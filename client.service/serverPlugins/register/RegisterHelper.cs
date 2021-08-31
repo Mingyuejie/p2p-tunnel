@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -108,14 +109,15 @@ namespace client.service.serverPlugins.register
                         AppShareData.Instance.ClientPort = Helper.GetRandomPort();
 
                         AppShareData.Instance.ClientTcpPort = Helper.GetRandomPort(new List<int> { AppShareData.Instance.ClientPort });
-                        TCPServer.Instance.Start(AppShareData.Instance.ClientTcpPort);
+                        TCPServer.Instance.Start(AppShareData.Instance.ClientTcpPort, AppShareData.Instance.LocalIp);
 
                         //TCP 开始监听
                         Socket serverSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                         serverSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        serverSocket.Bind(new IPEndPoint(IPAddress.Any, AppShareData.Instance.ClientTcpPort));
+                        IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Parse(AppShareData.Instance.ServerIp), AppShareData.Instance.ServerTcpPort);
+                        serverSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalIp, AppShareData.Instance.ClientTcpPort));
                         AppShareData.Instance.TcpServer = serverSocket;
-                        serverSocket.Connect(new IPEndPoint(IPAddress.Parse(AppShareData.Instance.ServerIp), AppShareData.Instance.ServerTcpPort));
+                        serverSocket.Connect(remoteEndPoint);
 
                         TCPServer.Instance.BindReceive(serverSocket);
 
@@ -127,7 +129,7 @@ namespace client.service.serverPlugins.register
 
 
                         //UDP 开始监听
-                        UDPServer.Instance.Start(AppShareData.Instance.ClientPort);
+                        UDPServer.Instance.Start(AppShareData.Instance.ClientPort, AppShareData.Instance.LocalIp);
                         AppShareData.Instance.UdpServer = new IPEndPoint(IPAddress.Parse(AppShareData.Instance.ServerIp), AppShareData.Instance.ServerPort);
                         RegisterEventHandles.Instance.SendRegisterMessage(new RegisterParams
                         {

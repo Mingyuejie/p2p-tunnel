@@ -244,12 +244,12 @@ namespace client.service.serverPlugins.connectClient
                 _ = Task.Run(() =>
                 {
                     //随便给目标客户端发个低TTL消息
-                    using Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    using Socket targetSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     try
                     {
                         targetSocket.Ttl = (short)(RouteLevel + 2);
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        targetSocket.Bind(new IPEndPoint(IPAddress.Any, ClientTcpPort));
+                        targetSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalIp, ClientTcpPort));
                         targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(ip), e.Data.LocalTcpPort));
                     }
                     catch (Exception)
@@ -330,7 +330,7 @@ namespace client.service.serverPlugins.connectClient
                     try
                     {
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        targetSocket.Bind(new IPEndPoint(IPAddress.Any, ClientTcpPort));
+                        targetSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalIp, ClientTcpPort));
                         string ip = length >= ips.Length ? ips[ips.Length - 1] : ips[length];
 
                         IAsyncResult result = targetSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(ip), e.Data.LocalTcpPort), null, null);
@@ -452,7 +452,7 @@ namespace client.service.serverPlugins.connectClient
                 using Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 targetSocket.Ttl = (short)(RouteLevel + 2);
                 targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                targetSocket.Bind(new IPEndPoint(IPAddress.Any, ClientTcpPort));
+                targetSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalIp, ClientTcpPort));
                 targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(e.Data.Ip), e.Data.LocalTcpPort));
                 System.Threading.Thread.Sleep(500);
                 targetSocket.SafeClose();

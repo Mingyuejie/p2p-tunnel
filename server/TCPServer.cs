@@ -43,26 +43,26 @@ namespace server
             }
         }
 
-        public void Start(int port)
+        public void Start(int port, IPAddress ip = null)
         {
             if (Running)
             {
                 return;
             }
             cancellationTokenSource = new CancellationTokenSource();
-            BindAccept(port);
+            BindAccept(port, ip);
         }
 
-        public void BindAccept(int port)
+        public void BindAccept(int port,IPAddress ip = null)
         {
             if (servers.ContainsKey(port)) return;
 
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            socket.Bind(new IPEndPoint(IPAddress.Any, port));
+            socket.Bind(new IPEndPoint(ip ?? IPAddress.Any, port));
             socket.Listen(int.MaxValue);
 
-            ServerModel server = new ServerModel
+            ServerModel server = new()
             {
                 AcceptDone = new ManualResetEvent(false),
                 Socket = socket
@@ -78,8 +78,9 @@ namespace server
                     {
                         _ = socket.BeginAccept(new AsyncCallback(Accept), server);
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        Logger.Instance.Info(ex + "");
                         Stop();
                         break;
                     }
@@ -99,8 +100,9 @@ namespace server
                 Socket client = server.Socket.EndAccept(result);
                 BindReceive(client);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Logger.Instance.Info(ex+"");
             }
         }
         private void Receive(IAsyncResult result)
@@ -137,8 +139,9 @@ namespace server
                 }
 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Logger.Instance.Info(ex + "");
                 _ = clients.TryRemove(model.Id, out ReceiveModel client);
             }
         }
@@ -221,7 +224,7 @@ namespace server
                     }
                     catch (Exception ex)
                     {
-                        Logger.Instance.Error(ex + "");
+                        Logger.Instance.Info(ex + "");
                     }
                 }
             }

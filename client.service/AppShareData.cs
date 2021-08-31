@@ -46,8 +46,12 @@ namespace client.service
         //在线客户端列表
         public ConcurrentDictionary<long, ClientInfo> Clients { get; set; } = new();
 
+
+        public IPAddress LocalIp { get; set; } = IPAddress.Any;
+
         //NAT服务地址
         public string ServerIp { get; set; } = string.Empty;
+
         //NAT服务UDP端口
         public int ServerPort { get; set; } = 0;
         //NAT服务TCP端口

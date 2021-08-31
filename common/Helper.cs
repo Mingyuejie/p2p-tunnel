@@ -71,7 +71,6 @@ namespace common
         }
         public static void CloseTimeout(long id)
         {
-            Console.WriteLine($"关闭:{id}");
             if (setTimeoutCache.TryRemove(id, out System.Timers.Timer t) && t != null)
             {
                 t.Close();
@@ -706,6 +705,31 @@ namespace common
                 stream.Seek(origPos, SeekOrigin.Begin);
             }
             return targetEncoding;
+        }
+
+        /// <summary>
+        /// 查询适合连接远程地址的合适接口地址
+        /// </summary>
+        /// <param name="remoteEndPoint"></param>
+        /// <param name="socket"></param>
+        /// <returns></returns>
+        public static IPEndPoint RoutingInterfaceQuery(IPEndPoint remoteEndPoint, Socket socket)
+        {
+            SocketAddress address = remoteEndPoint.Serialize();
+            byte[] remoteAddrBytes = new byte[address.Size];
+            for (int i = 0; i < address.Size; i++)
+            {
+                remoteAddrBytes[i] = address[i];
+            }
+            byte[] outBytes = new byte[remoteAddrBytes.Length];
+            socket.IOControl(IOControlCode.RoutingInterfaceQuery, remoteAddrBytes, outBytes);
+            for (int i = 0; i < address.Size; i++)
+            {
+                address[i] = outBytes[i];
+            }
+            EndPoint ep = remoteEndPoint.Create(address);
+
+            return (IPEndPoint)ep;
         }
     }
 

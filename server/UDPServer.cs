@@ -42,7 +42,7 @@ namespace server
             }
         }
 
-        public void Start(int port)
+        public void Start(int port, IPAddress ip = null)
         {
             if (Running)
             {
@@ -50,8 +50,11 @@ namespace server
             }
 
             cancellationTokenSource = new CancellationTokenSource();
-            IpepServer = new IPEndPoint(IPAddress.Any, port);
+            IpepServer = new IPEndPoint(ip ?? IPAddress.Any, port);
             UdpcRecv = new UdpClient(IpepServer);
+            //UdpcRecv.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            //UdpcRecv.Client.Bind(IpepServer);
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 const uint IOC_IN = 0x80000000;
@@ -130,8 +133,9 @@ namespace server
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Logger.Instance.Info(ex + "");
             }
         }
     }
