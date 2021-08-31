@@ -175,6 +175,39 @@ namespace client.service.serverPlugins.forward.tcp
             });
         }
 
+        private byte[] chunkedHeaderBytes = Encoding.ASCII.GetBytes("Transfer-Encoding: chunked");
+        /// <summary>
+        /// 判断是否分块传输
+        /// </summary>
+        /// <param name="lines"></param>
+        /// <returns></returns>
+        private bool IsChunked(byte[] lines)
+        {
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (lines[i] == 10 && lines[i - 1] == 13 && lines.Length - i >= chunkedHeaderBytes.Length)
+                {
+                    if (Enumerable.SequenceEqual(lines.Skip(i + 1).Take(chunkedHeaderBytes.Length), chunkedHeaderBytes))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// \r\n\r\n结束 13 10 13 10
+        /// </summary>
+        /// <param name="lines"></param>
+        /// <returns></returns>
+        private bool IsEnd(byte[] lines)
+        {
+            return lines.Length >= 4 && lines[^1] == 10 && lines[^2] == 13 && lines[^3] == 10 && lines[^4] == 13;
+        }
+
+
+
         public string Del(int id)
         {
 
