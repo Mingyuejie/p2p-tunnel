@@ -115,14 +115,7 @@ namespace client.service.serverPlugins.forward.tcp
                     SourceSocket = socket,
                     TargetClient = server.TargetClient
                 };
-                if (server.AliveType == TcpForwardAliveTypes.UNALIVE)
-                {
-                    Receive(client, client.SourceSocket.ReceiveAll());
-                }
-                else
-                {
-                    BindReceive(client);
-                }
+                BindReceive(client);
             }
             catch (Exception)
             {
@@ -198,6 +191,22 @@ namespace client.service.serverPlugins.forward.tcp
         }
 
         public void Response(TcpForwardModel model)
+        {
+            if (clients.TryGetValue(model.RequestId, out ClientCacheModel client) && client != null)
+            {
+                try
+                {
+                    if (client.Socket.Connected)
+                    {
+                        int length = client.Socket.Send(model.Buffer, SocketFlags.None);
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+        public void ResponseEnd(TcpForwardModel model)
         {
             if (clients.TryGetValue(model.RequestId, out ClientCacheModel client) && client != null)
             {

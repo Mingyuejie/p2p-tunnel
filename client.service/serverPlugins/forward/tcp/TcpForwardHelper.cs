@@ -73,6 +73,9 @@ namespace client.service.serverPlugins.forward.tcp
                 case TcpForwardType.RESPONSE:
                     TcpForwardServer.Instance.Response(_arg.Data);
                     break;
+                case TcpForwardType.RESPONSE_END:
+                    TcpForwardServer.Instance.ResponseEnd(_arg.Data);
+                    break;
                 //A收到B的错误回复
                 case TcpForwardType.FAIL:
                     TcpForwardServer.Instance.Fail(_arg.Data);
@@ -99,7 +102,6 @@ namespace client.service.serverPlugins.forward.tcp
                                 DnsEndPoint dnsEndPoint = new(_arg.Data.TargetIp, _arg.Data.TargetPort);
                                 socket.Connect(dnsEndPoint);
 
-
                                 if (_arg.Data.AliveType == TcpForwardAliveTypes.ALIVE)
                                 {
                                     _ = clients.TryAdd(_arg.Data.RequestId, client);
@@ -111,9 +113,46 @@ namespace client.service.serverPlugins.forward.tcp
                                 _ = client.TargetSocket.Send(_arg.Data.Buffer);
                                 if (_arg.Data.AliveType == TcpForwardAliveTypes.UNALIVE)
                                 {
-                                    Receive(client, client.TargetSocket.ReceiveAll());
-                                    client.TargetSocket.SafeClose();
-                                    _ = clients.TryRemove(_arg.Data.RequestId, out _);
+                                    var bytes = client.TargetSocket.ReceiveAll();
+                                    string strs = Encoding.UTF8.GetString(bytes);
+                                    string[] lines = strs.Split("\r\n\r\n")[0].Split("\r\n");
+                                    if (IsChunked(lines) && !IsEnd(lines))
+                                    {
+                                        Receive(client, bytes);
+                                        Task.Run(() =>
+                                        {
+                                            while (true)
+                                            {
+                                                try
+                                                {
+                                                    var bytes = client.TargetSocket.ReceiveAll();
+                                                    Receive(client, bytes);
+                                                    if (IsEnd(Encoding.UTF8.GetString(bytes).Split("\r\n")))
+                                                    {
+                                                        ReceiveEnd(client, bytes);
+                                                        client.TargetSocket.SafeClose();
+                                                        _ = clients.TryRemove(_arg.Data.RequestId, out _);
+                                                        break;
+                                                    }
+                                                    else
+                                                    {
+                                                        Receive(client, bytes);
+                                                    }
+                                                }
+                                                catch (Exception)
+                                                {
+                                                    client.TargetSocket.SafeClose();
+                                                    _ = clients.TryRemove(_arg.Data.RequestId, out _);
+                                                }
+                                            }
+                                        });
+                                    }
+                                    else
+                                    {
+                                        ReceiveEnd(client, bytes);
+                                        client.TargetSocket.SafeClose();
+                                        _ = clients.TryRemove(_arg.Data.RequestId, out _);
+                                    }
                                 }
                             }
                         }
@@ -138,6 +177,27 @@ namespace client.service.serverPlugins.forward.tcp
                     break;
             }
         }
+
+        private bool IsChunked(string[] lines)
+        {
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (lines[i].Split(':')[0] == "Transfer-Encoding" && lines[i].Split(':')[1].Trim() == "chunked")
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        private bool IsEnd(string[] lines)
+        {
+            if (lines[^3] == "0" && lines[^2].Length == 0)
+            {
+                return true;
+            }
+            return false;
+        }
+
 
         public void BindReceive(ClientModel client)
         {
@@ -167,6 +227,23 @@ namespace client.service.serverPlugins.forward.tcp
                     RequestId = client.RequestId,
                     Buffer = data,
                     Type = TcpForwardType.RESPONSE,
+                    TargetPort = client.TargetPort,
+                    AliveType = client.AliveType,
+                    TargetIp = client.TargetIp
+                },
+                Socket = client.SourceSocket
+            });
+        }
+
+        private void ReceiveEnd(ClientModel client, byte[] data)
+        {
+            TcpForwardEventHandles.Instance.OnSendTcpForwardMessage(new OnSendTcpForwardMessageEventArg
+            {
+                Data = new TcpForwardModel
+                {
+                    RequestId = client.RequestId,
+                    Buffer = data,
+                    Type = TcpForwardType.RESPONSE_END,
                     TargetPort = client.TargetPort,
                     AliveType = client.AliveType,
                     TargetIp = client.TargetIp

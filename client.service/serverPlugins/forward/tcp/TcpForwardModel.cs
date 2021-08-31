@@ -40,7 +40,7 @@ namespace client.service.serverPlugins.forward.tcp
     [Flags]
     public enum TcpForwardType
     {
-        REQUEST, RESPONSE, FAIL
+        REQUEST, RESPONSE, FAIL, RESPONSE_END
     }
 
 
