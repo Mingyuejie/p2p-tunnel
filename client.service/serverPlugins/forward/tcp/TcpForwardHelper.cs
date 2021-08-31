@@ -145,7 +145,7 @@ namespace client.service.serverPlugins.forward.tcp
             {
                 while (client.TargetSocket.Connected && clients.ContainsKey(client.RequestId))
                 {
-                    try
+                    try 
                     {
                         Receive(client, client.TargetSocket.ReceiveAll());
                     }
