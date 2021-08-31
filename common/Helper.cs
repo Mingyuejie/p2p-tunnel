@@ -71,14 +71,18 @@ namespace common
         }
         public static void CloseTimeout(long id)
         {
+            Console.WriteLine($"关闭:{id}");
             if (setTimeoutCache.TryRemove(id, out System.Timers.Timer t) && t != null)
             {
                 t.Close();
             }
         }
 
-        public static void SetInterval(Action action, double interval)
+        public static long SetInterval(Action action, double interval)
         {
+            _ = Interlocked.Increment(ref setTimeoutId);
+            long id = setTimeoutId;
+
             System.Timers.Timer t = new(interval);//实例化Timer类，设置间隔时间为10000毫秒；
             t.Elapsed += new ElapsedEventHandler((object source, ElapsedEventArgs e) =>
             {
@@ -89,6 +93,10 @@ namespace common
             t.AutoReset = true;//设置是执行一次（false）还是一直执行(true)；
             t.Enabled = true;//是否执行System.Timers.Timer.Elapsed事件；
             t.Start(); //启动定时器
+
+            setTimeoutCache.TryAdd(id, t);
+
+            return id;
         }
 
 

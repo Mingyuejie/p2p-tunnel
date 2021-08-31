@@ -31,8 +31,8 @@ namespace client.service.serverPlugins.connectClient
         public int ClientTcpPort => EventHandlers.ClientTcpPort;
         public int RouteLevel => EventHandlers.RouteLevel;
 
-        private readonly ConcurrentDictionary<long, ConnectMessageCache> connectCache = new ConcurrentDictionary<long, ConnectMessageCache>();
-        private readonly ConcurrentDictionary<long, ConnectTcpMessageCache> connectTcpCache = new ConcurrentDictionary<long, ConnectTcpMessageCache>();
+        private readonly ConcurrentDictionary<long, ConnectMessageCache> connectCache = new();
+        private readonly ConcurrentDictionary<long, ConnectTcpMessageCache> connectTcpCache = new();
 
         #region 连接客户端  具体流程 看MessageTypes里的描述
         /// <summary>
@@ -239,7 +239,6 @@ namespace client.service.serverPlugins.connectClient
             OnTcpConnectClientStep1Handler?.Invoke(this, e);
 
             List<string> ips = e.Data.LocalIps.Split(',').Concat(new string[] { e.Data.Ip }).ToList();
-
             foreach (string ip in ips)
             {
                 _ = Task.Run(() =>
@@ -256,7 +255,7 @@ namespace client.service.serverPlugins.connectClient
                     catch (Exception)
                     {
                     }
-                    //System.Threading.Thread.Sleep(500);
+                    System.Threading.Thread.Sleep(100);
                     targetSocket.SafeClose();
                 });
             }
@@ -313,7 +312,7 @@ namespace client.service.serverPlugins.connectClient
             {
                 connectdIds.Add(e.Data.Id);
                 bool success = false;
-                int length = 10, errLength = 10;
+                int length = 5, errLength = 10;
                 int interval = 0;
                 while (length > 0 && errLength > 0)
                 {
@@ -336,7 +335,6 @@ namespace client.service.serverPlugins.connectClient
 
                         IAsyncResult result = targetSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(ip), e.Data.LocalTcpPort), null, null);
                         _ = result.AsyncWaitHandle.WaitOne(2000, false);
-
                         if (result.IsCompleted)
                         {
 
@@ -544,6 +542,7 @@ namespace client.service.serverPlugins.connectClient
                     Id = arg.Id
                 }
             });
+
         }
         /// <summary>
         /// TCP消息，已经连接了对方，发个3告诉对方已连接
@@ -592,20 +591,19 @@ namespace client.service.serverPlugins.connectClient
         /// 对方连接我了
         /// </summary>
         /// <param name="toid"></param>
-        public void OnTcpConnectClientStep3Message(OnConnectClientStep3EventArg e)
+        public void OnTcpConnectClientStep3Message(OnConnectClientStep3EventArg arg)
         {
-
-            if (connectTcpCache.TryGetValue(e.Data.Id, out ConnectTcpMessageCache cache))
+            if (connectTcpCache.TryGetValue(arg.Data.Id, out ConnectTcpMessageCache cache))
             {
-                connectTcpCache.TryRemove(e.Data.Id, out _);
-                cache?.Callback(e);
+                connectTcpCache.TryRemove(arg.Data.Id, out _);
+                cache?.Callback(arg);
                 SendTcpConnectClientStep4Message(new SendTcpConnectClientStep4EventArg
                 {
-                    Socket = e.Packet.TcpSocket,
+                    Socket = arg.Packet.TcpSocket,
                     Id = AppShareData.Instance.ConnectId
                 });
             }
-            OnTcpConnectClientStep3Handler?.Invoke(this, e);
+            OnTcpConnectClientStep3Handler?.Invoke(this, arg);
 
         }
 
@@ -659,14 +657,13 @@ namespace client.service.serverPlugins.connectClient
         /// 目标客户端回应我了
         /// </summary>
         /// <param name="toid"></param>
-        public void OnConnectClientStep4Message(OnConnectClientStep4EventArg e)
+        public void OnConnectClientStep4Message(OnConnectClientStep4EventArg arg)
         {
-            if (connectCache.TryRemove(e.Data.Id, out ConnectMessageCache cache))
+            if (connectCache.TryRemove(arg.Data.Id, out ConnectMessageCache cache))
             {
-                cache?.Callback(e);
+                cache?.Callback(arg);
             }
-
-            OnConnectClientStep4Handler?.Invoke(this, e);
+            OnConnectClientStep4Handler?.Invoke(this, arg);
         }
         /// <summary>
         /// 来源客户端回应我了

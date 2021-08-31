@@ -290,14 +290,17 @@ namespace client.service.serverPlugins.forward.tcp
 
         private void ReadConfig()
         {
-            ConfigFileModel config = Helper.DeJsonSerializer<ConfigFileModel>(File.ReadAllText(configFileName));
-            if (config != null)
+            if (File.Exists(configFileName))
             {
-                Mappings = config.Mappings;
-                Mappings.ForEach(c =>
+                ConfigFileModel config = Helper.DeJsonSerializer<ConfigFileModel>(File.ReadAllText(configFileName));
+                if (config != null)
                 {
-                    c.Listening = false;
-                });
+                    Mappings = config.Mappings;
+                    Mappings.ForEach(c =>
+                    {
+                        c.Listening = false;
+                    });
+                }
             }
         }
         private string SaveConfig()
