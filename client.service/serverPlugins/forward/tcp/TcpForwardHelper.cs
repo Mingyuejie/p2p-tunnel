@@ -143,6 +143,7 @@ namespace client.service.serverPlugins.forward.tcp
                                                 {
                                                     client.TargetSocket.SafeClose();
                                                     _ = clients.TryRemove(_arg.Data.RequestId, out _);
+                                                    break;
                                                 }
                                             }
                                         });
