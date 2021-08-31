@@ -1,6 +1,7 @@
 ﻿using common;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
@@ -38,8 +39,12 @@ namespace common.extends
             {
                 try
                 {
-                    //Logger.Instance.Info($"关闭socket:{socket.RemoteEndPoint}");
-                    //Logger.Instance.Info(Helper.GetStackTrace());
+                    //if(IPEndPoint.Parse(socket.RemoteEndPoint.ToString()).Address.ToString() == "124.227.80.202")
+                    //{
+                    //    Logger.Instance.Error($"关闭socket:{socket.RemoteEndPoint}");
+                    //    Logger.Instance.Error(Helper.GetStackTrace());
+                    //}
+
                     socket.Shutdown(SocketShutdown.Both);
                 }
                 catch (Exception)

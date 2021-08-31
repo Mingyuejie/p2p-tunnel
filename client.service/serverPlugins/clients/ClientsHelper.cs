@@ -93,6 +93,7 @@ namespace client.service.serverPlugins.clients
                         }
                         else if (client.TcpConnected)
                         {
+                            Logger.Instance.Info($"给{client.Id}发送心跳包");
                             HeartEventHandles.Instance.SendTcpHeartMessage(client.Socket);
                         }
 
@@ -116,6 +117,7 @@ namespace client.service.serverPlugins.clients
                         }
                         else if (e.Packet.ServerType == ServerType.TCP)
                         {
+                            Logger.Instance.Info($"收到{e.Data.SourceId}的心跳包");
                             cacheClient.TcpLastTime = Helper.GetTimeStamp();
                         }
                     }

@@ -131,9 +131,14 @@ namespace server
                             }
                             _ = model.Socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
                         }
+                        else
+                        {
+                            Logger.Instance.Info("!Running");
+                        }
                     }
                     else
                     {
+                        Logger.Instance.Info($"length:{length}");
                         _ = clients.TryRemove(model.Id, out ReceiveModel client);
                     }
                 }
