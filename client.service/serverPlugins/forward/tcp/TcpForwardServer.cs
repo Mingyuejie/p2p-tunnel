@@ -117,7 +117,15 @@ namespace client.service.serverPlugins.forward.tcp
                 };
                 if (server.AliveType == TcpForwardAliveTypes.UNALIVE)
                 {
-                    Receive(client, client.SourceSocket.ReceiveAll());
+                    var bytes = client.SourceSocket.ReceiveAll();
+                    if(bytes.Length > 0)
+                    {
+                        Receive(client, bytes);
+                    }
+                    else
+                    {
+                        _ = clients.TryRemove(client.RequestId, out _);
+                    }
                 }
                 else
                 {
@@ -139,7 +147,16 @@ namespace client.service.serverPlugins.forward.tcp
                 {
                     try
                     {
-                        Receive(client, client.SourceSocket.ReceiveAll());
+                        var bytes = client.SourceSocket.ReceiveAll();
+                        if(bytes.Length > 0)
+                        {
+                            Receive(client, bytes);
+                        }
+                        else
+                        {
+                            _ = clients.TryRemove(client.RequestId, out _);
+                        }
+                       
                     }
                     catch (Exception)
                     {
@@ -198,6 +215,23 @@ namespace client.service.serverPlugins.forward.tcp
         }
 
         public void Response(TcpForwardModel model)
+        {
+            if (clients.TryGetValue(model.RequestId, out ClientCacheModel client) && client != null)
+            {
+                try
+                {
+                    if (client.Socket.Connected)
+                    {
+                        int length = client.Socket.Send(model.Buffer, SocketFlags.None);
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+
+        public void ResponseEnd(TcpForwardModel model)
         {
             if (clients.TryGetValue(model.RequestId, out ClientCacheModel client) && client != null)
             {

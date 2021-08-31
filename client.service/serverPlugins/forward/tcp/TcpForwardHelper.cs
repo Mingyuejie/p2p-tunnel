@@ -73,6 +73,9 @@ namespace client.service.serverPlugins.forward.tcp
                 case TcpForwardType.RESPONSE:
                     TcpForwardServer.Instance.Response(_arg.Data);
                     break;
+                case TcpForwardType.RESPONSE_END:
+                    TcpForwardServer.Instance.ResponseEnd(_arg.Data);
+                    break;
                 //A收到B的错误回复
                 case TcpForwardType.FAIL:
                     TcpForwardServer.Instance.Fail(_arg.Data);
@@ -111,9 +114,63 @@ namespace client.service.serverPlugins.forward.tcp
                                 _ = client.TargetSocket.Send(_arg.Data.Buffer);
                                 if (_arg.Data.AliveType == TcpForwardAliveTypes.UNALIVE)
                                 {
-                                    Receive(client, client.TargetSocket.ReceiveAll());
-                                    client.TargetSocket.SafeClose();
-                                    _ = clients.TryRemove(_arg.Data.RequestId, out _);
+                                    var bytes = client.TargetSocket.ReceiveAll();
+                                    //分块传输
+                                    if (IsChunked(bytes))
+                                    {
+                                        //第一次传完
+                                        if (IsEnd(bytes))
+                                        {
+                                            ReceiveEnd(client, bytes, _arg.Packet.TcpSocket);
+                                        }
+                                        else
+                                        {
+                                            Receive(client, bytes);
+                                            while (true)
+                                            {
+                                                try
+                                                {
+                                                    var bytes1 = client.TargetSocket.ReceiveAll();
+                                                    if(bytes1.Length > 0)
+                                                    {
+                                                        Receive(client, bytes1);
+                                                        if (IsEnd(bytes1))
+                                                        {
+                                                            ReceiveEnd(client, bytes1, _arg.Packet.TcpSocket);
+                                                            client.TargetSocket.SafeClose();
+                                                            _ = clients.TryRemove(_arg.Data.RequestId, out _);
+                                                            break;
+                                                        }
+                                                        else
+                                                        {
+                                                            Receive(client, bytes1);
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        _ = clients.TryRemove(_arg.Data.RequestId, out _);
+                                                    }
+                                                }
+                                                catch (Exception)
+                                                {
+                                                    client.TargetSocket.SafeClose();
+                                                    _ = clients.TryRemove(_arg.Data.RequestId, out _);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        ReceiveEnd(client, bytes, _arg.Packet.TcpSocket);
+                                        client.TargetSocket.SafeClose();
+                                        _ = clients.TryRemove(_arg.Data.RequestId, out _);
+                                    }
+
+
+                                    //Receive(client, client.TargetSocket.ReceiveAll());
+                                    //client.TargetSocket.SafeClose();
+                                    //_ = clients.TryRemove(_arg.Data.RequestId, out _);
                                 }
                             }
                         }
@@ -145,9 +202,17 @@ namespace client.service.serverPlugins.forward.tcp
             {
                 while (client.TargetSocket.Connected && clients.ContainsKey(client.RequestId))
                 {
-                    try 
+                    try
                     {
-                        Receive(client, client.TargetSocket.ReceiveAll());
+                        var bytes = client.TargetSocket.ReceiveAll();
+                        if (bytes.Length > 0)
+                        {
+                            Receive(client, bytes);
+                        }
+                        else
+                        {
+                            _ = clients.TryRemove(client.RequestId, out _);
+                        }
                     }
                     catch (Exception)
                     {
@@ -172,6 +237,23 @@ namespace client.service.serverPlugins.forward.tcp
                     TargetIp = client.TargetIp
                 },
                 Socket = client.SourceSocket
+            });
+        }
+
+        private void ReceiveEnd(ClientModel client, byte[] data, Socket sourceSocket)
+        {
+            TcpForwardEventHandles.Instance.OnSendTcpForwardMessage(new OnSendTcpForwardMessageEventArg
+            {
+                Data = new TcpForwardModel
+                {
+                    RequestId = client.RequestId,
+                    Buffer = data,
+                    Type = TcpForwardType.RESPONSE_END,
+                    TargetPort = client.TargetPort,
+                    AliveType = client.AliveType,
+                    TargetIp = client.TargetIp
+                },
+                Socket = sourceSocket
             });
         }
 
