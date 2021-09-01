@@ -64,126 +64,23 @@ namespace client.service.serverPlugins.forward.tcp
         }
         private void OnTcpForwardMessageHandler(object sender, OnTcpForwardMessageEventArg arg)
         {
-            OnTcpForwardMessageEventArg _arg = arg;
-            switch (_arg.Data.Type)
+            switch (arg.Data.Type)
             {
                 //A收到了B的回复
                 case TcpForwardType.RESPONSE:
-                    TcpForwardServer.Instance.Response(_arg.Data);
+                    TcpForwardServer.Instance.Response(arg.Data);
                     break;
                 case TcpForwardType.RESPONSE_END:
-                    TcpForwardServer.Instance.ResponseEnd(_arg.Data);
+                    TcpForwardServer.Instance.ResponseEnd(arg.Data);
                     break;
                 //A收到B的错误回复
                 case TcpForwardType.FAIL:
-                    TcpForwardServer.Instance.Fail(_arg.Data);
+                    TcpForwardServer.Instance.Fail(arg.Data);
                     break;
                 //B收到请求
                 case TcpForwardType.REQUEST:
                     {
-                        ClientModel.Get(_arg.Data.RequestId, out ClientModel client);
-                        try
-                        {
-                            if (client == null)
-                            {
-                                Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                                client = new ClientModel
-                                {
-                                    RequestId = _arg.Data.RequestId,
-                                    TargetSocket = socket,
-                                    TargetPort = _arg.Data.TargetPort,
-                                    AliveType = _arg.Data.AliveType,
-                                    TargetIp = _arg.Data.TargetIp,
-                                    SourceSocket = _arg.Packet.TcpSocket
-                                };
-
-                                DnsEndPoint dnsEndPoint = new(_arg.Data.TargetIp, _arg.Data.TargetPort);
-                                socket.Connect(dnsEndPoint);
-
-
-                                if (_arg.Data.AliveType == TcpForwardAliveTypes.ALIVE)
-                                {
-                                    ClientModel.Add(client);
-                                    BindReceive(client);
-                                }
-                            }
-                            if (client.TargetSocket.Connected)
-                            {
-                                _ = client.TargetSocket.Send(_arg.Data.Buffer);
-                                if (_arg.Data.AliveType == TcpForwardAliveTypes.UNALIVE)
-                                {
-                                    var bytes = client.TargetSocket.ReceiveAll();
-                                    //分块传输
-                                    if (IsChunked(bytes))
-                                    {
-                                        //第一次传完
-                                        if (IsEnd(bytes))
-                                        {
-                                            ReceiveEnd(client, bytes, _arg.Packet.TcpSocket);
-                                        }
-                                        else
-                                        {
-                                            Receive(client, bytes);
-                                            while (true)
-                                            {
-                                                try
-                                                {
-                                                    var bytes1 = client.TargetSocket.ReceiveAll();
-                                                    if(bytes1.Length > 0)
-                                                    {
-                                                        Receive(client, bytes1);
-                                                        if (IsEnd(bytes1))
-                                                        {
-                                                            ReceiveEnd(client, bytes1, _arg.Packet.TcpSocket);
-                                                            client.Remove();
-                                                            break;
-                                                        }
-                                                        else
-                                                        {
-                                                            Receive(client, bytes1);
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        client.Remove();
-                                                    }
-                                                }
-                                                catch (Exception)
-                                                {
-                                                    client.Remove();
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        ReceiveEnd(client, bytes, _arg.Packet.TcpSocket);
-                                        client.Remove();
-                                    }
-
-
-                                    //Receive(client, client.TargetSocket.ReceiveAll());
-                                    //client.TargetSocket.SafeClose();
-                                    //_ = clients.TryRemove(_arg.Data.RequestId, out _);
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            ClientModel.Remove(_arg.Data.RequestId);
-                            TcpForwardEventHandles.Instance.OnSendTcpForwardMessage(new OnSendTcpForwardMessageEventArg
-                            {
-                                Data = new TcpForwardModel
-                                {
-                                    RequestId = _arg.Data.RequestId,
-                                    Type = TcpForwardType.FAIL,
-                                    Buffer = Encoding.UTF8.GetBytes(ex + ""),
-                                    AliveType = _arg.Data.AliveType
-                                },
-                                Socket = _arg.Packet.TcpSocket
-                            });
-                        }
+                        Request(arg);
                     }
                     break;
                 default:
@@ -191,7 +88,115 @@ namespace client.service.serverPlugins.forward.tcp
             }
         }
 
-        public void BindReceive(ClientModel client)
+        private void Request(OnTcpForwardMessageEventArg arg)
+        {
+            ClientModel.Get(arg.Data.RequestId, out ClientModel client);
+            try
+            {
+                if (client == null)
+                {
+                    Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    client = new ClientModel
+                    {
+                        RequestId = arg.Data.RequestId,
+                        TargetSocket = socket,
+                        TargetPort = arg.Data.TargetPort,
+                        AliveType = arg.Data.AliveType,
+                        TargetIp = arg.Data.TargetIp,
+                        SourceSocket = arg.Packet.TcpSocket
+                    };
+
+                    DnsEndPoint dnsEndPoint = new(arg.Data.TargetIp, arg.Data.TargetPort);
+                    socket.Connect(dnsEndPoint);
+
+
+                    if (arg.Data.AliveType == TcpForwardAliveTypes.ALIVE)
+                    {
+                        ClientModel.Add(client);
+                        BindReceive(client);
+                    }
+                }
+                if (client.TargetSocket.Connected)
+                {
+                    _ = client.TargetSocket.Send(arg.Data.Buffer);
+                    if (arg.Data.AliveType == TcpForwardAliveTypes.UNALIVE)
+                    {
+                        BindUnliveReceive(client);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ClientModel.Remove(arg.Data.RequestId);
+                TcpForwardEventHandles.Instance.OnSendTcpForwardMessage(new OnSendTcpForwardMessageEventArg
+                {
+                    Data = new TcpForwardModel
+                    {
+                        RequestId = arg.Data.RequestId,
+                        Type = TcpForwardType.FAIL,
+                        Buffer = Encoding.UTF8.GetBytes(ex + ""),
+                        AliveType = arg.Data.AliveType
+                    },
+                    Socket = arg.Packet.TcpSocket
+                });
+            }
+        }
+
+        private void BindUnliveReceive(ClientModel client)
+        {
+            var bytes = client.TargetSocket.ReceiveAll();
+            //分块传输
+            if (Helper.IsChunked(bytes))
+            {
+                //第一次传完
+                if (Helper.IsChunkedEnd(bytes))
+                {
+                    ReceiveChunkedEnd(client, bytes, client.SourceSocket);
+                    client.Remove();
+                }
+                else
+                {
+                    Receive(client, bytes);
+                    while (true)
+                    {
+                        try
+                        {
+                            var bytes1 = client.TargetSocket.ReceiveAll();
+                            if (bytes1.Length > 0)
+                            {
+                                Receive(client, bytes1);
+                                if (Helper.IsChunkedEnd(bytes1))
+                                {
+                                    ReceiveChunkedEnd(client, bytes1, client.SourceSocket);
+                                    client.Remove();
+                                    break;
+                                }
+                                else
+                                {
+                                    Receive(client, bytes1);
+                                }
+                            }
+                            else
+                            {
+                                client.Remove();
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            client.Remove();
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                ReceiveChunkedEnd(client, bytes, client.SourceSocket);
+                client.Remove();
+            }
+        }
+
+        private void BindReceive(ClientModel client)
         {
             _ = Task.Factory.StartNew(() =>
             {
@@ -235,7 +240,7 @@ namespace client.service.serverPlugins.forward.tcp
             });
         }
 
-        private void ReceiveEnd(ClientModel client, byte[] data, Socket sourceSocket)
+        private void ReceiveChunkedEnd(ClientModel client, byte[] data, Socket sourceSocket)
         {
             TcpForwardEventHandles.Instance.OnSendTcpForwardMessage(new OnSendTcpForwardMessageEventArg
             {
@@ -250,37 +255,6 @@ namespace client.service.serverPlugins.forward.tcp
                 },
                 Socket = sourceSocket
             });
-        }
-
-        private byte[] chunkedHeaderBytes = Encoding.ASCII.GetBytes("Transfer-Encoding: chunked");
-        /// <summary>
-        /// 判断是否分块传输
-        /// </summary>
-        /// <param name="lines"></param>
-        /// <returns></returns>
-        private bool IsChunked(byte[] lines)
-        {
-            for (int i = 0; i < lines.Length; i++)
-            {
-                if (lines[i] == 10 && lines[i - 1] == 13 && lines.Length - i >= chunkedHeaderBytes.Length)
-                {
-                    if (Enumerable.SequenceEqual(lines.Skip(i + 1).Take(chunkedHeaderBytes.Length), chunkedHeaderBytes))
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// \r\n\r\n结束 13 10 13 10
-        /// </summary>
-        /// <param name="lines"></param>
-        /// <returns></returns>
-        private bool IsEnd(byte[] lines)
-        {
-            return lines.Length >= 4 && lines[^1] == 10 && lines[^2] == 13 && lines[^3] == 10 && lines[^4] == 13;
         }
 
         public string Del(int id)
