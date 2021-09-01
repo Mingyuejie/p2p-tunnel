@@ -14,25 +14,30 @@ namespace client.service.clientService.plugins
 
         public void Start()
         {
-            //NatUtility.DeviceFound += (object sender, DeviceEventArgs e) =>
-            //{
-            //    INatDevice device = e.Device;
-            //    if (device.NatProtocol == NatProtocol.Upnp)
-            //    {
-            //        try
-            //        {
-            //            devices.Add(new DeviceModel
-            //            {
-            //                Device = device,
-            //                Text = $"外网:{device.GetExternalIPAsync().Result},内网:{device.DeviceEndpoint}"
-            //            });
-            //        }
-            //        catch (Exception)
-            //        {
-            //        }
-            //    }
-            //};
-            //NatUtility.StartDiscovery();
+            NatUtility.DeviceFound += (object sender, DeviceEventArgs e) =>
+            {
+                INatDevice device = e.Device;
+                if (device.NatProtocol == NatProtocol.Upnp)
+                {
+                    try
+                    {
+                        devices.Add(new DeviceModel
+                        {
+                            Device = device,
+                            Text = $"外网:{device.GetExternalIPAsync().Result},内网:{device.DeviceEndpoint}"
+                        });
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+            };
+            NatUtility.StartDiscovery();
+
+            Helper.SetTimeout(() =>
+            {
+                NatUtility.StopDiscovery();
+            }, 5000);
         }
     }
 
