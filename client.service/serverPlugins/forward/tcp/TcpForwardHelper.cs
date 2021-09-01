@@ -51,7 +51,7 @@ namespace client.service.serverPlugins.forward.tcp
         {
             if (arg.Socket != null)
             {
-                TcpForwardEventHandles.Instance.OnSendTcpForwardMessage(new OnSendTcpForwardMessageEventArg
+                TcpForwardEventHandles.Instance.SendTcpForwardMessage(new SendTcpForwardMessageEventArg
                 {
                     Data = arg.Msg,
                     Socket = arg.Socket
@@ -128,7 +128,7 @@ namespace client.service.serverPlugins.forward.tcp
             catch (Exception ex)
             {
                 ClientModel.Remove(arg.Data.RequestId);
-                TcpForwardEventHandles.Instance.OnSendTcpForwardMessage(new OnSendTcpForwardMessageEventArg
+                TcpForwardEventHandles.Instance.SendTcpForwardMessage(new SendTcpForwardMessageEventArg
                 {
                     Data = new TcpForwardModel
                     {
@@ -225,7 +225,7 @@ namespace client.service.serverPlugins.forward.tcp
 
         private void Receive(ClientModel client, byte[] data)
         {
-            TcpForwardEventHandles.Instance.OnSendTcpForwardMessage(new OnSendTcpForwardMessageEventArg
+            TcpForwardEventHandles.Instance.SendTcpForwardMessage(new SendTcpForwardMessageEventArg
             {
                 Data = new TcpForwardModel
                 {
@@ -242,7 +242,7 @@ namespace client.service.serverPlugins.forward.tcp
 
         private void ReceiveChunkedEnd(ClientModel client, byte[] data, Socket sourceSocket)
         {
-            TcpForwardEventHandles.Instance.OnSendTcpForwardMessage(new OnSendTcpForwardMessageEventArg
+            TcpForwardEventHandles.Instance.SendTcpForwardMessage(new SendTcpForwardMessageEventArg
             {
                 Data = new TcpForwardModel
                 {

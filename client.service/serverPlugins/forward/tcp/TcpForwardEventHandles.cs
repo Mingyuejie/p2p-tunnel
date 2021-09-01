@@ -16,8 +16,8 @@ namespace client.service.serverPlugins.forward.tcp
         }
 
         #region TCP转发
-        public event EventHandler<OnSendTcpForwardMessageEventArg> OnSendTcpForwardMessageHandler;
-        public void OnSendTcpForwardMessage(OnSendTcpForwardMessageEventArg arg)
+        public event EventHandler<SendTcpForwardMessageEventArg> OnSendTcpForwardMessageHandler;
+        public void SendTcpForwardMessage(SendTcpForwardMessageEventArg arg)
         {
             P2PMessageEventHandles.Instance.SendTcpMessage(new SendP2PTcpMessageArg
             {
@@ -38,7 +38,7 @@ namespace client.service.serverPlugins.forward.tcp
 
     #region TCP转发
 
-    public class OnSendTcpForwardMessageEventArg : EventArgs
+    public class SendTcpForwardMessageEventArg : EventArgs
     {
         public Socket Socket { get; set; }
         public TcpForwardModel Data { get; set; }
