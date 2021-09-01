@@ -22,8 +22,6 @@ namespace client.service.serverPlugins.forward.tcp
         public IPAddress IP { get; private set; }
         private readonly string configFileName = "config_tcp_forward.json";
         public List<TcpForwardRecordBaseModel> Mappings { get; set; } = new List<TcpForwardRecordBaseModel>();
-        private readonly ConcurrentDictionary<long, ClientModel> clients = new();
-
 
         private TcpForwardHelper()
         {
@@ -83,9 +81,9 @@ namespace client.service.serverPlugins.forward.tcp
                 //B收到请求
                 case TcpForwardType.REQUEST:
                     {
+                        ClientModel.Get(_arg.Data.RequestId, out ClientModel client);
                         try
                         {
-                            _ = clients.TryGetValue(_arg.Data.RequestId, out ClientModel client);
                             if (client == null)
                             {
                                 Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -105,7 +103,7 @@ namespace client.service.serverPlugins.forward.tcp
 
                                 if (_arg.Data.AliveType == TcpForwardAliveTypes.ALIVE)
                                 {
-                                    _ = clients.TryAdd(_arg.Data.RequestId, client);
+                                    ClientModel.Add(client);
                                     BindReceive(client);
                                 }
                             }
@@ -137,8 +135,7 @@ namespace client.service.serverPlugins.forward.tcp
                                                         if (IsEnd(bytes1))
                                                         {
                                                             ReceiveEnd(client, bytes1, _arg.Packet.TcpSocket);
-                                                            client.TargetSocket.SafeClose();
-                                                            _ = clients.TryRemove(_arg.Data.RequestId, out _);
+                                                            client.Remove();
                                                             break;
                                                         }
                                                         else
@@ -148,13 +145,12 @@ namespace client.service.serverPlugins.forward.tcp
                                                     }
                                                     else
                                                     {
-                                                        _ = clients.TryRemove(_arg.Data.RequestId, out _);
+                                                        client.Remove();
                                                     }
                                                 }
                                                 catch (Exception)
                                                 {
-                                                    client.TargetSocket.SafeClose();
-                                                    _ = clients.TryRemove(_arg.Data.RequestId, out _);
+                                                    client.Remove();
                                                     break;
                                                 }
                                             }
@@ -163,8 +159,7 @@ namespace client.service.serverPlugins.forward.tcp
                                     else
                                     {
                                         ReceiveEnd(client, bytes, _arg.Packet.TcpSocket);
-                                        client.TargetSocket.SafeClose();
-                                        _ = clients.TryRemove(_arg.Data.RequestId, out _);
+                                        client.Remove();
                                     }
 
 
@@ -176,7 +171,7 @@ namespace client.service.serverPlugins.forward.tcp
                         }
                         catch (Exception ex)
                         {
-                            _ = clients.TryRemove(_arg.Data.RequestId, out _);
+                            ClientModel.Remove(_arg.Data.RequestId);
                             TcpForwardEventHandles.Instance.OnSendTcpForwardMessage(new OnSendTcpForwardMessageEventArg
                             {
                                 Data = new TcpForwardModel
@@ -200,7 +195,7 @@ namespace client.service.serverPlugins.forward.tcp
         {
             _ = Task.Factory.StartNew(() =>
             {
-                while (client.TargetSocket.Connected && clients.ContainsKey(client.RequestId))
+                while (client.TargetSocket.Connected && ClientModel.Contains(client.RequestId))
                 {
                     try
                     {
@@ -211,12 +206,12 @@ namespace client.service.serverPlugins.forward.tcp
                         }
                         else
                         {
-                            _ = clients.TryRemove(client.RequestId, out _);
+                            client.Remove();
                         }
                     }
                     catch (Exception)
                     {
-                        _ = clients.TryRemove(client.RequestId, out _);
+                        client.Remove();
                         break;
                     }
                 }
@@ -288,8 +283,6 @@ namespace client.service.serverPlugins.forward.tcp
             return lines.Length >= 4 && lines[^1] == 10 && lines[^2] == 13 && lines[^3] == 10 && lines[^4] == 13;
         }
 
-
-
         public string Del(int id)
         {
 
@@ -301,6 +294,7 @@ namespace client.service.serverPlugins.forward.tcp
             }
             return SaveConfig();
         }
+
         public string Add(TcpForwardRecordBaseModel model, int id = 0)
         {
             TcpForwardRecordBaseModel portmap = Mappings.FirstOrDefault(c => c.SourcePort == model.SourcePort);
@@ -345,7 +339,6 @@ namespace client.service.serverPlugins.forward.tcp
         {
             return Start(Mappings.FirstOrDefault(c => c.ID == id));
         }
-
 
         public string Start(TcpForwardRecordBaseModel model)
         {
@@ -453,5 +446,44 @@ namespace client.service.serverPlugins.forward.tcp
         public string TargetIp { get; set; } = string.Empty;
         public int TargetPort { get; set; } = 0;
         public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.UNALIVE;
+
+        private readonly static ConcurrentDictionary<long, ClientModel> clients = new();
+
+        public static bool Add(ClientModel model)
+        {
+            return clients.TryAdd(model.RequestId, model);
+        }
+
+        public static bool Contains(long id)
+        {
+            return clients.ContainsKey(id);
+        }
+
+        public static bool Get(long id, out ClientModel c)
+        {
+            return clients.TryGetValue(id, out c);
+        }
+
+        public static void Remove(long id)
+        {
+            if (clients.TryRemove(id, out ClientModel c))
+            {
+                c.TargetSocket.SafeClose();
+            }
+        }
+
+        public static void Clear(int sourcePort)
+        {
+            IEnumerable<long> requestIds = clients.Where(c => c.Value.SourcePort == sourcePort).Select(c => c.Key);
+            foreach (var requestId in requestIds)
+            {
+                Remove(requestId);
+            }
+        }
+
+        public void Remove()
+        {
+            Remove(RequestId);
+        }
     }
 }

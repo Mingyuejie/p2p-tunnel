@@ -153,8 +153,6 @@ namespace client.service.serverPlugins.connectClient
             }, param.Timeout);
         }
 
-
-
         /// <summary>
         /// 服务器消息，让某个客户端反向链接我
         /// </summary>
@@ -185,8 +183,6 @@ namespace client.service.serverPlugins.connectClient
         {
             OnConnectClientReverseHandler?.Invoke(this, arg);
         }
-
-
 
         /// <summary>
         /// 服务器消息，某个客户端要跟我连接

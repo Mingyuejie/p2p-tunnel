@@ -18,7 +18,7 @@ namespace client.service.serverPlugins.clients
         private static readonly Lazy<ClientsHelper> lazy = new(() => new ClientsHelper());
         public static ClientsHelper Instance => lazy.Value;
         private short readClientsTimes = 0;
-        private readonly ConcurrentDictionary<long, ClientInfo> clients = AppShareData.Instance.Clients;
+
         private ClientsHelper()
         {
             //本客户端注册状态
@@ -41,7 +41,7 @@ namespace client.service.serverPlugins.clients
             //有人要求反向链接
             ConnectClientEventHandles.Instance.OnConnectClientReverseHandler += (s, arg) =>
             {
-                if (clients.TryGetValue(arg.Data.Id, out ClientInfo client) && client != null)
+                if (ClientInfo.Get(arg.Data.Id, out ClientInfo client) && client != null)
                 {
                     ConnectClient(client);
                 }
@@ -51,15 +51,14 @@ namespace client.service.serverPlugins.clients
             //退出消息
             RegisterEventHandles.Instance.OnSendExitMessageHandler += (sender, e) =>
             {
-                foreach (ClientInfo client in clients.Values)
+                foreach (ClientInfo client in ClientInfo.All())
                 {
-                    _ = RemoveClient(client.Id);
+                    client.Remove();
                     if (client.Connecting)
                     {
                         ConnectClientEventHandles.Instance.SendTcpConnectClientStep2StopMessage(client.Id);
                     }
                 }
-                clients.Clear();
                 readClientsTimes = 0;
             };
 
@@ -68,15 +67,13 @@ namespace client.service.serverPlugins.clients
             {
                 while (true)
                 {
-                    long time = Helper.GetTimeStamp();
-
-                    foreach (ClientInfo client in clients.Values)
+                    foreach (ClientInfo client in ClientInfo.All())
                     {
                         if (client.IsTimeout())
                         {
                             if (client.Connected && !client.Connecting)
                             {
-                                SetClientOffline(client.Id);
+                                client.Offline();
                             }
                         }
                         else if (client.Connected)
@@ -88,12 +85,11 @@ namespace client.service.serverPlugins.clients
                         {
                             if (client.TcpConnected && !client.TcpConnecting)
                             {
-                                SetClientTcpOffline(client.Id);
+                                client.OfflineTcp();
                             }
                         }
                         else if (client.TcpConnected)
                         {
-                            Logger.Instance.Info($"给{client.Id}发送心跳包");
                             HeartEventHandles.Instance.SendTcpHeartMessage(client.Socket);
                         }
 
@@ -108,18 +104,13 @@ namespace client.service.serverPlugins.clients
             {
                 if (e.Data.SourceId > 0)
                 {
-                    _ = clients.TryGetValue(e.Data.SourceId, out ClientInfo cacheClient);
-                    if (cacheClient != null)
+                    if (e.Packet.ServerType == ServerType.UDP)
                     {
-                        if (e.Packet.ServerType == ServerType.UDP)
-                        {
-                            cacheClient.LastTime = Helper.GetTimeStamp();
-                        }
-                        else if (e.Packet.ServerType == ServerType.TCP)
-                        {
-                            Logger.Instance.Info($"收到{e.Data.SourceId}的心跳包");
-                            cacheClient.TcpLastTime = Helper.GetTimeStamp();
-                        }
+                        ClientInfo.UpdateLastTime(e.Data.SourceId);
+                    }
+                    else if (e.Packet.ServerType == ServerType.TCP)
+                    {
+                        ClientInfo.UpdateTcpLastTime(e.Data.SourceId);
                     }
                 }
             };
@@ -142,13 +133,13 @@ namespace client.service.serverPlugins.clients
 
         private void OnConnectClientStep1Handler(object sender, OnConnectClientStep1EventArg e)
         {
-            if (clients.TryGetValue(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null)
+            if (ClientInfo.Get(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null)
             {
                 cacheClient.Connecting = true;
             }
             _ = Helper.SetTimeout(() =>
             {
-                if (clients.TryGetValue(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null && !cacheClient.Connected)
+                if (ClientInfo.Get(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null && !cacheClient.Connected)
                 {
                     cacheClient.Connecting = false;
                 }
@@ -156,30 +147,17 @@ namespace client.service.serverPlugins.clients
         }
         private void OnConnectClientStep3Handler(object sender, OnConnectClientStep3EventArg e)
         {
-            if (clients.TryGetValue(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null)
-            {
-                cacheClient.Connected = true;
-                cacheClient.Connecting = false;
-                cacheClient.LastTime = Helper.GetTimeStamp();
-                cacheClient.Address = e.Packet.SourcePoint;
-            }
+            ClientInfo.Online(e.Data.Id, e.Packet.SourcePoint);
         }
-
 
         private void OnSendTcpConnectClientStep2FailHandler(object sender, OnSendTcpConnectClientStep2FailEventArg e)
         {
-            SetClientTcpOffline(e.ToId);
+            ClientInfo.OfflineTcp(e.ToId);
         }
 
         private void OnTcpConnectClientStep4Handler(object sender, OnConnectClientStep4EventArg e)
         {
-            if (clients.TryGetValue(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null)
-            {
-                cacheClient.TcpConnected = true;
-                cacheClient.TcpConnecting = false;
-                cacheClient.TcpLastTime = Helper.GetTimeStamp();
-                cacheClient.Socket = e.Packet.TcpSocket;
-            }
+            ClientInfo.OnlineTcp(e.Data.Id, e.Packet.TcpSocket);
         }
 
         private void OnRegisterTcpStateChangeHandler(object sender, RegisterTcpEventArg e)
@@ -203,19 +181,18 @@ namespace client.service.serverPlugins.clients
                     }
 
                     //下线了的
-                    IEnumerable<long> offlines = clients.Values.Select(c => c.Id).Except(e.Data.Clients.Select(c => c.Id));
+                    IEnumerable<long> offlines = ClientInfo.AllIds().Except(e.Data.Clients.Select(c => c.Id));
                     foreach (long offid in offlines)
                     {
                         if (offid == AppShareData.Instance.ConnectId)
                         {
                             continue;
                         }
-                        SetClientOffline(offid);
-                        SetClientTcpOffline(offid);
-                        _ = RemoveClient(offid);
+                        ClientInfo.OfflineBoth(offid);
+                        ClientInfo.Remove(offid);
                     }
                     //新上线的
-                    IEnumerable<long> upLines = e.Data.Clients.Select(c => c.Id).Except(clients.Values.Select(c => c.Id));
+                    IEnumerable<long> upLines = e.Data.Clients.Select(c => c.Id).Except(ClientInfo.AllIds());
                     IEnumerable<MessageClientsClientModel> upLineClients = e.Data.Clients.Where(c => upLines.Contains(c.Id));
                     foreach (MessageClientsClientModel item in upLineClients)
                     {
@@ -237,7 +214,7 @@ namespace client.service.serverPlugins.clients
                             Port = item.Port,
                             TcpPort = item.TcpPort
                         };
-                        _ = clients.TryAdd(item.Id, client);
+                        ClientInfo.Add(client);
                         if (readClientsTimes == 1)
                         {
                             ConnectClient(client);
@@ -254,7 +231,7 @@ namespace client.service.serverPlugins.clients
 
         public void ConnectClient(long id)
         {
-            clients.TryGetValue(id, out ClientInfo client);
+            ClientInfo.Get(id, out ClientInfo client);
             if (client != null)
             {
                 ConnectClient(client);
@@ -276,17 +253,11 @@ namespace client.service.serverPlugins.clients
                     Name = info.Name,
                     Callback = (e) =>
                     {
-                        if (clients.TryGetValue(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null)
-                        {
-                            cacheClient.Connected = true;
-                            cacheClient.LastTime = Helper.GetTimeStamp();
-                            cacheClient.Address = e.Packet.SourcePoint;
-                            cacheClient.Connecting = false;
-                        }
+                        ClientInfo.Online(e.Data.Id, e.Packet.SourcePoint);
                     },
                     FailCallback = (e) =>
                     {
-                        SetClientOffline(info.Id);
+                        ClientInfo.Offline(info.Id);
                     },
                     Timeout = 2000,
                     TryTimes = 5
@@ -300,19 +271,12 @@ namespace client.service.serverPlugins.clients
                 {
                     Callback = (e) =>
                     {
-                        if (clients.TryGetValue(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null)
-                        {
-                            cacheClient.TcpConnected = true;
-                            cacheClient.TcpConnecting = false;
-                            cacheClient.TcpLastTime = Helper.GetTimeStamp();
-                            cacheClient.Socket = e.Packet.TcpSocket;
-                        }
+                        ClientInfo.OnlineTcp(e.Data.Id, e.Packet.TcpSocket);
                     },
                     FailCallback = (e) =>
                     {
                         Logger.Instance.Error(e.Msg);
-                        SetClientTcpOffline(info.Id);
-                        info.TcpConnecting = false;
+                        ClientInfo.OfflineTcp(info.Id);
                     },
                     Id = info.Id,
                     Name = info.Name,
@@ -321,42 +285,9 @@ namespace client.service.serverPlugins.clients
             }
         }
 
-        private void SetClientOffline(long id)
-        {
-            _ = clients.TryGetValue(id, out ClientInfo client);
-            if (client != null)
-            {
-                client.Connecting = false;
-                client.Connected = false;
-                client.LastTime = 0;
-            }
-
-        }
-        private void SetClientTcpOffline(long id)
-        {
-            _ = clients.TryGetValue(id, out ClientInfo client);
-            if (client != null)
-            {
-                client.TcpConnecting = false;
-                client.TcpConnected = false;
-                client.TcpLastTime = 0;
-                if (client.Socket != null)
-                {
-                    client.Socket.SafeClose();
-                }
-            }
-        }
-        private ClientInfo RemoveClient(long id)
-        {
-            _ = clients.TryRemove(id, out ClientInfo client);
-            return client;
-        }
-
-
         public void OfflineClient(long id)
         {
-            SetClientOffline(id);
-            SetClientTcpOffline(id);
+            ClientInfo.OfflineBoth(id);
         }
     }
 }

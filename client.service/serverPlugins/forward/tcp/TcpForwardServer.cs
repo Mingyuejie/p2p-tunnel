@@ -24,14 +24,11 @@ namespace client.service.serverPlugins.forward.tcp
 
         private long requestId = 0;
         public event EventHandler<TcpForwardRequestModel> OnRequest;
-        public ConcurrentDictionary<long, ClientCacheModel> clients = new();
-        public ConcurrentDictionary<int, ServerModel> services = new();
-
         public event EventHandler<ListeningChangeModel> OnListeningChange;
 
         public void Start(TcpForwardRecordModel mapping)
         {
-            if (services.ContainsKey(mapping.SourcePort))
+            if (ServerModel.Contains(mapping.SourcePort))
             {
                 return;
             }
@@ -49,7 +46,7 @@ namespace client.service.serverPlugins.forward.tcp
                 Socket = socket,
                 SourcePort = mapping.SourcePort
             };
-            _ = services.TryAdd(mapping.SourcePort, server);
+            ServerModel.Add(server);
             OnListeningChange?.Invoke(this, new ListeningChangeModel
             {
                 SourcePort = mapping.SourcePort,
@@ -83,8 +80,7 @@ namespace client.service.serverPlugins.forward.tcp
                     catch (Exception)
                     {
                         Stop(sourcePort);
-                        services.TryRemove(sourcePort, out _);
-                        server.AcceptDone.Dispose();
+                        server.Remove();
                         break;
                     }
                     _ = server.AcceptDone.WaitOne();
@@ -104,7 +100,7 @@ namespace client.service.serverPlugins.forward.tcp
                 Socket socket = server.SourceSocket.EndAccept(result);
                 _ = Interlocked.Increment(ref requestId);
                 long _requestId = requestId;
-                _ = clients.TryAdd(_requestId, new ClientCacheModel { SourcePort = server.SourcePort, Socket = socket });
+                ClientCacheModel.Add(new ClientCacheModel { RequestId = _requestId, SourcePort = server.SourcePort, Socket = socket });
 
                 ClientModel2 client = new()
                 {
@@ -118,13 +114,13 @@ namespace client.service.serverPlugins.forward.tcp
                 if (server.AliveType == TcpForwardAliveTypes.UNALIVE)
                 {
                     var bytes = client.SourceSocket.ReceiveAll();
-                    if(bytes.Length > 0)
+                    if (bytes.Length > 0)
                     {
                         Receive(client, bytes);
                     }
                     else
                     {
-                        _ = clients.TryRemove(client.RequestId, out _);
+                        ClientCacheModel.Remove(client.RequestId);
                     }
                 }
                 else
@@ -143,24 +139,24 @@ namespace client.service.serverPlugins.forward.tcp
         {
             Task.Factory.StartNew((e) =>
             {
-                while (client.SourceSocket.Connected && clients.ContainsKey(client.RequestId))
+                while (client.SourceSocket.Connected && ClientCacheModel.Contains(client.RequestId))
                 {
                     try
                     {
                         var bytes = client.SourceSocket.ReceiveAll();
-                        if(bytes.Length > 0)
+                        if (bytes.Length > 0)
                         {
                             Receive(client, bytes);
                         }
                         else
                         {
-                            _ = clients.TryRemove(client.RequestId, out _);
+                            ClientCacheModel.Remove(client.RequestId);
                         }
-                       
+
                     }
                     catch (Exception)
                     {
-                        _ = clients.TryRemove(client.RequestId, out _);
+                        ClientCacheModel.Remove(client.RequestId);
                         break;
                     }
                 }
@@ -173,7 +169,7 @@ namespace client.service.serverPlugins.forward.tcp
             if (client.TargetClient != null)
             {
                 socket = client.TargetClient.Socket;
-                if (socket == null || !socket.Connected)
+                if (socket == null || !socket.Connected || client.TargetClient.Name != client.TargetClient.Name)
                 {
                     client.TargetClient = AppShareData.Instance.Clients.Values.FirstOrDefault(c => c.Name == client.TargetClient.Name);
                     if (client.TargetClient != null)
@@ -216,7 +212,7 @@ namespace client.service.serverPlugins.forward.tcp
 
         public void Response(TcpForwardModel model)
         {
-            if (clients.TryGetValue(model.RequestId, out ClientCacheModel client) && client != null)
+            if (ClientCacheModel.Get(model.RequestId, out ClientCacheModel client) && client != null)
             {
                 try
                 {
@@ -233,7 +229,7 @@ namespace client.service.serverPlugins.forward.tcp
 
         public void ResponseEnd(TcpForwardModel model)
         {
-            if (clients.TryGetValue(model.RequestId, out ClientCacheModel client) && client != null)
+            if (ClientCacheModel.Get(model.RequestId, out ClientCacheModel client) && client != null)
             {
                 try
                 {
@@ -247,15 +243,14 @@ namespace client.service.serverPlugins.forward.tcp
                 }
                 if (model.AliveType == TcpForwardAliveTypes.UNALIVE)
                 {
-                    client.Socket.SafeClose();
-                    _ = clients.TryRemove(model.RequestId, out _);
+                    client.Remove();
                 }
             }
         }
 
         public void Fail(TcpForwardModel failModel, string body = "snltty")
         {
-            if (clients.TryRemove(failModel.RequestId, out ClientCacheModel client) && client != null)
+            if (ClientCacheModel.Get(failModel.RequestId, out ClientCacheModel client) && client != null)
             {
                 if (failModel.AliveType == TcpForwardAliveTypes.UNALIVE)
                 {
@@ -276,39 +271,36 @@ namespace client.service.serverPlugins.forward.tcp
                 {
                     Logger.Instance.Info(failModel.Buffer.Length.ToString());
                 }
-                client.Socket.SafeClose();
+                client.Remove();
             }
+        }
+
+        public void Stop(ServerModel model)
+        {
+            OnListeningChange?.Invoke(this, new ListeningChangeModel
+            {
+                SourcePort = model.SourcePort,
+                Listening = false
+            });
+
+            ClientCacheModel.Clear(model.SourcePort);
+
+            model.Remove();
         }
 
         public void Stop(int sourcePort)
         {
-            if (services.TryRemove(sourcePort, out ServerModel server) && server != null)
+            if (ServerModel.Get(sourcePort, out ServerModel model))
             {
-                server.Socket.SafeClose();
-                server.CancelToken.Cancel();
-                server.AcceptDone.Dispose();
-            }
-
-            OnListeningChange?.Invoke(this, new ListeningChangeModel
-            {
-                SourcePort = sourcePort,
-                Listening = false
-            });
-
-            IEnumerable<long> requestIds = clients.Where(c => c.Value.SourcePort == sourcePort).Select(c => c.Key);
-            foreach (var requestId in requestIds)
-            {
-                if (clients.TryRemove(requestId, out ClientCacheModel client) && client != null)
-                {
-                    client.Socket.SafeClose();
-                }
+                Stop(model);
             }
         }
+
         public void StopAll()
         {
-            foreach (KeyValuePair<int, ServerModel> item in services)
+            foreach (ServerModel item in ServerModel.All())
             {
-                Stop(item.Key);
+                Stop(item);
             }
         }
     }
@@ -334,8 +326,47 @@ namespace client.service.serverPlugins.forward.tcp
 
     public class ClientCacheModel
     {
+        private static ConcurrentDictionary<long, ClientCacheModel> clients = new();
+
         public int SourcePort { get; set; } = 0;
         public Socket Socket { get; set; }
+        public long RequestId { get; set; }
+
+        public static bool Add(ClientCacheModel model)
+        {
+            return clients.TryAdd(model.RequestId, model);
+        }
+
+        public static bool Contains(long id)
+        {
+            return clients.ContainsKey(id);
+        }
+
+        public static bool Get(long id, out ClientCacheModel c)
+        {
+            return clients.TryGetValue(id, out c);
+        }
+
+        public static void Remove(long id)
+        {
+            if (clients.TryRemove(id, out ClientCacheModel c))
+            {
+                c.Socket.SafeClose();
+            }
+        }
+        public static void Clear(int sourcePort)
+        {
+            IEnumerable<long> requestIds = clients.Where(c => c.Value.SourcePort == sourcePort).Select(c => c.Key);
+            foreach (var requestId in requestIds)
+            {
+                Remove(requestId);
+            }
+        }
+
+        public void Remove()
+        {
+            Remove(RequestId);
+        }
     }
     public class ServerModel
     {
@@ -343,5 +374,41 @@ namespace client.service.serverPlugins.forward.tcp
         public Socket Socket { get; set; }
         public ManualResetEvent AcceptDone { get; set; }
         public CancellationTokenSource CancelToken { get; set; }
+
+        public static ConcurrentDictionary<int, ServerModel> services = new();
+
+        public static bool Add(ServerModel model)
+        {
+            return services.TryAdd(model.SourcePort, model);
+        }
+
+        public static bool Contains(int id)
+        {
+            return services.ContainsKey(id);
+        }
+
+        public static bool Get(int id, out ServerModel c)
+        {
+            return services.TryGetValue(id, out c);
+        }
+
+        public static void Remove(int id)
+        {
+            if (services.TryRemove(id, out ServerModel c))
+            {
+                c.Socket.SafeClose();
+                c.CancelToken.Cancel();
+                c.AcceptDone.Dispose();
+            }
+        }
+        public static IEnumerable<ServerModel> All()
+        {
+            return services.Values;
+        }
+
+        public void Remove()
+        {
+            Remove(SourcePort);
+        }
     }
 }
