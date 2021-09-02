@@ -43,6 +43,7 @@ namespace server
 
         public void Start(int port, IPAddress ip = null)
         {
+
             if (Running)
             {
                 return;
