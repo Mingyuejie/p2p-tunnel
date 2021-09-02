@@ -5,6 +5,7 @@ using server.models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 
 namespace client.service.serverPlugins.p2pMessage
@@ -22,6 +23,26 @@ namespace client.service.serverPlugins.p2pMessage
                 .Where(c => c.GetInterfaces().Contains(typeof(IP2PMessagePlugin)))
                 .Select(c => (IP2PMessagePlugin)Activator.CreateInstance(c)).GroupBy(c => c.Type)
                 .ToDictionary(g => g.Key, g => g.ToArray());
+        }
+
+        public event EventHandler<OnP2PTcpMessageArg> OnMessageHandler;
+        public void OnMessage(OnP2PTcpMessageArg arg)
+        {
+            P2PDataMessageTypes type = (P2PDataMessageTypes)arg.Data.DataType;
+
+            if (plugins.ContainsKey(type))
+            {
+                IP2PMessagePlugin[] plugin = plugins[type];
+                if (plugin.Length > 0)
+                {
+                    for (int i = 0; i < plugin.Length; i++)
+                    {
+                        plugin[i].Excute(arg);
+                    }
+                }
+            }
+
+            OnMessageHandler?.Invoke(this, arg);
         }
 
         public event EventHandler<OnP2PTcpMessageArg> OnTcpMessageHandler;
@@ -44,7 +65,7 @@ namespace client.service.serverPlugins.p2pMessage
             OnTcpMessageHandler?.Invoke(this, arg);
         }
 
-        public event EventHandler<SendP2PTcpMessageArg> SendTcpMessageHandler;
+        public event EventHandler<SendP2PTcpMessageArg> OnSendTcpMessageHandler;
         public void SendTcpMessage(SendP2PTcpMessageArg arg)
         {
             EventHandlers.Instance.SendTcpMessage(new SendTcpMessageEventArg
@@ -58,9 +79,32 @@ namespace client.service.serverPlugins.p2pMessage
                 }
             });
 
-            SendTcpMessageHandler?.Invoke(this, arg);
+            OnSendTcpMessageHandler?.Invoke(this, arg);
         }
 
+        public event EventHandler<SendP2PMessageArg> OnSendMessageHandler;
+        public void SendMessage(SendP2PMessageArg arg)
+        {
+            EventHandlers.Instance.SendMessage(new SendMessageEventArg
+            {
+                Address = arg.Address,
+                Data = new MessageP2PModel
+                {
+                    Data = arg.Data.ProtobufSerialize(),
+                    DataType = (byte)arg.Data.Type,
+                    FormId = EventHandlers.Instance.ConnectId
+                }
+            });
+            OnSendMessageHandler?.Invoke(this, arg);
+        }
+
+    }
+
+    public class SendP2PMessageArg
+    {
+        public IPEndPoint Address { get; set; }
+
+        public IP2PMessageBase Data { get; set; }
     }
 
     public class SendP2PTcpMessageArg
@@ -69,6 +113,7 @@ namespace client.service.serverPlugins.p2pMessage
 
         public IP2PMessageBase Data { get; set; }
     }
+
 
     public class OnP2PTcpMessageArg
     {

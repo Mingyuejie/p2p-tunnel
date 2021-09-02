@@ -14,20 +14,21 @@ namespace server.packet
     /// 自定义UDP数据包
     /// 包的数据顺序
     /// int type
-    /// int sequence length
     /// string sequence
     /// int index
     /// int total
+    /// short ttl
     /// byte[] 数据
     /// </summary>
     public class UdpPacket : IPacket
     {
-        private static readonly ConcurrentDictionary<long, ConcurrentDictionary<long, PacketCacheModel>> packetChunkCache =
-            new ConcurrentDictionary<long, ConcurrentDictionary<long, PacketCacheModel>>();
+        private static readonly ConcurrentDictionary<long, ConcurrentDictionary<long, PacketCacheModel>> packetChunkCache = new();
 
         public long Sequence { get; set; }
         public int Total { get; set; }
         public int Index { get; set; }
+        public short Ttl { get; set; }
+        public long Id { get; set; } = 0;
         public byte[] Chunk { get; set; }
 
         public MessageTypes Type { get; set; }
@@ -36,13 +37,15 @@ namespace server.packet
         {
 
         }
-        public UdpPacket(long sequence, int total, int index, byte[] chunk, MessageTypes type) : this()
+        public UdpPacket(long sequence, int total, int index, byte[] chunk, MessageTypes type, short ttl, long id = 0) : this()
         {
             Sequence = sequence;
             Total = total;
             Index = index;
             Chunk = chunk;
             Type = type;
+            Ttl = ttl;
+            Id = id;
         }
 
         public byte[] ToArray()
@@ -51,8 +54,10 @@ namespace server.packet
             byte[] typeArray = BitConverter.GetBytes((int)Type);
             byte[] indexArray = BitConverter.GetBytes(Index);
             byte[] totalArray = BitConverter.GetBytes(Total);
+            byte[] ttlArray = BitConverter.GetBytes(Ttl);
+            byte[] idArray = BitConverter.GetBytes(Id);
 
-            byte[] dist = new byte[Chunk.Length + typeArray.Length + indexArray.Length + sequenceArray.Length + totalArray.Length];
+            byte[] dist = new byte[Chunk.Length + typeArray.Length + indexArray.Length + sequenceArray.Length + totalArray.Length+ ttlArray.Length+ idArray.Length];
 
             int distIndex = 0;
 
@@ -67,6 +72,12 @@ namespace server.packet
 
             Array.Copy(totalArray, 0, dist, distIndex, totalArray.Length);
             distIndex += totalArray.Length;
+
+            Array.Copy(ttlArray, 0, dist, distIndex, ttlArray.Length);
+            distIndex += ttlArray.Length;
+
+            Array.Copy(idArray, 0, dist, distIndex, idArray.Length);
+            distIndex += idArray.Length;
 
             Array.Copy(Chunk, 0, dist, distIndex, Chunk.Length);
 
@@ -100,11 +111,17 @@ namespace server.packet
             int total = BitConverter.ToInt32(array.Skip(skipIndex).Take(4).ToArray());
             skipIndex += 4;
 
+            short ttl = BitConverter.ToInt16(array.Skip(skipIndex).Take(2).ToArray());
+            skipIndex += 2;
+
+            long id = BitConverter.ToInt16(array.Skip(skipIndex).Take(8).ToArray());
+            skipIndex += 8;
+
             byte[] chunk = array.Skip(skipIndex).ToArray();
 
             if (total == 1)
             {
-                return new UdpPacket(sequence, total, index, chunk, (MessageTypes)type);
+                return new UdpPacket(sequence, total, index, chunk, (MessageTypes)type, ttl, id);
             }
 
             //ip 分类
@@ -141,7 +158,7 @@ namespace server.packet
                     distIndex += item.Buffers.Length;
                 }
                 packets.Buffers.Clear();
-                return new UdpPacket(sequence, total, index, dist, (MessageTypes)type);
+                return new UdpPacket(sequence, total, index, dist, (MessageTypes)type, ttl, id);
             }
             else
             {
@@ -177,6 +194,6 @@ namespace server.packet
     public class PacketCacheBufferModel
     {
         public int Index { get; set; } = 0;
-        public byte[] Buffers { get; set; } = new byte[0];
+        public byte[] Buffers { get; set; } = Array.Empty<byte>();
     }
 }

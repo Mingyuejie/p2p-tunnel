@@ -9,9 +9,9 @@ namespace server.extends
 {
     public static class ByteArrayExtends
     {
-        public static IEnumerable<UdpPacket> SerializeMessage(this IMessageModelBase obj, long sequence)
+        public static IEnumerable<UdpPacket> SerializeMessage(this IMessageModelBase obj, long sequence, short ttl = 5)
         {
-            return obj.ProtobufSerialize().Split(sequence, obj.MsgType);
+            return obj.ProtobufSerialize().Split(sequence, obj.MsgType, ttl);
         }
 
 
@@ -27,17 +27,17 @@ namespace server.extends
         /// <param name="sequence"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static IEnumerable<UdpPacket> Split(this byte[] datagram, long sequence, MessageTypes type)
+        public static IEnumerable<UdpPacket> Split(this byte[] datagram, long sequence, MessageTypes type, short ttl = 5)
         {
             if (datagram == null)
             {
                 throw new ArgumentNullException("datagram");
             }
 
-            // 8UDP数据包头  20ip数据包头  8sequence长度 4type长度  4index长度
-            int chunkLength = 1500 - 8 - 20 - 8 - 4 - 4;
+            // 8UDP数据包头  20ip数据包头  8sequence长度 4type长度  4index长度 2ttl长度
+            int chunkLength = 1500 - 8 - 20 - 8 - 4 - 4-2;
 
-            List<UdpPacket> packets = new List<UdpPacket>();
+            List<UdpPacket> packets = new();
 
             int chunks = datagram.Length / chunkLength;
             int remainder = datagram.Length % chunkLength;
@@ -48,14 +48,14 @@ namespace server.extends
             {
                 byte[] chunk = new byte[chunkLength];
                 Buffer.BlockCopy(datagram, (i - 1) * chunkLength, chunk, 0, chunkLength);
-                packets.Add(new UdpPacket(sequence, total, i, chunk, type));
+                packets.Add(new UdpPacket(sequence, total, i, chunk, type, ttl));
             }
             if (remainder > 0)
             {
                 int length = datagram.Length - (chunkLength * chunks);
                 byte[] chunk = new byte[length];
                 Buffer.BlockCopy(datagram, chunkLength * chunks, chunk, 0, length);
-                packets.Add(new UdpPacket(sequence, total, total, chunk, type));
+                packets.Add(new UdpPacket(sequence, total, total, chunk, type, ttl));
             }
 
             return packets;

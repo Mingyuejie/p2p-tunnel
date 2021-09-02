@@ -22,6 +22,14 @@ namespace client.ui.plugins.p2pMessage
                     Packet = model
                 });
             }
+            else
+            {
+                P2PMessageEventHandles.Instance.OnMessage(new OnP2PTcpMessageArg
+                {
+                    Data = data,
+                    Packet = model
+                });
+            }
         }
     }
 }

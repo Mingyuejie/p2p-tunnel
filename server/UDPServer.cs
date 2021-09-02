@@ -4,9 +4,7 @@ using server.model;
 using server.packet;
 using server.plugin;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -33,6 +31,7 @@ namespace server
 
         public UdpClient UdpcRecv { get; set; } = null;
         IPEndPoint IpepServer { get; set; } = null;
+        long sequence = 0;
         private CancellationTokenSource cancellationTokenSource;
         private bool Running
         {
@@ -52,8 +51,6 @@ namespace server
             cancellationTokenSource = new CancellationTokenSource();
             IpepServer = new IPEndPoint(ip ?? IPAddress.Any, port);
             UdpcRecv = new UdpClient(IpepServer);
-            //UdpcRecv.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            //UdpcRecv.Client.Bind(IpepServer);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -64,12 +61,12 @@ namespace server
             }
 
             _ = Task.Factory.StartNew((e) =>
-              {
-                  while (Running)
-                  {
-                      Receive();
-                  }
-              }, TaskCreationOptions.LongRunning, cancellationTokenSource.Token);
+            {
+                while (Running)
+                {
+                    Receive();
+                }
+            }, TaskCreationOptions.LongRunning, cancellationTokenSource.Token);
 
         }
 
@@ -92,7 +89,8 @@ namespace server
                 return;
             }
 
-            IEnumerable<UdpPacket> udpPackets = msg.Data.SerializeMessage(0);
+            _ = Interlocked.Increment(ref sequence);
+            IEnumerable<UdpPacket> udpPackets = msg.Data.SerializeMessage(sequence);
 
             try
             {
