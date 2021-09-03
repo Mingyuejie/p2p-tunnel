@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-03 11:06:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-03 14:48:23
+ * @LastEditTime: 2021-09-03 23:24:38
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\Index.vue
@@ -71,4 +71,10 @@ export default {
 
 .vuepress-markdown-body p, .vuepress-markdown-body blockquote, .vuepress-markdown-body ul, .vuepress-markdown-body ol, .vuepress-markdown-body dl, .vuepress-markdown-body table, .vuepress-markdown-body pre
     margin-bottom: 1.6rem;
+
+.vuepress-markdown-body tr:nth-child(2n)
+    background-color: transparent;
+
+.vuepress-markdown-body tr:nth-child(3n)
+    background-color: #f6f8fa;
 </style>
