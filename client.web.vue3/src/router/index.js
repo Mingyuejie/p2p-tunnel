@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-04 00:02:20
+ * @LastEditTime: 2021-09-04 00:32:02
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\router\index.js
@@ -55,6 +55,11 @@ const routes = [
                 path: '/about-env.html',
                 name: 'AboutEnv',
                 component: () => import('../views/about/Env.vue')
+            },
+            {
+                path: '/about-publish.html',
+                name: 'AboutPublish',
+                component: () => import('../views/about/Publish.vue')
             },
             {
                 path: '/about-winservice.html',

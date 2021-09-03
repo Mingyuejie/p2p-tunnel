@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-03 11:06:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-04 00:05:34
+ * @LastEditTime: 2021-09-04 00:33:54
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\Index.vue
@@ -19,6 +19,9 @@
                 </li>
                 <li>
                     <router-link :to="{name:'AboutEnv'}">环境测试记录</router-link>
+                </li>
+                <li>
+                    <router-link :to="{name:'AboutPublish'}">自己发布代码</router-link>
                 </li>
                 <li>
                     <router-link :to="{name:'AboutWinService'}">注册windows服务</router-link>
