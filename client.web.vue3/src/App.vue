@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-08-22 12:23:12
+ * @LastEditTime: 2021-09-03 11:31:25
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\App.vue
@@ -14,10 +14,8 @@
                 <div class="menu">
                     <Menu></Menu>
                 </div>
-                <div class="content flex-1 relative">
-                    <div class="absolute scrollbar-10">
-                        <router-view />
-                    </div>
+                <div class="content flex-1 relative scrollbar-10">
+                    <router-view />
                 </div>
                 <div class="copyright">
                     @snltty
@@ -47,7 +45,7 @@ export default {
     }
 }
 </script>
-<style lang="stylus">
+<style lang="stylus" scoped>
 .body
     background-image: url('./assets/bg.png');
     background-size: 100% 100%;
@@ -56,7 +54,7 @@ export default {
 
 .wrap
     width: 80%;
-    max-width: 80rem;
+    max-width: 90rem;
     margin: 0 auto;
 
 .content

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-21 14:57:33
  * @LastEditors: snltty
- * @LastEditTime: 2021-08-27 16:40:27
+ * @LastEditTime: 2021-09-03 11:02:01
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\states\clients.js
@@ -22,7 +22,7 @@ export const provideClients = () => {
     const fn = () => {
         getClients().then((msg) => {
             state.clients = JSON.parse(msg);
-            setTimeout(fn, 10)
+            setTimeout(fn, 50)
         }).catch(() => {
             setTimeout(fn, 1000);
         });

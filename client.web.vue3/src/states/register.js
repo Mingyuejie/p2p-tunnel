@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:39:45
  * @LastEditors: snltty
- * @LastEditTime: 2021-08-26 17:30:19
+ * @LastEditTime: 2021-09-03 11:02:07
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\states\register.js
@@ -55,7 +55,7 @@ export const provideRegister = () => {
                 state.GroupId = json.GroupId;
             }
             //console.timeEnd('获取注册信息时间');
-            setTimeout(fn, 10)
+            setTimeout(fn, 50)
         }).catch(() => {
             //console.timeEnd('获取注册信息时间');
             setTimeout(fn, 1000);

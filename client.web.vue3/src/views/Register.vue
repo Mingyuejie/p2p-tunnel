@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:30:19
  * @LastEditors: snltty
- * @LastEditTime: 2021-08-27 15:59:39
+ * @LastEditTime: 2021-09-03 11:31:45
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\Register.vue
@@ -174,7 +174,7 @@ export default {
             registerState.UseMac = json.UseMac;
 
         }).catch((msg) => {
-            ElMessage.error(msg);
+            //ElMessage.error(msg);
         });
 
         const handleSubmit = () => {

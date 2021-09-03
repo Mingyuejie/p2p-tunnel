@@ -2,11 +2,15 @@
  * @Author: snltty
  * @Date: 2021-08-22 14:09:03
  * @LastEditors: snltty
- * @LastEditTime: 2021-08-22 14:14:39
+ * @LastEditTime: 2021-09-03 14:56:07
  * @version: v1.0.0
  * @Descripttion: 功能说明
- * @FilePath: \client.web.vue3d:\Desktop\p2p-tunnel\README.md
+ * @FilePath: \client.web.vue3c:\Users\ASUS\Desktop\p2p-tunnel\README.md
 -->
+# 详细说明
+
+<a href="http://snltty.gitee.io/p2p-tunnel/#/about-home.html" target="_blank">详细说明</a>
+
 # p2p-tunnel
 
 1. .NET5 Socket编程实现内网穿透
@@ -26,15 +30,6 @@
 4. mstsc.manager windows远程桌面管理
 5. rdp.desktop rdp 桌面共享 
 6. rdp.viewer  rdp 桌面共享查看器
-
-```
-我也不知道成功率大概有多少，想试试的同学，配置及更详细说明在 wiki 
-```
-
-| A端 | B端 | 平台 | 可用 |
-| :----:| :----: | :----: |:----: |
-| 三级网关（电信网） | 1. 二级网关(TP-LINK WDR5620)<br>2. 三级网关(天翼网关 EchoLife HS8145C5->TP-LINK WDR5620) | win10 |√ |
-| 期待补充 | 期待补充 | 期待补充 | 期待补充 |
 
 
 ### 截图

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-08-23 16:40:17
+ * @LastEditTime: 2021-09-03 14:42:17
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -18,6 +18,7 @@
             <router-link :to="{name:'TcpForward'}">TCP转发 <i class="el-icon-circle-check" :class="{active:tcpForwardConnected}"></i></router-link>
             <router-link :to="{name:'UPNP'}">UPNP映射</router-link>
             <router-link :to="{name:'WakeUp'}">幻数据包</router-link>
+            <router-link :to="{name:'About'}">关于</router-link>
         </div>
         <div class="meta">
             <a href="javascript:;">{{connectStr}}<i class="el-icon-refresh"></i></a>
@@ -71,7 +72,7 @@ export default {
         text-shadow: 0 1px 1px #28866e;
         font-size: 1.4rem;
 
-        &.router-link-exact-active, &:hover
+        &.router-link-active, &:hover
             color: #fff;
             background-color: rgba(0, 0, 0, 0.5);
 
