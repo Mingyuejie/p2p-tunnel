@@ -1,7 +1,16 @@
+<!--
+ * @Author: snltty
+ * @Date: 2021-09-03 14:39:29
+ * @LastEditors: snltty
+ * @LastEditTime: 2021-09-03 15:02:44
+ * @version: v1.0.0
+ * @Descripttion: 功能说明
+ * @FilePath: \client.web.vue3\src\views\about\setting.md
+-->
 ## 1、安装.NET5 环境
-1. windows 64位 https://dotnet.microsoft.com/download/dotnet/thank-you/sdk-5.0.400-windows-x64-installer
-2. windows 32位 https://dotnet.microsoft.com/download/dotnet/thank-you/sdk-5.0.400-windows-x86-installer
-3. 其它版本  https://dotnet.microsoft.com/download/dotnet/5.0
+1. windows 64位 <a href="https://dotnet.microsoft.com/download/dotnet/thank-you/sdk-5.0.400-windows-x64-installer" target="_blank">https://dotnet.microsoft.com/download/dotnet/thank-you/sdk-5.0.400-windows-x64-installer</a>
+2. windows 32位 <a href="https://dotnet.microsoft.com/download/dotnet/thank-you/sdk-5.0.400-windows-x86-installer" target="_blank">https://dotnet.microsoft.com/download/dotnet/thank-you/sdk-5.0.400-windows-x86-installer</a>
+3. 其它版本  <a href="https://dotnet.microsoft.com/download/dotnet/5.0" target="_blank">https://dotnet.microsoft.com/download/dotnet/5.0</a>
 
 ## 2、你有服务器，想自己发布服务端
 1. server.service -> publish文件夹  或者自己发布项目
