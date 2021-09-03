@@ -18,9 +18,6 @@ namespace client.service.clientService
 
         private readonly Dictionary<string, Tuple<object, MethodInfo>> plugins = new();
 
-
-
-
         private ClientServer()
         {
             var types = AppDomain.CurrentDomain.GetAssemblies()

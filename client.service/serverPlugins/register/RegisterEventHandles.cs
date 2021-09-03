@@ -73,6 +73,8 @@ namespace client.service.serverPlugins.register
             }
             OnSendExitMessageHandler?.Invoke(this, arg);
             EventHandlers.Sequence = 0;
+
+            Helper.FlushMemory();
         }
 
         #region 注册

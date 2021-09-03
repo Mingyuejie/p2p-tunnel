@@ -51,6 +51,7 @@ namespace client.service
                         response.StatusCode = (int)HttpStatusCode.BadRequest;
                     }
                     stream.Close();
+                    stream.Dispose();
                 }
 
             }, TaskCreationOptions.LongRunning);
