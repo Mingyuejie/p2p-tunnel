@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-03 11:06:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-03 23:24:38
+ * @LastEditTime: 2021-09-04 00:05:34
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\Index.vue
@@ -19,6 +19,9 @@
                 </li>
                 <li>
                     <router-link :to="{name:'AboutEnv'}">环境测试记录</router-link>
+                </li>
+                <li>
+                    <router-link :to="{name:'AboutWinService'}">注册windows服务</router-link>
                 </li>
             </ul>
         </div>
@@ -68,6 +71,9 @@ export default {
 .vuepress-markdown-body
     font-family: none;
     font-size: 1.4rem;
+
+    li
+        list-style: auto;
 
 .vuepress-markdown-body p, .vuepress-markdown-body blockquote, .vuepress-markdown-body ul, .vuepress-markdown-body ol, .vuepress-markdown-body dl, .vuepress-markdown-body table, .vuepress-markdown-body pre
     margin-bottom: 1.6rem;

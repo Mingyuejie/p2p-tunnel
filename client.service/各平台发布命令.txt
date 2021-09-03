@@ -1,0 +1,12 @@
+常用  r参数值
+https://docs.microsoft.com/zh-cn/dotnet/core/rid-catalog
+
+完整 r参数值 
+https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.NETCore.Platforms/src/runtime.json
+
+
+dotnet publish -c release -o ./publish-win -r win-x64
+
+dotnet publish -c release -o ./publish-osx -r osx-x64
+
+dotnet publish -c release -o ./publish-linux -r linux-x64
