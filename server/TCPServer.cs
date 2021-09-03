@@ -53,7 +53,7 @@ namespace server
             BindAccept(port, ip);
         }
 
-        public void BindAccept(int port,IPAddress ip = null)
+        public void BindAccept(int port, IPAddress ip = null)
         {
             if (servers.ContainsKey(port)) return;
 
@@ -102,7 +102,7 @@ namespace server
             }
             catch (Exception ex)
             {
-                Logger.Instance.Info(ex+"");
+                Logger.Instance.Info(ex + "");
             }
         }
         private void Receive(IAsyncResult result)
@@ -196,10 +196,9 @@ namespace server
             cancellationTokenSource.Cancel();
             foreach (ReceiveModel client in clients.Values)
             {
-
-                if (client != null && client.Socket != null)
+                if (client != null)
                 {
-                    client.Socket.SafeClose();
+                    client.Clear();
                 }
             }
             clients.Clear();
@@ -244,6 +243,22 @@ namespace server
         public IPEndPoint Address { get; set; }
         public byte[] Buffer { get; set; }
         public List<byte> CacheBuffer { get; set; } = new List<byte>();
+
+        public void Clear()
+        {
+            Id = 0;
+            ConnectId = 0;
+            Address = null;
+            CacheBuffer.Clear();
+            Buffer = null;
+
+            if(Socket!= null)
+            {
+                Socket.SafeClose();
+                Socket = null;
+            }
+            
+        }
     }
 
     public class ServerModel
