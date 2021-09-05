@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-03 11:31:25
+ * @LastEditTime: 2021-09-05 20:09:20
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\App.vue
@@ -30,6 +30,7 @@ import { provideRegister } from './states/register'
 import { provideWebsocket } from './states/websocket'
 import { provideClients } from './states/clients'
 import { provideTcpForward } from './states/tcpForward'
+import { provideFileserver } from './states/fileserver'
 import { ElConfigProvider } from 'element-plus'
 import zhCn from 'element-plus/lib/locale/lang/zh-cn'
 export default {
@@ -39,6 +40,7 @@ export default {
         provideWebsocket();
         provideClients();
         provideTcpForward();
+        provideFileserver();
         return {
             locale: zhCn
         }

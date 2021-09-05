@@ -24,6 +24,9 @@
 		<Content Include="nssm安装服务.bat">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
+		<Content Include="version.txt">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
 		<Content Include="各平台发布命令.txt">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
@@ -38,11 +41,13 @@
 		</Content>
 	</ItemGroup>
 	<ItemGroup>
+	  <None Remove="version.txt" />
 	  <None Remove="各平台发布命令.txt" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Fleck" Version="1.2.0" />
 		<PackageReference Include="Mono.Nat" Version="3.0.1" />
+		<PackageReference Include="System.Drawing.Common" Version="5.0.2" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\common\common.csproj" />

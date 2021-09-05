@@ -38,5 +38,8 @@ namespace client.service.clientService
         {
             Message = msg;
         }
+
+        public Action<ClientServicePluginExcuteWrap, object> Callback { get; set; }
+
     }
 }

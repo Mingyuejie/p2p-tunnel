@@ -1,6 +1,5 @@
-﻿using client.service.serverPlugins.forward.tcp;
+﻿using client.service.p2pPlugins.plugins.forward.tcp;
 using common;
-using System.Collections.Generic;
 
 namespace client.service.clientService.plugins
 {
@@ -25,6 +24,7 @@ namespace client.service.clientService.plugins
             {
                 arg.SetResultCode(-1, errmsg);
             }
+            arg.Callback(arg, null);
 
         }
 
@@ -36,11 +36,12 @@ namespace client.service.clientService.plugins
             {
                 arg.SetResultCode(-1, errmsg);
             }
+            arg.Callback(arg, null);
         }
 
-        public List<TcpForwardRecordBaseModel> List(ClientServicePluginExcuteWrap arg)
+        public void List(ClientServicePluginExcuteWrap arg)
         {
-            return TcpForwardHelper.Instance.Mappings;
+            arg.Callback(arg, TcpForwardHelper.Instance.Mappings);
         }
 
         public void Start(ClientServicePluginExcuteWrap arg)
@@ -51,12 +52,14 @@ namespace client.service.clientService.plugins
             {
                 arg.SetResultCode(-1, errmsg);
             }
+            arg.Callback(arg, null);
         }
 
         public void Stop(ClientServicePluginExcuteWrap arg)
         {
             ForwardSettingModel model = Helper.DeJsonSerializer<ForwardSettingModel>(arg.Content);
             TcpForwardHelper.Instance.Stop(model.ID);
+            arg.Callback(arg, null);
         }
     }
 

@@ -19,9 +19,9 @@ namespace client.service.events
         public long Sequence { get; set; } = 0;
         public IPEndPoint UdpServer => AppShareData.Instance.UdpServer;
         public Socket TcpServer  => AppShareData.Instance.TcpServer;
-        public long ConnectId => AppShareData.Instance.ConnectId;
-        public int ClientTcpPort => AppShareData.Instance.ClientTcpPort;
-        public int RouteLevel => AppShareData.Instance.RouteLevel;
+        public long ConnectId => AppShareData.Instance.RemoteInfo.ConnectId;
+        public int ClientTcpPort => AppShareData.Instance.LocalInfo.TcpPort;
+        public int RouteLevel => AppShareData.Instance.LocalInfo.RouteLevel;
 
 
         #region 发送消息

@@ -119,7 +119,7 @@ namespace client.service.serverPlugins.clients
             {
                 try
                 {
-                    AppShareData.Instance.RouteLevel = Helper.GetRouteLevel();
+                    AppShareData.Instance.LocalInfo.RouteLevel = Helper.GetRouteLevel();
                 }
                 catch (Exception)
                 {
@@ -164,7 +164,7 @@ namespace client.service.serverPlugins.clients
         {
             if (e.State)
             {
-                AppShareData.Instance.Ip = e.Ip;
+                AppShareData.Instance.RemoteInfo.Ip = e.Ip;
             }
         }
 
@@ -184,7 +184,7 @@ namespace client.service.serverPlugins.clients
                     IEnumerable<long> offlines = ClientInfo.AllIds().Except(e.Data.Clients.Select(c => c.Id));
                     foreach (long offid in offlines)
                     {
-                        if (offid == AppShareData.Instance.ConnectId)
+                        if (offid == AppShareData.Instance.RemoteInfo.ConnectId)
                         {
                             continue;
                         }
@@ -196,7 +196,7 @@ namespace client.service.serverPlugins.clients
                     IEnumerable<MessageClientsClientModel> upLineClients = e.Data.Clients.Where(c => upLines.Contains(c.Id));
                     foreach (MessageClientsClientModel item in upLineClients)
                     {
-                        if (item.Id == AppShareData.Instance.ConnectId)
+                        if (item.Id == AppShareData.Instance.RemoteInfo.ConnectId)
                         {
                             continue;
                         }
@@ -240,7 +240,7 @@ namespace client.service.serverPlugins.clients
 
         private void ConnectClient(ClientInfo info)
         {
-            if (info.Id == AppShareData.Instance.ConnectId)
+            if (info.Id == AppShareData.Instance.RemoteInfo.ConnectId)
             {
                 return;
             }

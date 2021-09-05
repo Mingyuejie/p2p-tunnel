@@ -245,7 +245,7 @@ namespace client.service.serverPlugins.connectClient
                     {
                         targetSocket.Ttl = (short)(RouteLevel + 2);
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        targetSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalIp, ClientTcpPort));
+                        targetSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalInfo.LocalIp, ClientTcpPort));
                         targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(ip), e.Data.LocalTcpPort));
                     }
                     catch (Exception)
@@ -326,7 +326,7 @@ namespace client.service.serverPlugins.connectClient
                     try
                     {
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        targetSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalIp, ClientTcpPort));
+                        targetSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalInfo.LocalIp, ClientTcpPort));
                         string ip = length >= ips.Length ? ips[ips.Length - 1] : ips[length];
 
                         IAsyncResult result = targetSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(ip), e.Data.LocalTcpPort), null, null);
@@ -448,7 +448,7 @@ namespace client.service.serverPlugins.connectClient
                 using Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 targetSocket.Ttl = (short)(RouteLevel + 2);
                 targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                targetSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalIp, ClientTcpPort));
+                targetSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalInfo.LocalIp, ClientTcpPort));
                 targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(e.Data.Ip), e.Data.LocalTcpPort));
                 System.Threading.Thread.Sleep(500);
                 targetSocket.SafeClose();
@@ -596,7 +596,7 @@ namespace client.service.serverPlugins.connectClient
                 SendTcpConnectClientStep4Message(new SendTcpConnectClientStep4EventArg
                 {
                     Socket = arg.Packet.TcpSocket,
-                    Id = AppShareData.Instance.ConnectId
+                    Id = AppShareData.Instance.RemoteInfo.ConnectId
                 });
             }
             OnTcpConnectClientStep3Handler?.Invoke(this, arg);

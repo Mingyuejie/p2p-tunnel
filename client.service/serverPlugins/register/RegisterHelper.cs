@@ -29,9 +29,9 @@ namespace client.service.serverPlugins.register
             //退出消息
             RegisterEventHandles.Instance.OnSendExitMessageHandler += (sender, e) =>
             {
-                AppShareData.Instance.IsConnecting = false;
-                AppShareData.Instance.Connected = false;
-                AppShareData.Instance.TcpConnected = false;
+                AppShareData.Instance.LocalInfo.IsConnecting = false;
+                AppShareData.Instance.LocalInfo.Connected = false;
+                AppShareData.Instance.LocalInfo.TcpConnected = false;
                 ResetLastTime();
                 OnRegisterChange?.Invoke(this, false);
             };
@@ -45,7 +45,7 @@ namespace client.service.serverPlugins.register
                     {
                         RegisterEventHandles.Instance.SendExitMessage();
                     }
-                    if (AppShareData.Instance.Connected && AppShareData.Instance.TcpConnected)
+                    if (AppShareData.Instance.LocalInfo.Connected && AppShareData.Instance.LocalInfo.TcpConnected)
                     {
                         HeartEventHandles.Instance.SendHeartMessage();
                         HeartEventHandles.Instance.SendTcpHeartMessage();
@@ -91,7 +91,7 @@ namespace client.service.serverPlugins.register
         public void Start(Action<string> callback = null)
         {
             //不管三七二十一，先停止一波
-            bool connecting = AppShareData.Instance.IsConnecting;
+            bool connecting = AppShareData.Instance.LocalInfo.IsConnecting;
             RegisterEventHandles.Instance.SendExitMessage();
             if (connecting)
             {
@@ -103,58 +103,59 @@ namespace client.service.serverPlugins.register
                 {
                     try
                     {
-                        AppShareData.Instance.IsConnecting = true;
-                        ResetLastTime();
+                        AppShareData.Instance.LocalInfo.IsConnecting = true;
 
-                        AppShareData.Instance.ClientPort = Helper.GetRandomPort();
+                        AppShareData.Instance.LocalInfo.Port = Helper.GetRandomPort();
 
-                        AppShareData.Instance.ClientTcpPort = Helper.GetRandomPort(new List<int> { AppShareData.Instance.ClientPort });
-                        TCPServer.Instance.Start(AppShareData.Instance.ClientTcpPort, AppShareData.Instance.LocalIp);
+                        //TCP 本地开始监听
+                        AppShareData.Instance.LocalInfo.TcpPort = Helper.GetRandomPort(new List<int> { AppShareData.Instance.LocalInfo.Port });
+                        TCPServer.Instance.Start(AppShareData.Instance.LocalInfo.TcpPort, AppShareData.Instance.LocalInfo.LocalIp);
 
-                        //TCP 开始监听
+                        //TCP 连接服务器
                         Socket serverSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                         serverSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Parse(AppShareData.Instance.ServerIp), AppShareData.Instance.ServerTcpPort);
-                        serverSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalIp, AppShareData.Instance.ClientTcpPort));
+                        IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Parse(AppShareData.Instance.ServerConfig.Ip), AppShareData.Instance.ServerConfig.TcpPort);
+                        serverSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalInfo.LocalIp, AppShareData.Instance.LocalInfo.TcpPort));
                         AppShareData.Instance.TcpServer = serverSocket;
                         serverSocket.Connect(remoteEndPoint);
-
                         TCPServer.Instance.BindReceive(serverSocket);
 
+                        //上报mac
                         string mac = string.Empty;
-                        if (AppShareData.Instance.UseMac)
+                        if (AppShareData.Instance.ClientConfig.UseMac)
                         {
-                            AppShareData.Instance.Mac = mac = Helper.GetMacAddress(IPEndPoint.Parse(serverSocket.LocalEndPoint.ToString()).Address.ToString());
+                            AppShareData.Instance.LocalInfo.Mac = mac = Helper.GetMacAddress(IPEndPoint.Parse(serverSocket.LocalEndPoint.ToString()).Address.ToString());
                         }
 
-
                         //UDP 开始监听
-                        UDPServer.Instance.Start(AppShareData.Instance.ClientPort, AppShareData.Instance.LocalIp);
-                        AppShareData.Instance.UdpServer = new IPEndPoint(IPAddress.Parse(AppShareData.Instance.ServerIp), AppShareData.Instance.ServerPort);
+                        UDPServer.Instance.Start(AppShareData.Instance.LocalInfo.Port, AppShareData.Instance.LocalInfo.LocalIp);
+                        AppShareData.Instance.UdpServer = new IPEndPoint(IPAddress.Parse(AppShareData.Instance.ServerConfig.Ip), AppShareData.Instance.ServerConfig.Port);
+                        
+                        //注册
                         RegisterEventHandles.Instance.SendRegisterMessage(new RegisterParams
                         {
-                            ClientName = AppShareData.Instance.ClientName,
-                            GroupId = AppShareData.Instance.GroupId,
-                            LocalTcpPort = 0,//AppShareData.Instance.ClientTcpPort,
+                            ClientName = AppShareData.Instance.ClientConfig.Name,
+                            GroupId = AppShareData.Instance.ClientConfig.GroupId,
+                            LocalTcpPort = 0,
                             Mac = mac,
                             LocalIps = IPEndPoint.Parse(serverSocket.LocalEndPoint.ToString()).Address.ToString(),
                             Timeout = 5 * 1000,
                             Callback = (result) =>
                             {
-                                AppShareData.Instance.IsConnecting = false;
-                                AppShareData.Instance.GroupId = result.GroupId;
-                                AppShareData.Instance.Ip = result.Ip;
-                                AppShareData.Instance.ConnectId = result.Id;
-                                AppShareData.Instance.Connected = true;
-                                AppShareData.Instance.TcpConnected = true;
-                                AppShareData.Instance.ClientTcpPort2 = result.TcpPort;
+                                AppShareData.Instance.LocalInfo.IsConnecting = false;
+                                AppShareData.Instance.ClientConfig.GroupId = result.GroupId;
+                                AppShareData.Instance.RemoteInfo.Ip = result.Ip;
+                                AppShareData.Instance.RemoteInfo.ConnectId = result.Id;
+                                AppShareData.Instance.LocalInfo.Connected = true;
+                                AppShareData.Instance.LocalInfo.TcpConnected = true;
+                                AppShareData.Instance.RemoteInfo.TcpPort = result.TcpPort;
 
                                 OnRegisterChange?.Invoke(this, true);
                                 callback?.Invoke(string.Empty);
                             },
                             FailCallback = (fail) =>
                             {
-                                AppShareData.Instance.IsConnecting = false;
+                                AppShareData.Instance.LocalInfo.IsConnecting = false;
                                 OnRegisterChange?.Invoke(this, false);
                                 callback?.Invoke(fail.Msg);
                             }
@@ -164,7 +165,7 @@ namespace client.service.serverPlugins.register
                     {
                         Logger.Instance.Error(ex.Message);
                         callback?.Invoke(ex.Message);
-                        AppShareData.Instance.IsConnecting = false;
+                        AppShareData.Instance.LocalInfo.IsConnecting = false;
                         RegisterEventHandles.Instance.SendExitMessage();
                     }
                 });

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using System.Text.Json.Serialization;
 
 namespace client.service
 {
@@ -20,69 +21,98 @@ namespace client.service
         public IPEndPoint UdpServer { get; set; } = null;
         public Socket TcpServer { get; set; } = null;
 
+        /// <summary>
+        /// 远程信息
+        /// </summary>
+        public RemoteInfo RemoteInfo { get; set; } = new RemoteInfo();
+        /// <summary>
+        /// 本地信息
+        /// </summary>
+        public LocalInfo LocalInfo { get; set; } = new LocalInfo();
 
-        //路由网关数，与外网的距离
-        public int RouteLevel { get; set; } = 0;
-
-        //外网ip
-        public string Ip { get; set; } = string.Empty;
-
-        //客户端名
-        public string ClientName { get; set; } = string.Empty;
-        //客户端分组编号
-        public string GroupId { get; set; } = string.Empty;
-        //自动注册
-        public bool AutoReg { get; set; } = false;
-        public bool UseMac { get; set; } = false;
-        public string Mac { get; set; } = string.Empty;
-
-
-        //UDP是否已连接
-        public bool Connected { get; set; } = false;
-
-        //TCP是否已连接
-        public bool TcpConnected { get; set; } = false;
-
-        //在线客户端列表
+        /// <summary>
+        /// 在线客户端列表
+        /// </summary>
         public ConcurrentDictionary<long, ClientInfo> Clients { get; set; } = new();
+        /// <summary>
+        /// 客户端配置
+        /// </summary>
+        public ClientConfig ClientConfig { get; set; } = new ClientConfig();
+        /// <summary>
+        /// 服务器配置
+        /// </summary>
+        public ServerConfig ServerConfig { get; set; } = new ServerConfig();
 
+        /// <summary>
+        /// 文件服务配置
+        /// </summary>
+        public FileServerConfig FileServerConfig { get; set; } = new FileServerConfig();
 
-        public IPAddress LocalIp { get; set; } = IPAddress.Any;
-
-        //NAT服务地址
-        public string ServerIp { get; set; } = string.Empty;
-
-        //NAT服务UDP端口
-        public int ServerPort { get; set; } = 0;
-        //NAT服务TCP端口
-        public int ServerTcpPort { get; set; } = 0;
-
-        //客户端UDP端口
-        public int ClientPort { get; set; } = 0;
-        //客户端TCP端口
-        public int ClientTcpPort { get; set; } = 0;
-        public int ClientTcpPort2 { get; set; } = 0;
-
-        //是否正在连接
-        public bool IsConnecting { get; set; } = false;
-
-        //连接ID 身份标识
-        public long ConnectId { get; set; } = 0;
-
+        /// <summary>
+        /// 保存配置
+        /// </summary>
         public void SaveConfig()
         {
             Config config = Helper.DeJsonSerializer<Config>(System.IO.File.ReadAllText("appsettings.json"));
 
-            config.Client.GroupId = GroupId;
-            config.Client.Name = ClientName;
-            config.Client.AutoReg = AutoReg;
-            config.Client.UseMac = UseMac;
+            config.Client = ClientConfig;
 
-            config.Server.Ip = ServerIp;
-            config.Server.Port = ServerPort;
-            config.Server.TcpPort = ServerTcpPort;
+            config.Server = ServerConfig;
+
+            config.FileServer = FileServerConfig;
 
             System.IO.File.WriteAllText("appsettings.json", Helper.JsonSerializer(config), System.Text.Encoding.UTF8);
         }
+    }
+
+    public class RemoteInfo
+    {
+        /// <summary>
+        /// 客户端在远程的ip
+        /// </summary>
+        public string Ip { get; set; } = string.Empty;
+        /// <summary>
+        /// 客户端在远程的TCP端口
+        /// </summary>
+        public int TcpPort { get; set; } = 0;
+        /// <summary>
+        /// 客户端连接ID
+        /// </summary>
+        public long ConnectId { get; set; } = 0;
+    }
+
+    public class LocalInfo
+    {
+        /// <summary>
+        /// 外网距离
+        /// </summary>
+        public int RouteLevel { get; set; } = 0;
+        /// <summary>
+        /// 本地mac地址
+        /// </summary>
+        public string Mac { get; set; } = string.Empty;
+        /// <summary>
+        /// 本地UDP端口
+        /// </summary>
+        public int Port { get; set; } = 0;
+        /// <summary>
+        /// 本地TCP端口
+        /// </summary>
+        public int TcpPort { get; set; } = 0;
+
+        [JsonIgnore]
+        public IPAddress LocalIp { get; set; } = IPAddress.Any;
+        /// <summary>
+        /// 是否正在连接服务器
+        /// </summary>
+        public bool IsConnecting { get; set; } = false;
+        /// <summary>
+        /// UDP是否已连接服务器
+        /// </summary>
+        public bool Connected { get; set; } = false;
+        /// <summary>
+        /// TCP是否已连接服务器
+        /// </summary>
+        public bool TcpConnected { get; set; } = false;
     }
 }

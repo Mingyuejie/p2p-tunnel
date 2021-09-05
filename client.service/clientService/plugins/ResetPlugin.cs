@@ -27,6 +27,7 @@ namespace client.service.clientService.plugins
                     }
                 }
             }
+            arg.Callback(arg, null);
         }
     }
 

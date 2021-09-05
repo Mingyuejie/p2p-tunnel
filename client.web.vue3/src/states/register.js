@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:39:45
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-03 11:02:07
+ * @LastEditTime: 2021-09-05 20:03:48
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\states\register.js
@@ -10,59 +10,57 @@
 // import { provide, inject, reactive } from 'vue'
 
 import { provide, inject, reactive } from "vue";
-import { getRegisterInfo } from '../apis/register'
-import { subWebsocketState } from '../apis/request'
+import { subWebsocketState, subNotifyMsg } from '../apis/request'
 
 const provideRegisterKey = Symbol();
 export const provideRegister = () => {
     const state = reactive({
-        ClientName: '',
-        ClientPort: 0,
-        AutoReg: false,
-        UseMac: false,
-        ClientTcpPort: 0,
-        ClientTcpPort2: 0,
-        Connected: 0,
-        TcpConnected: 0,
-        Ip: '',
-        Mac: '',
-        GroupId: '',
-        ConnectId: '',
-        IsConnecting: false,
-        RouteLevel: 0,
-        ServerIp: '',
-        ServerPort: 0,
-        ServerTcpPort: 0,
+        ClientConfig: {
+            GroupId: '',
+            Name: '',
+            AutoReg: false,
+            UseMac: false,
+        },
+        ServerConfig: {
+            Ip: '',
+            Port: 0,
+            TcpPort: 0,
+        },
+        LocalInfo: {
+            RouteLevel: 0,
+            Mac: '',
+            Port: 0,
+            TcpPort: 0,
+            IsConnecting: false,
+            Connected: false,
+            TcpConnected: false,
+        },
+        RemoteInfo: {
+            Ip: '',
+            TcpPort: 0,
+            ConnectId: 0,
+        }
     });
     provide(provideRegisterKey, state);
 
-    //定时更新一些不可修改的数据
-    const fn = () => {
-        //console.time('获取注册信息时间');
-        getRegisterInfo().then((msg) => {
-            let json = JSON.parse(msg);
-            state.Connected = json.Connected;
-            state.ClientPort = json.ClientPort;
-            state.ClientTcpPort = json.ClientTcpPort;
-            state.ClientTcpPort2 = json.ClientTcpPort2;
-            state.TcpConnected = json.TcpConnected;
-            state.Ip = json.Ip;
-            state.Mac = json.Mac;
-            state.ConnectId = json.ConnectId;
-            state.IsConnecting = json.IsConnecting;
-            state.RouteLevel = json.RouteLevel;
-            if (!state.GroupId) {
-                state.GroupId = json.GroupId;
-            }
-            //console.timeEnd('获取注册信息时间');
-            setTimeout(fn, 50)
-        }).catch(() => {
-            //console.timeEnd('获取注册信息时间');
-            setTimeout(fn, 1000);
-        });
-    };
-    fn();
+    subNotifyMsg('register/info', (msg) => {
+        let json = JSON.parse(msg);
+        state.LocalInfo.Connected = json.LocalInfo.Connected;
+        state.LocalInfo.TcpConnected = json.LocalInfo.TcpConnected;
+        state.LocalInfo.Port = json.LocalInfo.Port;
+        state.LocalInfo.TcpPort = json.LocalInfo.TcpPort;
+        state.LocalInfo.Mac = json.LocalInfo.Mac;
 
+        state.RemoteInfo.TcpPort = json.RemoteInfo.TcpPort;
+        state.RemoteInfo.Ip = json.RemoteInfo.Ip;
+        state.RemoteInfo.ConnectId = json.RemoteInfo.ConnectId;
+
+        state.LocalInfo.IsConnecting = json.LocalInfo.IsConnecting;
+        state.LocalInfo.RouteLevel = json.LocalInfo.RouteLevel;
+        if (!state.ClientConfig.GroupId) {
+            state.ClientConfig.GroupId = json.ClientConfig.GroupId;
+        }
+    });
     subWebsocketState(() => {
         state.Connected = false;
         state.TcpConnected = false;

@@ -2,24 +2,24 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:30:19
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-03 11:31:45
+ * @LastEditTime: 2021-09-05 21:44:24
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\Register.vue
 -->
 <template>
     <div class="register-form">
-        <el-form label-width="8.5rem" ref="formDom" :model="registerState" :rules="rules">
+        <el-form label-width="8.5rem" ref="formDom" :model="model" :rules="rules">
             <el-form-item label="" label-width="0">
                 <el-row>
                     <el-col :span="12">
                         <el-form-item label="客户名称" prop="ClientName">
-                            <el-input v-model="registerState.ClientName" maxlength="32" show-word-limit></el-input>
+                            <el-input v-model="model.ClientName" maxlength="32" show-word-limit></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="12">
                         <el-form-item label="分组编号" prop="GroupId">
-                            <el-input v-model="registerState.GroupId" maxlength="32" show-word-limit></el-input>
+                            <el-input v-model="model.GroupId" maxlength="32" show-word-limit></el-input>
                         </el-form-item>
                     </el-col>
                 </el-row>
@@ -28,17 +28,17 @@
                 <el-row>
                     <el-col :span="8">
                         <el-form-item label="IP" label-width="55" prop="ServerIp">
-                            <el-input v-model="registerState.ServerIp"></el-input>
+                            <el-input v-model="model.ServerIp"></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="8">
                         <el-form-item label="UDP端口" prop="ServerPort">
-                            <el-input v-model="registerState.ServerPort"></el-input>
+                            <el-input v-model="model.ServerPort"></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="8">
                         <el-form-item label="TCP端口" prop="ServerTcpPort">
-                            <el-input v-model="registerState.ServerTcpPort"></el-input>
+                            <el-input v-model="model.ServerTcpPort"></el-input>
                         </el-form-item>
                     </el-col>
                 </el-row>
@@ -47,17 +47,17 @@
                 <el-row>
                     <el-col :span="8">
                         <el-form-item label="IP" label-width="50" prop="Ip">
-                            <el-input readonly v-model="registerState.Ip"></el-input>
+                            <el-input readonly v-model="registerState.RemoteInfo.Ip"></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="8">
-                        <el-form-item label="UDP端口" prop="ClientPort">
-                            <el-input readonly v-model="registerState.ClientPort"></el-input>
+                        <el-form-item label="UDP端口" prop="Port">
+                            <el-input readonly v-model="registerState.LocalInfo.Port"></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="8">
-                        <el-form-item label="TCP端口" prop="ClientTcpPort">
-                            <el-input readonly v-model="registerState.ClientTcpPort"></el-input>
+                        <el-form-item label="TCP端口" prop="TcpPort">
+                            <el-input readonly v-model="registerState.LocalInfo.TcpPort"></el-input>
                         </el-form-item>
                     </el-col>
                 </el-row>
@@ -66,17 +66,17 @@
                 <el-row>
                     <el-col :span="8">
                         <el-form-item label="ID" label-width="50" prop="ConnectId">
-                            <el-input readonly v-model="registerState.ConnectId"></el-input>
+                            <el-input readonly v-model="registerState.RemoteInfo.ConnectId"></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="8">
                         <el-form-item label="外网距离" prop="RouteLevel">
-                            <el-input readonly v-model="registerState.RouteLevel"></el-input>
+                            <el-input readonly v-model="registerState.LocalInfo.RouteLevel"></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="8">
-                        <el-form-item label="TCP端口" prop="ClientTcpPort2">
-                            <el-input readonly v-model="registerState.ClientTcpPort2"></el-input>
+                        <el-form-item label="TCP端口" prop="TcpPort">
+                            <el-input readonly v-model="registerState.RemoteInfo.TcpPort"></el-input>
                         </el-form-item>
                     </el-col>
                 </el-row>
@@ -85,12 +85,12 @@
                 <el-row>
                     <el-col :span="8">
                         <el-form-item label="地址" label-width="50" prop="Mac">
-                            <el-input readonly v-model="registerState.Mac"></el-input>
+                            <el-input readonly v-model="registerState.LocalInfo.Mac"></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="8">
                         <el-form-item label="上报mac" prop="UseMac">
-                            <el-switch v-model="registerState.UseMac" />
+                            <el-switch v-model="model.UseMac" />
                         </el-form-item>
                     </el-col>
                 </el-row>
@@ -99,23 +99,23 @@
                 <el-row>
                     <el-col :span="8">
                         <el-form-item label="UDP" prop="Connected">
-                            <el-switch disabled v-model="registerState.Connected" />
+                            <el-switch disabled v-model="registerState.LocalInfo.Connected" />
                         </el-form-item>
                     </el-col>
                     <el-col :span="8">
                         <el-form-item label="TCP" prop="TcpConnected">
-                            <el-switch disabled v-model="registerState.TcpConnected" />
+                            <el-switch disabled v-model="registerState.LocalInfo.TcpConnected" />
                         </el-form-item>
                     </el-col>
                     <el-col :span="8">
                         <el-form-item label="自动注册" prop="AutoReg">
-                            <el-switch v-model="registerState.AutoReg" />
+                            <el-switch v-model="model.AutoReg" />
                         </el-form-item>
                     </el-col>
                 </el-row>
             </el-form-item>
             <el-form-item label="" label-width="0" class="t-c">
-                <el-button type="primary" :loading="registerState.IsConnecting" @click="handleSubmit">注册</el-button>
+                <el-button type="primary" :loading="registerState.LocalInfo.IsConnecting" @click="handleSubmit">注册</el-button>
             </el-form-item>
             <el-form-item label="" label-width="0">
                 <el-alert title="分组编号" type="info" show-icon :closable="false">
@@ -131,7 +131,7 @@
 </template>
 
 <script>
-import { ref, toRefs } from '@vue/reactivity';
+import { ref, toRefs, reactive } from '@vue/reactivity';
 import { injectRegister } from '../states/register'
 import { sendRegisterMsg, getRegisterInfo } from '../apis/register'
 import { sendConfigMsg } from '../apis/config'
@@ -141,40 +141,51 @@ export default {
     setup () {
         const formDom = ref(null);
         const registerState = injectRegister();
-        const rules = ref({
-            ClientName: [{ required: true, message: '必填', trigger: 'blur' }],
-            ServerIp: [{ required: true, message: '必填', trigger: 'blur' }],
-            ServerPort: [
-                { required: true, message: '必填', trigger: 'blur' },
-                {
-                    type: 'number', min: 1, max: 65535, message: '数字 1-65535', trigger: 'blur', transform (value) {
-                        return Number(value)
+        const state = reactive({
+            model: {
+                ClientName: '',
+                ServerIp: '',
+                ServerPort: 0,
+                ServerTcpPort: 0,
+                AutoReg: false,
+                UseMac: false,
+                GroupId: ''
+            },
+            rules: {
+                ClientName: [{ required: true, message: '必填', trigger: 'blur' }],
+                ServerIp: [{ required: true, message: '必填', trigger: 'blur' }],
+                ServerPort: [
+                    { required: true, message: '必填', trigger: 'blur' },
+                    {
+                        type: 'number', min: 1, max: 65535, message: '数字 1-65535', trigger: 'blur', transform (value) {
+                            return Number(value)
+                        }
                     }
-                }
-            ],
-            ServerTcpPort: [
-                { required: true, message: '必填', trigger: 'blur' },
-                {
-                    type: 'number', min: 1, max: 65535, message: '数字 1-65535', trigger: 'blur', transform (value) {
-                        return Number(value)
+                ],
+                ServerTcpPort: [
+                    { required: true, message: '必填', trigger: 'blur' },
+                    {
+                        type: 'number', min: 1, max: 65535, message: '数字 1-65535', trigger: 'blur', transform (value) {
+                            return Number(value)
+                        }
                     }
-                }
-            ]
+                ]
+            }
         });
 
         //获取一下可修改的数据
         getRegisterInfo().then((msg) => {
             let json = JSON.parse(msg);
-            registerState.ClientName = json.ClientName;
-            registerState.ServerIp = json.ServerIp;
-            registerState.ServerPort = json.ServerPort;
-            registerState.ServerTcpPort = json.ServerTcpPort;
-            registerState.GroupId = json.GroupId;
-            registerState.AutoReg = json.AutoReg;
-            registerState.UseMac = json.UseMac;
+            state.model.ClientName = registerState.ClientConfig.Name = json.ClientConfig.Name;
+            state.model.GroupId = registerState.ClientConfig.GroupId = json.ClientConfig.GroupId;
+            state.model.AutoReg = registerState.ClientConfig.AutoReg = json.ClientConfig.AutoReg;
+            state.model.UseMac = registerState.ClientConfig.UseMac = json.ClientConfig.UseMac;
 
+            state.model.ServerIp = registerState.ServerConfig.Ip = json.ServerConfig.Ip;
+            state.model.ServerPort = registerState.ServerConfig.Port = json.ServerConfig.Port;
+            state.model.ServerTcpPort = registerState.ServerConfig.TcpPort = json.ServerConfig.TcpPort;
         }).catch((msg) => {
-            //ElMessage.error(msg);
+            // ElMessage.error(msg);
         });
 
         const handleSubmit = () => {
@@ -183,15 +194,20 @@ export default {
                     return false;
                 }
                 let data = {
-                    ClientName: registerState.ClientName,
-                    ServerIp: registerState.ServerIp,
-                    ServerPort: +registerState.ServerPort,
-                    ServerTcpPort: +registerState.ServerTcpPort,
-                    GroupId: registerState.GroupId,
-                    AutoReg: registerState.AutoReg,
-                    UseMac: registerState.UseMac,
+                    ClientConfig: {
+                        Name: state.model.ClientName,
+                        GroupId: state.model.GroupId,
+                        AutoReg: state.model.AutoReg,
+                        UseMac: state.model.UseMac,
+                    },
+                    ServerConfig: {
+                        Ip: state.model.ServerIp,
+                        Port: +state.model.ServerPort,
+                        TcpPort: +state.model.ServerTcpPort,
+                    }
                 };
-                registerState.IsConnecting = true;
+                console.log(JSON.stringify(data));
+                registerState.LocalInfo.IsConnecting = true;
                 sendConfigMsg(data).then(() => {
                     sendRegisterMsg().then((res) => {
                     }).catch((msg) => {
@@ -204,7 +220,7 @@ export default {
         }
 
         return {
-            registerState, rules, formDom, handleSubmit
+            ...toRefs(state), registerState, formDom, handleSubmit
         }
     }
 }

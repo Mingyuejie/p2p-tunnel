@@ -43,25 +43,25 @@ namespace client.service.clientService.plugins
 
     public class UpnpPlugin : IClientServicePlugin
     {
-        public string[] Devices(ClientServicePluginExcuteWrap arg)
+        public void Devices(ClientServicePluginExcuteWrap arg)
         {
             try
             {
-                return UpnpHelper.Instance.devices.Select(c => c.Text).ToArray();
+                arg.Callback(arg, UpnpHelper.Instance.devices.Select(c => c.Text).ToArray());
             }
             catch (Exception ex)
             {
                 arg.SetResultCode(-1, ex.Message);
-                return Array.Empty<string>();
+                arg.Callback(arg, Array.Empty<string>());
             }
         }
 
-        public MappingModel[] Mappings(ClientServicePluginExcuteWrap arg)
+        public void Mappings(ClientServicePluginExcuteWrap arg)
         {
             RequestModel model = Helper.DeJsonSerializer<RequestModel>(arg.Content);
             try
             {
-                return UpnpHelper.Instance.devices[model.DeviceIndex].GetMappings().Select(c => new MappingModel
+                arg.Callback(arg, UpnpHelper.Instance.devices[model.DeviceIndex].GetMappings().Select(c => new MappingModel
                 {
                     Description = c.Description,
                     DeviceIndex = model.DeviceIndex,
@@ -70,12 +70,12 @@ namespace client.service.clientService.plugins
                     Protocol = c.Protocol,
                     PublicPort = c.PublicPort,
                     Expiration = c.Expiration
-                }).ToArray();
+                }).ToArray());
             }
             catch (Exception ex)
             {
                 arg.SetResultCode(-1, ex.Message);
-                return Array.Empty<MappingModel>();
+                arg.Callback(arg, Array.Empty<MappingModel>());
             }
         }
 
@@ -91,6 +91,7 @@ namespace client.service.clientService.plugins
                 Logger.Instance.Error(ex.Message);
                 arg.SetResultCode(-1, ex.Message);
             }
+            arg.Callback(arg,null);
         }
 
         public void Del(ClientServicePluginExcuteWrap arg)
@@ -104,6 +105,7 @@ namespace client.service.clientService.plugins
             {
                 arg.SetResultCode(-1, ex.Message);
             }
+            arg.Callback(arg, null);
         }
     }
 

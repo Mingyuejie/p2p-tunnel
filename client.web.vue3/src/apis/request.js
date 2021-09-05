@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 23:04:50
  * @LastEditors: snltty
- * @LastEditTime: 2021-08-26 16:46:04
+ * @LastEditTime: 2021-09-05 20:02:46
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\apis\request.js
@@ -77,7 +77,6 @@ const initWebsocket = () => {
 }
 initWebsocket();
 
-
 //发送消息
 export const sendWebsocketMsg = (path, msg = {}) => {
     return new Promise((resolve, reject) => {
@@ -96,3 +95,10 @@ export const sendWebsocketMsg = (path, msg = {}) => {
     });
 }
 
+
+export const subNotifyMsg = (path, callback) => {
+    pushListener.add(path, callback);
+}
+export const unsubNotifyMsg = (path, callback) => {
+    pushListener.remove(path, callback);
+}

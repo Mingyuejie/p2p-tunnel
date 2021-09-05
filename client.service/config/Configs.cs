@@ -1,15 +1,38 @@
 ﻿using System.Net;
+using System.Text.Json.Serialization;
 
 namespace client.service.config
 {
+    /// <summary>
+    /// 配置信息
+    /// </summary>
     public class Config
     {
+        /// <summary>
+        /// 本地websocket
+        /// </summary>
         public WebsocketConfig Websocket { get; set; } = new WebsocketConfig();
+        /// <summary>
+        /// 客户端配置
+        /// </summary>
         public ClientConfig Client { get; set; } = new ClientConfig();
+        /// <summary>
+        /// 服务器配置
+        /// </summary>
         public ServerConfig Server { get; set; } = new ServerConfig();
+        /// <summary>
+        /// 本地web管理端配置
+        /// </summary>
         public WebConfig Web { get; set; } = new WebConfig();
+        /// <summary>
+        /// 文件服务器配置
+        /// </summary>
+        public FileServerConfig FileServer { get; set; } = new FileServerConfig();
     }
 
+    /// <summary>
+    /// 本地web管理端配置
+    /// </summary>
     public class WebConfig
     {
         public string Ip { get; set; } = IPAddress.Any.ToString();
@@ -24,15 +47,32 @@ namespace client.service.config
         public int Port { get; set; } = 8098;
     }
 
+    /// <summary>
+    /// 客户端配置
+    /// </summary>
     public class ClientConfig
     {
+        /// <summary>
+        /// 分组编号
+        /// </summary>
         public string GroupId { get; set; } = string.Empty;
+        /// <summary>
+        /// 客户端名
+        /// </summary>
         public string Name { get; set; } = string.Empty;
+        /// <summary>
+        /// 自动注册
+        /// </summary>
         public bool AutoReg { get; set; } = false;
+        /// <summary>
+        /// 上报MAC地址
+        /// </summary>
         public bool UseMac { get; set; } = false;
-        
     }
 
+    /// <summary>
+    /// 服务器配置
+    /// </summary>
     public class ServerConfig
     {
         public string Ip { get; set; } = string.Empty;
@@ -40,4 +80,9 @@ namespace client.service.config
         public int TcpPort { get; set; } = 8000;
     }
 
+    public class FileServerConfig
+    {
+        public bool IsStart { get; set; } = true;
+        public string Root { get; set; } = "./ftp";
+    }
 }

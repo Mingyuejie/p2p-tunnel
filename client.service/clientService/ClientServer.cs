@@ -1,9 +1,13 @@
-﻿using common;
+﻿using client.service.clientService.plugins;
+using client.service.p2pPlugins.plugins.fileServer;
+using client.service.p2pPlugins.plugins.forward.tcp;
+using common;
 using Fleck;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -36,6 +40,8 @@ namespace client.service.clientService
                     }
                 }
             }
+
+            Notify();
         }
 
         public void Start(string ip, int port)
@@ -72,6 +78,7 @@ namespace client.service.clientService
                 socket.OnOpen = () =>
                 {
                     _ = websockets.TryAdd(socket.ConnectionInfo.Id, socket);
+                    NotifyVersion(socket);
                 };
                 socket.OnMessage = message =>
                 {
@@ -91,31 +98,34 @@ namespace client.service.clientService
                                     Content = model.Content,
                                     Websockets = websockets,
                                     Path = model.Path,
+                                    Callback = (param, returnResult) =>
+                                    {
+                                        string result = string.Empty;
+                                        if (returnResult != null)
+                                        {
+                                            if (returnResult is string)
+                                            {
+                                                result = returnResult as string;
+                                            }
+                                            else
+                                            {
+                                                result = Helper.JsonSerializer(returnResult);
+                                            }
+                                        }
+                                        param.Socket.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
+                                        {
+                                            Content = param.Code == 0 ? result : param.Message,
+                                            RequestId = param.RequestId,
+                                            Path = param.Path,
+                                            Code = param.Code
+                                        }));
+                                    }
                                 };
-                                var returnResult = plugin.Item2.Invoke(plugin.Item1, new object[] { param });
-                                string result = string.Empty;
-                                if (returnResult != null)
-                                {
-                                    if (returnResult is string)
-                                    {
-                                        result = returnResult as string;
-                                    }
-                                    else
-                                    {
-                                        result = Helper.JsonSerializer(returnResult);
-                                    }
-                                }
-                                socket.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
-                                {
-                                    Content = param.Code == 0 ? result : param.Message,
-                                    RequestId = model.RequestId,
-                                    Path = model.Path,
-                                    Code = param.Code
-                                }));
-
+                                plugin.Item2.Invoke(plugin.Item1, new object[] { param });
                             }
                             catch (Exception ex)
                             {
+                                Logger.Instance.Info(ex + "");
                                 socket.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
                                 {
                                     Content = ex.Message,
@@ -128,6 +138,88 @@ namespace client.service.clientService
                     });
                 };
             });
+        }
+
+        private void Notify()
+        {
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    foreach (var connection in websockets.Values)
+                    {
+                        connection.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
+                        {
+                            Content = Helper.JsonSerializer(AppShareData.Instance.Clients.Values.ToList()),
+                            RequestId = 0,
+                            Path = "clients/list",
+                            Code = 0
+                        }));
+                        connection.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
+                        {
+                            Content = Helper.JsonSerializer(new RegisterInfo
+                            {
+                                ClientConfig = AppShareData.Instance.ClientConfig,
+                                ServerConfig = AppShareData.Instance.ServerConfig,
+                                LocalInfo = AppShareData.Instance.LocalInfo,
+                                RemoteInfo = AppShareData.Instance.RemoteInfo,
+                            }),
+                            RequestId = 0,
+                            Path = "register/info",
+                            Code = 0
+                        }));
+                        connection.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
+                        {
+                            Content = Helper.JsonSerializer(TcpForwardHelper.Instance.Mappings),
+                            RequestId = 0,
+                            Path = "tcpforward/list",
+                            Code = 0
+                        }));
+                        connection.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
+                        {
+                            Content = Helper.JsonSerializer(AppShareData.Instance.FileServerConfig),
+                            RequestId = 0,
+                            Path = "fileserver/info",
+                            Code = 0
+                        }));
+                        connection.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
+                        {
+                            Content = Helper.JsonSerializer(FileServerHelper.Instance.GetOnlineList()),
+                            RequestId = 0,
+                            Path = "fileserver/online",
+                            Code = 0
+                        }));
+                    }
+                    System.Threading.Thread.Sleep(500);
+                }
+            });
+        }
+
+        private void NotifyVersion(IWebSocketConnection connection)
+        {
+            connection.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
+            {
+                Content = Helper.JsonSerializer(new
+                {
+                    Local = System.IO.File.ReadAllText("version.txt"),
+                    Remote = GetVersion()
+                }),
+                RequestId = 0,
+                Path = "system/version",
+                Code = 0
+            }));
+        }
+
+        private string GetVersion()
+        {
+            try
+            {
+                return new HttpClient().GetStringAsync($"https://gitee.com/snltty/p2p-tunnel/raw/master/client.service/version.txt?t={Helper.GetTimeStamp()}").Result;
+            }
+            catch (Exception)
+            {
+            }
+            return string.Empty;
         }
     }
 }

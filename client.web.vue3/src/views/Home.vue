@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-08-28 13:08:29
+ * @LastEditTime: 2021-09-05 12:44:14
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\Home.vue
@@ -42,7 +42,7 @@
 </template>
 
 <script>
-import { computed, toRefs } from '@vue/reactivity';
+import { toRefs } from '@vue/reactivity';
 import { injectClients } from '../states/clients'
 import { sendClientConnect, sendClientConnectReverse } from '../apis/clients'
 import { sendReset } from '../apis/reset'

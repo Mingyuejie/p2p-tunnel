@@ -30,6 +30,8 @@ namespace client.service.clientService.plugins
                 }
             }
             Send(model.Mac, model.Ip, model.Port);
+
+            arg.Callback(arg, null);
         }
 
 
