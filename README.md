@@ -38,14 +38,14 @@
 
 
 #### 2. 客户端列表
-![客户端列表](https://gitee.com/snltty/p2p-tunnel/raw/master/screenshot/clients.jpg)
+![客户端列表](./screenshot/clients.jpg)
 
 
 #### 3. 转发配置
-![转发配置](https://gitee.com/snltty/p2p-tunnel/raw/master/screenshot/tcpforward.jpg)
+![转发配置](./screenshot/tcpforward.jpg)
 
 #### 4. 访问对方网页
-![访问网页](https://gitee.com/snltty/p2p-tunnel/raw/master/screenshot/bweb.jpg)
+![访问网页](./master/screenshot/bweb.jpg)
 
 #### 5. 访问对方桌面
-![访问网页](https://gitee.com/snltty/p2p-tunnel/raw/master/screenshot/bdesktop.jpg)
+![访问网页](./screenshot/bdesktop.jpg)
