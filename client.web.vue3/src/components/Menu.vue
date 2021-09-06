@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-06 11:13:38
+ * @LastEditTime: 2021-09-06 20:20:00
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -22,7 +22,7 @@
             <router-link :to="{name:'About'}">关于</router-link>
         </div>
         <div class="meta">
-            <a href="javascript:;">{{connectStr}}<i class="el-icon-refresh"></i></a>
+            <a href="javascript:;" :class="{active:websocketState.connected}">{{connectStr}}<i class="el-icon-refresh"></i></a>
             <Theme></Theme>
         </div>
     </div>
@@ -65,7 +65,7 @@ export default {
         });
 
         return {
-            ...toRefs(registerState), connectStr, tcpForwardConnected, fileServerStarted
+            ...toRefs(registerState), websocketState, connectStr, tcpForwardConnected, fileServerStarted
         }
     }
 }
@@ -107,5 +107,8 @@ export default {
 
 .meta
     a
-        color: #fff;
+        color: #fff700;
+
+        &.active
+            color: #5bff68;
 </style>
