@@ -34,7 +34,7 @@
 
 ### 截图
 #### 1. 注册
-![注册](https://gitee.com/snltty/p2p-tunnel/raw/master/screenshot/reg.jpg)
+![注册](./screenshot/reg.jpg)
 
 
 #### 2. 客户端列表
