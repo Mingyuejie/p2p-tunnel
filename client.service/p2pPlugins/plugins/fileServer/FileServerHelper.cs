@@ -31,12 +31,27 @@ namespace client.service.p2pPlugins.plugins.fileServer
 
         private string localCurrentPath = string.Empty;
         private string localRootPath = string.Empty;
-        private string remoteCurrentPath = AppShareData.Instance.FileServerConfig.Root;
+
+        private string remoteCurrentPath = string.Empty;
+        private string RemoteCurrentPath
+        {
+            get => remoteCurrentPath;
+            set
+            {
+                remoteCurrentPath = value;
+                //默认显示桌面
+                if (string.IsNullOrWhiteSpace(remoteCurrentPath))
+                {
+                    remoteCurrentPath = GetFolderPath(SpecialFolder.Desktop);
+                }
+            }
+        }
 
         private readonly ConcurrentDictionary<string, FileSaveInfo> files = new();
 
         private FileServerHelper()
         {
+            RemoteCurrentPath = AppShareData.Instance.FileServerConfig.Root;
             FileServerEventHandles.Instance.OnTcpFileFileMessageHandler += OnTcpFileFileMessageHandler;
             FileServerEventHandles.Instance.OnTcpFileProgressMessageHandler += OnTcpFileProgressMessageHandler;
             FileServerEventHandles.Instance.OnTcpFileDownloadMessageHandler += OnTcpFileDownloadMessageHandler;
@@ -83,7 +98,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
         {
             var file = e.Data;
 
-            string path = file.FileType == P2PFileCmdTypes.DOWNLOAD ? localCurrentPath : remoteCurrentPath;
+            string path = file.FileType == P2PFileCmdTypes.DOWNLOAD ? localCurrentPath : RemoteCurrentPath;
             if (!Directory.Exists(path))
             {
                 _ = Directory.CreateDirectory(path);
@@ -125,7 +140,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
 
         public void Start()
         {
-            remoteCurrentPath = AppShareData.Instance.FileServerConfig.Root;
+            RemoteCurrentPath = AppShareData.Instance.FileServerConfig.Root;
             AppShareData.Instance.FileServerConfig.IsStart = true;
         }
         public void Stop()
@@ -288,18 +303,18 @@ namespace client.service.p2pPlugins.plugins.fileServer
         /// <returns></returns>
         public System.IO.FileInfo GetRemoteFile(string path)
         {
-            return new System.IO.FileInfo(Path.Combine(remoteCurrentPath, path));
+            return new System.IO.FileInfo(Path.Combine(RemoteCurrentPath, path));
         }
 
         public FileInfo[] GetRemoteFiles(string path)
         {
             if (!AppShareData.Instance.FileServerConfig.IsStart) return Array.Empty<FileInfo>();
-            remoteCurrentPath = Path.Combine(remoteCurrentPath, path);
-            if (new DirectoryInfo(remoteCurrentPath).FullName.Length < AppShareData.Instance.FileServerConfig.Root.Length)
+            RemoteCurrentPath = Path.Combine(RemoteCurrentPath, path);
+            if (new DirectoryInfo(RemoteCurrentPath).FullName.Length < AppShareData.Instance.FileServerConfig.Root.Length)
             {
-                remoteCurrentPath = AppShareData.Instance.FileServerConfig.Root;
+                RemoteCurrentPath = AppShareData.Instance.FileServerConfig.Root;
             }
-            return GetFiles(remoteCurrentPath, false);
+            return GetFiles(RemoteCurrentPath, false);
         }
 
         public FileInfo[] GetLocalFiles(string path, bool reset)
