@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-05 12:43:00
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-05 23:39:12
+ * @LastEditTime: 2021-09-06 14:48:26
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\fileserver\Remote.vue
@@ -48,6 +48,7 @@ import { computed, reactive, toRefs } from '@vue/reactivity';
 import { getRemoteFiles, sendDownload } from '../../apis/file-server'
 import { injectClients } from '../../states/clients'
 import { inject, onMounted } from '@vue/runtime-core';
+import { ElMessageBox } from 'element-plus'
 export default {
     setup () {
         const remoteState = inject('remote');
@@ -68,7 +69,7 @@ export default {
                     Length: 0,
                 }, ...JSON.parse(res)];
                 state.loading = false;
-            }).catch(() => {
+            }).catch((msg) => {
                 state.loading = false;
             });
         }
@@ -88,9 +89,10 @@ export default {
         const handleClientChange = () => {
             loadDir();
         }
+        const reload = handleClientChange;
         const handleDownload = (row) => {
             if (localState.files.filter(c => c.Name == row.Name).length > 0) {
-                this.$confirm('文件已存在，是否确定下载?', '提示', {
+                ElMessageBox.confirm('文件已存在，是否确定下载?', '提示', {
                     confirmButtonText: '确定',
                     cancelButtonText: '取消',
                     type: 'warning'
@@ -108,7 +110,7 @@ export default {
             }
         }
         return {
-            ...toRefs(state), clients, remoteState,
+            ...toRefs(state), clients, remoteState, reload,
             handleRowDblclick, objectSpanMethod, handleClientChange, handleDownload
         }
     }

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-05 19:49:43
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-05 22:02:38
+ * @LastEditTime: 2021-09-06 15:00:12
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\fileserver\Online.vue
@@ -21,7 +21,7 @@
         </el-table-column>
         <el-table-column prop="Label" label="已下载" width="200">
             <template #default="scope">
-                <span>{{(scope.row.IndexLength/1024/1024).toFixed(2)}} MB，{{(scope.row.IndexLength/scope.row.TotalLength).toFixed(2)*100}}%</span>
+                <span>{{(scope.row.IndexLength/1024/1024).toFixed(2)}} MB，{{Math.floor((scope.row.IndexLength/scope.row.TotalLength)*100)}}%</span>
             </template>
         </el-table-column>
     </el-table>
@@ -32,7 +32,8 @@ import { toRefs, reactive } from '@vue/reactivity';
 import { subNotifyMsg, unsubNotifyMsg } from '../../apis/request'
 import { onMounted, onUnmounted } from '@vue/runtime-core';
 export default {
-    setup () {
+    emits: ['on-change'],
+    setup (props, { emit }) {
         const state = reactive({
             list: [],
             loading: false
@@ -40,8 +41,11 @@ export default {
         const onlineMsg = (msg) => {
             let arr = JSON.parse(msg);
             arr.forEach(c => {
-                c.FileType = { 'DOWNLOAD': '下', 'UPLOAD': '↑' }[c.FileType];
+                c.FileType = { 'DOWNLOAD': '↓', 'UPLOAD': '↑' }[c.FileType];
             });
+            if (arr.length < state.list.length) {
+                emit('on-change');
+            }
             state.list = arr;
         }
         onMounted(() => {

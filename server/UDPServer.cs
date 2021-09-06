@@ -132,9 +132,8 @@ namespace server
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Logger.Instance.Info(ex + "");
             }
         }
     }

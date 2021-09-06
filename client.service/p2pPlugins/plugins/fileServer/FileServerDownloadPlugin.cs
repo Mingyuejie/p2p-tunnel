@@ -31,4 +31,19 @@ namespace client.service.p2pPlugins.plugins.fileServer
             });
         }
     }
+
+    public class FileServerProgressPlugin : IP2PFilePlugin
+    {
+        public P2PFileCmdTypes Type => P2PFileCmdTypes.PROGRESS;
+
+        public void Excute(TcpFileMessageEventArg arg)
+        {
+            FileServerEventHandles.Instance.OnTcpFileProgressMessage(new TcpFileProgressMessageEventArg
+            {
+                Packet = arg.Packet,
+                RawData = arg.Data,
+                Data = arg.Data.Data.ProtobufDeserialize<P2PFileProgressModel>()
+            });
+        }
+    }
 }

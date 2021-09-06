@@ -251,7 +251,7 @@ namespace client.service.serverPlugins.connectClient
                     catch (Exception)
                     {
                     }
-                    System.Threading.Thread.Sleep(100);
+                    System.Threading.Thread.Sleep(500);
                     targetSocket.SafeClose();
                 });
             }
@@ -326,6 +326,7 @@ namespace client.service.serverPlugins.connectClient
                     try
                     {
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                        targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
                         targetSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalInfo.LocalIp, ClientTcpPort));
                         string ip = length >= ips.Length ? ips[ips.Length - 1] : ips[length];
 

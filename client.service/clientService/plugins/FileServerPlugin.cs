@@ -20,7 +20,7 @@ namespace client.service.clientService.plugins
             FileServerConfig model = Helper.DeJsonSerializer<FileServerConfig>(arg.Content);
             if (!System.IO.Directory.Exists(model.Root))
             {
-                arg.SetResultCode(-1,"目录不存在");
+                arg.SetResultCode(-1, "目录不存在");
             }
             else
             {
@@ -47,18 +47,7 @@ namespace client.service.clientService.plugins
         public void Download(ClientServicePluginExcuteWrap arg)
         {
             RequestFileDownloadModel model = Helper.DeJsonSerializer<RequestFileDownloadModel>(arg.Content);
-            FileInfo[] result = Array.Empty<FileInfo>();
-            var socket = GetSocket(model.ToId);
-            if (socket != null)
-            {
-                FileServerEventHandles.Instance.SendTcpFileCmdDownloadMessage(new SendTcpFileMessageEventArg<P2PFileCmdDownloadModel>
-                {
-                    Data = new P2PFileCmdDownloadModel { Path = model.Path },
-                    Socket = socket,
-                    ToId = model.ToId
-                });
-            }
-            else
+            if (!FileServerHelper.Instance.Download(model.ToId, model.Path))
             {
                 arg.SetResultCode(-1, "请选择目标对象");
             }
@@ -68,21 +57,9 @@ namespace client.service.clientService.plugins
         public void Upload(ClientServicePluginExcuteWrap arg)
         {
             RequestFileUploadModel model = Helper.DeJsonSerializer<RequestFileUploadModel>(arg.Content);
-            FileInfo[] result = Array.Empty<FileInfo>();
-            var socket = GetSocket(model.ToId);
-            if (socket != null)
-            {
-                FileServerEventHandles.Instance.SendTcpFileUploadMessage(new SendTcpFileMessageEventArg<P2PFileCmdUploadModel>
-                {
-                    Data = new P2PFileCmdUploadModel { Path = model.Path },
-                    Socket = socket,
-                    ToId = model.ToId
-                });
-            }
-            else
+            if (!FileServerHelper.Instance.Upload(model.ToId, model.Path))
             {
                 arg.SetResultCode(-1, "请选择目标对象");
-               
             }
             arg.Callback(arg, null);
         }
@@ -90,37 +67,16 @@ namespace client.service.clientService.plugins
         public void List(ClientServicePluginExcuteWrap arg)
         {
             RequestFileListModel model = Helper.DeJsonSerializer<RequestFileListModel>(arg.Content);
-            var socket = GetSocket(model.ToId);
-            if (socket != null)
+            if (!FileServerHelper.Instance.RequestRemoteList(model.ToId, model.Path, (msg) =>
             {
-                FileServerEventHandles.Instance.RequestFileListMessage(new SendTcpFileMessageEventArg<P2PFileCmdListModel>
-                {
-                    ToId = model.ToId,
-                    Socket = socket,
-                    Data = new P2PFileCmdListModel { Path = model.Path }
-                }, (msg) =>
-                {
-                    for (int i = 0; i < msg.Length; i++)
-                    {
-                        if(msg[i].Type == 0)
-                        {
-                            msg[i].Image = FileServerHelper.Instance.GetDirectoryIcon();
-                        }
-                        else
-                        {
-                            msg[i].Image = FileServerHelper.Instance.GetFileIcon(msg[i].Name);
-                        }
-                    }
-
-                    arg.Callback(arg, msg);
-                }, (msg) =>
-                {
-                    arg.SetResultCode(-1, msg);
-                    arg.Callback(arg, Array.Empty<FileInfo>());
-                });
-            }
-            else
+                arg.Callback(arg, msg);
+            }, (msg) =>
             {
+                arg.SetResultCode(-1, msg);
+                arg.Callback(arg, Array.Empty<FileInfo>());
+            }))
+            {
+                arg.SetResultCode(-1, "请选择目标对象");
                 arg.Callback(arg, Array.Empty<FileInfo>());
             }
         }
@@ -128,7 +84,7 @@ namespace client.service.clientService.plugins
         public void LocalList(ClientServicePluginExcuteWrap arg)
         {
             RequestFileListModel model = Helper.DeJsonSerializer<RequestFileListModel>(arg.Content);
-            arg.Callback(arg, FileServerHelper.Instance.GetLocalFiles(model.Path));
+            arg.Callback(arg, FileServerHelper.Instance.GetLocalFiles(model.Path, model.ToId == -1));
         }
 
         public void Online(ClientServicePluginExcuteWrap arg)
@@ -136,10 +92,9 @@ namespace client.service.clientService.plugins
             arg.Callback(arg, FileServerHelper.Instance.GetOnlineList());
         }
 
-        private Socket GetSocket(long id)
+        public void SpecialFolder(ClientServicePluginExcuteWrap arg)
         {
-            AppShareData.Instance.Clients.TryGetValue(id, out ClientInfo client);
-            return client?.Socket ?? null;
+            arg.Callback(arg, FileServerHelper.Instance.GetSpecialFolders());
         }
     }
 

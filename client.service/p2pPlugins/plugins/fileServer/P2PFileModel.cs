@@ -12,7 +12,8 @@ namespace client.service.p2pPlugins.plugins.fileServer
         LIST, //发送列表
         DOWNLOAD,//请求下载
         UPLOAD,//请求下载
-        FILE //发送文件
+        FILE, //发送文件
+        PROGRESS, //进度
     }
 
     [ProtoContract]
@@ -93,5 +94,20 @@ namespace client.service.p2pPlugins.plugins.fileServer
 
         [ProtoMember(6)]
         public long Size { get; set; } = 0;
+    }
+
+    [ProtoContract]
+    public class P2PFileProgressModel
+    {
+        public P2PFileProgressModel() { }
+
+        [ProtoMember(1, IsRequired = true)]
+        public P2PFileCmdTypes CmdType { get; } = P2PFileCmdTypes.PROGRESS;
+
+        [ProtoMember(2)]
+        public string Md5 { get; set; } = string.Empty;
+
+        [ProtoMember(3)]
+        public long IndexLength { get; set; } = 0;
     }
 }

@@ -1,5 +1,6 @@
 ﻿using common;
 using common.extends;
+using ProtoBuf;
 using server.model;
 using System;
 using System.Collections.Concurrent;
@@ -7,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -75,13 +77,15 @@ namespace client.service.p2pPlugins.plugins.request
         //收到请求
         public void OnTcpRequestMsessage(OnTcpRequestMsessageEventArg arg)
         {
+            string path = arg.Data.Path.ToLower();
             if (arg.Data.RequestType == RequestTypes.RESULT)
             {
                 OnTcpRequestMsessageResult(arg);
             }
-            else if (plugins.ContainsKey(arg.Data.Path))
+            else if (plugins.ContainsKey(path))
             {
-                var plugin = plugins[arg.Data.Path];
+               
+                var plugin = plugins[path];
                 try
                 {
                     var param = new PluginExcuteWrap
@@ -116,7 +120,7 @@ namespace client.service.p2pPlugins.plugins.request
                         Socket = arg.Packet.TcpSocket,
                         Data = new MessageRequestModel
                         {
-                            Data = Array.Empty<byte>(),
+                            Data = Encoding.UTF8.GetBytes(ex.Message),
                             RequestId = arg.Data.RequestId,
                             Code = MessageRequestResultCodes.FAIL,
                             Path = arg.Data.Path,
@@ -153,7 +157,11 @@ namespace client.service.p2pPlugins.plugins.request
                 }
                 else
                 {
-                    cache.FailCallback(arg.Data.Data.ProtobufDeserialize<TcpRequestMessageFailModel>());
+                    cache.FailCallback(new TcpRequestMessageFailModel
+                    {
+                        Type = TcpRequestMessageFailType.ERROR,
+                        Msg = Encoding.UTF8.GetString(arg.Data.Data)
+                    });
                 }
             }
         }
@@ -197,12 +205,17 @@ namespace client.service.p2pPlugins.plugins.request
         public Action<TcpRequestMessageFailModel> FailCallback { get; set; } = null;
     }
 
+    [ProtoContract]
     public class TcpRequestMessageFailModel
     {
+        [ProtoMember(1, IsRequired = true)]
         public TcpRequestMessageFailType Type { get; set; } = TcpRequestMessageFailType.ERROR;
+        [ProtoMember(2)]
         public string Msg { get; set; } = string.Empty;
     }
 
+    [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
+    [Flags]
     public enum TcpRequestMessageFailType
     {
         ERROR, TIMEOUT

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:30:19
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-05 21:44:24
+ * @LastEditTime: 2021-09-06 11:15:02
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\Register.vue
@@ -206,7 +206,6 @@ export default {
                         TcpPort: +state.model.ServerTcpPort,
                     }
                 };
-                console.log(JSON.stringify(data));
                 registerState.LocalInfo.IsConnecting = true;
                 sendConfigMsg(data).then(() => {
                     sendRegisterMsg().then((res) => {

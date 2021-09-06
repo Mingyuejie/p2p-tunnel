@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-05 22:52:58
+ * @LastEditTime: 2021-09-06 11:13:38
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -52,7 +52,7 @@ export default {
         subNotifyMsg('system/version', (msg) => {
             let json = JSON.parse(msg);
             let localVersion = json.Local.split('\r\n')[0];
-            let remoteVersion = json.Remote.split('\r\n')[0];
+            let remoteVersion = json.Remote.split('\n')[0];
             if (localVersion != remoteVersion && remoteVersion.length > 0) {
                 ElNotification({
                     title: '新信息',

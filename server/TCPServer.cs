@@ -31,7 +31,7 @@ namespace server
                  .ToDictionary(g => g.Key, g => g.ToArray());
         }
 
-        public ConcurrentDictionary<long, ReceiveModel> clients = new ConcurrentDictionary<long, ReceiveModel>();
+
         public ConcurrentDictionary<int, ServerModel> servers = new ConcurrentDictionary<int, ServerModel>();
 
         private CancellationTokenSource cancellationTokenSource;
@@ -59,6 +59,7 @@ namespace server
 
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
             socket.Bind(new IPEndPoint(ip ?? IPAddress.Any, port));
             socket.Listen(int.MaxValue);
 
@@ -108,10 +109,9 @@ namespace server
         private void Receive(IAsyncResult result)
         {
             ReceiveModel model = (ReceiveModel)result.AsyncState;
-
             try
             {
-                if (model.Socket.Connected)
+                if (model.Socket != null && model.Socket.Connected)
                 {
                     int length = model.Socket.EndReceive(result);
                     result.AsyncWaitHandle.Close();
@@ -139,23 +139,32 @@ namespace server
                     else
                     {
                         Logger.Instance.Info($"length:{length}");
-                        _ = clients.TryRemove(model.Id, out ReceiveModel client);
+                        model.Clear();
                     }
                 }
 
             }
+            catch (SocketException ex)
+            {
+                if (ex.SocketErrorCode == SocketError.ConnectionAborted)
+                {
+                }
+                model.ErrorCallback?.Invoke(ex.SocketErrorCode);
+                Logger.Instance.Info(ex + "");
+                model.Clear();
+            }
             catch (Exception ex)
             {
                 Logger.Instance.Info(ex + "");
-                _ = clients.TryRemove(model.Id, out ReceiveModel client);
+                model.Clear();
             }
         }
-        public void BindReceive(Socket socket)
+        public void BindReceive(Socket socket, Action<SocketError> errorCallback = null)
         {
             IPEndPoint ip = IPEndPoint.Parse(socket.RemoteEndPoint.ToString());
             Interlocked.Increment(ref Id);
-            ReceiveModel model = new ReceiveModel { Id = Id, Address = ip, Socket = socket, Buffer = new byte[0] };
-            _ = clients.TryAdd(Id, model);
+            ReceiveModel model = new ReceiveModel { ErrorCallback = errorCallback, Id = Id, Address = ip, Socket = socket, Buffer = new byte[0] };
+            _ = ReceiveModel.Add(model);
 
             model.Buffer = new byte[1024];
             _ = socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
@@ -194,14 +203,7 @@ namespace server
         public void Stop()
         {
             cancellationTokenSource.Cancel();
-            foreach (ReceiveModel client in clients.Values)
-            {
-                if (client != null)
-                {
-                    client.Clear();
-                }
-            }
-            clients.Clear();
+            ReceiveModel.ClearAll();
             foreach (ServerModel server in servers.Values)
             {
 
@@ -237,6 +239,8 @@ namespace server
 
     public class ReceiveModel
     {
+        public static ConcurrentDictionary<long, ReceiveModel> clients = new ConcurrentDictionary<long, ReceiveModel>();
+
         public long Id { get; set; }
         public long ConnectId { get; set; }
         public Socket Socket { get; set; }
@@ -244,20 +248,41 @@ namespace server
         public byte[] Buffer { get; set; }
         public List<byte> CacheBuffer { get; set; } = new List<byte>();
 
+        public Action<SocketError> ErrorCallback { get; set; }
+
         public void Clear()
         {
+            clients.TryRemove(Id, out _);
+
             Id = 0;
             ConnectId = 0;
             Address = null;
             CacheBuffer.Clear();
             Buffer = null;
+            ErrorCallback = null;
 
-            if(Socket!= null)
+            if (Socket != null)
             {
                 Socket.SafeClose();
                 Socket = null;
             }
-            
+
+        }
+
+        public static void ClearAll()
+        {
+            foreach (ReceiveModel client in clients.Values)
+            {
+                if (client != null)
+                {
+                    client.Clear();
+                }
+            }
+        }
+
+        public static bool Add(ReceiveModel model)
+        {
+            return clients.TryAdd(model.Id, model);
         }
     }
 

@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -65,6 +66,7 @@ namespace client.service.serverPlugins.register
                     }
                     else if (e.Packet.ServerType == ServerType.TCP)
                     {
+                        Logger.Instance.Info($"收到服务器心跳~~~");
                         lastTcpTime = Helper.GetTimeStamp();
                     }
                 }
@@ -114,11 +116,17 @@ namespace client.service.serverPlugins.register
                         //TCP 连接服务器
                         Socket serverSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                         serverSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                        serverSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
                         IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Parse(AppShareData.Instance.ServerConfig.Ip), AppShareData.Instance.ServerConfig.TcpPort);
                         serverSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalInfo.LocalIp, AppShareData.Instance.LocalInfo.TcpPort));
                         AppShareData.Instance.TcpServer = serverSocket;
                         serverSocket.Connect(remoteEndPoint);
-                        TCPServer.Instance.BindReceive(serverSocket);
+                        TCPServer.Instance.BindReceive(serverSocket,(code)=> { 
+                            if(code == SocketError.ConnectionAborted)
+                            {
+                                AutoReg();
+                            }
+                        });
 
                         //上报mac
                         string mac = string.Empty;
@@ -130,7 +138,7 @@ namespace client.service.serverPlugins.register
                         //UDP 开始监听
                         UDPServer.Instance.Start(AppShareData.Instance.LocalInfo.Port, AppShareData.Instance.LocalInfo.LocalIp);
                         AppShareData.Instance.UdpServer = new IPEndPoint(IPAddress.Parse(AppShareData.Instance.ServerConfig.Ip), AppShareData.Instance.ServerConfig.Port);
-                        
+
                         //注册
                         RegisterEventHandles.Instance.SendRegisterMessage(new RegisterParams
                         {
@@ -181,6 +189,36 @@ namespace client.service.serverPlugins.register
         {
             long time = Helper.GetTimeStamp();
             return (lastTime > 0 && time - lastTime > 20000) || (lastTcpTime > 0 && time - lastTcpTime > 20000);
+        }
+
+        struct Tcpkeepalive
+        {
+            public uint onoff;
+            public uint keepalivetime;
+            public uint keepaliveinterval;
+        }
+
+        /// &lt;summary&gt;
+        /// 结构体转byte数组
+        /// &lt;/summary&gt;
+        /// &lt;param name="structObj"&gt;要转换的结构体   &lt;/param&gt;
+        /// &lt;returns&gt;转换后的byte数组&lt;/returns&gt;
+        public static byte[] StructToBytes(object structObj)
+        {
+            //得到结构体的大小
+            int size = Marshal.SizeOf(structObj);
+            //创建byte数组
+            byte[] bytes = new byte[size];
+            //分配结构体大小的内存空间
+            IntPtr structPtr = Marshal.AllocHGlobal(size);
+            //将结构体拷到分配好的内存空间
+            Marshal.StructureToPtr(structObj, structPtr, false);
+            //从内存空间拷到byte数组
+            Marshal.Copy(structPtr, bytes, 0, size);
+            //释放内存空间
+            Marshal.FreeHGlobal(structPtr);
+            //返回byte数组
+            return bytes;
         }
     }
 }

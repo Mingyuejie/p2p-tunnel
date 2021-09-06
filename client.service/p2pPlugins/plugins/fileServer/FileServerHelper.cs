@@ -1,16 +1,28 @@
-﻿using common.extends;
+﻿using client.service.serverPlugins.clients;
+using common;
+using common.extends;
 using ProtoBuf;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Environment;
 
 namespace client.service.p2pPlugins.plugins.fileServer
 {
+    /// <summary>
+    /// 流程   
+    /// a 请求下载  则 b发送文件给 a  a反馈保存进度给b
+    /// a 上传     则 a发送文件给 b  b反馈保存进度
+    /// 
+    /// 发送文件端为 上传进度 
+    /// 保存文件端为 下载进度     FileSaveInfo.FileType
+    /// </summary>
 
     public class FileServerHelper
     {
@@ -18,6 +30,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
         public static FileServerHelper Instance => lazy.Value;
 
         private string localCurrentPath = string.Empty;
+        private string localRootPath = string.Empty;
         private string remoteCurrentPath = AppShareData.Instance.FileServerConfig.Root;
 
         private readonly ConcurrentDictionary<string, FileSaveInfo> files = new();
@@ -25,6 +38,45 @@ namespace client.service.p2pPlugins.plugins.fileServer
         private FileServerHelper()
         {
             FileServerEventHandles.Instance.OnTcpFileFileMessageHandler += OnTcpFileFileMessageHandler;
+            FileServerEventHandles.Instance.OnTcpFileProgressMessageHandler += OnTcpFileProgressMessageHandler;
+            FileServerEventHandles.Instance.OnTcpFileDownloadMessageHandler += OnTcpFileDownloadMessageHandler;
+        }
+
+        private void OnTcpFileDownloadMessageHandler(object sender, TcpFileDownloadMessageEventArg e)
+        {
+            var file = GetLocalFile(e.Data.Path);
+            string md5 = Helper.GetMd5Hash($"{file.FullName}_{e.RawData.FormId}_{P2PFileCmdTypes.DOWNLOAD}");
+            if (!files.ContainsKey(md5))
+            {
+                files.TryAdd(md5, new FileSaveInfo
+                {
+                    FileName = file.Name,
+                    IndexLength = 0,
+                    TotalLength = file.Length,
+                    FileType = P2PFileCmdTypes.UPLOAD.ToString()
+                });
+                FileServerEventHandles.Instance.SendTcpFileDownloadMessage(new SendTcpFileMessageEventArg<string>
+                {
+                    Data = md5,
+                    Socket = e.Packet.TcpSocket,
+                    ToId = e.RawData.FormId
+                }, file);
+            }
+        }
+
+        private void OnTcpFileProgressMessageHandler(object sender, TcpFileProgressMessageEventArg e)
+        {
+            if (files.TryGetValue(e.Data.Md5, out FileSaveInfo info))
+            {
+                if (info != null)
+                {
+                    info.IndexLength = e.Data.IndexLength;
+                    if (info.IndexLength >= info.TotalLength)
+                    {
+                        files.TryRemove(e.Data.Md5, out _);
+                    }
+                }
+            }
         }
 
         private void OnTcpFileFileMessageHandler(object sender, TcpFileFileMessageEventArg e)
@@ -50,7 +102,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
                     Stream = new FileStream(fullPath, FileMode.Create & FileMode.Append, FileAccess.Write),
                     IndexLength = 0,
                     TotalLength = file.Size,
-                    FileType = file.FileType.ToString(),
+                    FileType = P2PFileCmdTypes.DOWNLOAD.ToString(),
                     FileName = file.Name
                 };
                 _ = files.TryAdd(file.Md5, fs);
@@ -63,6 +115,12 @@ namespace client.service.p2pPlugins.plugins.fileServer
                 _ = files.TryRemove(file.Md5, out _);
                 fs.Stream.Close();
             }
+            FileServerEventHandles.Instance.SendTcpFileProgressMessage(new SendTcpFileMessageEventArg<P2PFileProgressModel>
+            {
+                Socket = e.Packet.TcpSocket,
+                Data = new P2PFileProgressModel { IndexLength = fs.IndexLength, Md5 = file.Md5 },
+                ToId = e.RawData.FormId
+            });
         }
 
         public void Start()
@@ -75,6 +133,82 @@ namespace client.service.p2pPlugins.plugins.fileServer
             AppShareData.Instance.FileServerConfig.IsStart = false;
         }
 
+        public bool Upload(long toid, string path)
+        {
+            var socket = GetSocket(toid);
+            if (socket != null)
+            {
+                var file = GetLocalFile(path);
+                string md5 = Helper.GetMd5Hash($"{file.FullName}_{toid}_{P2PFileCmdTypes.UPLOAD}");
+                if (!files.ContainsKey(md5))
+                {
+                    files.TryAdd(md5, new FileSaveInfo
+                    {
+                        FileName = file.Name,
+                        IndexLength = 0,
+                        TotalLength = file.Length,
+                        FileType = P2PFileCmdTypes.UPLOAD.ToString()
+                    });
+                    FileServerEventHandles.Instance.SendTcpFileUploadMessage(new SendTcpFileMessageEventArg<string>
+                    {
+                        Data = md5,
+                        Socket = socket,
+                        ToId = toid
+                    }, file);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool Download(long toid, string path)
+        {
+            var socket = GetSocket(toid);
+            if (socket != null)
+            {
+                FileServerEventHandles.Instance.SendTcpFileCmdDownloadMessage(new SendTcpFileMessageEventArg<P2PFileCmdDownloadModel>
+                {
+                    Data = new P2PFileCmdDownloadModel { Path = path },
+                    Socket = socket,
+                    ToId = toid
+                });
+                return true;
+            }
+            return false;
+        }
+
+        public bool RequestRemoteList(long toid, string path, Action<FileInfo[]> callback, Action<string> callback2)
+        {
+            var socket = GetSocket(toid);
+            if (socket != null)
+            {
+                FileServerEventHandles.Instance.RequestFileListMessage(new SendTcpFileMessageEventArg<P2PFileCmdListModel>
+                {
+                    ToId = toid,
+                    Socket = socket,
+                    Data = new P2PFileCmdListModel { Path = path }
+                }, (msg) =>
+                {
+                    for (int i = 0; i < msg.Length; i++)
+                    {
+                        if (msg[i].Type == 0)
+                        {
+                            msg[i].Image = GetDirectoryIcon();
+                        }
+                        else
+                        {
+                            msg[i].Image = GetFileIcon(msg[i].Name);
+                        }
+                    }
+                    callback(msg);
+                }, (msg) =>
+                {
+                    callback2(msg);
+                });
+                return true;
+            }
+            return false;
+        }
 
         /// <summary>
         /// 上传下载中的
@@ -91,11 +225,67 @@ namespace client.service.p2pPlugins.plugins.fileServer
             });
         }
 
+        public SpecialFolderInfo GetSpecialFolders()
+        {
+            string desktop = GetFolderPath(SpecialFolder.Desktop);
+            List<SpecialFolder> specialFolders = new()
+            {
+                SpecialFolder.MyPictures,
+                SpecialFolder.MyMusic,
+                SpecialFolder.MyVideos,
+                SpecialFolder.MyDocuments,
+                SpecialFolder.Desktop
+            };
 
+            List<SpecialFolderInfo> child = new()
+            {
+                new SpecialFolderInfo
+                {
+                    Name = "this Computer",
+                    Child = specialFolders.Select(c =>
+                    {
+                        string path = GetFolderPath(c);
+                        return new SpecialFolderInfo()
+                        {
+                            FullName = path,
+                            Name = Path.GetFileName(path)
+                        };
+                    }).Concat(DriveInfo.GetDrives().Where(c => c.IsReady).Select(c => new SpecialFolderInfo
+                    {
+                        FullName = c.Name,
+                        Name = string.IsNullOrWhiteSpace(c.VolumeLabel) ? $"磁盘({ c.Name.Substring(0, 2)})" : c.VolumeLabel
+                    })).ToArray()
+                }
+            };
+            child.AddRange(new DirectoryInfo(desktop).GetDirectories().Select(c => new SpecialFolderInfo
+            {
+                FullName = c.FullName,
+                Name = c.Name,
+            }));
+
+            return new SpecialFolderInfo
+            {
+                Name = Path.GetFileName(desktop),
+                FullName = desktop,
+                Child = child.ToArray()
+            };
+        }
+
+
+        /// <summary>
+        /// 根据路径获取本地文件
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
         public System.IO.FileInfo GetLocalFile(string path)
         {
             return new System.IO.FileInfo(Path.Combine(localCurrentPath, path));
         }
+        /// <summary>
+        /// 根据路径获取服务文件
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
         public System.IO.FileInfo GetRemoteFile(string path)
         {
             return new System.IO.FileInfo(Path.Combine(remoteCurrentPath, path));
@@ -112,38 +302,34 @@ namespace client.service.p2pPlugins.plugins.fileServer
             return GetFiles(remoteCurrentPath, false);
         }
 
-        public FileInfo[] GetLocalFiles(string path)
+        public FileInfo[] GetLocalFiles(string path, bool reset)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(path))
+                if (reset)
                 {
-                    localCurrentPath = string.Empty;
-                }
-                else if (path == "..")
-                {
-                    localCurrentPath = localCurrentPath.Length <= 3 ? string.Empty : new DirectoryInfo(Path.Combine(localCurrentPath, path)).FullName;
+                    localRootPath = localCurrentPath = path;
                 }
                 else
                 {
-                    localCurrentPath = string.IsNullOrWhiteSpace(localCurrentPath) ? path : new DirectoryInfo(Path.Combine(localCurrentPath, path)).FullName;
+                    if (!string.IsNullOrWhiteSpace(localCurrentPath) && !string.IsNullOrWhiteSpace(path))
+                    {
+                        localCurrentPath = new DirectoryInfo(Path.Combine(localCurrentPath, path)).FullName;
+                        if (localCurrentPath.Length < localRootPath.Length)
+                        {
+                            localCurrentPath = localRootPath;
+                        }
+                    }
                 }
                 if (string.IsNullOrWhiteSpace(localCurrentPath))
                 {
-                    return DriveInfo.GetDrives().Where(c => c.IsReady).Select(c => new FileInfo
-                    {
-                        FullName = c.Name,
-                        Length = c.TotalSize,
-                        FreeLength = c.TotalFreeSpace,
-                        Type = -1,
-                        Name = c.VolumeLabel,
-                        Image = GetFileIcon(c.VolumeLabel)
-                    }).ToArray();
+                    localRootPath = localCurrentPath = GetFolderPath(SpecialFolder.Desktop);
                 }
                 return GetFiles(localCurrentPath, true);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine(ex + "");
                 return Array.Empty<FileInfo>();
             }
         }
@@ -175,7 +361,6 @@ namespace client.service.p2pPlugins.plugins.fileServer
                 Image = isIcon ? GetFileIcon(c.Name) : string.Empty
             })).ToArray();
         }
-
 
         private Dictionary<string, string> icons = new Dictionary<string, string>();
         public string GetFileIcon(string p_Path)
@@ -233,6 +418,12 @@ namespace client.service.p2pPlugins.plugins.fileServer
             }
         }
 
+        private Socket GetSocket(long id)
+        {
+            AppShareData.Instance.Clients.TryGetValue(id, out ClientInfo client);
+            return client?.Socket ?? null;
+        }
+
     }
 
     public class FileSaveInfo
@@ -287,5 +478,12 @@ namespace client.service.p2pPlugins.plugins.fileServer
         SHGFI_ICON = 0x100,
         SHGFI_LARGEICON = 0x0,
         SHGFI_USEFILEATTRIBUTES = 0x10
+    }
+
+    public class SpecialFolderInfo
+    {
+        public string Name { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public SpecialFolderInfo[] Child { get; set; } = Array.Empty<SpecialFolderInfo>();
     }
 }

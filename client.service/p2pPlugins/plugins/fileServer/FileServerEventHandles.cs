@@ -47,6 +47,33 @@ namespace client.service.p2pPlugins.plugins.fileServer
         }
 
         /// <summary>
+        /// 文件进度
+        /// </summary>
+        public event EventHandler<TcpFileProgressMessageEventArg> OnTcpFileProgressMessageHandler;
+        public void OnTcpFileProgressMessage(TcpFileProgressMessageEventArg arg)
+        {
+            OnTcpFileProgressMessageHandler?.Invoke(this, arg);
+        }
+        /// <summary>
+        /// 发送文件进度
+        /// </summary>
+        /// <param name="arg"></param>
+        public void SendTcpFileProgressMessage(SendTcpFileMessageEventArg<P2PFileProgressModel> arg)
+        {
+            P2PMessageEventHandles.Instance.SendTcpMessage(new SendP2PTcpMessageArg
+            {
+                Socket = arg.Socket,
+                Data = new P2PFileModel
+                {
+                    CmdType = P2PFileCmdTypes.PROGRESS,
+                    FormId = EventHandlers.Instance.ConnectId,
+                    ToId = arg.ToId,
+                    Data = arg.Data.ProtobufSerialize()
+                }
+            });
+        }
+
+        /// <summary>
         /// 收到文件
         /// </summary>
         public event EventHandler<TcpFileFileMessageEventArg> OnTcpFileFileMessageHandler;
@@ -56,12 +83,11 @@ namespace client.service.p2pPlugins.plugins.fileServer
         }
 
         /// <summary>
-        /// 上传
+        /// 上传文件
         /// </summary>
         /// <param name="arg"></param>
-        public void SendTcpFileUploadMessage(SendTcpFileMessageEventArg<P2PFileCmdUploadModel> arg)
+        public void SendTcpFileUploadMessage(SendTcpFileMessageEventArg<string> arg,System.IO.FileInfo file)
         {
-            var file = FileServerHelper.Instance.GetLocalFile(arg.Data.Path);
             SendTcpFileFileMessage(new SendTcpFileMessageEventArg<P2PFileFileModel>
             {
                 ToId = arg.ToId,
@@ -70,7 +96,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
                 {
                     Name = file.Name,
                     Size = file.Length,
-                    Md5 = Helper.GetMd5Hash($"{file.FullName}_{P2PFileCmdTypes.UPLOAD}"),
+                    Md5 = arg.Data,
                     Data = Array.Empty<byte>(),
                     FileType = P2PFileCmdTypes.UPLOAD
                 }
@@ -97,28 +123,35 @@ namespace client.service.p2pPlugins.plugins.fileServer
             });
         }
 
-        public event EventHandler<TcpFileDownloadMessageEventArg> TcpFileDownloadMessageHandler;
+        /// <summary>
+        /// 发送对方请求下载的文件
+        /// </summary>
+        /// <param name="arg"></param>
+        /// <param name="file"></param>
+        public void SendTcpFileDownloadMessage(SendTcpFileMessageEventArg<string> arg, System.IO.FileInfo file)
+        {
+            SendTcpFileFileMessage(new SendTcpFileMessageEventArg<P2PFileFileModel>
+            {
+                ToId = arg.ToId,
+                Socket = arg.Socket,
+                Data = new P2PFileFileModel
+                {
+                    Name = file.Name,
+                    Size = file.Length,
+                    Md5 = arg.Data,
+                    Data = Array.Empty<byte>(),
+                    FileType = P2PFileCmdTypes.DOWNLOAD
+                }
+            }, file);
+        }
+        public event EventHandler<TcpFileDownloadMessageEventArg> OnTcpFileDownloadMessageHandler;
         /// <summary>
         /// 有人请求下载
         /// </summary>
         /// <param name="arg"></param>
         public void OnTcpFileDownloadMessage(TcpFileDownloadMessageEventArg arg)
         {
-            var file = FileServerHelper.Instance.GetRemoteFile(arg.Data.Path);
-            SendTcpFileFileMessage(new SendTcpFileMessageEventArg<P2PFileFileModel>
-            {
-                ToId = arg.RawData.FormId,
-                Socket = arg.Packet.TcpSocket,
-                Data = new P2PFileFileModel
-                {
-                    Name = file.Name,
-                    Size = file.Length,
-                    Md5 = Helper.GetMd5Hash($"{file.FullName}_{P2PFileCmdTypes.DOWNLOAD}"),
-                    Data = Array.Empty<byte>(),
-                    FileType = P2PFileCmdTypes.DOWNLOAD
-                }
-            }, file);
-            TcpFileDownloadMessageHandler?.Invoke(this, arg);
+            OnTcpFileDownloadMessageHandler?.Invoke(this, arg);
         }
         /// <summary>
         /// 请求文件列表
@@ -126,7 +159,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
         /// <param name="arg"></param>
         public void RequestFileListMessage(SendTcpFileMessageEventArg<P2PFileCmdListModel> arg, Action<FileInfo[]> callback, Action<string> failCallback)
         {
-            RequestEventHandlers.Instance.SendTcpRequestMsessage(arg.Socket, "FileRequest/List", arg.Data, (msg) =>
+            RequestEventHandlers.Instance.SendTcpRequestMsessage(arg.Socket, "filerequest/list", arg.Data, (msg) =>
             {
                 callback(msg.Data.ProtobufDeserialize<FileInfo[]>());
             }, (msg) =>
@@ -215,6 +248,13 @@ namespace client.service.p2pPlugins.plugins.fileServer
         public PluginExcuteModel Packet { get; set; }
         public P2PFileModel RawData { get; set; }
         public P2PFileFileModel Data { get; set; }
+    }
+
+    public class TcpFileProgressMessageEventArg : EventArgs
+    {
+        public PluginExcuteModel Packet { get; set; }
+        public P2PFileModel RawData { get; set; }
+        public P2PFileProgressModel Data { get; set; }
     }
 
     public class TcpFileMessageEventArg : EventArgs
