@@ -45,7 +45,7 @@
 ![转发配置](./screenshot/tcpforward.jpg)
 
 #### 4. 访问对方网页
-![访问网页](./master/screenshot/bweb.jpg)
+![访问网页](./screenshot/bweb.jpg)
 
 #### 5. 访问对方桌面
 ![访问网页](./screenshot/bdesktop.jpg)
