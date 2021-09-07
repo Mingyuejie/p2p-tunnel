@@ -356,7 +356,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
             if (!Directory.Exists(path)) return Array.Empty<FileInfo>();
 
             var dir = new DirectoryInfo(path);
-            return dir.GetDirectories().Select(c => new FileInfo
+            return dir.GetDirectories().Where(c => (c.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden).Select(c => new FileInfo
             {
                 CreationTime = c.CreationTime,
                 Length = 0,
@@ -366,7 +366,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
                 LastAccessTime = c.LastAccessTime,
                 Type = 0,
                 Image = isIcon ? GetDirectoryIcon() : string.Empty
-            }).Concat(dir.GetFiles().Select(c => new FileInfo
+            }).Concat(dir.GetFiles().Where(c => (c.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden).Select(c => new FileInfo
             {
                 CreationTime = c.CreationTime,
                 Length = c.Length,
@@ -388,23 +388,47 @@ namespace client.service.p2pPlugins.plugins.fileServer
                 return icons[ext];
             }
 
-            SHFILEINFO _SHFILEINFO = new SHFILEINFO();
-            IntPtr _IconIntPtr = SHGetFileInfo(p_Path, 0, ref _SHFILEINFO, (uint)Marshal.SizeOf(_SHFILEINFO), (uint)(SHGFI.SHGFI_ICON | SHGFI.SHGFI_LARGEICON | SHGFI.SHGFI_USEFILEATTRIBUTES));
-            if (_IconIntPtr.Equals(IntPtr.Zero)) return null;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                SHFILEINFO _SHFILEINFO = new SHFILEINFO();
+                IntPtr _IconIntPtr = SHGetFileInfo(p_Path, 0, ref _SHFILEINFO, (uint)Marshal.SizeOf(_SHFILEINFO), (uint)(SHGFI.SHGFI_ICON | SHGFI.SHGFI_LARGEICON | SHGFI.SHGFI_USEFILEATTRIBUTES));
+                if (_IconIntPtr.Equals(IntPtr.Zero)) return null;
+                icons.Add(ext, Icon2Base64(System.Drawing.Icon.FromHandle(_SHFILEINFO.hIcon)));
+                return icons[ext];
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return string.Empty;
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                return string.Empty;
+            }
 
-            icons.Add(ext, Icon2Base64(System.Drawing.Icon.FromHandle(_SHFILEINFO.hIcon)));
-            return icons[ext];
+            return string.Empty;
         }
 
         private string dirIcon = string.Empty;
         public string GetDirectoryIcon()
         {
             if (!string.IsNullOrWhiteSpace(dirIcon)) return dirIcon;
-            SHFILEINFO _SHFILEINFO = new SHFILEINFO();
-            IntPtr _IconIntPtr = SHGetFileInfo(@"", 0, ref _SHFILEINFO, (uint)Marshal.SizeOf(_SHFILEINFO), (uint)(SHGFI.SHGFI_ICON | SHGFI.SHGFI_LARGEICON));
-            if (_IconIntPtr.Equals(IntPtr.Zero)) return null;
 
-            dirIcon = Icon2Base64(System.Drawing.Icon.FromHandle(_SHFILEINFO.hIcon));
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                SHFILEINFO _SHFILEINFO = new SHFILEINFO();
+                IntPtr _IconIntPtr = SHGetFileInfo(@"", 0, ref _SHFILEINFO, (uint)Marshal.SizeOf(_SHFILEINFO), (uint)(SHGFI.SHGFI_ICON | SHGFI.SHGFI_LARGEICON));
+                if (_IconIntPtr.Equals(IntPtr.Zero)) return null;
+                dirIcon = Icon2Base64(System.Drawing.Icon.FromHandle(_SHFILEINFO.hIcon));
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return string.Empty;
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                return string.Empty;
+            }
+
             return dirIcon;
         }
 
