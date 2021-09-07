@@ -15,7 +15,7 @@ namespace server.service.plugins
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
-            MessageExitModel model = data.Packet.Chunk.ProtobufDeserialize<MessageExitModel>();
+            ExitModel model = data.Packet.Chunk.DeBytes<ExitModel>();
             ClientRegisterCache.Instance.Remove(model.Id);
         }
     }

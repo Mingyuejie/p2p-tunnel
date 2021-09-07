@@ -28,49 +28,49 @@ namespace client.service.events
         /// <summary>
         /// 发送消息
         /// </summary>
-        public event EventHandler<SendMessageEventArg> OnSendMessageHandler;
+        public event EventHandler<SendEventArg> OnSendHandler;
         /// <summary>
         /// 发送消息
         /// </summary>
         /// <param name="arg"></param>
-        public void SendMessage(SendMessageEventArg arg)
+        public void Send(SendEventArg arg)
         {
             IPEndPoint address = arg.Address ?? UdpServer;
             if (address == null)
             {
                 return;
             }
-            UDPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+            UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
             {
                 Address = address,
                 Data = arg.Data
             });
 
-            OnSendMessageHandler?.Invoke(this, arg);
+            OnSendHandler?.Invoke(this, arg);
         }
         /// <summary>
         /// 发送消息
         /// </summary>
-        public event EventHandler<SendTcpMessageEventArg> OnSendTcpMessageHandler;
+        public event EventHandler<SendTcpEventArg> OnSendTcpHandler;
 
         /// <summary>
         /// 发送消息
         /// </summary>
-        public void SendTcpMessage(SendTcpMessageEventArg arg, int timeout = 0)
+        public void SendTcp(SendTcpEventArg arg, int timeout = 0)
         {
             if (arg.Socket == null && TcpServer == null)
             {
                 return;
             }
 
-            TCPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+            TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
             {
                 TcpCoket = arg.Socket ?? TcpServer,
                 Data = arg.Data,
                 Timeout = timeout
             });
 
-            OnSendTcpMessageHandler?.Invoke(this, arg);
+            OnSendTcpHandler?.Invoke(this, arg);
         }
 
         #endregion
@@ -79,21 +79,21 @@ namespace client.service.events
 
     #region 发送消息
 
-    public class SendMessageEventArg
+    public class SendEventArg
     {
         /// <summary>
         /// 为 null时默认给连接的服务器发送
         /// </summary>
         public IPEndPoint Address { get; set; }
-        public IMessageModelBase Data { get; set; }
+        public IModelBase Data { get; set; }
     }
-    public class SendTcpMessageEventArg
+    public class SendTcpEventArg
     {
         /// <summary>
         /// 为 null时默认给连接的服务器发送
         /// </summary>
         public Socket Socket { get; set; }
-        public IMessageModelBase Data { get; set; }
+        public IModelBase Data { get; set; }
     }
 
     #endregion

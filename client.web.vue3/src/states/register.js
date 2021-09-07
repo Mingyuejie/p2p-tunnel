@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:39:45
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-05 20:03:48
+ * @LastEditTime: 2021-09-07 15:38:08
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\states\register.js
@@ -58,6 +58,7 @@ export const provideRegister = () => {
         state.LocalInfo.IsConnecting = json.LocalInfo.IsConnecting;
         state.LocalInfo.RouteLevel = json.LocalInfo.RouteLevel;
         if (!state.ClientConfig.GroupId) {
+
             state.ClientConfig.GroupId = json.ClientConfig.GroupId;
         }
     });

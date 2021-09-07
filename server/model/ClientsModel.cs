@@ -5,20 +5,20 @@ namespace server.model
 {
 
     [ProtoContract]
-    public class MessageClientsModel : IMessageModelBase
+    public class ClientsModel : IModelBase
     {
-        public MessageClientsModel() { }
+        public ClientsModel() { }
 
         [ProtoMember(1, IsRequired = true)]
         public MessageTypes MsgType { get; } = MessageTypes.SERVER_SEND_CLIENTS;
 
         [ProtoMember(2)]
-        public IEnumerable<MessageClientsClientModel> Clients { get; set; }
+        public IEnumerable<ClientsClientModel> Clients { get; set; }
 
     }
 
     [ProtoContract]
-    public class MessageClientsClientModel
+    public class ClientsClientModel
     {
         [ProtoMember(1)]
         public string Address { get; set; } = string.Empty;

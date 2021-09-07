@@ -2,13 +2,16 @@
 using client.service.p2pPlugins.plugins.fileServer;
 using client.service.p2pPlugins.plugins.forward.tcp;
 using common;
+using common.extends;
 using Fleck;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace client.service.clientService
@@ -82,60 +85,73 @@ namespace client.service.clientService
                 };
                 socket.OnMessage = message =>
                 {
-                    Task.Run(() =>
-                    {
-                        ClientServiceMessageWrap model = Helper.DeJsonSerializer<ClientServiceMessageWrap>(message);
-                        model.Path = model.Path.ToLower();
-                        if (plugins.ContainsKey(model.Path))
-                        {
-                            var plugin = plugins[model.Path];
-                            try
-                            {
-                                var param = new ClientServicePluginExcuteWrap
-                                {
-                                    Socket = socket,
-                                    RequestId = model.RequestId,
-                                    Content = model.Content,
-                                    Websockets = websockets,
-                                    Path = model.Path,
-                                    Callback = (param, returnResult) =>
-                                    {
-                                        string result = string.Empty;
-                                        if (returnResult != null)
-                                        {
-                                            if (returnResult is string)
-                                            {
-                                                result = returnResult as string;
-                                            }
-                                            else
-                                            {
-                                                result = Helper.JsonSerializer(returnResult);
-                                            }
-                                        }
-                                        param.Socket.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
-                                        {
-                                            Content = param.Code == 0 ? result : param.Message,
-                                            RequestId = param.RequestId,
-                                            Path = param.Path,
-                                            Code = param.Code
-                                        }));
-                                    }
-                                };
-                                plugin.Item2.Invoke(plugin.Item1, new object[] { param });
-                            }
-                            catch (Exception ex)
-                            {
-                                Logger.Instance.Info(ex + "");
-                                socket.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
-                                {
-                                    Content = ex.Message,
-                                    RequestId = model.RequestId,
-                                    Path = model.Path,
-                                    Code = -1
-                                }));
-                            }
-                        }
-                    });
+                    _ = Task.Run(() =>
+                      {
+                          ClientServiceMessageWrap model = message.DeJson<ClientServiceMessageWrap>();
+                          model.Path = model.Path.ToLower();
+                          if (plugins.ContainsKey(model.Path))
+                          {
+                              var plugin = plugins[model.Path];
+                              try
+                              {
+                                  var param = new ClientServicePluginExcuteWrap
+                                  {
+                                      Socket = socket,
+                                      RequestId = model.RequestId,
+                                      Content = model.Content,
+                                      Websockets = websockets,
+                                      Path = model.Path
+                                  };
+                                  object resultAsync = plugin.Item2.Invoke(plugin.Item1, new object[] { param });
+
+                                  object resultObject = null;
+                                  if (resultAsync is Task task)
+                                  {
+                                      task.Wait();
+                                      if (resultAsync is Task<object> task1)
+                                      {
+                                          resultObject = task1.Result;
+                                      }
+                                  }
+                                  else
+                                  {
+                                      resultObject = resultAsync;
+                                  }
+                                  string resultString = string.Empty;
+                                  if (resultObject != null)
+                                  {
+                                      if (resultObject is string)
+                                      {
+                                          resultString = resultObject as string;
+                                      }
+                                      else
+                                      {
+                                          resultString = resultObject.ToJson();
+                                      }
+                                  }
+                                 
+                                  param.Socket.Send(new ClientServiceMessageWrap
+                                  {
+                                      Content = param.Code == 0 ? resultString : param.ErrorMessage,
+                                      RequestId = param.RequestId,
+                                      Path = param.Path,
+                                      Code = param.Code
+                                  }.ToJson());
+
+                              }
+                              catch (Exception ex)
+                              {
+                                  Logger.Instance.Info(ex + "");
+                                  socket.Send(new ClientServiceMessageWrap
+                                  {
+                                      Content = ex.Message,
+                                      RequestId = model.RequestId,
+                                      Path = model.Path,
+                                      Code = -1
+                                  }.ToJson());
+                              }
+                          }
+                      });
                 };
             });
         }
@@ -148,47 +164,47 @@ namespace client.service.clientService
                 {
                     foreach (var connection in websockets.Values)
                     {
-                        connection.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
+                        connection.Send(new ClientServiceMessageWrap
                         {
-                            Content = Helper.JsonSerializer(AppShareData.Instance.Clients.Values.ToList()),
+                            Content = AppShareData.Instance.Clients.Values.ToList().ToJson(),
                             RequestId = 0,
                             Path = "clients/list",
                             Code = 0
-                        }));
-                        connection.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
+                        }.ToJson());
+                        connection.Send(new ClientServiceMessageWrap
                         {
-                            Content = Helper.JsonSerializer(new RegisterInfo
+                            Content = new RegisterInfo
                             {
                                 ClientConfig = AppShareData.Instance.ClientConfig,
                                 ServerConfig = AppShareData.Instance.ServerConfig,
                                 LocalInfo = AppShareData.Instance.LocalInfo,
                                 RemoteInfo = AppShareData.Instance.RemoteInfo,
-                            }),
+                            }.ToJson(),
                             RequestId = 0,
                             Path = "register/info",
                             Code = 0
-                        }));
-                        connection.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
+                        }.ToJson());
+                        connection.Send(new ClientServiceMessageWrap
                         {
-                            Content = Helper.JsonSerializer(TcpForwardHelper.Instance.Mappings),
+                            Content = TcpForwardHelper.Instance.Mappings.ToJson(),
                             RequestId = 0,
                             Path = "tcpforward/list",
                             Code = 0
-                        }));
-                        connection.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
+                        }.ToJson());
+                        connection.Send(new ClientServiceMessageWrap
                         {
-                            Content = Helper.JsonSerializer(AppShareData.Instance.FileServerConfig),
+                            Content = AppShareData.Instance.FileServerConfig.ToJson(),
                             RequestId = 0,
                             Path = "fileserver/info",
                             Code = 0
-                        }));
-                        connection.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
+                        }.ToJson());
+                        connection.Send(new ClientServiceMessageWrap
                         {
-                            Content = Helper.JsonSerializer(FileServerHelper.Instance.GetOnlineList()),
+                            Content = FileServerHelper.Instance.GetOnlineList().ToJson(),
                             RequestId = 0,
                             Path = "fileserver/online",
                             Code = 0
-                        }));
+                        }.ToJson());
                     }
                     System.Threading.Thread.Sleep(500);
                 }
@@ -197,17 +213,17 @@ namespace client.service.clientService
 
         private void NotifyVersion(IWebSocketConnection connection)
         {
-            connection.Send(Helper.JsonSerializer(new ClientServiceMessageWrap
+            connection.Send(new ClientServiceMessageWrap
             {
-                Content = Helper.JsonSerializer(new
+                Content = new
                 {
                     Local = System.IO.File.ReadAllText("version.txt"),
                     Remote = GetVersion()
-                }),
+                }.ToJson(),
                 RequestId = 0,
                 Path = "system/version",
                 Code = 0
-            }));
+            }.ToJson());
         }
 
         private string GetVersion()

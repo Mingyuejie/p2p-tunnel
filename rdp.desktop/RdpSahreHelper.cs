@@ -1,4 +1,5 @@
 ﻿using common;
+using common.extends;
 using RDPCOMAPILib;
 using System;
 using System.IO;
@@ -106,7 +107,7 @@ namespace rdp.desktop
         {
             if (File.Exists(configFileName))
             {
-                ConfigFileModel config = Helper.DeJsonSerializer<ConfigFileModel>(File.ReadAllText(configFileName)); ;
+                ConfigFileModel config = File.ReadAllText(configFileName).DeJson<ConfigFileModel>();
                 if (config != null)
                 {
                     ViewModel.AttendeeLimit = config.AttendeeLimit;
@@ -117,11 +118,11 @@ namespace rdp.desktop
 
         private void SaveConfig()
         {
-            File.WriteAllText(configFileName, Helper.JsonSerializer(new ConfigFileModel
+            File.WriteAllText(configFileName, new ConfigFileModel
             {
                 AttendeeLimit = ViewModel.AttendeeLimit,
                 Password = ViewModel.Password,
-            }));
+            }.ToJson());
         }
 
 

@@ -11,8 +11,8 @@ namespace client.service.serverPlugins.connectClient
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
         {
-            MessageConnectClientReverseModel data = model.Packet.Chunk.ProtobufDeserialize<MessageConnectClientReverseModel>();
-            ConnectClientEventHandles.Instance.OnConnectClientReverseMessage(new OnConnectClientReverseEventArg
+            ConnectClientReverseModel data = model.Packet.Chunk.DeBytes<ConnectClientReverseModel>();
+            ConnectClientEventHandles.Instance.OnConnectClientReverse(new OnConnectClientReverseEventArg
             {
                 Data = data,
                 Packet = model,
@@ -26,10 +26,10 @@ namespace client.service.serverPlugins.connectClient
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
         {
-            MessageConnectClientStep1Model data = model.Packet.Chunk.ProtobufDeserialize<MessageConnectClientStep1Model>();
+            ConnectClientStep1Model data = model.Packet.Chunk.DeBytes<ConnectClientStep1Model>();
             if (serverType == ServerType.UDP)
             {
-                ConnectClientEventHandles.Instance.OnConnectClientStep1Message(new OnConnectClientStep1EventArg
+                ConnectClientEventHandles.Instance.OnConnectClientStep1(new OnConnectClientStep1EventArg
                 {
                     Data = data,
                     Packet = model,
@@ -37,7 +37,7 @@ namespace client.service.serverPlugins.connectClient
             }
             else if (serverType == ServerType.TCP)
             {
-                ConnectClientEventHandles.Instance.OnTcpConnectClientStep1Message(new OnConnectClientStep1EventArg
+                ConnectClientEventHandles.Instance.OnTcpConnectClientStep1(new OnConnectClientStep1EventArg
                 {
                     Data = data,
                     Packet = model,
@@ -53,11 +53,11 @@ namespace client.service.serverPlugins.connectClient
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
         {
-            MessageConnectClientStep2Model data = model.Packet.Chunk.ProtobufDeserialize<MessageConnectClientStep2Model>();
+            ConnectClientStep2Model data = model.Packet.Chunk.DeBytes<ConnectClientStep2Model>();
 
             if (serverType == ServerType.UDP)
             {
-                ConnectClientEventHandles.Instance.OnConnectClientStep2Message(new OnConnectClientStep2EventArg
+                ConnectClientEventHandles.Instance.OnConnectClientStep2(new OnConnectClientStep2EventArg
                 {
                     Data = data,
                     Packet = model,
@@ -65,7 +65,7 @@ namespace client.service.serverPlugins.connectClient
             }
             else if (serverType == ServerType.TCP)
             {
-                ConnectClientEventHandles.Instance.OnTcpConnectClientStep2Message(new OnConnectClientStep2EventArg
+                ConnectClientEventHandles.Instance.OnTcpConnectClientStep2(new OnConnectClientStep2EventArg
                 {
                     Data = data,
                     Packet = model,
@@ -82,8 +82,8 @@ namespace client.service.serverPlugins.connectClient
         {
             if (serverType == ServerType.TCP)
             {
-                MessageConnectClientStep2RetryModel data = model.Packet.Chunk.ProtobufDeserialize<MessageConnectClientStep2RetryModel>();
-                ConnectClientEventHandles.Instance.OnTcpConnectClientStep2RetryMessage(new OnConnectClientStep2RetryEventArg
+                ConnectClientStep2RetryModel data = model.Packet.Chunk.DeBytes<ConnectClientStep2RetryModel>();
+                ConnectClientEventHandles.Instance.OnTcpConnectClientStep2Retry(new OnConnectClientStep2RetryEventArg
                 {
                     Data = data,
                     Packet = model,
@@ -98,7 +98,7 @@ namespace client.service.serverPlugins.connectClient
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
         {
-            MessageConnectClientStep2FailModel data = model.Packet.Chunk.ProtobufDeserialize<MessageConnectClientStep2FailModel>();
+            ConnectClientStep2FailModel data = model.Packet.Chunk.DeBytes<ConnectClientStep2FailModel>();
 
             if (serverType == ServerType.UDP)
             {
@@ -110,7 +110,7 @@ namespace client.service.serverPlugins.connectClient
             }
             else if (serverType == ServerType.TCP)
             {
-                ConnectClientEventHandles.Instance.OnTcpConnectClientStep2FailMessage(new OnTcpConnectClientStep2FailEventArg
+                ConnectClientEventHandles.Instance.OnTcpConnectClientStep2Fail(new OnTcpConnectClientStep2FailEventArg
                 {
                     Data = data,
                     Packet = model,
@@ -125,11 +125,11 @@ namespace client.service.serverPlugins.connectClient
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
         {
-            MessageConnectClientStep3Model data = model.Packet.Chunk.ProtobufDeserialize<MessageConnectClientStep3Model>();
+            ConnectClientStep3Model data = model.Packet.Chunk.DeBytes<ConnectClientStep3Model>();
 
             if (serverType == ServerType.UDP)
             {
-                ConnectClientEventHandles.Instance.OnConnectClientStep3Message(new OnConnectClientStep3EventArg
+                ConnectClientEventHandles.Instance.OnConnectClientStep3(new OnConnectClientStep3EventArg
                 {
                     Data = data,
                     Packet = model,
@@ -137,7 +137,7 @@ namespace client.service.serverPlugins.connectClient
             }
             else if (serverType == ServerType.TCP)
             {
-                ConnectClientEventHandles.Instance.OnTcpConnectClientStep3Message(new OnConnectClientStep3EventArg
+                ConnectClientEventHandles.Instance.OnTcpConnectClientStep3(new OnConnectClientStep3EventArg
                 {
                     Data = data,
                     Packet = model,
@@ -152,11 +152,11 @@ namespace client.service.serverPlugins.connectClient
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
         {
-            MessageConnectClientStep4Model data = model.Packet.Chunk.ProtobufDeserialize<MessageConnectClientStep4Model>();
+            ConnectClientStep4Model data = model.Packet.Chunk.DeBytes<ConnectClientStep4Model>();
 
             if (serverType == ServerType.UDP)
             {
-                ConnectClientEventHandles.Instance.OnConnectClientStep4Message(new OnConnectClientStep4EventArg
+                ConnectClientEventHandles.Instance.OnConnectClientStep4(new OnConnectClientStep4EventArg
                 {
                     Data = data,
                     Packet = model,
@@ -164,7 +164,7 @@ namespace client.service.serverPlugins.connectClient
             }
             else if (serverType == ServerType.TCP)
             {
-                ConnectClientEventHandles.Instance.OnTcpConnectClientStep4Message(new OnConnectClientStep4EventArg
+                ConnectClientEventHandles.Instance.OnTcpConnectClientStep4(new OnConnectClientStep4EventArg
                 {
                     Data = data,
                     Packet = model,
@@ -180,7 +180,7 @@ namespace client.service.serverPlugins.connectClient
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
-            MessageConnectClientStep2StopModel model = data.Packet.Chunk.ProtobufDeserialize<MessageConnectClientStep2StopModel>();
+            ConnectClientStep2StopModel model = data.Packet.Chunk.DeBytes<ConnectClientStep2StopModel>();
 
             ConnectClientEventHandles.Instance.OnTcpConnectClientStep2StopMessage(model);
         }

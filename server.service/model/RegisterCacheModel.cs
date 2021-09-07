@@ -17,6 +17,7 @@ namespace server.service.model
         public long Id { get; set; } = 0;
 
         public string GroupId { get; set; } = string.Empty;
+        public string OriginGroupId { get; set; } = string.Empty;
 
         public long LastTime { get; set; }
 

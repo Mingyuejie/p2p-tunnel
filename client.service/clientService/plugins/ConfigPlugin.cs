@@ -1,5 +1,6 @@
 ﻿using client.service.config;
 using common;
+using common.extends;
 using System;
 
 namespace client.service.clientService.plugins
@@ -12,12 +13,11 @@ namespace client.service.clientService.plugins
     {
         public void Update(ClientServicePluginExcuteWrap arg)
         {
-            SettingModel model = Helper.DeJsonSerializer<SettingModel>(arg.Content);
+            SettingModel model = arg.Content.DeJson<SettingModel>();
 
             AppShareData.Instance.ClientConfig = model.ClientConfig;
             AppShareData.Instance.ServerConfig = model.ServerConfig;
             AppShareData.Instance.SaveConfig();
-            arg.Callback(arg, null);
         }
     }
 

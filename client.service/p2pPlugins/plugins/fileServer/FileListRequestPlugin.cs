@@ -8,8 +8,8 @@ namespace client.service.p2pPlugins.plugins
     {
         public void List(PluginExcuteWrap arg)
         {
-            var model = arg.Data.Data.Data.ProtobufDeserialize<P2PFileCmdListModel>();
-            arg.Callback(arg, FileServerHelper.Instance.GetRemoteFiles(model.Path).ProtobufSerialize());
+            var model = arg.Data.Data.Data.DeBytes<FileServerListModel>();
+            arg.Callback(arg, FileServerHelper.Instance.GetRemoteFiles(model.Path).ToBytes());
         }
     }
 }

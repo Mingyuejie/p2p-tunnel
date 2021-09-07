@@ -1,5 +1,6 @@
 ﻿using client.service.serverPlugins.clients;
 using common;
+using common.extends;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace client.service.clientService.plugins
     {
         public void WakeUp(ClientServicePluginExcuteWrap arg)
         {
-            WakeUpModel model = Helper.DeJsonSerializer<WakeUpModel>(arg.Content);
+            WakeUpModel model = arg.Content.DeJson<WakeUpModel>();
 
             if (model.ID > 0)
             {
@@ -30,8 +31,6 @@ namespace client.service.clientService.plugins
                 }
             }
             Send(model.Mac, model.Ip, model.Port);
-
-            arg.Callback(arg, null);
         }
 
 

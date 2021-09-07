@@ -10,7 +10,7 @@ namespace client.service.serverPlugins.register
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
         {
-            MessageRegisterResultModel res = model.Packet.Chunk.ProtobufDeserialize<MessageRegisterResultModel>();
+            RegisterResultModel res = model.Packet.Chunk.DeBytes<RegisterResultModel>();
 
             if (serverType == ServerType.UDP)
             {

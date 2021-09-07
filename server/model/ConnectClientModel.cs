@@ -6,9 +6,9 @@ namespace server.model
     /// 告诉服务器，我要连接哪个客户端
     /// </summary>
     [ProtoContract]
-    public class MessageConnectClientModel : IMessageModelBase
+    public class ConnectClientModel : IModelBase
     {
-        public MessageConnectClientModel() { }
+        public ConnectClientModel() { }
 
         /// <summary>
         /// 来源客户端id
@@ -33,9 +33,9 @@ namespace server.model
     /// 反向链接  A让B链接自己
     /// </summary>
     [ProtoContract]
-    public class MessageConnectClientReverseModel : IMessageModelBase
+    public class ConnectClientReverseModel : IModelBase
     {
-        public MessageConnectClientReverseModel() { }
+        public ConnectClientReverseModel() { }
 
         /// <summary>
         /// 来源客户端id
@@ -60,9 +60,9 @@ namespace server.model
     /// 第一步
     /// </summary>
     [ProtoContract]
-    public class MessageConnectClientStep1Model : IMessageModelBase
+    public class ConnectClientStep1Model : IModelBase
     {
-        public MessageConnectClientStep1Model() { }
+        public ConnectClientStep1Model() { }
 
         /// <summary>
         /// 来源客户端id
@@ -103,9 +103,9 @@ namespace server.model
     }
 
     [ProtoContract]
-    public class MessageConnectClientStep1AckModel : IMessageModelBase
+    public class ConnectClientStep1AckModel : IModelBase
     {
-        public MessageConnectClientStep1AckModel() { }
+        public ConnectClientStep1AckModel() { }
 
         /// <summary>
         /// 我的id
@@ -121,9 +121,9 @@ namespace server.model
     /// 第一步结果
     /// </summary>
     [ProtoContract]
-    public class MessageConnectClientStep1ResultModel : IMessageModelBase
+    public class ConnectClientStep1ResultModel : IModelBase
     {
-        public MessageConnectClientStep1ResultModel() { }
+        public ConnectClientStep1ResultModel() { }
 
         /// <summary>
         /// 我的id
@@ -150,9 +150,9 @@ namespace server.model
     /// 第二步
     /// </summary>
     [ProtoContract]
-    public class MessageConnectClientStep2Model : IMessageModelBase
+    public class ConnectClientStep2Model : IModelBase
     {
-        public MessageConnectClientStep2Model() { }
+        public ConnectClientStep2Model() { }
 
         /// <summary>
         /// 来源客户端id
@@ -197,9 +197,9 @@ namespace server.model
     /// 第二步重试
     /// </summary>
     [ProtoContract]
-    public class MessageConnectClientStep2RetryModel : IMessageModelBase
+    public class ConnectClientStep2RetryModel : IModelBase
     {
-        public MessageConnectClientStep2RetryModel() { }
+        public ConnectClientStep2RetryModel() { }
 
         /// <summary>
         /// 来源客户端id
@@ -239,9 +239,9 @@ namespace server.model
     /// 第二步失败
     /// </summary>
     [ProtoContract]
-    public class MessageConnectClientStep2FailModel : IMessageModelBase
+    public class ConnectClientStep2FailModel : IModelBase
     {
-        public MessageConnectClientStep2FailModel() { }
+        public ConnectClientStep2FailModel() { }
 
         /// <summary>
         /// 我的id
@@ -266,9 +266,9 @@ namespace server.model
     /// 第二步停止
     /// </summary>
     [ProtoContract]
-    public class MessageConnectClientStep2StopModel : IMessageModelBase
+    public class ConnectClientStep2StopModel : IModelBase
     {
-        public MessageConnectClientStep2StopModel() { }
+        public ConnectClientStep2StopModel() { }
 
         /// <summary>
         /// 我的id
@@ -294,7 +294,7 @@ namespace server.model
     /// 第三步
     /// </summary>
     [ProtoContract]
-    public class MessageConnectClientStep3Model : IMessageModelBase
+    public class ConnectClientStep3Model : IModelBase
     {
         [ProtoMember(1, IsRequired = true)]
         public MessageTypes MsgType { get; } = MessageTypes.P2P_STEP_3;
@@ -310,7 +310,7 @@ namespace server.model
     /// 第四步
     /// </summary>
     [ProtoContract]
-    public class MessageConnectClientStep4Model : IMessageModelBase
+    public class ConnectClientStep4Model : IModelBase
     {
         [ProtoMember(1, IsRequired = true)]
         public MessageTypes MsgType { get; } = MessageTypes.P2P_STEP_4;

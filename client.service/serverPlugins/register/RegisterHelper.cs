@@ -77,27 +77,28 @@ namespace client.service.serverPlugins.register
         {
             Task.Run(() =>
             {
-                Start((msg) =>
+                while (true)
                 {
-                    if (!string.IsNullOrWhiteSpace(msg))
+                    var result = Start().Result;
+                    if (string.IsNullOrWhiteSpace(result.ErrorMsg))
                     {
-                        Helper.SetTimeout(() =>
-                        {
-                            AutoReg();
-                        }, 2000);
+                        break;
                     }
-                });
+                    Thread.Sleep(2000);
+                }
             });
         }
 
-        public void Start(Action<string> callback = null)
+        public async Task<CommonTaskResponseModel<bool>> Start()
         {
+            var tcs = new TaskCompletionSource<CommonTaskResponseModel<bool>>();
+
             //不管三七二十一，先停止一波
             bool connecting = AppShareData.Instance.LocalInfo.IsConnecting;
             RegisterEventHandles.Instance.SendExitMessage();
             if (connecting)
             {
-                callback?.Invoke("正在注册！");
+                tcs.SetResult(new CommonTaskResponseModel<bool> { ErrorMsg = "正在注册！" });
             }
             else
             {
@@ -121,8 +122,9 @@ namespace client.service.serverPlugins.register
                         serverSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalInfo.LocalIp, AppShareData.Instance.LocalInfo.TcpPort));
                         AppShareData.Instance.TcpServer = serverSocket;
                         serverSocket.Connect(remoteEndPoint);
-                        TCPServer.Instance.BindReceive(serverSocket,(code)=> { 
-                            if(code == SocketError.ConnectionAborted)
+                        TCPServer.Instance.BindReceive(serverSocket, (code) =>
+                        {
+                            if (code == SocketError.ConnectionAborted)
                             {
                                 AutoReg();
                             }
@@ -159,25 +161,27 @@ namespace client.service.serverPlugins.register
                                 AppShareData.Instance.RemoteInfo.TcpPort = result.TcpPort;
 
                                 OnRegisterChange?.Invoke(this, true);
-                                callback?.Invoke(string.Empty);
+                                tcs.SetResult(new CommonTaskResponseModel<bool> { ErrorMsg = string.Empty });
                             },
                             FailCallback = (fail) =>
                             {
                                 AppShareData.Instance.LocalInfo.IsConnecting = false;
                                 OnRegisterChange?.Invoke(this, false);
-                                callback?.Invoke(fail.Msg);
+                                tcs.SetResult(new CommonTaskResponseModel<bool> { ErrorMsg = fail.Msg });
                             }
                         });
                     }
                     catch (Exception ex)
                     {
                         Logger.Instance.Error(ex.Message);
-                        callback?.Invoke(ex.Message);
+                        tcs.SetResult(new CommonTaskResponseModel<bool> { ErrorMsg = ex.Message });
                         AppShareData.Instance.LocalInfo.IsConnecting = false;
                         RegisterEventHandles.Instance.SendExitMessage();
                     }
                 });
             }
+
+            return await tcs.Task;
         }
 
         private void ResetLastTime()
@@ -189,36 +193,6 @@ namespace client.service.serverPlugins.register
         {
             long time = Helper.GetTimeStamp();
             return (lastTime > 0 && time - lastTime > 20000) || (lastTcpTime > 0 && time - lastTcpTime > 20000);
-        }
-
-        struct Tcpkeepalive
-        {
-            public uint onoff;
-            public uint keepalivetime;
-            public uint keepaliveinterval;
-        }
-
-        /// &lt;summary&gt;
-        /// 结构体转byte数组
-        /// &lt;/summary&gt;
-        /// &lt;param name="structObj"&gt;要转换的结构体   &lt;/param&gt;
-        /// &lt;returns&gt;转换后的byte数组&lt;/returns&gt;
-        public static byte[] StructToBytes(object structObj)
-        {
-            //得到结构体的大小
-            int size = Marshal.SizeOf(structObj);
-            //创建byte数组
-            byte[] bytes = new byte[size];
-            //分配结构体大小的内存空间
-            IntPtr structPtr = Marshal.AllocHGlobal(size);
-            //将结构体拷到分配好的内存空间
-            Marshal.StructureToPtr(structObj, structPtr, false);
-            //从内存空间拷到byte数组
-            Marshal.Copy(structPtr, bytes, 0, size);
-            //释放内存空间
-            Marshal.FreeHGlobal(structPtr);
-            //返回byte数组
-            return bytes;
         }
     }
 }

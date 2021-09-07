@@ -6,6 +6,7 @@ using client.service.serverPlugins.clients;
 using client.service.serverPlugins.register;
 using client.service.webServer;
 using common;
+using common.extends;
 using System;
 using System.IO;
 
@@ -15,7 +16,7 @@ namespace client.service
     {
         static void Main(string[] args)
         {
-            Config config = Helper.DeJsonSerializer<Config>(File.ReadAllText("appsettings.json"));
+            Config config = File.ReadAllText("appsettings.json").DeJson<Config>();
 
             //客户端信息
             AppShareData.Instance.ClientConfig = config.Client;

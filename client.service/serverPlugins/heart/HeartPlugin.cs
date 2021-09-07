@@ -13,7 +13,7 @@ namespace client.service.serverPlugins.heart
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
         {
-            MessageHeartModel data = model.Packet.Chunk.ProtobufDeserialize<MessageHeartModel>();
+            HeartModel data = model.Packet.Chunk.DeBytes<HeartModel>();
             HeartEventHandles.Instance.OnHeartMessage(new OnHeartEventArg
             {
                 Packet = model,

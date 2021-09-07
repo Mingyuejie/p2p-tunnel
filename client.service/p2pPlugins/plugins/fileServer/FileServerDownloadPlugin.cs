@@ -2,47 +2,47 @@
 
 namespace client.service.p2pPlugins.plugins.fileServer
 {
-    public class FileServerDownloadPlugin : IP2PFilePlugin
+    public class FileServerDownloadPlugin : IFileServerPlugin
     {
-        public P2PFileCmdTypes Type => P2PFileCmdTypes.DOWNLOAD;
+        public FileServerCmdTypes Type => FileServerCmdTypes.DOWNLOAD;
 
         public void Excute(TcpFileMessageEventArg arg)
         {
-            FileServerEventHandles.Instance.OnTcpFileDownloadMessage(new TcpFileDownloadMessageEventArg
+            FileServerEventHandles.Instance.OnTcpDownload(new  TcpEventArg<FileServerDownloadModel>  
             {
                 Packet = arg.Packet,
                 RawData = arg.Data,
-                Data = arg.Data.Data.ProtobufDeserialize<P2PFileCmdDownloadModel>()
+                Data = arg.Data.Data.DeBytes<FileServerDownloadModel>()
             });
         }
     }
 
-    public class FileServerFilePlugin : IP2PFilePlugin
+    public class FileServerFilePlugin : IFileServerPlugin
     {
-        public P2PFileCmdTypes Type => P2PFileCmdTypes.FILE;
+        public FileServerCmdTypes Type => FileServerCmdTypes.FILE;
 
         public void Excute(TcpFileMessageEventArg arg)
         {
-            FileServerEventHandles.Instance.OnTcpFileFileMessage(new TcpFileFileMessageEventArg
+            FileServerEventHandles.Instance.OnTcpFile(new  TcpEventArg<FileModel>
             {
                 Packet = arg.Packet,
                 RawData = arg.Data,
-                Data = arg.Data.Data.ProtobufDeserialize<P2PFileFileModel>()
+                Data = arg.Data.Data.DeBytes<FileModel>()
             });
         }
     }
 
-    public class FileServerProgressPlugin : IP2PFilePlugin
+    public class FileServerProgressPlugin : IFileServerPlugin
     {
-        public P2PFileCmdTypes Type => P2PFileCmdTypes.PROGRESS;
+        public FileServerCmdTypes Type => FileServerCmdTypes.PROGRESS;
 
         public void Excute(TcpFileMessageEventArg arg)
         {
-            FileServerEventHandles.Instance.OnTcpFileProgressMessage(new TcpFileProgressMessageEventArg
+            FileServerEventHandles.Instance.OnTcpProgress(new  TcpEventArg<FileServerProgressModel>
             {
                 Packet = arg.Packet,
                 RawData = arg.Data,
-                Data = arg.Data.Data.ProtobufDeserialize<P2PFileProgressModel>()
+                Data = arg.Data.Data.DeBytes<FileServerProgressModel>()
             });
         }
     }

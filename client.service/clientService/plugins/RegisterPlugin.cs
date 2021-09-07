@@ -7,35 +7,29 @@ namespace client.service.clientService.plugins
 {
     public class RegisterPlugin : IClientServicePlugin
     {
-        public void Start(ClientServicePluginExcuteWrap arg)
+        public async Task Start(ClientServicePluginExcuteWrap arg)
         {
-            RegisterHelper.Instance.Start((msg) =>
+            var result = await RegisterHelper.Instance.Start();
+            if (!string.IsNullOrWhiteSpace(result.ErrorMsg))
             {
-                if (!string.IsNullOrWhiteSpace(msg))
-                {
-
-                    arg.SetResultCode(-1, msg);
-                }
-                arg.Callback(arg, null);
-            });
-
+                arg.SetCode(-1, result.ErrorMsg);
+            }
         }
 
         public void Stop(ClientServicePluginExcuteWrap arg)
         {
             RegisterEventHandles.Instance.SendExitMessage();
-            arg.Callback(arg, null);
         }
 
-        public void Info(ClientServicePluginExcuteWrap arg)
+        public RegisterInfo Info(ClientServicePluginExcuteWrap arg)
         {
-            arg.Callback(arg, new RegisterInfo
+            return new RegisterInfo
             {
                 ClientConfig = AppShareData.Instance.ClientConfig,
                 ServerConfig = AppShareData.Instance.ServerConfig,
                 LocalInfo = AppShareData.Instance.LocalInfo,
                 RemoteInfo = AppShareData.Instance.RemoteInfo,
-            });
+            };
         }
     }
 

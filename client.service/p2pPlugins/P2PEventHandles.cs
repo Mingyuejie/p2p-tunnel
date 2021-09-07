@@ -10,32 +10,32 @@ using System.Net.Sockets;
 
 namespace client.service.p2pPlugins
 {
-    public class P2PMessageEventHandles
+    public class P2PEventHandles
     {
-        private static readonly Lazy<P2PMessageEventHandles> lazy = new(() => new P2PMessageEventHandles());
-        public static P2PMessageEventHandles Instance => lazy.Value;
-        private readonly Dictionary<P2PDataMessageTypes, IP2PMessagePlugin[]> plugins = null;
+        private static readonly Lazy<P2PEventHandles> lazy = new(() => new P2PEventHandles());
+        public static P2PEventHandles Instance => lazy.Value;
+        private readonly Dictionary<P2PDataTypes, IP2PPlugin[]> plugins = null;
 
-        private P2PMessageEventHandles()
+        private P2PEventHandles()
         {
             plugins = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(c => c.GetTypes())
-                .Where(c => c.GetInterfaces().Contains(typeof(IP2PMessagePlugin)))
-                .Select(c => (IP2PMessagePlugin)Activator.CreateInstance(c)).GroupBy(c => c.Type)
+                .Where(c => c.GetInterfaces().Contains(typeof(IP2PPlugin)))
+                .Select(c => (IP2PPlugin)Activator.CreateInstance(c)).GroupBy(c => c.Type)
                 .ToDictionary(g => g.Key, g => g.ToArray());
         }
 
         /// <summary>
         /// 收到P2P的UDP消息
         /// </summary>
-        public event EventHandler<OnP2PTcpMessageArg> OnMessageHandler;
-        public void OnMessage(OnP2PTcpMessageArg arg)
+        public event EventHandler<OnP2PTcpArg> OnP2PHandler;
+        public void OnP2P(OnP2PTcpArg arg)
         {
-            P2PDataMessageTypes type = (P2PDataMessageTypes)arg.Data.DataType;
+            P2PDataTypes type = (P2PDataTypes)arg.Data.DataType;
 
             if (plugins.ContainsKey(type))
             {
-                IP2PMessagePlugin[] plugin = plugins[type];
+                IP2PPlugin[] plugin = plugins[type];
                 if (plugin.Length > 0)
                 {
                     for (int i = 0; i < plugin.Length; i++)
@@ -45,20 +45,20 @@ namespace client.service.p2pPlugins
                 }
             }
 
-            OnMessageHandler?.Invoke(this, arg);
+            OnP2PHandler?.Invoke(this, arg);
         }
 
         /// <summary>
         /// 收到p2p的TCP消息
         /// </summary>
-        public event EventHandler<OnP2PTcpMessageArg> OnTcpMessageHandler;
-        public void OnTcpMessage(OnP2PTcpMessageArg arg)
+        public event EventHandler<OnP2PTcpArg> OnP2PTcpHandler;
+        public void OnP2PTcp(OnP2PTcpArg arg)
         {
-            P2PDataMessageTypes type = (P2PDataMessageTypes)arg.Data.DataType;
+            P2PDataTypes type = (P2PDataTypes)arg.Data.DataType;
 
             if (plugins.ContainsKey(type))
             {
-                IP2PMessagePlugin[] plugin = plugins[type];
+                IP2PPlugin[] plugin = plugins[type];
                 if (plugin.Length > 0)
                 {
                     for (int i = 0; i < plugin.Length; i++)
@@ -68,58 +68,58 @@ namespace client.service.p2pPlugins
                 }
             }
 
-            OnTcpMessageHandler?.Invoke(this, arg);
+            OnP2PTcpHandler?.Invoke(this, arg);
         }
 
         /// <summary>
         /// 发送p2p的TCP消息
         /// </summary>
-        public event EventHandler<SendP2PTcpMessageArg> OnSendTcpMessageHandler;
-        public void SendTcpMessage(SendP2PTcpMessageArg arg)
+        public event EventHandler<SendP2PTcpArg> OnSendTcpHandler;
+        public void SendTcp(SendP2PTcpArg arg)
         {
-            EventHandlers.Instance.SendTcpMessage(new SendTcpMessageEventArg
+            EventHandlers.Instance.SendTcp(new SendTcpEventArg
             {
                 Socket = arg.Socket,
-                Data = new MessageP2PModel
+                Data = new P2PModel
                 {
-                    Data = arg.Data.ProtobufSerialize(),
+                    Data = arg.Data.ToBytes(),
                     DataType = (byte)arg.Data.Type,
                     FormId = EventHandlers.Instance.ConnectId
                 }
             });
 
-            OnSendTcpMessageHandler?.Invoke(this, arg);
+            OnSendTcpHandler?.Invoke(this, arg);
         }
 
         /// <summary>
         /// 发送p2p的UDP消息
         /// </summary>
-        public event EventHandler<SendP2PMessageArg> OnSendMessageHandler;
-        public void SendMessage(SendP2PMessageArg arg)
+        public event EventHandler<SendP2PArg> OnSendHandler;
+        public void Send(SendP2PArg arg)
         {
-            EventHandlers.Instance.SendMessage(new SendMessageEventArg
+            EventHandlers.Instance.Send(new SendEventArg
             {
                 Address = arg.Address,
-                Data = new MessageP2PModel
+                Data = new P2PModel
                 {
-                    Data = arg.Data.ProtobufSerialize(),
+                    Data = arg.Data.ToBytes(),
                     DataType = (byte)arg.Data.Type,
                     FormId = EventHandlers.Instance.ConnectId
                 }
             });
-            OnSendMessageHandler?.Invoke(this, arg);
+            OnSendHandler?.Invoke(this, arg);
         }
 
     }
 
-    public class SendP2PMessageArg
+    public class SendP2PArg
     {
         public IPEndPoint Address { get; set; }
 
         public IP2PMessageBase Data { get; set; }
     }
 
-    public class SendP2PTcpMessageArg
+    public class SendP2PTcpArg
     {
         public Socket Socket { get; set; }
 
@@ -127,9 +127,9 @@ namespace client.service.p2pPlugins
     }
 
 
-    public class OnP2PTcpMessageArg
+    public class OnP2PTcpArg
     {
-        public MessageP2PModel Data { get; set; }
+        public P2PModel Data { get; set; }
         public PluginExcuteModel Packet { get; set; }
     }
 }

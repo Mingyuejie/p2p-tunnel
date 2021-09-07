@@ -216,11 +216,11 @@ namespace server
             servers.Clear();
         }
 
-        public void Send(MessageRecvQueueModel<IMessageModelBase> msg)
+        public void Send(RecvQueueModel<IModelBase> msg)
         {
             if (Running)
             {
-                TcpPacket tcpPackets = msg.Data.SerializeTcpMessage();
+                TcpPacket tcpPackets = msg.Data.ToTcpPacket();
                 if (msg.TcpCoket != null && msg.TcpCoket.Connected)
                 {
                     try

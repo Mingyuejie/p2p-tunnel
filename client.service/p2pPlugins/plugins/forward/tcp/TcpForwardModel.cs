@@ -28,7 +28,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
         public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.UNALIVE;
 
         [ProtoMember(7, IsRequired = true)]
-        P2PDataMessageTypes IP2PMessageBase.Type { get; } = P2PDataMessageTypes.TCP_FORWARD;
+        P2PDataTypes IP2PMessageBase.Type { get; } = P2PDataTypes.TCP_FORWARD;
     }
 
 

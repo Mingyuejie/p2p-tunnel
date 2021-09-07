@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:30:19
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-06 11:15:02
+ * @LastEditTime: 2021-09-07 15:40:53
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\Register.vue
@@ -137,6 +137,7 @@ import { sendRegisterMsg, getRegisterInfo } from '../apis/register'
 import { sendConfigMsg } from '../apis/config'
 
 import { ElMessage } from 'element-plus'
+import { watch } from '@vue/runtime-core';
 export default {
     setup () {
         const formDom = ref(null);
@@ -186,6 +187,9 @@ export default {
             state.model.ServerTcpPort = registerState.ServerConfig.TcpPort = json.ServerConfig.TcpPort;
         }).catch((msg) => {
             // ElMessage.error(msg);
+        });
+        watch(() => registerState.ClientConfig.GroupId, () => {
+            state.model.GroupId = registerState.ClientConfig.GroupId;
         });
 
         const handleSubmit = () => {

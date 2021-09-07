@@ -1,6 +1,7 @@
 ﻿using client.service.config;
 using client.service.serverPlugins.clients;
 using common;
+using common.extends;
 using System;
 using System.Collections.Concurrent;
 using System.Net;
@@ -53,7 +54,7 @@ namespace client.service
         /// </summary>
         public void SaveConfig()
         {
-            Config config = Helper.DeJsonSerializer<Config>(System.IO.File.ReadAllText("appsettings.json"));
+            Config config = System.IO.File.ReadAllText("appsettings.json").DeJson<Config>();
 
             config.Client = ClientConfig;
 
@@ -61,7 +62,7 @@ namespace client.service
 
             config.FileServer = FileServerConfig;
 
-            System.IO.File.WriteAllText("appsettings.json", Helper.JsonSerializer(config), System.Text.Encoding.UTF8);
+            System.IO.File.WriteAllText("appsettings.json", config.ToJson(), System.Text.Encoding.UTF8);
         }
     }
 

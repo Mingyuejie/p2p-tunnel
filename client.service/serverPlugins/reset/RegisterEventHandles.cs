@@ -32,10 +32,10 @@ namespace client.service.serverPlugins.reset
         /// <param name="toid"></param>
         public void SendResetMessage(Socket socket, long toid)
         {
-            EventHandlers.SendTcpMessage(new SendTcpMessageEventArg
+            EventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = socket,
-                Data = new MessageResetModel
+                Data = new ResetModel
                 {
                     Id = ConnectId,
                     ToId = toid

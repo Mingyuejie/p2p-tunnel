@@ -17,7 +17,7 @@ namespace server.service.plugins
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
-            MessageResetModel model = data.Packet.Chunk.ProtobufDeserialize<MessageResetModel>();
+            ResetModel model = data.Packet.Chunk.DeBytes<ResetModel>();
 
             //A已注册
             RegisterCacheModel source = ClientRegisterCache.Instance.Get(model.Id);
@@ -35,7 +35,7 @@ namespace server.service.plugins
 
                     if (serverType == ServerType.UDP)
                     {
-                        UDPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                        UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = null,
@@ -44,7 +44,7 @@ namespace server.service.plugins
                     }
                     else if (serverType == ServerType.TCP)
                     {
-                        TCPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                        TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,

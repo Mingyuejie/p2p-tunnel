@@ -193,8 +193,8 @@ namespace client.service.serverPlugins.clients
                     }
                     //新上线的
                     IEnumerable<long> upLines = e.Data.Clients.Select(c => c.Id).Except(ClientInfo.AllIds());
-                    IEnumerable<MessageClientsClientModel> upLineClients = e.Data.Clients.Where(c => upLines.Contains(c.Id));
-                    foreach (MessageClientsClientModel item in upLineClients)
+                    IEnumerable<ClientsClientModel> upLineClients = e.Data.Clients.Where(c => upLines.Contains(c.Id));
+                    foreach (ClientsClientModel item in upLineClients)
                     {
                         if (item.Id == AppShareData.Instance.RemoteInfo.ConnectId)
                         {
@@ -247,7 +247,7 @@ namespace client.service.serverPlugins.clients
             if (info.Connecting == false && info.Connected == false)
             {
                 info.Connecting = true;
-                ConnectClientEventHandles.Instance.SendConnectClientMessage(new ConnectParams
+                ConnectClientEventHandles.Instance.SendConnectClient(new ConnectParams
                 {
                     Id = info.Id,
                     Name = info.Name,
@@ -267,7 +267,7 @@ namespace client.service.serverPlugins.clients
             if (info.TcpConnecting == false && info.TcpConnected == false)
             {
                 info.TcpConnecting = true;
-                ConnectClientEventHandles.Instance.SendTcpConnectClientMessage(new ConnectTcpParams
+                ConnectClientEventHandles.Instance.SendTcpConnectClient(new ConnectTcpParams
                 {
                     Callback = (e) =>
                     {

@@ -6,9 +6,9 @@ namespace server.model
     /// 客户端注册数据
     /// </summary>
     [ProtoContract]
-    public class MessageRegisterModel : IMessageModelBase
+    public class RegisterModel : IModelBase
     {
-        public MessageRegisterModel() { }
+        public RegisterModel() { }
 
         /// <summary>
         /// 客户端ID  第一次 UDP注册得到，第二次TCP注册带过来
@@ -39,9 +39,9 @@ namespace server.model
     }
 
     [ProtoContract]
-    public class MessageRegisterResultModel : IMessageModelBase
+    public class RegisterResultModel : IModelBase
     {
-        public MessageRegisterResultModel() { }
+        public RegisterResultModel() { }
 
         [ProtoMember(1)]
         public int Code { get; set; } = 0;

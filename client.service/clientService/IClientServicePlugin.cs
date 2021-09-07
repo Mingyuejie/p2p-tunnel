@@ -28,18 +28,15 @@ namespace client.service.clientService
         public ConcurrentDictionary<Guid, IWebSocketConnection> Websockets { get; set; }
 
         public int Code { get; private set; } = 0;
-        public string Message { get; private set; } = string.Empty;
-        public void SetResultCode(int code, string msg = "")
+        public string ErrorMessage { get; private set; } = string.Empty;
+        public void SetCode(int code, string errormsg = "")
         {
             Code = code;
-            Message = msg;
+            ErrorMessage = errormsg;
         }
-        public void SetResultMessage(string msg)
+        public void SetErrorMessage(string msg)
         {
-            Message = msg;
+            ErrorMessage = msg;
         }
-
-        public Action<ClientServicePluginExcuteWrap, object> Callback { get; set; }
-
     }
 }

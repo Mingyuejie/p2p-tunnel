@@ -11,24 +11,24 @@ namespace server.service.plugins
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
-            MessageHeartModel model = data.Packet.Chunk.ProtobufDeserialize<MessageHeartModel>();
+            HeartModel model = data.Packet.Chunk.DeBytes<HeartModel>();
             ClientRegisterCache.Instance.UpdateTime(model.SourceId);
 
             if (serverType == ServerType.UDP)
             {
-                UDPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
                 {
                     Address = data.SourcePoint,
-                    Data = new MessageHeartModel { TargetId = model.SourceId, SourceId = -1 }
+                    Data = new HeartModel { TargetId = model.SourceId, SourceId = -1 }
                 });
             }
             else if (serverType == ServerType.TCP)
             {
-                TCPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
                 {
                     Address = data.SourcePoint,
                     TcpCoket = data.TcpSocket,
-                    Data = new MessageHeartModel { TargetId = model.SourceId, SourceId = -1 }
+                    Data = new HeartModel { TargetId = model.SourceId, SourceId = -1 }
                 });
             }
         }

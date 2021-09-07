@@ -30,7 +30,7 @@ namespace client.service.serverPlugins.clients
     public class OnServerSendClientsEventArg : EventArgs
     {
         public PluginExcuteModel Packet { get; set; }
-        public MessageClientsModel Data { get; set; }
+        public ClientsModel Data { get; set; }
     }
 
 }

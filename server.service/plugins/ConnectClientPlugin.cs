@@ -15,7 +15,7 @@ namespace server.service.plugins
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
-            MessageConnectClientModel model = data.Packet.Chunk.ProtobufDeserialize<MessageConnectClientModel>();
+            ConnectClientModel model = data.Packet.Chunk.DeBytes<ConnectClientModel>();
 
             //A已注册
             RegisterCacheModel source = ClientRegisterCache.Instance.Get(model.Id);
@@ -34,11 +34,11 @@ namespace server.service.plugins
                     if (serverType == ServerType.UDP)
                     {
                         //向B发送链接请求，告诉A谁要连接你，你给它回个消息
-                        UDPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                        UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
-                            Data = new MessageConnectClientStep1Model
+                            Data = new ConnectClientStep1Model
                             {
                                 Ip = source.Address.Address.ToString(),
                                 Id = source.Id,
@@ -53,11 +53,11 @@ namespace server.service.plugins
                     else if (serverType == ServerType.TCP)
                     {
                         //向A发送B的信息，等待A准备好
-                        TCPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                        TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = source.Address,
                             TcpCoket = source.TcpSocket,
-                            Data = new MessageConnectClientStep1Model
+                            Data = new ConnectClientStep1Model
                             {
                                 Ip = target.Address.Address.ToString(),
                                 Id = target.Id,
@@ -84,7 +84,7 @@ namespace server.service.plugins
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
-            MessageConnectClientReverseModel model = data.Packet.Chunk.ProtobufDeserialize<MessageConnectClientReverseModel>();
+            ConnectClientReverseModel model = data.Packet.Chunk.DeBytes<ConnectClientReverseModel>();
 
             //A已注册
             RegisterCacheModel source = ClientRegisterCache.Instance.Get(model.Id);
@@ -102,7 +102,7 @@ namespace server.service.plugins
 
                     if (serverType == ServerType.UDP)
                     {
-                        UDPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                        UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
@@ -111,7 +111,7 @@ namespace server.service.plugins
                     }
                     else if (serverType == ServerType.TCP)
                     {
-                        TCPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                        TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
@@ -131,7 +131,7 @@ namespace server.service.plugins
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
-            MessageConnectClientStep1ResultModel model = data.Packet.Chunk.ProtobufDeserialize<MessageConnectClientStep1ResultModel>();
+            ConnectClientStep1ResultModel model = data.Packet.Chunk.DeBytes<ConnectClientStep1ResultModel>();
 
             //已注册
             RegisterCacheModel source = ClientRegisterCache.Instance.Get(model.Id);
@@ -149,11 +149,11 @@ namespace server.service.plugins
                     if (serverType == ServerType.UDP)
                     {
                         //向A发送信息，B已经准备好了，你去连接一下吧
-                        UDPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                        UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
-                            Data = new MessageConnectClientStep2Model
+                            Data = new ConnectClientStep2Model
                             {
                                 Ip = source.Address.Address.ToString(),
                                 Id = source.Id,
@@ -169,11 +169,11 @@ namespace server.service.plugins
                     else if (serverType == ServerType.TCP)
                     {
                         //向B发送信息，A已经准备好了，你去连接一下吧
-                        TCPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                        TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
-                            Data = new MessageConnectClientStep2Model
+                            Data = new ConnectClientStep2Model
                             {
                                 Ip = source.Address.Address.ToString(),
                                 Id = source.Id,
@@ -197,7 +197,7 @@ namespace server.service.plugins
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
-            MessageConnectClientStep2RetryModel model = data.Packet.Chunk.ProtobufDeserialize<MessageConnectClientStep2RetryModel>();
+            ConnectClientStep2RetryModel model = data.Packet.Chunk.DeBytes<ConnectClientStep2RetryModel>();
 
             //已注册
             RegisterCacheModel source = ClientRegisterCache.Instance.Get(model.Id);
@@ -213,11 +213,11 @@ namespace server.service.plugins
                     }
                     if (serverType == ServerType.UDP)
                     {
-                        UDPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                        UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
-                            Data = new MessageConnectClientStep2RetryModel
+                            Data = new ConnectClientStep2RetryModel
                             {
                                 Id = model.ToId,
                                 ToId = model.Id,
@@ -231,11 +231,11 @@ namespace server.service.plugins
                     }
                     else if (serverType == ServerType.TCP)
                     {
-                        TCPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                        TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
-                            Data = new MessageConnectClientStep2RetryModel
+                            Data = new ConnectClientStep2RetryModel
                             {
                                 Id = model.ToId,
                                 ToId = model.Id,
@@ -258,7 +258,7 @@ namespace server.service.plugins
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
-            MessageConnectClientStep2FailModel model = data.Packet.Chunk.ProtobufDeserialize<MessageConnectClientStep2FailModel>();
+            ConnectClientStep2FailModel model = data.Packet.Chunk.DeBytes<ConnectClientStep2FailModel>();
 
             //已注册
             RegisterCacheModel source = ClientRegisterCache.Instance.Get(model.Id);
@@ -274,11 +274,11 @@ namespace server.service.plugins
                     }
                     if (serverType == ServerType.UDP)
                     {
-                        UDPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                        UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
-                            Data = new MessageConnectClientStep2FailModel
+                            Data = new ConnectClientStep2FailModel
                             {
                                 Id = model.Id,
                                 ToId = model.ToId
@@ -287,11 +287,11 @@ namespace server.service.plugins
                     }
                     else if (serverType == ServerType.TCP)
                     {
-                        TCPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                        TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
-                            Data = new MessageConnectClientStep2FailModel
+                            Data = new ConnectClientStep2FailModel
                             {
                                 Id = model.Id,
                                 ToId = model.ToId
@@ -309,7 +309,7 @@ namespace server.service.plugins
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
-            MessageConnectClientStep2StopModel model = data.Packet.Chunk.ProtobufDeserialize<MessageConnectClientStep2StopModel>();
+            ConnectClientStep2StopModel model = data.Packet.Chunk.DeBytes<ConnectClientStep2StopModel>();
 
             //已注册
             RegisterCacheModel source = ClientRegisterCache.Instance.Get(model.Id);
@@ -325,11 +325,11 @@ namespace server.service.plugins
                     }
                     if (serverType == ServerType.UDP)
                     {
-                        UDPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                        UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
-                            Data = new MessageConnectClientStep2StopModel
+                            Data = new ConnectClientStep2StopModel
                             {
                                 Id = model.Id,
                                 ToId = model.ToId
@@ -338,11 +338,11 @@ namespace server.service.plugins
                     }
                     else if (serverType == ServerType.TCP)
                     {
-                        TCPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                        TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
-                            Data = new MessageConnectClientStep2StopModel
+                            Data = new ConnectClientStep2StopModel
                             {
                                 Id = model.Id,
                                 ToId = model.ToId

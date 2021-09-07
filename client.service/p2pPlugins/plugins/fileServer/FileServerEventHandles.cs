@@ -16,24 +16,24 @@ namespace client.service.p2pPlugins.plugins.fileServer
     {
         private static readonly Lazy<FileServerEventHandles> lazy = new Lazy<FileServerEventHandles>(() => new FileServerEventHandles());
         public static FileServerEventHandles Instance => lazy.Value;
-        private readonly Dictionary<P2PFileCmdTypes, IP2PFilePlugin[]> plugins = null;
+        private readonly Dictionary<FileServerCmdTypes, IFileServerPlugin[]> plugins = null;
 
 
         private FileServerEventHandles()
         {
             plugins = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(c => c.GetTypes())
-                .Where(c => c.GetInterfaces().Contains(typeof(IP2PFilePlugin)))
-                .Select(c => (IP2PFilePlugin)Activator.CreateInstance(c)).GroupBy(c => c.Type)
+                .Where(c => c.GetInterfaces().Contains(typeof(IFileServerPlugin)))
+                .Select(c => (IFileServerPlugin)Activator.CreateInstance(c)).GroupBy(c => c.Type)
                 .ToDictionary(g => g.Key, g => g.ToArray());
         }
 
-        public event EventHandler<TcpFileMessageEventArg> OnTcpFileMessageHandler;
-        public void OnTcpFileMessage(TcpFileMessageEventArg arg)
+        public event EventHandler<TcpFileMessageEventArg> OnTcpFileServerHandler;
+        public void OnTcpFileServer(TcpFileMessageEventArg arg)
         {
             if (plugins.ContainsKey(arg.Data.CmdType))
             {
-                IP2PFilePlugin[] plugin = plugins[arg.Data.CmdType];
+                IFileServerPlugin[] plugin = plugins[arg.Data.CmdType];
                 if (plugin.Length > 0)
                 {
                     for (int i = 0; i < plugin.Length; i++)
@@ -43,32 +43,32 @@ namespace client.service.p2pPlugins.plugins.fileServer
                 }
             }
 
-            OnTcpFileMessageHandler?.Invoke(this, arg);
+            OnTcpFileServerHandler?.Invoke(this, arg);
         }
 
         /// <summary>
         /// 文件进度
         /// </summary>
-        public event EventHandler<TcpFileProgressMessageEventArg> OnTcpFileProgressMessageHandler;
-        public void OnTcpFileProgressMessage(TcpFileProgressMessageEventArg arg)
+        public event EventHandler<TcpEventArg<FileServerProgressModel>> OnTcpProgressHandler;
+        public void OnTcpProgress(TcpEventArg<FileServerProgressModel> arg)
         {
-            OnTcpFileProgressMessageHandler?.Invoke(this, arg);
+            OnTcpProgressHandler?.Invoke(this, arg);
         }
         /// <summary>
         /// 发送文件进度
         /// </summary>
         /// <param name="arg"></param>
-        public void SendTcpFileProgressMessage(SendTcpFileMessageEventArg<P2PFileProgressModel> arg)
+        public void SendTcpProgress(SendTcpEventArg<FileServerProgressModel> arg)
         {
-            P2PMessageEventHandles.Instance.SendTcpMessage(new SendP2PTcpMessageArg
+            P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
             {
                 Socket = arg.Socket,
-                Data = new P2PFileModel
+                Data = new FileServerModel
                 {
-                    CmdType = P2PFileCmdTypes.PROGRESS,
+                    CmdType = FileServerCmdTypes.PROGRESS,
                     FormId = EventHandlers.Instance.ConnectId,
                     ToId = arg.ToId,
-                    Data = arg.Data.ProtobufSerialize()
+                    Data = arg.Data.ToBytes()
                 }
             });
         }
@@ -76,29 +76,29 @@ namespace client.service.p2pPlugins.plugins.fileServer
         /// <summary>
         /// 收到文件
         /// </summary>
-        public event EventHandler<TcpFileFileMessageEventArg> OnTcpFileFileMessageHandler;
-        public void OnTcpFileFileMessage(TcpFileFileMessageEventArg arg)
+        public event EventHandler<TcpEventArg<FileModel>> OnTcpFileHandler;
+        public void OnTcpFile(TcpEventArg<FileModel> arg)
         {
-            OnTcpFileFileMessageHandler?.Invoke(this, arg);
+            OnTcpFileHandler?.Invoke(this, arg);
         }
 
         /// <summary>
         /// 上传文件
         /// </summary>
         /// <param name="arg"></param>
-        public void SendTcpFileUploadMessage(SendTcpFileMessageEventArg<string> arg,System.IO.FileInfo file)
+        public void SendTcpUpload(SendTcpEventArg<string> arg, System.IO.FileInfo file)
         {
-            SendTcpFileFileMessage(new SendTcpFileMessageEventArg<P2PFileFileModel>
+            SendTcpFile(new SendTcpEventArg<FileModel>
             {
                 ToId = arg.ToId,
                 Socket = arg.Socket,
-                Data = new P2PFileFileModel
+                Data = new FileModel
                 {
                     Name = file.Name,
                     Size = file.Length,
                     Md5 = arg.Data,
                     Data = Array.Empty<byte>(),
-                    FileType = P2PFileCmdTypes.UPLOAD
+                    FileType = FileServerCmdTypes.UPLOAD
                 }
             }, file);
         }
@@ -108,17 +108,17 @@ namespace client.service.p2pPlugins.plugins.fileServer
         /// 请求下载
         /// </summary>
         /// <param name="arg"></param>
-        public void SendTcpFileCmdDownloadMessage(SendTcpFileMessageEventArg<P2PFileCmdDownloadModel> arg)
+        public void SendTcpDownload(SendTcpEventArg<FileServerDownloadModel> arg)
         {
-            P2PMessageEventHandles.Instance.SendTcpMessage(new SendP2PTcpMessageArg
+            P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
             {
                 Socket = arg.Socket,
-                Data = new P2PFileModel
+                Data = new FileServerModel
                 {
-                    CmdType = P2PFileCmdTypes.DOWNLOAD,
+                    CmdType = FileServerCmdTypes.DOWNLOAD,
                     FormId = EventHandlers.Instance.ConnectId,
                     ToId = arg.ToId,
-                    Data = arg.Data.ProtobufSerialize()
+                    Data = arg.Data.ToBytes()
                 }
             });
         }
@@ -128,58 +128,62 @@ namespace client.service.p2pPlugins.plugins.fileServer
         /// </summary>
         /// <param name="arg"></param>
         /// <param name="file"></param>
-        public void SendTcpFileDownloadMessage(SendTcpFileMessageEventArg<string> arg, System.IO.FileInfo file)
+        public void SendTcpDownload(SendTcpEventArg<string> arg, System.IO.FileInfo file)
         {
-            SendTcpFileFileMessage(new SendTcpFileMessageEventArg<P2PFileFileModel>
+            SendTcpFile(new SendTcpEventArg<FileModel>
             {
                 ToId = arg.ToId,
                 Socket = arg.Socket,
-                Data = new P2PFileFileModel
+                Data = new FileModel
                 {
                     Name = file.Name,
                     Size = file.Length,
                     Md5 = arg.Data,
                     Data = Array.Empty<byte>(),
-                    FileType = P2PFileCmdTypes.DOWNLOAD
+                    FileType = FileServerCmdTypes.DOWNLOAD
                 }
             }, file);
         }
-        public event EventHandler<TcpFileDownloadMessageEventArg> OnTcpFileDownloadMessageHandler;
+        public event EventHandler<TcpEventArg<FileServerDownloadModel>> OnTcpDownloadHandler;
         /// <summary>
         /// 有人请求下载
         /// </summary>
         /// <param name="arg"></param>
-        public void OnTcpFileDownloadMessage(TcpFileDownloadMessageEventArg arg)
+        public void OnTcpDownload(TcpEventArg<FileServerDownloadModel> arg)
         {
-            OnTcpFileDownloadMessageHandler?.Invoke(this, arg);
+            OnTcpDownloadHandler?.Invoke(this, arg);
         }
         /// <summary>
         /// 请求文件列表
         /// </summary>
         /// <param name="arg"></param>
-        public void RequestFileListMessage(SendTcpFileMessageEventArg<P2PFileCmdListModel> arg, Action<FileInfo[]> callback, Action<string> failCallback)
+        public async Task<CommonTaskResponseModel<FileInfo[]>> RequestTcpFileList(SendTcpEventArg<FileServerListModel> arg)
         {
-            RequestEventHandlers.Instance.SendTcpRequestMsessage(arg.Socket, "filerequest/list", arg.Data, (msg) =>
+            var result = await RequestEventHandlers.Instance.TcpRequest(new TcpRequestParam
             {
-                callback(msg.Data.ProtobufDeserialize<FileInfo[]>());
-            }, (msg) =>
-            {
-                failCallback(msg.Msg);
+                Socket = arg.Socket,
+                Path = "filerequest/list",
+                Data = arg.Data
             });
+            if (result.Code == MessageRequestResponseCodes.OK)
+            {
+                return new CommonTaskResponseModel<FileInfo[]> { Data = result.Data.DeBytes<FileInfo[]>() };
+            }
+            return new CommonTaskResponseModel<FileInfo[]> { ErrorMsg = result.ErrorMsg };
         }
 
-        public event EventHandler<SendTcpFileMessageEventArg<P2PFileFileModel>> OnSendTcpFileFileMessageHandler;
+        public event EventHandler<SendTcpEventArg<FileModel>> OnSendTcpFileHandler;
         /// <summary>
         /// 发送文件
         /// </summary>
         /// <param name="arg"></param>
         /// <param name="file"></param>
-        public void SendTcpFileFileMessage(SendTcpFileMessageEventArg<P2PFileFileModel> arg, System.IO.FileInfo file = null)
+        public void SendTcpFile(SendTcpEventArg<FileModel> arg, System.IO.FileInfo file = null)
         {
             if (file == null)
             {
-                _SendTcpChatFileMessage(arg);
-                OnSendTcpFileFileMessageHandler?.Invoke(this, arg);
+                _SendTcpFile(arg);
+                OnSendTcpFileHandler?.Invoke(this, arg);
             }
             else
             {
@@ -200,70 +204,55 @@ namespace client.service.p2pPlugins.plugins.fileServer
                             fs.Read(data, 0, packSize);
 
                             arg.Data.Data = data;
-                            _SendTcpChatFileMessage(arg);
+                            _SendTcpFile(arg);
                         }
                         if (lastPackSize > 0)
                         {
                             byte[] data = new byte[lastPackSize];
                             fs.Read(data, 0, (int)lastPackSize);
                             arg.Data.Data = data;
-                            _SendTcpChatFileMessage(arg);
+                            _SendTcpFile(arg);
                         }
                     }
                     catch (Exception ex)
                     {
                         Logger.Instance.Info(ex + "");
                     }
-                    OnSendTcpFileFileMessageHandler?.Invoke(this, arg);
+                    OnSendTcpFileHandler?.Invoke(this, arg);
                 });
             }
         }
-        private void _SendTcpChatFileMessage(SendTcpFileMessageEventArg<P2PFileFileModel> arg)
+        private void _SendTcpFile(SendTcpEventArg<FileModel> arg)
         {
-            P2PMessageEventHandles.Instance.SendTcpMessage(new SendP2PTcpMessageArg
+            P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
             {
                 Socket = arg.Socket,
-                Data = new P2PFileModel
+                Data = new FileServerModel
                 {
                     CmdType = arg.Data.CmdType,
                     FormId = EventHandlers.Instance.ConnectId,
                     ToId = arg.ToId,
-                    Data = arg.Data.ProtobufSerialize()
+                    Data = arg.Data.ToBytes()
                 }
             });
         }
 
-
     }
 
-    public class TcpFileDownloadMessageEventArg : EventArgs
+    public class TcpEventArg<T> : EventArgs
     {
         public PluginExcuteModel Packet { get; set; }
-        public P2PFileModel RawData { get; set; }
-        public P2PFileCmdDownloadModel Data { get; set; }
-    }
-
-    public class TcpFileFileMessageEventArg : EventArgs
-    {
-        public PluginExcuteModel Packet { get; set; }
-        public P2PFileModel RawData { get; set; }
-        public P2PFileFileModel Data { get; set; }
-    }
-
-    public class TcpFileProgressMessageEventArg : EventArgs
-    {
-        public PluginExcuteModel Packet { get; set; }
-        public P2PFileModel RawData { get; set; }
-        public P2PFileProgressModel Data { get; set; }
+        public FileServerModel RawData { get; set; }
+        public T Data { get; set; }
     }
 
     public class TcpFileMessageEventArg : EventArgs
     {
         public PluginExcuteModel Packet { get; set; }
-        public P2PFileModel Data { get; set; }
+        public FileServerModel Data { get; set; }
     }
 
-    public class SendTcpFileMessageEventArg<T> : EventArgs
+    public class SendTcpEventArg<T> : EventArgs
     {
         public Socket Socket { get; set; }
         public T Data { get; set; }

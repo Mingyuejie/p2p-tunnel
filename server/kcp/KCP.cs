@@ -208,7 +208,7 @@ namespace server.kcp
         // kcp members.
         UInt32 conv; UInt32 mtu; UInt32 mss; UInt32 state;
         UInt32 snd_una; UInt32 snd_nxt; UInt32 rcv_nxt;
-        UInt32 ts_recent; UInt32 ts_lastack; UInt32 ssthresh;
+        UInt32 ssthresh;
         UInt32 rx_rttval; UInt32 rx_srtt;
         UInt32 rx_rto; UInt32 rx_minrto;
         UInt32 snd_wnd; UInt32 rcv_wnd; UInt32 rmt_wnd; UInt32 cwnd; UInt32 probe;

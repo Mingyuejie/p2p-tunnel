@@ -32,7 +32,7 @@ namespace client.service.serverPlugins.register
         /// <summary>
         /// 发送退出消息
         /// </summary>
-        public event EventHandler<SendMessageEventArg> OnSendExitMessageHandler;
+        public event EventHandler<SendEventArg> OnSendExitMessageHandler;
         /// <summary>
         /// 发送退出消息
         /// </summary>
@@ -41,10 +41,10 @@ namespace client.service.serverPlugins.register
         {
             requestCache = null;
 
-            SendMessageEventArg arg = new()
+            SendEventArg arg = new()
             {
                 Address = UdpServer,
-                Data = new MessageExitModel
+                Data = new ExitModel
                 {
                     Id = ConnectId,
                 }
@@ -52,7 +52,7 @@ namespace client.service.serverPlugins.register
 
             if (UdpServer != null)
             {
-                UDPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
                 {
                     Address = arg.Address,
                     Data = arg.Data
@@ -90,10 +90,10 @@ namespace client.service.serverPlugins.register
         public void SendRegisterMessage(RegisterParams param)
         {
             Helper.CloseTimeout(requestCacheId);
-            EventHandlers.SendMessage(new SendMessageEventArg
+            EventHandlers.Send(new SendEventArg
             {
                 Address = UdpServer,
-                Data = new MessageRegisterModel
+                Data = new RegisterModel
                 {
                     Name = param.ClientName,
                     GroupId = param.GroupId,
@@ -132,10 +132,10 @@ namespace client.service.serverPlugins.register
         /// <param name="arg"></param>
         public void SendTcpRegisterMessage(long id, string clientName, string groupId = "", string mac = "", int localport = 0)
         {
-            EventHandlers.SendTcpMessage(new SendTcpMessageEventArg
+            EventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = TcpServer,
-                Data = new MessageRegisterModel
+                Data = new RegisterModel
                 {
                     Id = id,
                     Name = clientName,
@@ -244,7 +244,7 @@ namespace client.service.serverPlugins.register
     public class OnRegisterResultEventArg : EventArgs
     {
         public PluginExcuteModel Packet { get; set; }
-        public MessageRegisterResultModel Data { get; set; }
+        public RegisterResultModel Data { get; set; }
     }
 
     public class RegisterEventArg : EventArgs
@@ -273,7 +273,7 @@ namespace client.service.serverPlugins.register
         public int Timeout { get; set; } = 15 * 1000;
         public int LocalTcpPort { get; set; } = 0;
 
-        public Action<MessageRegisterResultModel> Callback { get; set; } = null;
+        public Action<RegisterResultModel> Callback { get; set; } = null;
         public Action<RegisterMessageFailModel> FailCallback { get; set; } = null;
     }
 
@@ -281,7 +281,7 @@ namespace client.service.serverPlugins.register
     {
         public long Time { get; set; } = 0;
         public int Timeout { get; set; } = 15 * 60 * 1000;
-        public Action<MessageRegisterResultModel> Callback { get; set; } = null;
+        public Action<RegisterResultModel> Callback { get; set; } = null;
         public Action<RegisterMessageFailModel> FailCallback { get; set; } = null;
     }
 

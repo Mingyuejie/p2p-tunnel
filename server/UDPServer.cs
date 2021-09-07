@@ -83,7 +83,7 @@ namespace server
             }
         }
 
-        public void Send(MessageRecvQueueModel<IMessageModelBase> msg)
+        public void Send(RecvQueueModel<IModelBase> msg)
         {
             if (UdpcRecv == null)
             {
@@ -91,7 +91,7 @@ namespace server
             }
 
             _ = Interlocked.Increment(ref sequence);
-            IEnumerable<UdpPacket> udpPackets = msg.Data.SerializeMessage(sequence);
+            IEnumerable<UdpPacket> udpPackets = msg.Data.ToUdpPackets(sequence);
 
             try
             {

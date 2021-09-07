@@ -1,5 +1,6 @@
 ﻿using common;
 using common.cache;
+using common.extends;
 using server.model;
 using server.service.model;
 using System;
@@ -7,6 +8,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Threading.Tasks;
 
 namespace server.test
 {
@@ -14,44 +17,53 @@ namespace server.test
     {
         static void Main(string[] args)
         {
-            Config config = Helper.DeJsonSerializer<Config>(File.ReadAllText("appsettings.json"));
+            Config config = File.ReadAllText("appsettings.json").DeJson<Config>();
 
             UDPServer.Instance.Start(config.Udp);
             TCPServer.Instance.Start(config.Tcp);
-            Helper.SetInterval(() =>
+            Task.Run(() =>
             {
-                try
+                while (true)
                 {
-                    List<RegisterCacheModel> clients = ClientRegisterCache.Instance.GetAll();
-                    foreach (RegisterCacheModel client in clients)
+                    try
                     {
-                        IEnumerable<MessageClientsClientModel> clientResults = clients
-                        .Where(c => c.GroupId == client.GroupId)
-                        .Select(c => new MessageClientsClientModel
+                        //按分组id分组
+                        var clients = ClientRegisterCache.Instance.GetAll()
+                        .GroupBy(c => c.GroupId)
+                        .Select(c => new KeyValuePair<string, IEnumerable<ClientsClientModel>>(c.Key, c.Select(c => new ClientsClientModel
                         {
                             Address = c.Address.Address.ToString(),
                             Id = c.Id,
                             Name = c.Name,
                             Port = c.Address.Port,
                             TcpPort = c.TcpPort
-                        });
+                        }).ToList()));
 
-                        UDPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                        //每个分组
+                        foreach (var group in clients)
                         {
-                            Address = client.Address,
-                            Data = new MessageClientsModel
+                            //分组里的每个客户端
+                            foreach (var client in group.Value)
                             {
-                                Clients = clientResults
+                                UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                                {
+                                    Address = IPEndPoint.Parse(client.Address),
+                                    Data = new ClientsModel
+                                    {
+                                        Clients = group.Value
+                                    }
+                                });
                             }
-                        });
+                        }
                     }
-                }
-                catch (Exception e)
-                {
-                    Logger.Instance.Info($"发送广播客户端消息错误!{e.Message}");
-                }
+                    catch (Exception e)
+                    {
+                        Logger.Instance.Info($"发送广播客户端消息错误!{e.Message}");
+                    }
 
-            }, 1000);
+                    System.Threading.Thread.Sleep(1000);
+                }
+            });
 
             Logger.Instance.OnLogger += (sender, model) =>
             {

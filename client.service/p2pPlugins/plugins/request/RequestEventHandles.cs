@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -56,10 +55,10 @@ namespace client.service.p2pPlugins.plugins.request
                                   _ = requestCache.TryRemove(item.Id, out TcpRequestMessageCache cache);
                                   if (cache != null)
                                   {
-                                      cache.FailCallback(new TcpRequestMessageFailModel
+                                      cache.Tcs?.SetResult(new RequestModel
                                       {
-                                          Type = TcpRequestMessageFailType.TIMEOUT,
-                                          Msg = "请求超时"
+                                          Code = MessageRequestResponseCodes.FAIL,
+                                          ErrorMsg = "请求超时"
                                       });
                                   }
                               }
@@ -71,20 +70,17 @@ namespace client.service.p2pPlugins.plugins.request
               }, TaskCreationOptions.LongRunning);
         }
 
-        #region 请求
-
-
         //收到请求
-        public void OnTcpRequestMsessage(OnTcpRequestMsessageEventArg arg)
+        public void OnTcpRequest(OnTcpRequestEventArg arg)
         {
             string path = arg.Data.Path.ToLower();
             if (arg.Data.RequestType == RequestTypes.RESULT)
             {
-                OnTcpRequestMsessageResult(arg);
+                OnTcpRequestResponse(arg);
             }
             else if (plugins.ContainsKey(path))
             {
-               
+
                 var plugin = plugins[path];
                 try
                 {
@@ -95,14 +91,14 @@ namespace client.service.p2pPlugins.plugins.request
                         {
                             if (returnResult != null && returnResult.Length > 0)
                             {
-                                P2PMessageEventHandles.Instance.SendTcpMessage(new SendP2PTcpMessageArg
+                                P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
                                 {
                                     Socket = param.Data.Packet.TcpSocket,
-                                    Data = new MessageRequestModel
+                                    Data = new RequestModel
                                     {
                                         Data = returnResult,
                                         RequestId = param.Data.Data.RequestId,
-                                        Code = MessageRequestResultCodes.OK,
+                                        Code = MessageRequestResponseCodes.OK,
                                         Path = param.Data.Data.Path,
                                         RequestType = RequestTypes.RESULT
                                     }
@@ -115,14 +111,14 @@ namespace client.service.p2pPlugins.plugins.request
                 catch (Exception ex)
                 {
                     Logger.Instance.Info(ex + "");
-                    P2PMessageEventHandles.Instance.SendTcpMessage(new SendP2PTcpMessageArg
+                    P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
                     {
                         Socket = arg.Packet.TcpSocket,
-                        Data = new MessageRequestModel
+                        Data = new RequestModel
                         {
-                            Data = Encoding.UTF8.GetBytes(ex.Message),
+                            ErrorMsg = ex.Message,
                             RequestId = arg.Data.RequestId,
-                            Code = MessageRequestResultCodes.FAIL,
+                            Code = MessageRequestResponseCodes.FAIL,
                             Path = arg.Data.Path,
                             RequestType = RequestTypes.RESULT
                         }
@@ -131,105 +127,84 @@ namespace client.service.p2pPlugins.plugins.request
             }
             else
             {
-                P2PMessageEventHandles.Instance.SendTcpMessage(new SendP2PTcpMessageArg
+                P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
                 {
                     Socket = arg.Packet.TcpSocket,
-                    Data = new MessageRequestModel
+                    Data = new RequestModel
                     {
-                        Data = "没有相应的插件执行你的请求".ProtobufSerialize(),
+                        ErrorMsg = "没有相应的插件执行你的请求",
                         RequestId = arg.Data.RequestId,
                         Path = arg.Data.Path,
-                        Code = MessageRequestResultCodes.NOTFOUND,
+                        Code = MessageRequestResponseCodes.NOTFOUND,
                         RequestType = RequestTypes.RESULT
                     }
                 });
             }
         }
         //收到请求回调
-        public void OnTcpRequestMsessageResult(OnTcpRequestMsessageEventArg arg)
+        public void OnTcpRequestResponse(OnTcpRequestEventArg arg)
         {
             _ = requestCache.TryRemove(arg.Data.RequestId, out TcpRequestMessageCache cache);
             if (cache != null)
             {
-                if (arg.Data.Code == MessageRequestResultCodes.OK)
-                {
-                    cache.Callback(arg.Data);
-                }
-                else
-                {
-                    cache.FailCallback(new TcpRequestMessageFailModel
-                    {
-                        Type = TcpRequestMessageFailType.ERROR,
-                        Msg = Encoding.UTF8.GetString(arg.Data.Data)
-                    });
-                }
+                cache.Tcs?.SetResult(arg.Data);
             }
         }
         //发起请求
-        public void SendTcpRequestMsessage(Socket socket, string path, IRequestExcuteMessage data, Action<MessageRequestModel> callback, Action<TcpRequestMessageFailModel> failCallback)
+        public async Task<RequestModel> TcpRequest(TcpRequestParam param)
         {
+            await Task.Yield();
             _ = Interlocked.Increment(ref requestId);
+            var tcs = new TaskCompletionSource<RequestModel>();
             _ = requestCache.TryAdd(requestId, new TcpRequestMessageCache
             {
-                Callback = callback,
-                FailCallback = failCallback,
+                Tcs = tcs,
                 Id = requestId,
                 Time = Helper.GetTimeStamp()
             });
 
-            P2PMessageEventHandles.Instance.SendTcpMessage(new SendP2PTcpMessageArg
+            P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
             {
-                Socket = socket,
-                Data = new MessageRequestModel
+                Socket = param.Socket,
+                Data = new RequestModel
                 {
-                    Data = data.ProtobufSerialize(),
+                    Data = param.Data.ToBytes(),
                     RequestId = requestId,
-                    Path = path,
+                    Path = param.Path,
                     RequestType = RequestTypes.REQUEST
                 }
             });
+            return await tcs.Task;
         }
-        #endregion
     }
 
+    public class TcpRequestParam
+    {
+        public Socket Socket { get; set; }
+        public string Path { get; set; }
+        public IRequestExcuteMessage Data { get; set; }
+    }
 
-
-
-    #region 请求
     public class TcpRequestMessageCache
     {
         public long Id { get; set; } = 0;
         public long Time { get; set; } = 0;
         public int Timeout { get; set; } = 5 * 1000;
-        public Action<MessageRequestModel> Callback { get; set; } = null;
-        public Action<TcpRequestMessageFailModel> FailCallback { get; set; } = null;
+        public TaskCompletionSource<RequestModel> Tcs { get; set; } = null;
     }
 
-    [ProtoContract]
-    public class TcpRequestMessageFailModel
-    {
-        [ProtoMember(1, IsRequired = true)]
-        public TcpRequestMessageFailType Type { get; set; } = TcpRequestMessageFailType.ERROR;
-        [ProtoMember(2)]
-        public string Msg { get; set; } = string.Empty;
-    }
-
-    [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
-    [Flags]
-    public enum TcpRequestMessageFailType
-    {
-        ERROR, TIMEOUT
-    }
-
-    public class OnTcpRequestMsessageEventArg : EventArgs
+    public class OnTcpRequestEventArg : EventArgs
     {
         public PluginExcuteModel Packet { get; set; }
-        public MessageRequestModel Data { get; set; }
+        public RequestModel Data { get; set; }
     }
 
+    /// <summary>
+    /// 插件执行参数
+    /// </summary>
     public class PluginExcuteWrap
     {
-        public OnTcpRequestMsessageEventArg Data { get; set; }
+        public OnTcpRequestEventArg Data { get; set; }
 
         public int Code { get; private set; } = 0;
         public string Message { get; private set; } = string.Empty;
@@ -247,5 +222,67 @@ namespace client.service.p2pPlugins.plugins.request
 
     }
 
-    #endregion
+    [ProtoContract]
+    public class RequestModel : IP2PMessageBase
+    {
+        public RequestModel() { }
+
+        [ProtoMember(1, IsRequired = true)]
+        public P2PDataTypes Type { get; } = P2PDataTypes.REQUEST;
+
+        [ProtoMember(2)]
+        public byte[] Data { get; set; } = Array.Empty<byte>();
+
+        [ProtoMember(3)]
+        public long RequestId { get; set; } = 0;
+
+        [ProtoMember(4)]
+        public string Path { get; set; } = string.Empty;
+
+        [ProtoMember(6, IsRequired = true)]
+        public MessageRequestResponseCodes Code { get; set; } = MessageRequestResponseCodes.OK;
+
+        [ProtoMember(7, IsRequired = true)]
+        public RequestTypes RequestType { get; set; } = RequestTypes.REQUEST;
+
+        [ProtoMember(8)]
+        public string ErrorMsg { get; set; } = string.Empty;
+    }
+
+
+    [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
+    [Flags]
+    public enum MessageRequestResponseCodes : short
+    {
+        OK, NOTFOUND, FAIL
+    }
+
+    public interface IRequestExcuteMessage
+    {
+    }
+
+    public interface IRequestExcutePlugin
+    {
+    }
+
+    [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
+    [Flags]
+    public enum RequestTypes
+    {
+        REQUEST, RESULT
+    }
+
+    public class RequestPlugin : IP2PPlugin
+    {
+        public P2PDataTypes Type => P2PDataTypes.REQUEST;
+
+        public void Excute(OnP2PTcpArg arg)
+        {
+            RequestEventHandlers.Instance.OnTcpRequest(new OnTcpRequestEventArg
+            {
+                Data = arg.Data.Data.DeBytes<RequestModel>(),
+                Packet = arg.Packet,
+            });
+        }
+    }
 }

@@ -2,17 +2,24 @@
 
 namespace client.service.p2pPlugins.plugins.fileServer
 {
-    public class FileServerPlugin : IP2PMessagePlugin
+    public class FileServerPlugin : IP2PPlugin
     {
-        public P2PDataMessageTypes Type => P2PDataMessageTypes.FILE_SERVER;
+        public P2PDataTypes Type => P2PDataTypes.FILE_SERVER;
 
-        public void Excute(OnP2PTcpMessageArg arg)
+        public void Excute(OnP2PTcpArg arg)
         {
-            FileServerEventHandles.Instance.OnTcpFileMessage(new TcpFileMessageEventArg
+            FileServerEventHandles.Instance.OnTcpFileServer(new TcpFileMessageEventArg
             {
                 Packet = arg.Packet,
-                Data = arg.Data.Data.ProtobufDeserialize<P2PFileModel>()
+                Data = arg.Data.Data.DeBytes<FileServerModel>()
             });
         }
+    }
+
+    public interface IFileServerPlugin
+    {
+        FileServerCmdTypes Type { get; }
+
+        void Excute(TcpFileMessageEventArg arg);
     }
 }

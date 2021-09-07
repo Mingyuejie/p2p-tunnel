@@ -31,25 +31,25 @@ namespace client.service.serverPlugins.connectClient
         public int ClientTcpPort => EventHandlers.ClientTcpPort;
         public int RouteLevel => EventHandlers.RouteLevel;
 
-        private readonly ConcurrentDictionary<long, ConnectMessageCache> connectCache = new();
-        private readonly ConcurrentDictionary<long, ConnectTcpMessageCache> connectTcpCache = new();
+        private readonly ConcurrentDictionary<long, ConnectCache> connectCache = new();
+        private readonly ConcurrentDictionary<long, ConnectTcpCache> connectTcpCache = new();
 
         #region 连接客户端  具体流程 看MessageTypes里的描述
         /// <summary>
         /// 发送连接客户端请求消息（给服务器）
         /// </summary>
-        public event EventHandler<SendConnectClientEventArg> OnSendConnectClientMessageHandler;
+        public event EventHandler<SendConnectClientEventArg> OnSendConnectClientHandler;
         /// <summary>
         /// 发送连接客户端请求消息（给服务器）
         /// </summary>
         /// <param name="toid"></param>
-        public void SendConnectClientMessage(ConnectParams param)
+        public void SendConnectClient(ConnectParams param)
         {
             if (connectCache.ContainsKey(param.Id))
             {
                 return;
             }
-            connectCache.TryAdd(param.Id, new ConnectMessageCache
+            connectCache.TryAdd(param.Id, new ConnectCache
             {
                 Callback = param.Callback,
                 FailCallback = param.FailCallback,
@@ -58,7 +58,7 @@ namespace client.service.serverPlugins.connectClient
                 TryTimes = param.TryTimes
             });
 
-            OnSendConnectClientMessageHandler?.Invoke(this, new SendConnectClientEventArg
+            OnSendConnectClientHandler?.Invoke(this, new SendConnectClientEventArg
             {
                 Id = param.Id,
                 Name = param.Name
@@ -68,14 +68,14 @@ namespace client.service.serverPlugins.connectClient
         }
         private void TryConnect(long id)
         {
-            if (connectCache.TryGetValue(id, out ConnectMessageCache cache))
+            if (connectCache.TryGetValue(id, out ConnectCache cache))
             {
 
                 cache.TryTimes--;
-                EventHandlers.SendMessage(new SendMessageEventArg
+                EventHandlers.Send(new SendEventArg
                 {
                     Address = UdpServer,
-                    Data = new MessageConnectClientModel
+                    Data = new ConnectClientModel
                     {
                         ToId = id,
                         Id = ConnectId
@@ -83,7 +83,7 @@ namespace client.service.serverPlugins.connectClient
                 });
                 Helper.SetTimeout(() =>
                 {
-                    if (connectCache.TryGetValue(id, out ConnectMessageCache cache))
+                    if (connectCache.TryGetValue(id, out ConnectCache cache))
                     {
                         if (cache.TryTimes > 0)
                         {
@@ -92,10 +92,10 @@ namespace client.service.serverPlugins.connectClient
                         else
                         {
                             connectCache.TryRemove(id, out _);
-                            cache.FailCallback(new ConnectMessageFailModel
+                            cache.FailCallback(new ConnectFailModel
                             {
                                 Msg = "UDP连接超时",
-                                Type = ConnectMessageFailType.TIMEOUT
+                                Type = ConnectFailType.TIMEOUT
                             });
                         }
                     }
@@ -107,20 +107,20 @@ namespace client.service.serverPlugins.connectClient
         /// <summary>
         /// 发送TCP连接客户端请求消息（给服务器）
         /// </summary>
-        public event EventHandler<SendConnectClientEventArg> OnSendTcpConnectClientMessageHandler;
+        public event EventHandler<SendConnectClientEventArg> OnSendTcpConnectClientHandler;
         /// <summary>
         /// 发送TCP连接客户端请求消息（给服务器）
         /// </summary>
         /// <param name="toid"></param>
-        public void SendTcpConnectClientMessage(ConnectTcpParams param)
+        public void SendTcpConnectClient(ConnectTcpParams param)
         {
-            OnSendTcpConnectClientMessageHandler?.Invoke(this, new SendConnectClientEventArg
+            OnSendTcpConnectClientHandler?.Invoke(this, new SendConnectClientEventArg
             {
                 Id = param.Id,
                 Name = param.Name
             });
 
-            connectTcpCache.TryAdd(param.Id, new ConnectTcpMessageCache
+            connectTcpCache.TryAdd(param.Id, new ConnectTcpCache
             {
                 Callback = param.Callback,
                 FailCallback = param.FailCallback,
@@ -128,10 +128,10 @@ namespace client.service.serverPlugins.connectClient
                 Timeout = param.Timeout
             });
 
-            EventHandlers.SendTcpMessage(new SendTcpMessageEventArg
+            EventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = TcpServer,
-                Data = new MessageConnectClientModel
+                Data = new ConnectClientModel
                 {
                     ToId = param.Id,
                     Id = ConnectId
@@ -141,13 +141,13 @@ namespace client.service.serverPlugins.connectClient
             long id = param.Id;
             Helper.SetTimeout(() =>
             {
-                if (connectTcpCache.TryGetValue(id, out ConnectTcpMessageCache cache))
+                if (connectTcpCache.TryGetValue(id, out ConnectTcpCache cache))
                 {
                     connectTcpCache.TryRemove(id, out _);
-                    cache?.FailCallback(new ConnectMessageFailModel
+                    cache?.FailCallback(new ConnectFailModel
                     {
                         Msg = "TCP连接超时",
-                        Type = ConnectMessageFailType.TIMEOUT
+                        Type = ConnectFailType.TIMEOUT
                     });
                 }
             }, param.Timeout);
@@ -161,11 +161,11 @@ namespace client.service.serverPlugins.connectClient
         /// 服务器消息，让某个客户端反向链接我
         /// </summary>
         /// <param name="toid"></param>
-        public void SendConnectClientReverseMessage(long id)
+        public void SendConnectClientReverse(long id)
         {
-            EventHandlers.Instance.SendTcpMessage(new SendTcpMessageEventArg
+            EventHandlers.Instance.SendTcp(new SendTcpEventArg
             {
-                Data = new MessageConnectClientReverseModel { Id = ConnectId, ToId = id },
+                Data = new ConnectClientReverseModel { Id = ConnectId, ToId = id },
                 Socket = TcpServer
             });
 
@@ -179,7 +179,7 @@ namespace client.service.serverPlugins.connectClient
         /// 服务器消息，某个客户端要我反向链接他
         /// </summary>
         /// <param name="toid"></param>
-        public void OnConnectClientReverseMessage(OnConnectClientReverseEventArg arg)
+        public void OnConnectClientReverse(OnConnectClientReverseEventArg arg)
         {
             OnConnectClientReverseHandler?.Invoke(this, arg);
         }
@@ -193,24 +193,24 @@ namespace client.service.serverPlugins.connectClient
         /// 服务器消息，某个客户端要跟我连接
         /// </summary>
         /// <param name="toid"></param>
-        public void OnConnectClientStep1Message(OnConnectClientStep1EventArg arg)
+        public void OnConnectClientStep1(OnConnectClientStep1EventArg arg)
         {
             OnConnectClientStep1Handler?.Invoke(this, arg);
             //随便给来源客户端发个消息
             List<string> ips = arg.Data.LocalIps.Split(',').Concat(new string[] { arg.Data.Ip }).ToList();
             foreach (string ip in ips)
             {
-                EventHandlers.SendMessage(new SendMessageEventArg
+                EventHandlers.Send(new SendEventArg
                 {
                     Address = new IPEndPoint(IPAddress.Parse(ip), arg.Data.Port),
-                    Data = new MessageConnectClientStep1AckModel { Id = ConnectId }
+                    Data = new ConnectClientStep1AckModel { Id = ConnectId }
                 });
             }
             //告诉服务器我已准备好
-            EventHandlers.SendMessage(new SendMessageEventArg
+            EventHandlers.Send(new SendEventArg
             {
                 Address = null,
-                Data = new MessageConnectClientStep1ResultModel
+                Data = new ConnectClientStep1ResultModel
                 {
                     Id = ConnectId,
                     ToId = arg.Data.Id
@@ -230,7 +230,7 @@ namespace client.service.serverPlugins.connectClient
         /// 服务器Tcp消息，已拿到对方的信息
         /// </summary>
         /// <param name="toid"></param>
-        public void OnTcpConnectClientStep1Message(OnConnectClientStep1EventArg e)
+        public void OnTcpConnectClientStep1(OnConnectClientStep1EventArg e)
         {
             OnTcpConnectClientStep1Handler?.Invoke(this, e);
 
@@ -256,10 +256,10 @@ namespace client.service.serverPlugins.connectClient
                 });
             }
 
-            EventHandlers.SendTcpMessage(new SendTcpMessageEventArg
+            EventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = TcpServer,
-                Data = new MessageConnectClientStep1ResultModel
+                Data = new ConnectClientStep1ResultModel
                 {
                     Id = ConnectId,
                     ToId = e.Data.Id
@@ -276,13 +276,13 @@ namespace client.service.serverPlugins.connectClient
         /// 服务器消息，目标客户端已经准备好
         /// </summary>
         /// <param name="toid"></param>
-        public void OnConnectClientStep2Message(OnConnectClientStep2EventArg e)
+        public void OnConnectClientStep2(OnConnectClientStep2EventArg e)
         {
             OnConnectClientStep2Handler?.Invoke(this, e);
             List<string> ips = e.Data.LocalIps.Split(',').Concat(new string[] { e.Data.Ip }).ToList();
             foreach (string ip in ips)
             {
-                SendConnectClientStep3Message(new SendConnectClientStep3EventArg
+                SendConnectClientStep3(new SendConnectClientStep3EventArg
                 {
                     Address = new IPEndPoint(IPAddress.Parse(ip), e.Data.Port),
                     Id = ConnectId
@@ -300,7 +300,7 @@ namespace client.service.serverPlugins.connectClient
         /// 服务器TCP消息，来源客户端已经准备好
         /// </summary>
         /// <param name="toid"></param>
-        public void OnTcpConnectClientStep2Message(OnConnectClientStep2EventArg e)
+        public void OnTcpConnectClientStep2(OnConnectClientStep2EventArg e)
         {
             OnTcpConnectClientStep2Handler?.Invoke(this, e);
             string[] ips = e.Data.LocalIps.Split(',').Concat(new string[] { e.Data.Ip }).ToArray();
@@ -337,7 +337,7 @@ namespace client.service.serverPlugins.connectClient
 
                             targetSocket.EndConnect(result);
                             TCPServer.Instance.BindReceive(targetSocket);
-                            SendTcpConnectClientStep3Message(new SendTcpConnectClientStep3EventArg
+                            SendTcpConnectClientStep3(new SendTcpConnectClientStep3EventArg
                             {
                                 Socket = targetSocket,
                                 Id = ConnectId
@@ -373,7 +373,7 @@ namespace client.service.serverPlugins.connectClient
                         {
                             targetSocket.SafeClose();
                             interval = 2000;
-                            SendTcpConnectClientStep2RetryMessage(e.Data.Id);
+                            SendTcpConnectClientStep2Retry(e.Data.Id);
                             length--;
                         }
                     }
@@ -389,7 +389,7 @@ namespace client.service.serverPlugins.connectClient
                         else
                         {
                             interval = 100;
-                            SendTcpConnectClientStep2RetryMessage(e.Data.Id);
+                            SendTcpConnectClientStep2Retry(e.Data.Id);
                             length--;
                         }
                     }
@@ -400,7 +400,7 @@ namespace client.service.serverPlugins.connectClient
                 }
                 if (!success)
                 {
-                    OnSendTcpConnectClientStep2FailMessage(new OnSendTcpConnectClientStep2FailEventArg
+                    OnSendTcpConnectClientStep2Fail(new OnSendTcpConnectClientStep2FailEventArg
                     {
                         Id = ConnectId,
                         ToId = e.Data.Id
@@ -419,13 +419,13 @@ namespace client.service.serverPlugins.connectClient
         /// 服务器TCP消息，重试一次
         /// </summary>
         /// <param name="toid"></param>
-        public void SendTcpConnectClientStep2RetryMessage(long toid)
+        public void SendTcpConnectClientStep2Retry(long toid)
         {
             OnSendTcpConnectClientStep2RetryHandler?.Invoke(this, toid);
-            EventHandlers.SendTcpMessage(new SendTcpMessageEventArg
+            EventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = TcpServer,
-                Data = new MessageConnectClientStep2RetryModel
+                Data = new ConnectClientStep2RetryModel
                 {
                     Id = ConnectId,
                     ToId = toid
@@ -440,7 +440,7 @@ namespace client.service.serverPlugins.connectClient
         /// 服务器TCP消息，来源客户端已经准备好
         /// </summary>
         /// <param name="toid"></param>
-        public void OnTcpConnectClientStep2RetryMessage(OnConnectClientStep2RetryEventArg e)
+        public void OnTcpConnectClientStep2Retry(OnConnectClientStep2RetryEventArg e)
         {
             OnTcpConnectClientStep2RetryHandler?.Invoke(this, e);
             Task.Run(() =>
@@ -465,13 +465,13 @@ namespace client.service.serverPlugins.connectClient
         /// 服务器TCP消息，链接失败
         /// </summary>
         /// <param name="toid"></param>
-        public void OnSendTcpConnectClientStep2FailMessage(OnSendTcpConnectClientStep2FailEventArg arg)
+        public void OnSendTcpConnectClientStep2Fail(OnSendTcpConnectClientStep2FailEventArg arg)
         {
             OnSendTcpConnectClientStep2FailHandler?.Invoke(this, arg);
-            EventHandlers.SendTcpMessage(new SendTcpMessageEventArg
+            EventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = TcpServer,
-                Data = new MessageConnectClientStep2FailModel
+                Data = new ConnectClientStep2FailModel
                 {
                     Id = arg.Id,
                     ToId = arg.ToId
@@ -487,15 +487,15 @@ namespace client.service.serverPlugins.connectClient
         /// 服务器TCP消息，链接失败
         /// </summary>
         /// <param name="toid"></param>
-        public void OnTcpConnectClientStep2FailMessage(OnTcpConnectClientStep2FailEventArg arg)
+        public void OnTcpConnectClientStep2Fail(OnTcpConnectClientStep2FailEventArg arg)
         {
-            if (connectTcpCache.TryGetValue(arg.Data.Id, out ConnectTcpMessageCache cache))
+            if (connectTcpCache.TryGetValue(arg.Data.Id, out ConnectTcpCache cache))
             {
                 _ = connectTcpCache.TryRemove(arg.Data.Id, out _);
-                cache?.FailCallback(new ConnectMessageFailModel
+                cache?.FailCallback(new ConnectFailModel
                 {
                     Msg = "失败",
-                    Type = ConnectMessageFailType.ERROR
+                    Type = ConnectFailType.ERROR
                 });
             }
             OnTcpConnectClientStep2FailHandler?.Invoke(this, arg);
@@ -503,10 +503,10 @@ namespace client.service.serverPlugins.connectClient
 
         public void SendTcpConnectClientStep2StopMessage(long toid)
         {
-            EventHandlers.SendTcpMessage(new SendTcpMessageEventArg
+            EventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = TcpServer,
-                Data = new MessageConnectClientStep2StopModel
+                Data = new ConnectClientStep2StopModel
                 {
                     Id = ConnectId,
                     ToId = toid
@@ -514,7 +514,7 @@ namespace client.service.serverPlugins.connectClient
             });
         }
 
-        public void OnTcpConnectClientStep2StopMessage(MessageConnectClientStep2StopModel e)
+        public void OnTcpConnectClientStep2StopMessage(ConnectClientStep2StopModel e)
         {
             connectdIds.Remove(e.Id);
         }
@@ -528,13 +528,13 @@ namespace client.service.serverPlugins.connectClient
         /// 开始连接目标客户端
         /// </summary>
         /// <param name="toid"></param>
-        public void SendConnectClientStep3Message(SendConnectClientStep3EventArg arg)
+        public void SendConnectClientStep3(SendConnectClientStep3EventArg arg)
         {
             OnSendConnectClientStep3Handler?.Invoke(this, arg);
-            EventHandlers.SendMessage(new SendMessageEventArg
+            EventHandlers.Send(new SendEventArg
             {
                 Address = arg.Address,
-                Data = new MessageConnectClientStep3Model
+                Data = new ConnectClientStep3Model
                 {
                     Id = arg.Id
                 }
@@ -549,14 +549,14 @@ namespace client.service.serverPlugins.connectClient
         /// 开始连接目标客户端
         /// </summary>
         /// <param name="toid"></param>
-        public void SendTcpConnectClientStep3Message(SendTcpConnectClientStep3EventArg arg)
+        public void SendTcpConnectClientStep3(SendTcpConnectClientStep3EventArg arg)
         {
 
             OnSendTcpConnectClientStep3Handler?.Invoke(this, arg);
-            EventHandlers.SendTcpMessage(new SendTcpMessageEventArg
+            EventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = arg.Socket,
-                Data = new MessageConnectClientStep3Model
+                Data = new ConnectClientStep3Model
                 {
                     Id = arg.Id
                 }
@@ -571,7 +571,7 @@ namespace client.service.serverPlugins.connectClient
         /// 来源客户端开始连接我了
         /// </summary>
         /// <param name="toid"></param>
-        public void OnConnectClientStep3Message(OnConnectClientStep3EventArg e)
+        public void OnConnectClientStep3(OnConnectClientStep3EventArg e)
         {
             OnConnectClientStep3Handler?.Invoke(this, e);
             SendConnectClientStep4Message(new SendConnectClientStep4EventArg
@@ -588,13 +588,13 @@ namespace client.service.serverPlugins.connectClient
         /// 对方连接我了
         /// </summary>
         /// <param name="toid"></param>
-        public void OnTcpConnectClientStep3Message(OnConnectClientStep3EventArg arg)
+        public void OnTcpConnectClientStep3(OnConnectClientStep3EventArg arg)
         {
-            if (connectTcpCache.TryGetValue(arg.Data.Id, out ConnectTcpMessageCache cache))
+            if (connectTcpCache.TryGetValue(arg.Data.Id, out ConnectTcpCache cache))
             {
                 connectTcpCache.TryRemove(arg.Data.Id, out _);
                 cache?.Callback(arg);
-                SendTcpConnectClientStep4Message(new SendTcpConnectClientStep4EventArg
+                SendTcpConnectClientStep4(new SendTcpConnectClientStep4EventArg
                 {
                     Socket = arg.Packet.TcpSocket,
                     Id = AppShareData.Instance.RemoteInfo.ConnectId
@@ -615,10 +615,10 @@ namespace client.service.serverPlugins.connectClient
         public void SendConnectClientStep4Message(SendConnectClientStep4EventArg arg)
         {
             OnSendConnectClientStep4Handler?.Invoke(this, arg);
-            EventHandlers.SendMessage(new SendMessageEventArg
+            EventHandlers.Send(new SendEventArg
             {
                 Address = arg.Address,
-                Data = new MessageConnectClientStep4Model
+                Data = new ConnectClientStep4Model
                 {
                     Id = arg.Id
                 }
@@ -632,14 +632,14 @@ namespace client.service.serverPlugins.connectClient
         /// 回应目标客户端
         /// </summary>
         /// <param name="toid"></param>
-        public void SendTcpConnectClientStep4Message(SendTcpConnectClientStep4EventArg arg)
+        public void SendTcpConnectClientStep4(SendTcpConnectClientStep4EventArg arg)
         {
 
             OnSendTcpConnectClientStep4Handler?.Invoke(this, arg);
-            EventHandlers.SendTcpMessage(new SendTcpMessageEventArg
+            EventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = arg.Socket,
-                Data = new MessageConnectClientStep4Model
+                Data = new ConnectClientStep4Model
                 {
                     Id = arg.Id
                 }
@@ -654,9 +654,9 @@ namespace client.service.serverPlugins.connectClient
         /// 目标客户端回应我了
         /// </summary>
         /// <param name="toid"></param>
-        public void OnConnectClientStep4Message(OnConnectClientStep4EventArg arg)
+        public void OnConnectClientStep4(OnConnectClientStep4EventArg arg)
         {
-            if (connectCache.TryRemove(arg.Data.Id, out ConnectMessageCache cache))
+            if (connectCache.TryRemove(arg.Data.Id, out ConnectCache cache))
             {
                 cache?.Callback(arg);
             }
@@ -670,7 +670,7 @@ namespace client.service.serverPlugins.connectClient
         /// 来源客户端回应我了
         /// </summary>
         /// <param name="toid"></param>
-        public void OnTcpConnectClientStep4Message(OnConnectClientStep4EventArg arg)
+        public void OnTcpConnectClientStep4(OnConnectClientStep4EventArg arg)
         {
             replyIds.Add(arg.Data.Id);
             OnTcpConnectClientStep4Handler?.Invoke(this, arg);
@@ -691,14 +691,14 @@ namespace client.service.serverPlugins.connectClient
     public class OnConnectClientReverseEventArg : EventArgs
     {
         public PluginExcuteModel Packet { get; set; }
-        public MessageConnectClientReverseModel Data { get; set; }
+        public ConnectClientReverseModel Data { get; set; }
     }
 
 
     public class OnConnectClientStep1EventArg : EventArgs
     {
         public PluginExcuteModel Packet { get; set; }
-        public MessageConnectClientStep1Model Data { get; set; }
+        public ConnectClientStep1Model Data { get; set; }
     }
 
     public class OnConnectClientStep1ResultEventArg : EventArgs
@@ -708,13 +708,13 @@ namespace client.service.serverPlugins.connectClient
     public class OnConnectClientStep2EventArg : EventArgs
     {
         public PluginExcuteModel Packet { get; set; }
-        public MessageConnectClientStep2Model Data { get; set; }
+        public ConnectClientStep2Model Data { get; set; }
     }
 
     public class OnConnectClientStep2RetryEventArg : EventArgs
     {
         public PluginExcuteModel Packet { get; set; }
-        public MessageConnectClientStep2RetryModel Data { get; set; }
+        public ConnectClientStep2RetryModel Data { get; set; }
     }
 
     public class OnSendTcpConnectClientStep2FailEventArg : EventArgs
@@ -725,7 +725,7 @@ namespace client.service.serverPlugins.connectClient
     public class OnTcpConnectClientStep2FailEventArg : EventArgs
     {
         public PluginExcuteModel Packet { get; set; }
-        public MessageConnectClientStep2FailModel Data { get; set; }
+        public ConnectClientStep2FailModel Data { get; set; }
     }
     public class SendConnectClientStep3EventArg : EventArgs
     {
@@ -752,7 +752,7 @@ namespace client.service.serverPlugins.connectClient
     public class OnConnectClientStep3EventArg : EventArgs
     {
         public PluginExcuteModel Packet { get; set; }
-        public MessageConnectClientStep3Model Data { get; set; }
+        public ConnectClientStep3Model Data { get; set; }
     }
 
     public class SendConnectClientStep4EventArg : EventArgs
@@ -780,7 +780,7 @@ namespace client.service.serverPlugins.connectClient
     public class OnConnectClientStep4EventArg : EventArgs
     {
         public PluginExcuteModel Packet { get; set; }
-        public MessageConnectClientStep4Model Data { get; set; }
+        public ConnectClientStep4Model Data { get; set; }
     }
 
     #endregion
@@ -793,16 +793,16 @@ namespace client.service.serverPlugins.connectClient
         public string Name { get; set; } = string.Empty;
         public int Timeout { get; set; } = 5 * 1000;
         public Action<OnConnectClientStep4EventArg> Callback { get; set; } = null;
-        public Action<ConnectMessageFailModel> FailCallback { get; set; } = null;
+        public Action<ConnectFailModel> FailCallback { get; set; } = null;
     }
 
-    public class ConnectMessageCache
+    public class ConnectCache
     {
         public long Time { get; set; } = 0;
         public int TryTimes { get; set; } = 10;
         public int Timeout { get; set; } = 5 * 1000;
         public Action<OnConnectClientStep4EventArg> Callback { get; set; } = null;
-        public Action<ConnectMessageFailModel> FailCallback { get; set; } = null;
+        public Action<ConnectFailModel> FailCallback { get; set; } = null;
     }
 
     public class ConnectTcpParams
@@ -811,25 +811,25 @@ namespace client.service.serverPlugins.connectClient
         public string Name { get; set; } = string.Empty;
         public int Timeout { get; set; } = 15 * 1000;
         public Action<OnConnectClientStep3EventArg> Callback { get; set; } = null;
-        public Action<ConnectMessageFailModel> FailCallback { get; set; } = null;
+        public Action<ConnectFailModel> FailCallback { get; set; } = null;
     }
 
-    public class ConnectTcpMessageCache
+    public class ConnectTcpCache
     {
         public long Time { get; set; } = 0;
         public int TryTimes { get; set; } = 10;
         public int Timeout { get; set; } = 15 * 1000;
         public Action<OnConnectClientStep3EventArg> Callback { get; set; } = null;
-        public Action<ConnectMessageFailModel> FailCallback { get; set; } = null;
+        public Action<ConnectFailModel> FailCallback { get; set; } = null;
     }
 
-    public class ConnectMessageFailModel
+    public class ConnectFailModel
     {
-        public ConnectMessageFailType Type { get; set; } = ConnectMessageFailType.ERROR;
+        public ConnectFailType Type { get; set; } = ConnectFailType.ERROR;
         public string Msg { get; set; } = string.Empty;
     }
 
-    public enum ConnectMessageFailType
+    public enum ConnectFailType
     {
         ERROR, TIMEOUT
     }

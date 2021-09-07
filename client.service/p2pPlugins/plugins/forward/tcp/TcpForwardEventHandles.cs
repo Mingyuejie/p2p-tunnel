@@ -15,36 +15,36 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
         }
 
         #region TCP转发
-        public event EventHandler<SendTcpForwardMessageEventArg> OnSendTcpForwardMessageHandler;
-        public void SendTcpForwardMessage(SendTcpForwardMessageEventArg arg)
+        public event EventHandler<SendTcpForwardEventArg> OnSendTcpForwardHandler;
+        public void SendTcpForward(SendTcpForwardEventArg arg)
         {
-            P2PMessageEventHandles.Instance.SendTcpMessage(new SendP2PTcpMessageArg
+            P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
             {
                 Socket = arg.Socket,
                 Data = arg.Data
             });
 
-            OnSendTcpForwardMessageHandler?.Invoke(this, arg);
+            OnSendTcpForwardHandler?.Invoke(this, arg);
         }
 
-        public event EventHandler<OnTcpForwardMessageEventArg> OnTcpForwardMessageHandler;
-        public void OnTcpForwardMessage(OnTcpForwardMessageEventArg arg)
+        public event EventHandler<OnTcpForwardEventArg> OnTcpForwardHandler;
+        public void OnTcpForward(OnTcpForwardEventArg arg)
         {
-            OnTcpForwardMessageHandler?.Invoke(this, arg);
+            OnTcpForwardHandler?.Invoke(this, arg);
         }
         #endregion
     }
 
     #region TCP转发
 
-    public class SendTcpForwardMessageEventArg : EventArgs
+    public class SendTcpForwardEventArg : EventArgs
     {
         public Socket Socket { get; set; }
         public TcpForwardModel Data { get; set; }
     }
 
 
-    public class OnTcpForwardMessageEventArg : EventArgs
+    public class OnTcpForwardEventArg : EventArgs
     {
         public PluginExcuteModel Packet { get; set; }
         public TcpForwardModel Data { get; set; }

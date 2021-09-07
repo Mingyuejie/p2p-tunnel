@@ -7,7 +7,7 @@ namespace server.model
     /// 消息发送队列对象
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class MessageRecvQueueModel<T>
+    public class RecvQueueModel<T>
     {
         /// <summary>
         /// 目标地址

@@ -1,6 +1,7 @@
 ﻿using client.service.serverPlugins.clients;
 using client.service.serverPlugins.connectClient;
 using common;
+using common.extends;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,38 +9,33 @@ namespace client.service.clientService.plugins
 {
     public class ClientsPlugin : IClientServicePlugin
     {
-        public void List(ClientServicePluginExcuteWrap arg)
+        public IEnumerable<ClientInfo> List(ClientServicePluginExcuteWrap arg)
         {
-            arg.Callback(arg, AppShareData.Instance.Clients.Values.ToList());
+            return AppShareData.Instance.Clients.Values.ToList();
         }
 
         public void Connect(ClientServicePluginExcuteWrap arg)
         {
-            ConnectModel model = Helper.DeJsonSerializer<ConnectModel>(arg.Content);
+            ConnectModel model = arg.Content.DeJson<ConnectModel>();
             ClientsHelper.Instance.ConnectClient(model.ID);
-
-            arg.Callback(arg, null);
         }
 
         public void Stop(ClientServicePluginExcuteWrap arg)
         {
-            ConnectModel model = Helper.DeJsonSerializer<ConnectModel>(arg.Content);
+            ConnectModel model = arg.Content.DeJson<ConnectModel>();
             ConnectClientEventHandles.Instance.SendTcpConnectClientStep2StopMessage(model.ID);
-            arg.Callback(arg, null);
         }
 
         public void Offline(ClientServicePluginExcuteWrap arg)
         {
-            ConnectModel model = Helper.DeJsonSerializer<ConnectModel>(arg.Content);
+            ConnectModel model = arg.Content.DeJson<ConnectModel>();
             ClientsHelper.Instance.OfflineClient(model.ID);
-            arg.Callback(arg, null);
         }
 
         public void ConnectReverse(ClientServicePluginExcuteWrap arg)
         {
-            ConnectModel model = Helper.DeJsonSerializer<ConnectModel>(arg.Content);
-            ConnectClientEventHandles.Instance.SendConnectClientReverseMessage(model.ID);
-            arg.Callback(arg, null);
+            ConnectModel model = arg.Content.DeJson<ConnectModel>();
+            ConnectClientEventHandles.Instance.SendConnectClientReverse(model.ID);
         }
     }
 

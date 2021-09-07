@@ -9,15 +9,15 @@ namespace server.extends
 {
     public static class ByteArrayExtends
     {
-        public static IEnumerable<UdpPacket> SerializeMessage(this IMessageModelBase obj, long sequence, short ttl = 5)
+        public static IEnumerable<UdpPacket> ToUdpPackets(this IModelBase obj, long sequence, short ttl = 5)
         {
-            return obj.ProtobufSerialize().Split(sequence, obj.MsgType, ttl);
+            return obj.ToBytes().Split(sequence, obj.MsgType, ttl);
         }
 
 
-        public static TcpPacket SerializeTcpMessage(this IMessageModelBase obj)
+        public static TcpPacket ToTcpPacket(this IModelBase obj)
         {
-            return new TcpPacket(obj.ProtobufSerialize(), obj.MsgType);
+            return new TcpPacket(obj.ToBytes(), obj.MsgType);
         }
 
         /// <summary>

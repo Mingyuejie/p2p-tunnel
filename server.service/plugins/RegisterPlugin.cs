@@ -18,7 +18,7 @@ namespace server.service.plugins
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
-            MessageRegisterModel model = data.Packet.Chunk.ProtobufDeserialize<MessageRegisterModel>();
+            RegisterModel model = data.Packet.Chunk.DeBytes<RegisterModel>();
 
             if (serverType == ServerType.UDP)
             {
@@ -31,7 +31,7 @@ namespace server.service.plugins
                         LastTime = Helper.GetTimeStamp(),
                         TcpSocket = null,
                         TcpPort = 0,
-                        GroupId = model.GroupId,
+                        OriginGroupId = model.GroupId,
                         LocalIps = model.LocalIps,
                         Mac = model.Mac,
                         LocalPort = model.LocalTcpPort
@@ -39,17 +39,20 @@ namespace server.service.plugins
                     };
                     long id = ClientRegisterCache.Instance.Add(add, 0);
 
-                    UDPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                    string origingid = add.OriginGroupId;
+                    add.OriginGroupId = string.Empty;
+
+                    UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
                     {
                         Address = data.SourcePoint,
                         TcpCoket = null,
-                        Data = new MessageRegisterResultModel
+                        Data = new RegisterResultModel
                         {
                             Id = id,
                             Ip = data.SourcePoint.Address.ToString(),
                             Port = data.SourcePoint.Port,
                             TcpPort = 0,
-                            GroupId = add.GroupId,
+                            GroupId = origingid,
                             Mac = add.Mac,
                             LocalTcpPort = add.LocalPort
                         }
@@ -57,11 +60,11 @@ namespace server.service.plugins
                 }
                 else
                 {
-                    UDPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                    UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
                     {
                         Address = data.SourcePoint,
                         TcpCoket = null,
-                        Data = new MessageRegisterResultModel
+                        Data = new RegisterResultModel
                         {
                             Code = -1,
                             Msg = "组中已存在同名客户端"
@@ -76,23 +79,38 @@ namespace server.service.plugins
                 {
                     tcpPort = IPEndPoint.Parse(data.TcpSocket.RemoteEndPoint.ToString()).Port;
                 }
-                _ = ClientRegisterCache.Instance.UpdateTcpInfo(model.Id, data.TcpSocket, tcpPort);
 
-                TCPServer.Instance.Send(new MessageRecvQueueModel<IMessageModelBase>
+                if (ClientRegisterCache.Instance.UpdateTcpInfo(model.Id, data.TcpSocket, tcpPort, model.GroupId))
                 {
-                    Address = data.SourcePoint,
-                    TcpCoket = data.TcpSocket,
-                    Data = new MessageRegisterResultModel
+                    TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
                     {
-                        Id = model.Id,
-                        Ip = data.SourcePoint.Address.ToString(),
-                        Port = data.SourcePoint.Port,
-                        TcpPort = tcpPort,
-                        GroupId = model.GroupId,
-                        Mac = model.Mac,
-                        LocalTcpPort = model.LocalTcpPort
-                    }
-                });
+                        Address = data.SourcePoint,
+                        TcpCoket = data.TcpSocket,
+                        Data = new RegisterResultModel
+                        {
+                            Id = model.Id,
+                            Ip = data.SourcePoint.Address.ToString(),
+                            Port = data.SourcePoint.Port,
+                            TcpPort = tcpPort,
+                            GroupId = model.GroupId,
+                            Mac = model.Mac,
+                            LocalTcpPort = model.LocalTcpPort
+                        }
+                    });
+                }
+                else
+                {
+                    TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                    {
+                        Address = data.SourcePoint,
+                        TcpCoket = data.TcpSocket,
+                        Data = new RegisterResultModel
+                        {
+                            Code = -1,
+                            Msg = "TCP注册失败"
+                        }
+                    });
+                }
             }
         }
     }

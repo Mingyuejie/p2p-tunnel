@@ -4,7 +4,7 @@ using System.Text;
 
 namespace server.model
 {
-    public interface IMessageModelBase
+    public interface IModelBase
     {
         MessageTypes MsgType { get;}
     }

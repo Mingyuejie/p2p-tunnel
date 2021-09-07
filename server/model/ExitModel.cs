@@ -4,9 +4,9 @@ using server.model;
 namespace server.models
 {
     [ProtoContract]
-    public class MessageExitModel : IMessageModelBase
+    public class ExitModel : IModelBase
     {
-        public MessageExitModel() { }
+        public ExitModel() { }
         [ProtoMember(1)]
         public long Id { get; set; } = 0;
 

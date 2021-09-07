@@ -11,9 +11,9 @@ namespace server.model
     /// 重启
     /// </summary>
     [ProtoContract]
-    public class MessageResetModel : IMessageModelBase
+    public class ResetModel : IModelBase
     {
-        public MessageResetModel() { }
+        public ResetModel() { }
 
         /// <summary>
         /// 来源客户端id

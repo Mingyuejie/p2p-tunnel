@@ -3,9 +3,9 @@
 namespace server.model
 {
     [ProtoContract]
-    public class MessageHeartModel : IMessageModelBase
+    public class HeartModel : IModelBase
     {
-        public MessageHeartModel() { }
+        public HeartModel() { }
 
         [ProtoMember(1)]
         public long TargetId { get; set; } = 0;

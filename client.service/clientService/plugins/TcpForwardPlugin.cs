@@ -1,5 +1,6 @@
 ﻿using client.service.p2pPlugins.plugins.forward.tcp;
 using common;
+using common.extends;
 
 namespace client.service.clientService.plugins
 {
@@ -7,9 +8,9 @@ namespace client.service.clientService.plugins
     {
         public void Add(ClientServicePluginExcuteWrap arg)
         {
-            ForwardSettingModel model = Helper.DeJsonSerializer<ForwardSettingModel>(arg.Content);
+            ForwardSettingModel model = arg.Content.DeJson<ForwardSettingModel>();
 
-            TcpForwardRecordBaseModel fmodel = Helper.DeJsonSerializer<TcpForwardRecordBaseModel>(model.Content);
+            TcpForwardRecordBaseModel fmodel = arg.Content.DeJson<TcpForwardRecordBaseModel>();
             string errmsg = TcpForwardHelper.Instance.Add(new TcpForwardRecordBaseModel
             {
                 AliveType = fmodel.AliveType,
@@ -22,44 +23,40 @@ namespace client.service.clientService.plugins
             }, model.ID);
             if (!string.IsNullOrWhiteSpace(errmsg))
             {
-                arg.SetResultCode(-1, errmsg);
+                arg.SetCode(-1, errmsg);
             }
-            arg.Callback(arg, null);
 
         }
 
         public void Del(ClientServicePluginExcuteWrap arg)
         {
-            ForwardSettingModel model = Helper.DeJsonSerializer<ForwardSettingModel>(arg.Content);
+            ForwardSettingModel model = arg.Content.DeJson<ForwardSettingModel>();
             string errmsg = TcpForwardHelper.Instance.Del(model.ID);
             if (!string.IsNullOrWhiteSpace(errmsg))
             {
-                arg.SetResultCode(-1, errmsg);
+                arg.SetCode(-1, errmsg);
             }
-            arg.Callback(arg, null);
         }
 
-        public void List(ClientServicePluginExcuteWrap arg)
+        public System.Collections.Generic.List<TcpForwardRecordBaseModel> List(ClientServicePluginExcuteWrap arg)
         {
-            arg.Callback(arg, TcpForwardHelper.Instance.Mappings);
+            return TcpForwardHelper.Instance.Mappings;
         }
 
         public void Start(ClientServicePluginExcuteWrap arg)
         {
-            ForwardSettingModel model = Helper.DeJsonSerializer<ForwardSettingModel>(arg.Content);
+            ForwardSettingModel model = arg.Content.DeJson<ForwardSettingModel>();
             string errmsg = TcpForwardHelper.Instance.Start(model.ID);
             if (!string.IsNullOrWhiteSpace(errmsg))
             {
-                arg.SetResultCode(-1, errmsg);
+                arg.SetCode(-1, errmsg);
             }
-            arg.Callback(arg, null);
         }
 
         public void Stop(ClientServicePluginExcuteWrap arg)
         {
-            ForwardSettingModel model = Helper.DeJsonSerializer<ForwardSettingModel>(arg.Content);
+            ForwardSettingModel model = arg.Content.DeJson<ForwardSettingModel>();
             TcpForwardHelper.Instance.Stop(model.ID);
-            arg.Callback(arg, null);
         }
     }
 

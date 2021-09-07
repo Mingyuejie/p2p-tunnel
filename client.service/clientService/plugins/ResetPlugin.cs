@@ -1,6 +1,7 @@
 ﻿using client.service.serverPlugins.clients;
 using client.service.serverPlugins.reset;
 using common;
+using common.extends;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +16,7 @@ namespace client.service.clientService.plugins
     {
         public void Reset(ClientServicePluginExcuteWrap arg)
         {
-            ResetModel model = Helper.DeJsonSerializer<ResetModel>(arg.Content);
+            ResetModel model = arg.Content.DeJson<ResetModel>();
 
             if (model.ID > 0)
             {
@@ -27,7 +28,6 @@ namespace client.service.clientService.plugins
                     }
                 }
             }
-            arg.Callback(arg, null);
         }
     }
 

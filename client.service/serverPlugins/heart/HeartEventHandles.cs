@@ -24,7 +24,7 @@ namespace client.service.serverPlugins.heart
         /// <summary>
         /// 发送心跳消息
         /// </summary>
-        public event EventHandler<SendMessageEventArg> OnSendHeartMessageHandler;
+        public event EventHandler<SendEventArg> OnSendHeartMessageHandler;
         /// <summary>
         /// 发送心跳消息
         /// </summary>
@@ -33,23 +33,23 @@ namespace client.service.serverPlugins.heart
         {
             if (UdpServer != null || address != null)
             {
-                SendMessageEventArg arg = new SendMessageEventArg
+                SendEventArg arg = new SendEventArg
                 {
                     Address = address ?? UdpServer,
-                    Data = new MessageHeartModel
+                    Data = new HeartModel
                     {
                         SourceId = ConnectId
                     }
                 };
 
-                eventHandlers.SendMessage(arg);
+                eventHandlers.Send(arg);
                 OnSendHeartMessageHandler?.Invoke(this, arg);
             }
         }
         /// <summary>
         /// 发送TCP心跳消息
         /// </summary>
-        public event EventHandler<SendTcpMessageEventArg> OnSendTcpHeartMessageHandler;
+        public event EventHandler<SendTcpEventArg> OnSendTcpHeartMessageHandler;
         /// <summary>
         /// 发送TCP心跳消息
         /// </summary>
@@ -58,15 +58,15 @@ namespace client.service.serverPlugins.heart
         {
             if (UdpServer != null || socket != null)
             {
-                SendTcpMessageEventArg arg = new SendTcpMessageEventArg
+                SendTcpEventArg arg = new SendTcpEventArg
                 {
                     Socket = socket ?? TcpServer,
-                    Data = new MessageHeartModel
+                    Data = new HeartModel
                     {
                         SourceId = ConnectId
                     },
                 };
-                eventHandlers.SendTcpMessage(arg, 500);
+                eventHandlers.SendTcp(arg, 500);
                 OnSendTcpHeartMessageHandler?.Invoke(this, arg);
             }
         }
@@ -88,7 +88,7 @@ namespace client.service.serverPlugins.heart
     public class OnHeartEventArg : EventArgs
     {
         public PluginExcuteModel Packet { get; set; }
-        public MessageHeartModel Data { get; set; }
+        public HeartModel Data { get; set; }
     }
 
 }

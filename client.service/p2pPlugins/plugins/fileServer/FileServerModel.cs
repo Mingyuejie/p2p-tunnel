@@ -7,7 +7,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
 
     [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
-    public enum P2PFileCmdTypes : int
+    public enum FileServerCmdTypes : int
     {
         LIST, //发送列表
         DOWNLOAD,//请求下载
@@ -17,12 +17,12 @@ namespace client.service.p2pPlugins.plugins.fileServer
     }
 
     [ProtoContract]
-    public class P2PFileModel : IP2PMessageBase
+    public class FileServerModel : IP2PMessageBase
     {
-        public P2PFileModel() { }
+        public FileServerModel() { }
 
         [ProtoMember(1, IsRequired = true)]
-        public P2PDataMessageTypes Type { get; } = P2PDataMessageTypes.FILE_SERVER;
+        public P2PDataTypes Type { get; } = P2PDataTypes.FILE_SERVER;
 
         [ProtoMember(2)]
         public byte[] Data { get; set; } = Array.Empty<byte>();
@@ -34,13 +34,13 @@ namespace client.service.p2pPlugins.plugins.fileServer
         public long ToId { get; set; } = 0;
 
         [ProtoMember(5)]
-        public P2PFileCmdTypes CmdType { get; set; } = P2PFileCmdTypes.DOWNLOAD;
+        public FileServerCmdTypes CmdType { get; set; } = FileServerCmdTypes.DOWNLOAD;
     }
 
     [ProtoContract]
-    public class P2PFileCmdListModel : IRequestExcuteMessage
+    public class FileServerListModel : IRequestExcuteMessage
     {
-        public P2PFileCmdListModel() { }
+        public FileServerListModel() { }
 
         [ProtoMember(1)]
         public string Path { get; set; } = string.Empty;
@@ -48,24 +48,24 @@ namespace client.service.p2pPlugins.plugins.fileServer
     }
 
     [ProtoContract]
-    public class P2PFileCmdUploadModel
+    public class FileServerUploadModel
     {
-        public P2PFileCmdUploadModel() { }
+        public FileServerUploadModel() { }
 
         [ProtoMember(1, IsRequired = true)]
-        public P2PFileCmdTypes CmdType { get; } = P2PFileCmdTypes.UPLOAD;
+        public FileServerCmdTypes CmdType { get; } = FileServerCmdTypes.UPLOAD;
 
         [ProtoMember(2)]
         public string Path { get; set; } = string.Empty;
     }
 
     [ProtoContract]
-    public class P2PFileCmdDownloadModel
+    public class FileServerDownloadModel
     {
-        public P2PFileCmdDownloadModel() { }
+        public FileServerDownloadModel() { }
 
         [ProtoMember(1, IsRequired = true)]
-        public P2PFileCmdTypes CmdType { get; } = P2PFileCmdTypes.DOWNLOAD;
+        public FileServerCmdTypes CmdType { get; } = FileServerCmdTypes.DOWNLOAD;
 
         [ProtoMember(2)]
         public string Path { get; set; } = string.Empty;
@@ -73,15 +73,15 @@ namespace client.service.p2pPlugins.plugins.fileServer
 
 
     [ProtoContract]
-    public class P2PFileFileModel
+    public class FileModel
     {
-        public P2PFileFileModel() { }
+        public FileModel() { }
 
         [ProtoMember(1, IsRequired = true)]
-        public P2PFileCmdTypes CmdType { get; } = P2PFileCmdTypes.FILE;
+        public FileServerCmdTypes CmdType { get; } = FileServerCmdTypes.FILE;
 
         [ProtoMember(2, IsRequired = true)]
-        public P2PFileCmdTypes FileType { get; set; } = P2PFileCmdTypes.DOWNLOAD;
+        public FileServerCmdTypes FileType { get; set; } = FileServerCmdTypes.DOWNLOAD;
 
         [ProtoMember(3)]
         public string Name { get; set; } = string.Empty;
@@ -97,12 +97,12 @@ namespace client.service.p2pPlugins.plugins.fileServer
     }
 
     [ProtoContract]
-    public class P2PFileProgressModel
+    public class FileServerProgressModel
     {
-        public P2PFileProgressModel() { }
+        public FileServerProgressModel() { }
 
         [ProtoMember(1, IsRequired = true)]
-        public P2PFileCmdTypes CmdType { get; } = P2PFileCmdTypes.PROGRESS;
+        public FileServerCmdTypes CmdType { get; } = FileServerCmdTypes.PROGRESS;
 
         [ProtoMember(2)]
         public string Md5 { get; set; } = string.Empty;

@@ -4,9 +4,9 @@ using server.model;
 namespace server.models
 {
     [ProtoContract]
-    public class MessageP2PModel : IMessageModelBase
+    public class P2PModel : IModelBase
     {
-        public MessageP2PModel() { }
+        public P2PModel() { }
 
         [ProtoMember(1, IsRequired = true)]
         public MessageTypes MsgType { get; } = MessageTypes.P2P;

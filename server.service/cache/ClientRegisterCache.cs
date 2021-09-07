@@ -1,4 +1,5 @@
-﻿using server.service.model;
+﻿using common.extends;
+using server.service.model;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -41,7 +42,7 @@ namespace common.cache
 
         public RegisterCacheModel GetBySameGroup(string groupid, string name)
         {
-            return cache.Values.FirstOrDefault(c => c.GroupId == groupid && c.Name == name);
+            return cache.Values.FirstOrDefault(c => c.GroupId == groupid.Md5() && c.Name == name);
         }
 
         public List<RegisterCacheModel> GetAll()
@@ -57,21 +58,27 @@ namespace common.cache
                 id = Id;
             }
             model.Id = id;
-            model.GroupId = string.IsNullOrWhiteSpace(model.GroupId) ? Helper.GetMd5Hash(Guid.NewGuid().ToString()) : model.GroupId;
+            if (string.IsNullOrWhiteSpace(model.OriginGroupId))
+            {
+                model.OriginGroupId = Guid.NewGuid().ToString().Md5();
+            }
+
+            model.GroupId = model.OriginGroupId.Md5();
             _ = cache.AddOrUpdate(id, model, (a, b) => model);
             return id;
         }
 
-        public long UpdateTcpInfo(long id, Socket socket, int port)
+        public bool UpdateTcpInfo(long id, Socket socket, int port,string groupId)
         {
             RegisterCacheModel data = Get(id);
-            if (data != null)
+            if (data != null && groupId.Md5() == data.GroupId)
             {
                 data.LastTime = Helper.GetTimeStamp();
                 data.TcpSocket = socket;
                 data.TcpPort = port;
+                return true;
             }
-            return id;
+            return false;
         }
 
         public void Remove(long id)

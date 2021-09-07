@@ -1,4 +1,5 @@
 ﻿using common;
+using common.extends;
 using Mono.Nat;
 using System;
 using System.Collections.Generic;
@@ -43,25 +44,25 @@ namespace client.service.clientService.plugins
 
     public class UpnpPlugin : IClientServicePlugin
     {
-        public void Devices(ClientServicePluginExcuteWrap arg)
+        public string[] Devices(ClientServicePluginExcuteWrap arg)
         {
             try
             {
-                arg.Callback(arg, UpnpHelper.Instance.devices.Select(c => c.Text).ToArray());
+                return UpnpHelper.Instance.devices.Select(c => c.Text).ToArray();
             }
             catch (Exception ex)
             {
-                arg.SetResultCode(-1, ex.Message);
-                arg.Callback(arg, Array.Empty<string>());
+                arg.SetCode(-1, ex.Message);
+                return Array.Empty<string>();
             }
         }
 
-        public void Mappings(ClientServicePluginExcuteWrap arg)
+        public MappingModel[] Mappings(ClientServicePluginExcuteWrap arg)
         {
-            RequestModel model = Helper.DeJsonSerializer<RequestModel>(arg.Content);
+            RequestModel model = arg.Content.DeJson<RequestModel>();
             try
             {
-                arg.Callback(arg, UpnpHelper.Instance.devices[model.DeviceIndex].GetMappings().Select(c => new MappingModel
+                return UpnpHelper.Instance.devices[model.DeviceIndex].GetMappings().Select(c => new MappingModel
                 {
                     Description = c.Description,
                     DeviceIndex = model.DeviceIndex,
@@ -70,18 +71,18 @@ namespace client.service.clientService.plugins
                     Protocol = c.Protocol,
                     PublicPort = c.PublicPort,
                     Expiration = c.Expiration
-                }).ToArray());
+                }).ToArray();
             }
             catch (Exception ex)
             {
-                arg.SetResultCode(-1, ex.Message);
-                arg.Callback(arg, Array.Empty<MappingModel>());
+                arg.SetCode(-1, ex.Message);
+                return Array.Empty<MappingModel>();
             }
         }
 
         public void Add(ClientServicePluginExcuteWrap arg)
         {
-            MappingModel model = Helper.DeJsonSerializer<MappingModel>(arg.Content);
+            MappingModel model = arg.Content.DeJson<MappingModel>();
             try
             {
                 UpnpHelper.Instance.devices[model.DeviceIndex].Device.CreatePortMap(new Mapping(model.Protocol, model.PrivatePort, model.PublicPort, model.Lifetime, model.Description));
@@ -89,23 +90,21 @@ namespace client.service.clientService.plugins
             catch (Exception ex)
             {
                 Logger.Instance.Error(ex.Message);
-                arg.SetResultCode(-1, ex.Message);
+                arg.SetCode(-1, ex.Message);
             }
-            arg.Callback(arg,null);
         }
 
         public void Del(ClientServicePluginExcuteWrap arg)
         {
-            RequestModel model = Helper.DeJsonSerializer<RequestModel>(arg.Content);
+            RequestModel model = arg.Content.DeJson<RequestModel>();
             try
             {
                 UpnpHelper.Instance.devices[model.DeviceIndex].DelMapping(model.MappingIndex);
             }
             catch (Exception ex)
             {
-                arg.SetResultCode(-1, ex.Message);
+                arg.SetCode(-1, ex.Message);
             }
-            arg.Callback(arg, null);
         }
     }
 

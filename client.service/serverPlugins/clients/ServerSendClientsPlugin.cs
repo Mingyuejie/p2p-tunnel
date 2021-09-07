@@ -13,7 +13,7 @@ namespace client.service.serverPlugins.clients
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
         {
-            MessageClientsModel res = model.Packet.Chunk.ProtobufDeserialize<MessageClientsModel>();
+            ClientsModel res = model.Packet.Chunk.DeBytes<ClientsModel>();
 
             if (serverType == ServerType.UDP)
             {

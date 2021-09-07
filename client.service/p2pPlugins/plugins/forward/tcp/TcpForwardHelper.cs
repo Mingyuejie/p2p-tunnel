@@ -29,7 +29,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
             //A来了请求 ，转发到B，
             TcpForwardServer.Instance.OnRequest += OnRequest;
             //B那边发生了错误，无法完成请求
-            TcpForwardEventHandles.Instance.OnTcpForwardMessageHandler += OnTcpForwardMessageHandler;
+            TcpForwardEventHandles.Instance.OnTcpForwardHandler += OnTcpForwardMessageHandler;
 
             TcpForwardServer.Instance.OnListeningChange += (sender, model) =>
             {
@@ -50,7 +50,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
         {
             if (arg.Socket != null)
             {
-                TcpForwardEventHandles.Instance.SendTcpForwardMessage(new SendTcpForwardMessageEventArg
+                TcpForwardEventHandles.Instance.SendTcpForward(new SendTcpForwardEventArg
                 {
                     Data = arg.Msg,
                     Socket = arg.Socket
@@ -61,7 +61,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
                 TcpForwardServer.Instance.Fail(arg.Msg, "未选择转发对象，或者未与转发对象建立连接");
             }
         }
-        private void OnTcpForwardMessageHandler(object sender, OnTcpForwardMessageEventArg arg)
+        private void OnTcpForwardMessageHandler(object sender, OnTcpForwardEventArg arg)
         {
             switch (arg.Data.Type)
             {
@@ -87,7 +87,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
             }
         }
 
-        private void Request(OnTcpForwardMessageEventArg arg)
+        private void Request(OnTcpForwardEventArg arg)
         {
             ClientModel.Get(arg.Data.RequestId, out ClientModel client);
             try
@@ -127,7 +127,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
             catch (Exception ex)
             {
                 ClientModel.Remove(arg.Data.RequestId);
-                TcpForwardEventHandles.Instance.SendTcpForwardMessage(new SendTcpForwardMessageEventArg
+                TcpForwardEventHandles.Instance.SendTcpForward(new SendTcpForwardEventArg
                 {
                     Data = new TcpForwardModel
                     {
@@ -145,10 +145,10 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
         {
             var bytes = client.TargetSocket.ReceiveAll();
             //分块传输
-            if (Helper.IsChunked(bytes))
+            if (bytes.IsChunked())
             {
                 //第一次传完
-                if (Helper.IsChunkedEnd(bytes))
+                if (bytes.IsChunkedEnd())
                 {
                     ReceiveChunkedEnd(client, bytes, client.SourceSocket);
                     client.Remove();
@@ -164,7 +164,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
                             if (bytes1.Length > 0)
                             {
                                 Receive(client, bytes1);
-                                if (Helper.IsChunkedEnd(bytes1))
+                                if (bytes1.IsChunkedEnd())
                                 {
                                     ReceiveChunkedEnd(client, bytes1, client.SourceSocket);
                                     client.Remove();
@@ -224,7 +224,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
 
         private void Receive(ClientModel client, byte[] data)
         {
-            TcpForwardEventHandles.Instance.SendTcpForwardMessage(new SendTcpForwardMessageEventArg
+            TcpForwardEventHandles.Instance.SendTcpForward(new SendTcpForwardEventArg
             {
                 Data = new TcpForwardModel
                 {
@@ -241,7 +241,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
 
         private void ReceiveChunkedEnd(ClientModel client, byte[] data, Socket sourceSocket)
         {
-            TcpForwardEventHandles.Instance.SendTcpForwardMessage(new SendTcpForwardMessageEventArg
+            TcpForwardEventHandles.Instance.SendTcpForward(new SendTcpForwardEventArg
             {
                 Data = new TcpForwardModel
                 {
@@ -373,7 +373,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
         {
             if (File.Exists(configFileName))
             {
-                ConfigFileModel config = Helper.DeJsonSerializer<ConfigFileModel>(File.ReadAllText(configFileName));
+                ConfigFileModel config = File.ReadAllText(configFileName).DeJson<ConfigFileModel>();
                 if (config != null)
                 {
                     Mappings = config.Mappings;
@@ -389,10 +389,10 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
             try
             {
 
-                File.WriteAllText(configFileName, Helper.JsonSerializer(new ConfigFileModel
+                File.WriteAllText(configFileName, new ConfigFileModel
                 {
                     Mappings = Mappings
-                }));
+                }.ToJson());
                 return string.Empty;
             }
             catch (Exception ex)

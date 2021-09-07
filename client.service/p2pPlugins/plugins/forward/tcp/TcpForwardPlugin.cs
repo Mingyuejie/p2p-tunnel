@@ -2,13 +2,13 @@
 
 namespace client.service.p2pPlugins.plugins.forward.tcp
 {
-    public class TcpForwardPlugin : IP2PMessagePlugin
+    public class TcpForwardPlugin : IP2PPlugin
     {
-        public P2PDataMessageTypes Type => P2PDataMessageTypes.TCP_FORWARD;
-        public void Excute(OnP2PTcpMessageArg arg)
+        public P2PDataTypes Type => P2PDataTypes.TCP_FORWARD;
+        public void Excute(OnP2PTcpArg arg)
         {
-            TcpForwardModel data = arg.Data.Data.ProtobufDeserialize<TcpForwardModel>();
-            TcpForwardEventHandles.Instance.OnTcpForwardMessage(new OnTcpForwardMessageEventArg
+            TcpForwardModel data = arg.Data.Data.DeBytes<TcpForwardModel>();
+            TcpForwardEventHandles.Instance.OnTcpForward(new OnTcpForwardEventArg
             {
                 Packet = arg.Packet,
                 Data = data,
