@@ -1,4 +1,5 @@
-﻿using System;
+﻿using common;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -58,6 +59,8 @@ namespace client.service.webServer
                 }
 
             }, TaskCreationOptions.LongRunning);
+
+            Logger.Instance.Info("web服务已启动...");
         }
 
 

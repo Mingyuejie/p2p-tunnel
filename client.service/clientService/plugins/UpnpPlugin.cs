@@ -4,6 +4,7 @@ using Mono.Nat;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace client.service.clientService.plugins
 {
@@ -15,30 +16,45 @@ namespace client.service.clientService.plugins
 
         public void Start()
         {
-            NatUtility.DeviceFound += (object sender, DeviceEventArgs e) =>
+            Task.Run(() =>
             {
-                INatDevice device = e.Device;
-                if (device.NatProtocol == NatProtocol.Upnp)
+                try
                 {
-                    try
+                    NatUtility.DeviceFound += (object sender, DeviceEventArgs e) =>
                     {
-                        devices.Add(new DeviceModel
+                        INatDevice device = e.Device;
+                        if (device.NatProtocol == NatProtocol.Upnp)
                         {
-                            Device = device,
-                            Text = $"外网:{device.GetExternalIPAsync().Result},内网:{device.DeviceEndpoint}"
-                        });
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-            };
-            NatUtility.StartDiscovery();
+                            try
+                            {
+                                devices.Add(new DeviceModel
+                                {
+                                    Device = device,
+                                    Text = $"外网:{device.GetExternalIPAsync().Result},内网:{device.DeviceEndpoint}"
+                                });
+                            }
+                            catch (Exception)
+                            {
+                            }
+                        }
+                    };
+                    NatUtility.StartDiscovery();
 
-            Helper.SetTimeout(() =>
-            {
-                NatUtility.StopDiscovery();
-            }, 5000);
+
+                }
+                catch (Exception)
+                {
+                }
+                finally
+                {
+                    Helper.SetTimeout(() =>
+                    {
+                        NatUtility.StopDiscovery();
+                    }, 5000);
+                }
+            });
+
+            Logger.Instance.Info("UPNP服务已启动...");
         }
     }
 

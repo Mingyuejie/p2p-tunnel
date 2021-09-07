@@ -58,17 +58,12 @@ namespace server.test
                     }
                     catch (Exception e)
                     {
-                        Logger.Instance.Info($"发送广播客户端消息错误!{e.Message}");
+                        Logger.Instance.Debug($"发送广播客户端消息错误!{e.Message}");
                     }
 
                     System.Threading.Thread.Sleep(1000);
                 }
             });
-
-            Logger.Instance.OnLogger += (sender, model) =>
-            {
-                Console.WriteLine($"[{model.Type}][{model.Time:yyyy-MM-dd HH:mm:ss}]:{model.Content}");
-            };
 
             _ = Console.ReadLine();
         }

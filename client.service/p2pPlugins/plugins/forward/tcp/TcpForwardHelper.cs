@@ -44,6 +44,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
         public void Start()
         {
             StartAll();
+            Logger.Instance.Info("TCP转发服务已启动...");
         }
 
         private void OnRequest(object sender, TcpForwardRequestModel arg)

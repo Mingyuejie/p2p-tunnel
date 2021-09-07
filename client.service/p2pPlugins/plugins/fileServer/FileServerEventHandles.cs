@@ -216,7 +216,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
                     }
                     catch (Exception ex)
                     {
-                        Logger.Instance.Info(ex + "");
+                        Logger.Instance.Debug(ex + "");
                     }
                     OnSendTcpFileHandler?.Invoke(this, arg);
                 });

@@ -110,7 +110,7 @@ namespace client.service.p2pPlugins.plugins.request
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.Info(ex + "");
+                    Logger.Instance.Debug(ex + "");
                     P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
                     {
                         Socket = arg.Packet.TcpSocket,

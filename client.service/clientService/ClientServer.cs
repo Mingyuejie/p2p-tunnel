@@ -62,7 +62,7 @@ namespace client.service.clientService
                         //Logger.Instance.Info(message);
                         break;
                     case LogLevel.Warn:
-                        Logger.Instance.Info(message);
+                        Logger.Instance.Debug(message);
                         break;
                     case LogLevel.Error:
                         Logger.Instance.Error(message);
@@ -141,7 +141,7 @@ namespace client.service.clientService
                               }
                               catch (Exception ex)
                               {
-                                  Logger.Instance.Info(ex + "");
+                                  Logger.Instance.Debug(ex + "");
                                   socket.Send(new ClientServiceMessageWrap
                                   {
                                       Content = ex.Message,
@@ -154,6 +154,8 @@ namespace client.service.clientService
                       });
                 };
             });
+
+            Logger.Instance.Info("本地服务已启动...");
         }
 
         private void Notify()

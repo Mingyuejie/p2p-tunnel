@@ -81,7 +81,7 @@ namespace server
                     }
                     catch (Exception ex)
                     {
-                        Logger.Instance.Info(ex + "");
+                        Logger.Instance.Debug(ex + "");
                         Stop();
                         break;
                     }
@@ -103,7 +103,7 @@ namespace server
             }
             catch (Exception ex)
             {
-                Logger.Instance.Info(ex + "");
+                Logger.Instance.Debug(ex + "");
             }
         }
         private void Receive(IAsyncResult result)
@@ -133,12 +133,12 @@ namespace server
                         }
                         else
                         {
-                            Logger.Instance.Info("!Running");
+                            Logger.Instance.Debug("!Running");
                         }
                     }
                     else
                     {
-                        Logger.Instance.Info($"length:{length}");
+                        Logger.Instance.Debug($"length:{length}");
                         model.Clear();
                     }
                 }
@@ -150,12 +150,12 @@ namespace server
                 {
                 }
                 model.ErrorCallback?.Invoke(ex.SocketErrorCode);
-                Logger.Instance.Info(ex + "");
+                Logger.Instance.Debug(ex + "");
                 model.Clear();
             }
             catch (Exception ex)
             {
-                Logger.Instance.Info(ex + "");
+                Logger.Instance.Debug(ex + "");
                 model.Clear();
             }
         }
@@ -230,7 +230,7 @@ namespace server
                     }
                     catch (Exception ex)
                     {
-                        Logger.Instance.Info(ex + "");
+                        Logger.Instance.Debug(ex + "");
                     }
                 }
             }

@@ -87,6 +87,7 @@ namespace client.service.serverPlugins.register
                     Thread.Sleep(2000);
                 }
             });
+            Logger.Instance.Info("已自动注册...");
         }
 
         public async Task<CommonTaskResponseModel<bool>> Start()

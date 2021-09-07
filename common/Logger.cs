@@ -14,9 +14,33 @@ namespace common
         private readonly ConcurrentQueue<LoggerModel> queue = new ConcurrentQueue<LoggerModel>();
         public int Count => queue.Count;
 
-        public event EventHandler<LoggerModel> OnLogger;
+        public Action<LoggerModel> OnLogger;
         private Logger()
         {
+            OnLogger = (model) =>
+            {
+                ConsoleColor currentForeColor = Console.ForegroundColor;
+                switch (model.Type)
+                {
+                    case LoggerTypes.DEBUG:
+                        Console.ForegroundColor = ConsoleColor.Blue;
+                        break;
+                    case LoggerTypes.INFO:
+                        Console.ForegroundColor = ConsoleColor.White;
+                        break;
+                    case LoggerTypes.WARNING:
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        break;
+                    case LoggerTypes.ERROR:
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        break;
+                    default:
+                        break;
+                }
+                Console.WriteLine($"[{model.Type}][{model.Time:yyyy-MM-dd HH:mm:ss}]:{model.Content}");
+                Console.ForegroundColor = currentForeColor;
+            };
+
             _ = Task.Factory.StartNew(() =>
             {
                 while (true)
@@ -26,7 +50,7 @@ namespace common
                         LoggerModel model = Dequeue();
                         if (model != null)
                         {
-                            OnLogger?.Invoke(this, model);
+                            OnLogger?.Invoke(model);
                         }
                     }
                     else
@@ -38,6 +62,11 @@ namespace common
         }
 
         [Conditional("DEBUG")]
+        public void Debug(string content, params object[] args)
+        {
+            queue.Enqueue(new LoggerModel { Type = LoggerTypes.INFO, Content = string.Format(content, args) });
+        }
+
         public void Info(string content, params object[] args)
         {
             queue.Enqueue(new LoggerModel { Type = LoggerTypes.INFO, Content = string.Format(content, args) });
@@ -71,6 +100,6 @@ namespace common
 
     public enum LoggerTypes
     {
-        INFO, WARNING, ERROR
+       DEBUG, INFO, WARNING, ERROR
     }
 }
