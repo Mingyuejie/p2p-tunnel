@@ -58,7 +58,7 @@ namespace client.service
             }
 
             Logger.Instance.Warning("=======================================");
-            Logger.Instance.Warning("没什么报红的报黄的，就说明运行成功了");
+            Logger.Instance.Warning("没什么报红的，就说明运行成功了");
             Logger.Instance.Warning("=======================================");
             Logger.Instance.Warning($"前端管理地址:http://{config.Web.Ip}:{config.Web.Port}");
             Logger.Instance.Warning($"管理通信地址:ws://{config.Websocket.Ip}:{config.Websocket.Port}");

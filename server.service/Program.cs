@@ -65,6 +65,12 @@ namespace server.test
                 }
             });
 
+            Logger.Instance.Warning("=======================================");
+            Logger.Instance.Warning("没什么报红的，就说明运行成功了");
+            Logger.Instance.Warning("=======================================");
+            Logger.Instance.Warning($"UDP端口:{config.Udp}");
+            Logger.Instance.Warning($"TCP端口:{config.Tcp}");
+
             _ = Console.ReadLine();
         }
     }
