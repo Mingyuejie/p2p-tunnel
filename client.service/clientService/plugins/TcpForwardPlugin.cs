@@ -6,12 +6,17 @@ namespace client.service.clientService.plugins
 {
     public class TcpForwardPlugin : IClientServicePlugin
     {
+        private readonly TcpForwardHelper tcpForwardHelper;
+        public TcpForwardPlugin(TcpForwardHelper tcpForwardHelper)
+        {
+            this.tcpForwardHelper = tcpForwardHelper;
+        }
+
         public void Add(ClientServicePluginExcuteWrap arg)
         {
             ForwardSettingModel model = arg.Content.DeJson<ForwardSettingModel>();
-
-            TcpForwardRecordBaseModel fmodel = arg.Content.DeJson<TcpForwardRecordBaseModel>();
-            string errmsg = TcpForwardHelper.Instance.Add(new TcpForwardRecordBaseModel
+            TcpForwardRecordBaseModel fmodel = model.Content.DeJson<TcpForwardRecordBaseModel>();
+            string errmsg = tcpForwardHelper.Add(new TcpForwardRecordBaseModel
             {
                 AliveType = fmodel.AliveType,
                 Listening = false,
@@ -31,7 +36,7 @@ namespace client.service.clientService.plugins
         public void Del(ClientServicePluginExcuteWrap arg)
         {
             ForwardSettingModel model = arg.Content.DeJson<ForwardSettingModel>();
-            string errmsg = TcpForwardHelper.Instance.Del(model.ID);
+            string errmsg = tcpForwardHelper.Del(model.ID);
             if (!string.IsNullOrWhiteSpace(errmsg))
             {
                 arg.SetCode(-1, errmsg);
@@ -40,13 +45,13 @@ namespace client.service.clientService.plugins
 
         public System.Collections.Generic.List<TcpForwardRecordBaseModel> List(ClientServicePluginExcuteWrap arg)
         {
-            return TcpForwardHelper.Instance.Mappings;
+            return tcpForwardHelper.Mappings;
         }
 
         public void Start(ClientServicePluginExcuteWrap arg)
         {
             ForwardSettingModel model = arg.Content.DeJson<ForwardSettingModel>();
-            string errmsg = TcpForwardHelper.Instance.Start(model.ID);
+            string errmsg = tcpForwardHelper.Start(model.ID);
             if (!string.IsNullOrWhiteSpace(errmsg))
             {
                 arg.SetCode(-1, errmsg);
@@ -56,7 +61,7 @@ namespace client.service.clientService.plugins
         public void Stop(ClientServicePluginExcuteWrap arg)
         {
             ForwardSettingModel model = arg.Content.DeJson<ForwardSettingModel>();
-            TcpForwardHelper.Instance.Stop(model.ID);
+            tcpForwardHelper.Stop(model.ID);
         }
     }
 

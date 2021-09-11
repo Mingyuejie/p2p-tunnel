@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-03 14:39:29
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-03 15:02:44
+ * @LastEditTime: 2021-09-11 22:59:41
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\setting.md
@@ -69,7 +69,7 @@
 4. 浏览器打开  配置文件里“web”配置项配置的地址，开始使用吧
 
 
-## 4、如果你想自己修改 web管理端，或者修改可 客户端的 websocket配置
+## 4、如果你想自己修改 web管理端，或者修改客户端的 websocket配置
 1. 项目 client.web.vue3  使用的是 vue3+element-plus
 2. 修改通信地址
 ```

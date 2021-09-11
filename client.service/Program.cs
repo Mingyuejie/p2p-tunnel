@@ -2,11 +2,14 @@
 using client.service.clientService.plugins;
 using client.service.config;
 using client.service.p2pPlugins.plugins.forward.tcp;
+using client.service.serverPlugins;
 using client.service.serverPlugins.clients;
 using client.service.serverPlugins.register;
 using client.service.webServer;
 using common;
 using common.extends;
+using Microsoft.Extensions.DependencyInjection;
+using server;
 using System;
 using System.IO;
 
@@ -14,48 +17,21 @@ namespace client.service
 {
     class Program
     {
+        public static ServiceProvider serviceProvider;
+
         static void Main(string[] args)
         {
             Logger.Instance.Info("正在启动...");
 
-            Config config = File.ReadAllText("appsettings.json").DeJson<Config>();
+            Config config = Config.ReadConfig();
 
-            //客户端信息
-            AppShareData.Instance.ClientConfig = config.Client;
-            //服务器信息
-            AppShareData.Instance.ServerConfig = config.Server;
-            AppShareData.Instance.FileServerConfig = config.FileServer;
+            var serviceCollection = new ServiceCollection();
 
-            //客户端websocket
-            ClientServer.Instance.Start(config.Websocket.Ip, config.Websocket.Port);
-            
-            //端点
-            ClientsHelper.Instance.Start();
-            //TCP转发
-            TcpForwardHelper.Instance.Start();
-           
-            //UPNP
-            UpnpHelper.Instance.Start();
-            
-            //静态web服务
-            WebServer.Instance.Start(config.Web.Ip, config.Web.Port, config.Web.Path);
-           
+            serviceCollection.AddSingleton((e) => config);
+            serviceCollection.AddServerPlugin().AddClientServer().AddWebSercer();
 
-            //退出事件
-            AppDomain.CurrentDomain.ProcessExit += (s, e) =>
-            {
-                RegisterEventHandles.Instance.SendExitMessage();
-            };
-            Console.CancelKeyPress += (s, e) =>
-            {
-                RegisterEventHandles.Instance.SendExitMessage();
-            };
-
-            //自动注册
-            if (AppShareData.Instance.ClientConfig.AutoReg)
-            {
-                RegisterHelper.Instance.AutoReg();
-            }
+            serviceProvider = serviceCollection.BuildServiceProvider();
+            serviceProvider.UseServerPlugin().UseClientServer().UseWebSercer();
 
             Logger.Instance.Warning("=======================================");
             Logger.Instance.Warning("没什么报红的，就说明运行成功了");

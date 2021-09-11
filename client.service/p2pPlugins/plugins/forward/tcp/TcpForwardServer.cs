@@ -13,13 +13,12 @@ using System.Threading.Tasks;
 
 namespace client.service.p2pPlugins.plugins.forward.tcp
 {
-    internal class TcpForwardServer
+    public class TcpForwardServer
     {
-        private static readonly Lazy<TcpForwardServer> lazy = new(() => new TcpForwardServer());
-        public static TcpForwardServer Instance => lazy.Value;
-
-        private TcpForwardServer()
+        private readonly ClientsHelper clientsHelper;
+        public TcpForwardServer(ClientsHelper clientsHelper)
         {
+            this.clientsHelper = clientsHelper;
         }
 
         private long requestId = 0;
@@ -89,7 +88,6 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
             }, TaskCreationOptions.LongRunning, server.CancelToken.Token);
 
         }
-
 
         private void Accept(IAsyncResult result)
         {
@@ -171,7 +169,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
                 socket = client.TargetClient.Socket;
                 if (socket == null || !socket.Connected || client.TargetClient.Name != client.TargetClient.Name)
                 {
-                    client.TargetClient = AppShareData.Instance.Clients.Values.FirstOrDefault(c => c.Name == client.TargetClient.Name);
+                    client.TargetClient = clientsHelper.Clients.FirstOrDefault(c => c.Name == client.TargetClient.Name);
                     if (client.TargetClient != null)
                     {
                         socket = client.TargetClient.Socket;

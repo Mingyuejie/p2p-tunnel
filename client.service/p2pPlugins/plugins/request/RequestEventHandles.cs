@@ -1,5 +1,6 @@
 ﻿using common;
 using common.extends;
+using Microsoft.Extensions.DependencyInjection;
 using ProtoBuf;
 using server.model;
 using System;
@@ -15,32 +16,15 @@ namespace client.service.p2pPlugins.plugins.request
 {
     public class RequestEventHandlers
     {
-        private static readonly Lazy<RequestEventHandlers> lazy = new(() => new RequestEventHandlers());
-        public static RequestEventHandlers Instance => lazy.Value;
 
         private readonly ConcurrentDictionary<long, TcpRequestMessageCache> requestCache = new();
         private long requestId = 0;
         private readonly Dictionary<string, Tuple<object, MethodInfo>> plugins = new();
 
-        private RequestEventHandlers()
+        private readonly P2PEventHandles p2PEventHandles;
+        public RequestEventHandlers(P2PEventHandles p2PEventHandles)
         {
-            var types = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(c => c.GetTypes())
-                .Where(c => c.GetInterfaces().Contains(typeof(IRequestExcutePlugin)));
-            foreach (var item in types)
-            {
-                string path = item.Name.Replace("Plugin", "");
-                object obj = Activator.CreateInstance(item);
-                foreach (var method in item.GetMethods())
-                {
-                    string key = $"{path}/{method.Name}".ToLower();
-                    if (!plugins.ContainsKey(key))
-                    {
-                        plugins.TryAdd(key, new Tuple<object, MethodInfo>(obj, method));
-                    }
-                }
-            }
-
+            this.p2PEventHandles = p2PEventHandles;
             _ = Task.Factory.StartNew(() =>
               {
                   while (true)
@@ -70,6 +54,26 @@ namespace client.service.p2pPlugins.plugins.request
               }, TaskCreationOptions.LongRunning);
         }
 
+        public void LoadPlugins()
+        {
+            var types = AppDomain.CurrentDomain.GetAssemblies()
+             .SelectMany(c => c.GetTypes())
+             .Where(c => c.GetInterfaces().Contains(typeof(IRequestExcutePlugin)));
+            foreach (var item in types)
+            {
+                string path = item.Name.Replace("Plugin", "");
+                object obj = Program.serviceProvider.GetService(item);
+                foreach (var method in item.GetMethods())
+                {
+                    string key = $"{path}/{method.Name}".ToLower();
+                    if (!plugins.ContainsKey(key))
+                    {
+                        plugins.TryAdd(key, new Tuple<object, MethodInfo>(obj, method));
+                    }
+                }
+            }
+        }
+
         //收到请求
         public void OnTcpRequest(OnTcpRequestEventArg arg)
         {
@@ -91,7 +95,7 @@ namespace client.service.p2pPlugins.plugins.request
                         {
                             if (returnResult != null && returnResult.Length > 0)
                             {
-                                P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
+                                p2PEventHandles.SendTcp(new SendP2PTcpArg
                                 {
                                     Socket = param.Data.Packet.TcpSocket,
                                     Data = new RequestModel
@@ -111,7 +115,7 @@ namespace client.service.p2pPlugins.plugins.request
                 catch (Exception ex)
                 {
                     Logger.Instance.Debug(ex + "");
-                    P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
+                    p2PEventHandles.SendTcp(new SendP2PTcpArg
                     {
                         Socket = arg.Packet.TcpSocket,
                         Data = new RequestModel
@@ -127,7 +131,7 @@ namespace client.service.p2pPlugins.plugins.request
             }
             else
             {
-                P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
+                p2PEventHandles.SendTcp(new SendP2PTcpArg
                 {
                     Socket = arg.Packet.TcpSocket,
                     Data = new RequestModel
@@ -163,7 +167,7 @@ namespace client.service.p2pPlugins.plugins.request
                 Time = Helper.GetTimeStamp()
             });
 
-            P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
+            p2PEventHandles.SendTcp(new SendP2PTcpArg
             {
                 Socket = param.Socket,
                 Data = new RequestModel
@@ -274,15 +278,37 @@ namespace client.service.p2pPlugins.plugins.request
 
     public class RequestPlugin : IP2PPlugin
     {
+        private readonly RequestEventHandlers requestEventHandlers;
+        public RequestPlugin(RequestEventHandlers requestEventHandlers)
+        {
+            this.requestEventHandlers = requestEventHandlers;
+        }
+
         public P2PDataTypes Type => P2PDataTypes.REQUEST;
 
         public void Excute(OnP2PTcpArg arg)
         {
-            RequestEventHandlers.Instance.OnTcpRequest(new OnTcpRequestEventArg
+            requestEventHandlers.OnTcpRequest(new OnTcpRequestEventArg
             {
                 Data = arg.Data.Data.DeBytes<RequestModel>(),
                 Packet = arg.Packet,
             });
+        }
+    }
+
+    public static class ServiceCollectionExtends
+    {
+        public static ServiceCollection AddRequestPlugin(this ServiceCollection obj)
+        {
+            obj.AddSingleton<RequestPlugin>();
+            obj.AddSingleton<RequestEventHandlers>();
+
+            return obj;
+        }
+        public static ServiceProvider UseRequestPlugin(this ServiceProvider obj)
+        {
+            obj.GetService<RequestEventHandlers>().LoadPlugins();
+            return obj;
         }
     }
 }

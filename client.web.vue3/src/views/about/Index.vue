@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-03 11:06:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-04 00:33:54
+ * @LastEditTime: 2021-09-11 22:51:44
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\Index.vue
@@ -15,7 +15,10 @@
                     <router-link :to="{name:'AboutHome'}">首页</router-link>
                 </li>
                 <li>
-                    <router-link :to="{name:'AboutSetting'}">使用和配置流程</router-link>
+                    <router-link :to="{name:'AboutSetting'}">配置和运行</router-link>
+                </li>
+                <li>
+                    <router-link :to="{name:'AboutUse'}">使用及基本原理</router-link>
                 </li>
                 <li>
                     <router-link :to="{name:'AboutEnv'}">环境测试记录</router-link>

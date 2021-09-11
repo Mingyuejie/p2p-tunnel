@@ -1,7 +1,9 @@
 ﻿using client.service.events;
 using client.service.p2pPlugins.plugins.request;
+using client.service.serverPlugins.register;
 using common;
 using common.extends;
+using Microsoft.Extensions.DependencyInjection;
 using server.model;
 using System;
 using System.Collections.Generic;
@@ -14,18 +16,28 @@ namespace client.service.p2pPlugins.plugins.fileServer
 {
     public class FileServerEventHandles
     {
-        private static readonly Lazy<FileServerEventHandles> lazy = new Lazy<FileServerEventHandles>(() => new FileServerEventHandles());
-        public static FileServerEventHandles Instance => lazy.Value;
-        private readonly Dictionary<FileServerCmdTypes, IFileServerPlugin[]> plugins = null;
+        private Dictionary<FileServerCmdTypes, IFileServerPlugin[]> plugins = null;
 
+        private readonly P2PEventHandles p2PEventHandles;
+        private readonly RequestEventHandlers requestEventHandlers;
+        private readonly RegisterState registerState;
 
-        private FileServerEventHandles()
+        public FileServerEventHandles(P2PEventHandles p2PEventHandles, RequestEventHandlers requestEventHandlers, RegisterState registerState)
+        {
+            this.p2PEventHandles = p2PEventHandles;
+            this.requestEventHandlers = requestEventHandlers;
+            this.registerState = registerState;
+
+           
+        }
+
+        public void LoadPlugins()
         {
             plugins = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(c => c.GetTypes())
-                .Where(c => c.GetInterfaces().Contains(typeof(IFileServerPlugin)))
-                .Select(c => (IFileServerPlugin)Activator.CreateInstance(c)).GroupBy(c => c.Type)
-                .ToDictionary(g => g.Key, g => g.ToArray());
+               .SelectMany(c => c.GetTypes())
+               .Where(c => c.GetInterfaces().Contains(typeof(IFileServerPlugin)))
+               .Select(c => (IFileServerPlugin)Program.serviceProvider.GetService(c)).GroupBy(c => c.Type)
+               .ToDictionary(g => g.Key, g => g.ToArray());
         }
 
         public event EventHandler<TcpFileMessageEventArg> OnTcpFileServerHandler;
@@ -60,13 +72,13 @@ namespace client.service.p2pPlugins.plugins.fileServer
         /// <param name="arg"></param>
         public void SendTcpProgress(SendTcpEventArg<FileServerProgressModel> arg)
         {
-            P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
+            p2PEventHandles.SendTcp(new SendP2PTcpArg
             {
                 Socket = arg.Socket,
                 Data = new FileServerModel
                 {
                     CmdType = FileServerCmdTypes.PROGRESS,
-                    FormId = EventHandlers.Instance.ConnectId,
+                    FormId = registerState.RemoteInfo.ConnectId,
                     ToId = arg.ToId,
                     Data = arg.Data.ToBytes()
                 }
@@ -110,13 +122,13 @@ namespace client.service.p2pPlugins.plugins.fileServer
         /// <param name="arg"></param>
         public void SendTcpDownload(SendTcpEventArg<FileServerDownloadModel> arg)
         {
-            P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
+            p2PEventHandles.SendTcp(new SendP2PTcpArg
             {
                 Socket = arg.Socket,
                 Data = new FileServerModel
                 {
                     CmdType = FileServerCmdTypes.DOWNLOAD,
-                    FormId = EventHandlers.Instance.ConnectId,
+                    FormId = registerState.RemoteInfo.ConnectId,
                     ToId = arg.ToId,
                     Data = arg.Data.ToBytes()
                 }
@@ -159,7 +171,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
         /// <param name="arg"></param>
         public async Task<CommonTaskResponseModel<FileInfo[]>> RequestTcpFileList(SendTcpEventArg<FileServerListModel> arg)
         {
-            var result = await RequestEventHandlers.Instance.TcpRequest(new TcpRequestParam
+            var result = await requestEventHandlers.TcpRequest(new TcpRequestParam
             {
                 Socket = arg.Socket,
                 Path = "filerequest/list",
@@ -224,13 +236,13 @@ namespace client.service.p2pPlugins.plugins.fileServer
         }
         private void _SendTcpFile(SendTcpEventArg<FileModel> arg)
         {
-            P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
+            p2PEventHandles.SendTcp(new SendP2PTcpArg
             {
                 Socket = arg.Socket,
                 Data = new FileServerModel
                 {
                     CmdType = arg.Data.CmdType,
-                    FormId = EventHandlers.Instance.ConnectId,
+                    FormId = registerState.RemoteInfo.ConnectId,
                     ToId = arg.ToId,
                     Data = arg.Data.ToBytes()
                 }

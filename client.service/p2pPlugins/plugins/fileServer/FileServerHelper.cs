@@ -1,4 +1,5 @@
-﻿using client.service.serverPlugins.clients;
+﻿using client.service.config;
+using client.service.serverPlugins.clients;
 using common;
 using common.extends;
 using ProtoBuf;
@@ -27,9 +28,6 @@ namespace client.service.p2pPlugins.plugins.fileServer
 
     public class FileServerHelper
     {
-        private static readonly Lazy<FileServerHelper> lazy = new(() => new FileServerHelper());
-        public static FileServerHelper Instance => lazy.Value;
-
         private string localCurrentPath = string.Empty;
         private string localRootPath = string.Empty;
 
@@ -50,12 +48,20 @@ namespace client.service.p2pPlugins.plugins.fileServer
 
         private readonly ConcurrentDictionary<string, FileSaveInfo> files = new();
 
-        private FileServerHelper()
+        private readonly Config config;
+        private readonly ClientsHelper clientsHelper; 
+        private readonly FileServerEventHandles fileServerEventHandles;
+
+        public FileServerHelper(Config config, ClientsHelper clientsHelper, FileServerEventHandles fileServerEventHandles)
         {
-            RemoteCurrentPath = AppShareData.Instance.FileServerConfig.Root;
-            FileServerEventHandles.Instance.OnTcpFileHandler += OnTcpFileHandler;
-            FileServerEventHandles.Instance.OnTcpProgressHandler += OnTcpProgressHandler;
-            FileServerEventHandles.Instance.OnTcpDownloadHandler += OnTcpDownloadHandler;
+            this.config = config;
+            this.clientsHelper = clientsHelper;
+            this.fileServerEventHandles = fileServerEventHandles;
+
+            RemoteCurrentPath = config.FileServer.Root;
+            fileServerEventHandles.OnTcpFileHandler += OnTcpFileHandler;
+            fileServerEventHandles.OnTcpProgressHandler += OnTcpProgressHandler;
+            fileServerEventHandles.OnTcpDownloadHandler += OnTcpDownloadHandler;
         }
 
         private void OnTcpDownloadHandler(object sender, TcpEventArg<FileServerDownloadModel> e)
@@ -71,7 +77,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
                     TotalLength = file.Length,
                     FileType = FileServerCmdTypes.UPLOAD.ToString()
                 });
-                FileServerEventHandles.Instance.SendTcpDownload(new SendTcpEventArg<string>
+                fileServerEventHandles.SendTcpDownload(new SendTcpEventArg<string>
                 {
                     Data = md5,
                     Socket = e.Packet.TcpSocket,
@@ -131,7 +137,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
                 _ = files.TryRemove(file.Md5, out _);
                 fs.Stream.Close();
             }
-            FileServerEventHandles.Instance.SendTcpProgress(new SendTcpEventArg<FileServerProgressModel>
+            fileServerEventHandles.SendTcpProgress(new SendTcpEventArg<FileServerProgressModel>
             {
                 Socket = e.Packet.TcpSocket,
                 Data = new FileServerProgressModel { IndexLength = fs.IndexLength, Md5 = file.Md5 },
@@ -141,12 +147,12 @@ namespace client.service.p2pPlugins.plugins.fileServer
 
         public void Start()
         {
-            RemoteCurrentPath = AppShareData.Instance.FileServerConfig.Root;
-            AppShareData.Instance.FileServerConfig.IsStart = true;
+            RemoteCurrentPath = config.FileServer.Root;
+            config.FileServer.IsStart = true;
         }
         public void Stop()
         {
-            AppShareData.Instance.FileServerConfig.IsStart = false;
+            config.FileServer.IsStart = false;
         }
 
         public bool Upload(long toid, string path)
@@ -165,7 +171,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
                         TotalLength = file.Length,
                         FileType = FileServerCmdTypes.UPLOAD.ToString()
                     });
-                    FileServerEventHandles.Instance.SendTcpUpload(new SendTcpEventArg<string>
+                    fileServerEventHandles.SendTcpUpload(new SendTcpEventArg<string>
                     {
                         Data = md5,
                         Socket = socket,
@@ -182,7 +188,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
             var socket = GetSocket(toid);
             if (socket != null)
             {
-                FileServerEventHandles.Instance.SendTcpDownload(new SendTcpEventArg<FileServerDownloadModel>
+                fileServerEventHandles.SendTcpDownload(new SendTcpEventArg<FileServerDownloadModel>
                 {
                     Data = new FileServerDownloadModel { Path = path },
                     Socket = socket,
@@ -198,7 +204,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
             var socket = GetSocket(toid);
             if (socket != null)
             {
-                var result = await FileServerEventHandles.Instance.RequestTcpFileList(new SendTcpEventArg<FileServerListModel>
+                var result = await fileServerEventHandles.RequestTcpFileList(new SendTcpEventArg<FileServerListModel>
                 {
                     ToId = toid,
                     Socket = socket,
@@ -310,11 +316,11 @@ namespace client.service.p2pPlugins.plugins.fileServer
 
         public FileInfo[] GetRemoteFiles(string path)
         {
-            if (!AppShareData.Instance.FileServerConfig.IsStart) return Array.Empty<FileInfo>();
+            if (!config.FileServer.IsStart) return Array.Empty<FileInfo>();
             RemoteCurrentPath = Path.Combine(RemoteCurrentPath, path);
-            if (new DirectoryInfo(RemoteCurrentPath).FullName.Length < AppShareData.Instance.FileServerConfig.Root.Length)
+            if (new DirectoryInfo(RemoteCurrentPath).FullName.Length < config.FileServer.Root.Length)
             {
-                RemoteCurrentPath = AppShareData.Instance.FileServerConfig.Root;
+                RemoteCurrentPath = config.FileServer.Root;
             }
             return GetFiles(RemoteCurrentPath, false);
         }
@@ -461,7 +467,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
 
         private Socket GetSocket(long id)
         {
-            AppShareData.Instance.Clients.TryGetValue(id, out ClientInfo client);
+            clientsHelper.Get(id, out ClientInfo client);
             return client?.Socket ?? null;
         }
 

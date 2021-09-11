@@ -1,4 +1,7 @@
-﻿using common.extends;
+﻿using common;
+using common.extends;
+using server.model;
+using server.service.cache;
 using server.service.model;
 using System;
 using System.Collections.Concurrent;
@@ -6,32 +9,34 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 
-namespace common.cache
+namespace server.service.cache
 {
-    public sealed class ClientRegisterCache
+    public class ClientRegisterCache : IClientRegisterCache
     {
-        private static readonly Lazy<ClientRegisterCache> lazy = new(() => new ClientRegisterCache());
-        public static ClientRegisterCache Instance => lazy.Value;
-
         private readonly ConcurrentDictionary<long, RegisterCacheModel> cache = new();
 
         private static long Id = 0;
 
-        private ClientRegisterCache()
+        public ClientRegisterCache()
         {
-            Helper.SetInterval(() =>
+            Task.Run(() =>
             {
-                long time = Helper.GetTimeStamp();
-
-                foreach (RegisterCacheModel item in cache.Values)
+                while (true)
                 {
-                    if (time - item.LastTime > 60 * 1000)
+                    long time = Helper.GetTimeStamp();
+
+                    foreach (RegisterCacheModel item in cache.Values)
                     {
-                        _ = cache.TryRemove(item.Id, out _);
+                        if (time - item.LastTime > 60 * 1000)
+                        {
+                            _ = cache.TryRemove(item.Id, out _);
+                        }
                     }
+                    Thread.Sleep(100);
                 }
-            }, 1000);
+            });
         }
 
         public RegisterCacheModel Get(long id)
@@ -68,7 +73,7 @@ namespace common.cache
             return id;
         }
 
-        public bool UpdateTcpInfo(long id, Socket socket, int port,string groupId)
+        public bool UpdateTcpInfo(long id, Socket socket, int port, string groupId)
         {
             RegisterCacheModel data = Get(id);
             if (data != null && groupId.Md5() == data.GroupId)
@@ -95,5 +100,24 @@ namespace common.cache
             }
         }
 
+        public bool Verify(long id, PluginExcuteModel data)
+        {
+            RegisterCacheModel model = Get(id);
+
+            if (model != null)
+            {
+                switch (data.ServerType)
+                {
+                    case ServerType.TCP:
+                        return model.Address == data.SourcePoint;
+                    case ServerType.UDP:
+                        return model.TcpSocket.RemoteEndPoint == data.TcpSocket.RemoteEndPoint;
+                    default:
+                        break;
+                }
+            }
+
+            return false;
+        }
     }
 }

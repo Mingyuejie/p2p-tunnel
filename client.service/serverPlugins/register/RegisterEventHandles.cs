@@ -11,23 +11,28 @@ namespace client.service.serverPlugins.register
 {
     public class RegisterEventHandles
     {
-        private static readonly Lazy<RegisterEventHandles> lazy = new(() => new RegisterEventHandles());
-        public static RegisterEventHandles Instance => lazy.Value;
         private RegisterParams requestCache;
         private long requestCacheId = 0;
 
-        private RegisterEventHandles()
-        {
+        private readonly EventHandlers eventHandlers;
+        private readonly RegisterState registerState ;
+        private readonly IUdpServer udpServer;
+        private readonly ITcpServer tcpServer;
 
+        public RegisterEventHandles(EventHandlers eventHandlers, RegisterState registerState, IUdpServer udpServer, ITcpServer tcpServer)
+        {
+            this.eventHandlers = eventHandlers;
+            this.registerState = registerState;
+            this.udpServer = udpServer;
+            this.tcpServer = tcpServer;
         }
 
-        private EventHandlers EventHandlers => EventHandlers.Instance;
-        private IPEndPoint UdpServer => EventHandlers.UdpServer;
-        private Socket TcpServer => EventHandlers.TcpServer;
-        private long ConnectId => EventHandlers.ConnectId;
+        private IPEndPoint UdpServer => registerState.UdpAddress;
+        private Socket TcpServer => registerState.TcpSocket;
+        private long ConnectId => registerState.RemoteInfo.ConnectId;
 
-        public int ClientTcpPort => EventHandlers.ClientTcpPort;
-        public int RouteLevel => EventHandlers.RouteLevel;
+        public int ClientTcpPort => registerState.RemoteInfo.TcpPort;
+        public int RouteLevel => registerState.LocalInfo.RouteLevel;
 
         /// <summary>
         /// 发送退出消息
@@ -52,15 +57,13 @@ namespace client.service.serverPlugins.register
 
             if (UdpServer != null)
             {
-                UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                udpServer.Send(new RecvQueueModel<IModelBase>
                 {
                     Address = arg.Address,
                     Data = arg.Data
                 });
-                UDPServer.Instance.Stop();
-                TCPServer.Instance.Stop();
-
-                AppShareData.Instance.UdpServer = null;
+                udpServer.Stop();
+                tcpServer.Stop();
 
                 SendRegisterStateChange(new RegisterEventArg
                 {
@@ -72,7 +75,7 @@ namespace client.service.serverPlugins.register
                 });
             }
             OnSendExitMessageHandler?.Invoke(this, arg);
-            EventHandlers.Sequence = 0;
+            eventHandlers.Sequence = 0;
 
             Helper.FlushMemory();
         }
@@ -90,7 +93,7 @@ namespace client.service.serverPlugins.register
         public void SendRegisterMessage(RegisterParams param)
         {
             Helper.CloseTimeout(requestCacheId);
-            EventHandlers.Send(new SendEventArg
+            eventHandlers.Send(new SendEventArg
             {
                 Address = UdpServer,
                 Data = new RegisterModel
@@ -132,7 +135,7 @@ namespace client.service.serverPlugins.register
         /// <param name="arg"></param>
         public void SendTcpRegisterMessage(long id, string clientName, string groupId = "", string mac = "", int localport = 0)
         {
-            EventHandlers.SendTcp(new SendTcpEventArg
+            eventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = TcpServer,
                 Data = new RegisterModel

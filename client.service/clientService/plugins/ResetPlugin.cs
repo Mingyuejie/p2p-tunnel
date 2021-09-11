@@ -1,4 +1,5 @@
-﻿using client.service.serverPlugins.clients;
+﻿using client.service.config;
+using client.service.serverPlugins.clients;
 using client.service.serverPlugins.reset;
 using common;
 using common.extends;
@@ -14,17 +15,27 @@ namespace client.service.clientService.plugins
 {
     public class ResetPlugin : IClientServicePlugin
     {
+        private readonly ResetEventHandles  resetEventHandles;
+        private readonly ClientsHelper   clientsHelper;
+        private readonly Config config;
+        public ResetPlugin(ClientsHelper clientsHelper, Config config, ResetEventHandles resetEventHandles)
+        {
+            this.clientsHelper = clientsHelper;
+            this.config = config;
+            this.resetEventHandles = resetEventHandles;
+        }
+
         public void Reset(ClientServicePluginExcuteWrap arg)
         {
             ResetModel model = arg.Content.DeJson<ResetModel>();
 
             if (model.ID > 0)
             {
-                if (AppShareData.Instance.Clients.TryGetValue(model.ID, out ClientInfo client))
+                if (clientsHelper.Get(model.ID, out ClientInfo client))
                 {
                     if (client != null)
                     {
-                        ResetEventHandles.Instance.SendResetMessage(client.Socket, model.ID);
+                        resetEventHandles.SendResetMessage(client.Socket, model.ID);
                     }
                 }
             }

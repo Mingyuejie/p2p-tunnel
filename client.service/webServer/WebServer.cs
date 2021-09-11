@@ -1,4 +1,6 @@
-﻿using common;
+﻿using client.service.config;
+using common;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,15 +12,18 @@ namespace client.service.webServer
     /// <summary>
     /// 本地web管理端服务器
     /// </summary>
-    public class WebServer
+    public class WebServer : IWebServer
     {
-        private static readonly Lazy<WebServer> lazy = new Lazy<WebServer>(() => new WebServer());
-        public static WebServer Instance => lazy.Value;
+        private readonly Config config;
+        public WebServer(Config config)
+        {
+            this.config = config;
+        }
 
-        public void Start(string ip, int port, string root)
+        public void Start()
         {
             HttpListener http = new HttpListener();
-            http.Prefixes.Add($"http://{ip}:{port}/");
+            http.Prefixes.Add($"http://{config.Web.Ip}:{config.Web.Port}/");
             http.Start();
 
             _ = Task.Factory.StartNew(() =>
@@ -37,7 +42,7 @@ namespace client.service.webServer
                         //默认页面
                         if (path == "/") path = "index.html";
 
-                        string fullPath = Path.Join(root, path);
+                        string fullPath = Path.Join(config.Web.Path, path);
                         if (File.Exists(fullPath))
                         {
                             var bytes = File.ReadAllBytes(fullPath);
@@ -75,7 +80,7 @@ namespace client.service.webServer
             { ".html","text/html; charset=utf-8"},
             { ".css","text/css; charset=utf-8"},
         };
-        public string GetContentType(string path)
+        private string GetContentType(string path)
         {
             string ext = Path.GetExtension(path);
             if (types.ContainsKey(ext))
@@ -83,6 +88,20 @@ namespace client.service.webServer
                 return types[ext];
             }
             return "application/octet-stream";
+        }
+    }
+
+    public static class ServiceCollectionExtends
+    {
+        public static ServiceCollection AddWebSercer(this ServiceCollection obj)
+        {
+            obj.AddSingleton<IWebServer, WebServer>();
+            return obj;
+        }
+        public static ServiceProvider UseWebSercer(this ServiceProvider obj)
+        {
+            obj.GetService<IWebServer>().Start();
+            return obj;
         }
     }
 }

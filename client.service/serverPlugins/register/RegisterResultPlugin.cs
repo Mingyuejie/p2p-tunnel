@@ -6,6 +6,12 @@ namespace client.service.serverPlugins.register
 {
     public class RegisterResultPlugin : IPlugin
     {
+        private readonly RegisterEventHandles registerEventHandles;
+        public RegisterResultPlugin(RegisterEventHandles registerEventHandles)
+        {
+            this.registerEventHandles = registerEventHandles;
+        }
+
         public MessageTypes MsgType => MessageTypes.SERVER_REGISTER_RESULT;
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
@@ -14,7 +20,7 @@ namespace client.service.serverPlugins.register
 
             if (serverType == ServerType.UDP)
             {
-                RegisterEventHandles.Instance.OnRegisterResult(new OnRegisterResultEventArg
+                registerEventHandles.OnRegisterResult(new OnRegisterResultEventArg
                 {
                     Data = res,
                     Packet = model
@@ -22,7 +28,7 @@ namespace client.service.serverPlugins.register
             }
             else if (serverType == ServerType.TCP)
             {
-                RegisterEventHandles.Instance.OnRegisterTcpResult(new OnRegisterResultEventArg
+                registerEventHandles.OnRegisterTcpResult(new OnRegisterResultEventArg
                 {
                     Data = res,
                     Packet = model

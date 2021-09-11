@@ -15,23 +15,28 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
 {
     public class TcpForwardHelper
     {
-        private static readonly Lazy<TcpForwardHelper> lazy = new(() => new TcpForwardHelper());
-        public static TcpForwardHelper Instance => lazy.Value;
-
         public IPAddress IP { get; private set; }
         private readonly string configFileName = "config_tcp_forward.json";
         public List<TcpForwardRecordBaseModel> Mappings { get; set; } = new List<TcpForwardRecordBaseModel>();
 
-        private TcpForwardHelper()
+        private readonly TcpForwardServer tcpForwardServer;
+        private readonly TcpForwardEventHandles tcpForwardEventHandles;
+        private readonly ClientsHelper clientsHelper;
+
+        public TcpForwardHelper(TcpForwardServer tcpForwardServer, TcpForwardEventHandles tcpForwardEventHandles, ClientsHelper clientsHelper)
         {
+            this.tcpForwardServer = tcpForwardServer;
+            this.tcpForwardEventHandles = tcpForwardEventHandles;
+            this.clientsHelper = clientsHelper;
+
             ReadConfig();
 
             //A来了请求 ，转发到B，
-            TcpForwardServer.Instance.OnRequest += OnRequest;
+            tcpForwardServer.OnRequest += OnRequest;
             //B那边发生了错误，无法完成请求
-            TcpForwardEventHandles.Instance.OnTcpForwardHandler += OnTcpForwardMessageHandler;
+            tcpForwardEventHandles.OnTcpForwardHandler += OnTcpForwardMessageHandler;
 
-            TcpForwardServer.Instance.OnListeningChange += (sender, model) =>
+            tcpForwardServer.OnListeningChange += (sender, model) =>
             {
                 TcpForwardRecordBaseModel mapping = Mappings.FirstOrDefault(c => c.SourcePort == model.SourcePort);
                 if (mapping != null)
@@ -51,7 +56,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
         {
             if (arg.Socket != null)
             {
-                TcpForwardEventHandles.Instance.SendTcpForward(new SendTcpForwardEventArg
+                tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
                 {
                     Data = arg.Msg,
                     Socket = arg.Socket
@@ -59,7 +64,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
             }
             else
             {
-                TcpForwardServer.Instance.Fail(arg.Msg, "未选择转发对象，或者未与转发对象建立连接");
+                tcpForwardServer.Fail(arg.Msg, "未选择转发对象，或者未与转发对象建立连接");
             }
         }
         private void OnTcpForwardMessageHandler(object sender, OnTcpForwardEventArg arg)
@@ -68,14 +73,14 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
             {
                 //A收到了B的回复
                 case TcpForwardType.RESPONSE:
-                    TcpForwardServer.Instance.Response(arg.Data);
+                    tcpForwardServer.Response(arg.Data);
                     break;
                 case TcpForwardType.RESPONSE_END:
-                    TcpForwardServer.Instance.ResponseEnd(arg.Data);
+                    tcpForwardServer.ResponseEnd(arg.Data);
                     break;
                 //A收到B的错误回复
                 case TcpForwardType.FAIL:
-                    TcpForwardServer.Instance.Fail(arg.Data);
+                    tcpForwardServer.Fail(arg.Data);
                     break;
                 //B收到请求
                 case TcpForwardType.REQUEST:
@@ -128,7 +133,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
             catch (Exception ex)
             {
                 ClientModel.Remove(arg.Data.RequestId);
-                TcpForwardEventHandles.Instance.SendTcpForward(new SendTcpForwardEventArg
+                tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
                 {
                     Data = new TcpForwardModel
                     {
@@ -225,7 +230,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
 
         private void Receive(ClientModel client, byte[] data)
         {
-            TcpForwardEventHandles.Instance.SendTcpForward(new SendTcpForwardEventArg
+            tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
             {
                 Data = new TcpForwardModel
                 {
@@ -242,7 +247,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
 
         private void ReceiveChunkedEnd(ClientModel client, byte[] data, Socket sourceSocket)
         {
-            TcpForwardEventHandles.Instance.SendTcpForward(new SendTcpForwardEventArg
+            tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
             {
                 Data = new TcpForwardModel
                 {
@@ -291,6 +296,7 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
             else
             {
                 TcpForwardRecordBaseModel idmap = Mappings.FirstOrDefault(c => c.ID == id);
+
                 if (idmap.SourcePort == model.SourcePort && idmap.ID != portmap.ID)
                 {
                     return "已存在相同源端口的记录";
@@ -328,12 +334,12 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
                     TargetPort = model.TargetPort
                 };
 
-                model2.Client = AppShareData.Instance.Clients.Values.FirstOrDefault(c => c.Name == model.TargetName);
+                model2.Client = clientsHelper.Clients.FirstOrDefault(c => c.Name == model.TargetName);
                 if (model2.Client == null)
                 {
                     model2.Client = new ClientInfo { Name = model.TargetName };
                 }
-                TcpForwardServer.Instance.Start(model2);
+                tcpForwardServer.Start(model2);
                 SaveConfig();
                 return string.Empty;
             }
@@ -358,14 +364,14 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
 
         public void Stop(TcpForwardRecordBaseModel model)
         {
-            TcpForwardServer.Instance.Stop(model.SourcePort);
+            tcpForwardServer.Stop(model.SourcePort);
             SaveConfig();
         }
         public void StopAll()
         {
             Mappings.ForEach(c =>
             {
-                TcpForwardServer.Instance.Stop(c.SourcePort);
+                tcpForwardServer.Stop(c.SourcePort);
             });
             SaveConfig();
         }

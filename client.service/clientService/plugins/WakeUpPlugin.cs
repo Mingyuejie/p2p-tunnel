@@ -13,13 +13,19 @@ namespace client.service.clientService.plugins
 {
     public class WakeUpPlugin : IClientServicePlugin
     {
+        private readonly ClientsHelper clientsHelper;
+        public WakeUpPlugin(ClientsHelper clientsHelper)
+        {
+            this.clientsHelper = clientsHelper;
+        }
+
         public void WakeUp(ClientServicePluginExcuteWrap arg)
         {
             WakeUpModel model = arg.Content.DeJson<WakeUpModel>();
 
             if (model.ID > 0)
             {
-                if (AppShareData.Instance.Clients.TryGetValue(model.ID, out ClientInfo client))
+                if (clientsHelper.Get(model.ID, out ClientInfo client))
                 {
                     if (client != null)
                     {

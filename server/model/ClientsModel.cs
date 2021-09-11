@@ -1,5 +1,6 @@
 ﻿using ProtoBuf;
 using System.Collections.Generic;
+using System.Net.Sockets;
 
 namespace server.model
 {
@@ -34,5 +35,8 @@ namespace server.model
 
         [ProtoMember(5)]
         public int TcpPort { get; set; } = 0;
+
+        [ProtoIgnore]
+        public Socket TcpSocket { get; set; }
     }
 }

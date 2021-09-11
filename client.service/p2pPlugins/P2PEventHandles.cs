@@ -1,5 +1,8 @@
 ﻿using client.service.events;
+using client.service.p2pPlugins.plugins.request;
+using client.service.serverPlugins.register;
 using common.extends;
+using Microsoft.Extensions.DependencyInjection;
 using server.model;
 using server.models;
 using System;
@@ -12,16 +15,23 @@ namespace client.service.p2pPlugins
 {
     public class P2PEventHandles
     {
-        private static readonly Lazy<P2PEventHandles> lazy = new(() => new P2PEventHandles());
-        public static P2PEventHandles Instance => lazy.Value;
-        private readonly Dictionary<P2PDataTypes, IP2PPlugin[]> plugins = null;
+        private Dictionary<P2PDataTypes, IP2PPlugin[]> plugins = null;
 
-        private P2PEventHandles()
+        private readonly EventHandlers eventHandlers;
+        private readonly RegisterState registerState;
+
+        public P2PEventHandles(EventHandlers eventHandlers, RegisterState registerState)
+        {
+            this.eventHandlers = eventHandlers;
+            this.registerState = registerState;
+        }
+
+        public void LoadPlugins()
         {
             plugins = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(c => c.GetTypes())
                 .Where(c => c.GetInterfaces().Contains(typeof(IP2PPlugin)))
-                .Select(c => (IP2PPlugin)Activator.CreateInstance(c)).GroupBy(c => c.Type)
+                .Select(c => (IP2PPlugin)Program.serviceProvider.GetService(c)).GroupBy(c => c.Type)
                 .ToDictionary(g => g.Key, g => g.ToArray());
         }
 
@@ -77,14 +87,14 @@ namespace client.service.p2pPlugins
         public event EventHandler<SendP2PTcpArg> OnSendTcpHandler;
         public void SendTcp(SendP2PTcpArg arg)
         {
-            EventHandlers.Instance.SendTcp(new SendTcpEventArg
+            eventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = arg.Socket,
                 Data = new P2PModel
                 {
                     Data = arg.Data.ToBytes(),
                     DataType = (byte)arg.Data.Type,
-                    FormId = EventHandlers.Instance.ConnectId
+                    FormId = registerState.RemoteInfo.ConnectId
                 }
             });
 
@@ -97,14 +107,14 @@ namespace client.service.p2pPlugins
         public event EventHandler<SendP2PArg> OnSendHandler;
         public void Send(SendP2PArg arg)
         {
-            EventHandlers.Instance.Send(new SendEventArg
+            eventHandlers.Send(new SendEventArg
             {
                 Address = arg.Address,
                 Data = new P2PModel
                 {
                     Data = arg.Data.ToBytes(),
                     DataType = (byte)arg.Data.Type,
-                    FormId = EventHandlers.Instance.ConnectId
+                    FormId = registerState.RemoteInfo.ConnectId
                 }
             });
             OnSendHandler?.Invoke(this, arg);

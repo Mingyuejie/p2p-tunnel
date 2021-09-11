@@ -64,20 +64,36 @@ namespace common
         [Conditional("DEBUG")]
         public void Debug(string content, params object[] args)
         {
-            queue.Enqueue(new LoggerModel { Type = LoggerTypes.INFO, Content = string.Format(content, args) });
+            if(args != null && args.Length > 0)
+            {
+                content = string.Format(content, args);
+            }
+            queue.Enqueue(new LoggerModel { Type = LoggerTypes.INFO, Content = content });
         }
 
         public void Info(string content, params object[] args)
         {
-            queue.Enqueue(new LoggerModel { Type = LoggerTypes.INFO, Content = string.Format(content, args) });
+            if (args != null && args.Length > 0)
+            {
+                content = string.Format(content, args);
+            }
+            queue.Enqueue(new LoggerModel { Type = LoggerTypes.INFO, Content = content });
         }
         public void Warning(string content, params object[] args)
         {
-            queue.Enqueue(new LoggerModel { Type = LoggerTypes.WARNING, Content = string.Format(content, args) });
+            if (args != null && args.Length > 0)
+            {
+                content = string.Format(content, args);
+            }
+            queue.Enqueue(new LoggerModel { Type = LoggerTypes.WARNING, Content = content });
         }
         public void Error(string content, params object[] args)
         {
-            queue.Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = string.Format(content, args) });
+            if (args != null && args.Length > 0)
+            {
+                content = string.Format(content, args);
+            }
+            queue.Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = content });
         }
 
         public void Enqueue(LoggerModel model)

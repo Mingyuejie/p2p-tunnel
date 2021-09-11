@@ -1,17 +1,19 @@
 ﻿using common;
-using common.cache;
 using common.extends;
+using Microsoft.Extensions.DependencyInjection;
 using server.model;
+using server.plugin;
+using server.service.cache;
 using server.service.model;
+using server.service.plugins;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace server.test
+namespace server.service
 {
     class Program
     {
@@ -19,51 +21,15 @@ namespace server.test
         {
             Config config = File.ReadAllText("appsettings.json").DeJson<Config>();
 
-            UDPServer.Instance.Start(config.Udp);
-            TCPServer.Instance.Start(config.Tcp);
-            Task.Run(() =>
-            {
-                while (true)
-                {
-                    try
-                    {
-                        //按分组id分组
-                        var clients = ClientRegisterCache.Instance.GetAll()
-                        .GroupBy(c => c.GroupId)
-                        .Select(c => new KeyValuePair<string, IEnumerable<ClientsClientModel>>(c.Key, c.Select(c => new ClientsClientModel
-                        {
-                            Address = c.Address.Address.ToString(),
-                            Id = c.Id,
-                            Name = c.Name,
-                            Port = c.Address.Port,
-                            TcpPort = c.TcpPort
-                        }).ToList()));
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton((e) => config);
 
-                        //每个分组
-                        foreach (var group in clients)
-                        {
-                            //分组里的每个客户端
-                            foreach (var client in group.Value)
-                            {
-                                UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
-                                {
-                                    Address = IPEndPoint.Parse(client.Address),
-                                    Data = new ClientsModel
-                                    {
-                                        Clients = group.Value
-                                    }
-                                });
-                            }
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.Instance.Debug($"发送广播客户端消息错误!{e.Message}");
-                    }
+            serviceCollection.AddPlugin().AddTcpServer().AddUdpServer();
 
-                    System.Threading.Thread.Sleep(1000);
-                }
-            });
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            serviceProvider.UsePlugin().UseTcpServer().UseUdpServer();
+
 
             Logger.Instance.Warning("=======================================");
             Logger.Instance.Warning("没什么报红的，就说明运行成功了");

@@ -1,4 +1,5 @@
-﻿using client.service.serverPlugins.connectClient;
+﻿using client.service.config;
+using client.service.serverPlugins.connectClient;
 using client.service.serverPlugins.heart;
 using client.service.serverPlugins.register;
 using common;
@@ -15,31 +16,50 @@ namespace client.service.serverPlugins.clients
 {
     public class ClientsHelper
     {
-        private static readonly Lazy<ClientsHelper> lazy = new(() => new ClientsHelper());
-        public static ClientsHelper Instance => lazy.Value;
         private short readClientsTimes = 0;
 
-        private ClientsHelper()
+        private readonly RegisterEventHandles registerEventHandles;
+        private readonly ClientsEventHandles clientsEventHandles;
+        private readonly ConnectClientEventHandles connectClientEventHandles;
+        private readonly HeartEventHandles heartEventHandles;
+        private readonly RegisterHelper registerHelper;
+        private readonly RegisterState registerState;
+        private readonly Config config;
+
+        public IEnumerable<ClientInfo> Clients => ClientInfo.All();
+
+        public ClientsHelper(RegisterEventHandles registerEventHandles,
+            ClientsEventHandles clientsEventHandles,
+            ConnectClientEventHandles connectClientEventHandles,
+            HeartEventHandles heartEventHandles, RegisterHelper registerHelper, RegisterState registerState, Config config)
         {
+            this.registerEventHandles = registerEventHandles;
+            this.clientsEventHandles = clientsEventHandles;
+            this.connectClientEventHandles = connectClientEventHandles;
+            this.heartEventHandles = heartEventHandles;
+            this.registerHelper = registerHelper;
+            this.registerState = registerState;
+            this.config = config;
+
             //本客户端注册状态
-            RegisterEventHandles.Instance.OnSendRegisterTcpStateChangeHandler += OnRegisterTcpStateChangeHandler;
+            registerEventHandles.OnSendRegisterTcpStateChangeHandler += OnRegisterTcpStateChangeHandler;
             //收到来自服务器的 在线客户端 数据
-            ClientsEventHandles.Instance.OnServerSendClientsHandler += OnServerSendClientsHandler;
+            clientsEventHandles.OnServerSendClientsHandler += OnServerSendClientsHandler;
 
             //UDP
             //有人想连接我
-            ConnectClientEventHandles.Instance.OnConnectClientStep1Handler += OnConnectClientStep1Handler;
+            connectClientEventHandles.OnConnectClientStep1Handler += OnConnectClientStep1Handler;
             //有人连接我
-            ConnectClientEventHandles.Instance.OnConnectClientStep3Handler += OnConnectClientStep3Handler;
+            connectClientEventHandles.OnConnectClientStep3Handler += OnConnectClientStep3Handler;
 
             //TCP
             //有人回应
-            ConnectClientEventHandles.Instance.OnTcpConnectClientStep4Handler += OnTcpConnectClientStep4Handler;
+            connectClientEventHandles.OnTcpConnectClientStep4Handler += OnTcpConnectClientStep4Handler;
             //连接别人失败
-            ConnectClientEventHandles.Instance.OnSendTcpConnectClientStep2FailHandler += OnSendTcpConnectClientStep2FailHandler;
+            connectClientEventHandles.OnSendTcpConnectClientStep2FailHandler += OnSendTcpConnectClientStep2FailHandler;
 
             //有人要求反向链接
-            ConnectClientEventHandles.Instance.OnConnectClientReverseHandler += (s, arg) =>
+            connectClientEventHandles.OnConnectClientReverseHandler += (s, arg) =>
             {
                 if (ClientInfo.Get(arg.Data.Id, out ClientInfo client) && client != null)
                 {
@@ -49,14 +69,14 @@ namespace client.service.serverPlugins.clients
 
 
             //退出消息
-            RegisterEventHandles.Instance.OnSendExitMessageHandler += (sender, e) =>
+            registerEventHandles.OnSendExitMessageHandler += (sender, e) =>
             {
                 foreach (ClientInfo client in ClientInfo.All())
                 {
                     client.Remove();
                     if (client.Connecting)
                     {
-                        ConnectClientEventHandles.Instance.SendTcpConnectClientStep2StopMessage(client.Id);
+                        connectClientEventHandles.SendTcpConnectClientStep2StopMessage(client.Id);
                     }
                 }
                 readClientsTimes = 0;
@@ -78,7 +98,7 @@ namespace client.service.serverPlugins.clients
                         }
                         else if (client.Connected)
                         {
-                            HeartEventHandles.Instance.SendHeartMessage(client.Address);
+                            heartEventHandles.SendHeartMessage(registerState.RemoteInfo.ConnectId, client.Address);
                         }
 
                         if (client.IsTcpTimeout())
@@ -90,7 +110,7 @@ namespace client.service.serverPlugins.clients
                         }
                         else if (client.TcpConnected)
                         {
-                            HeartEventHandles.Instance.SendTcpHeartMessage(client.Socket);
+                            heartEventHandles.SendTcpHeartMessage(registerState.RemoteInfo.ConnectId, client.Socket);
                         }
 
                     }
@@ -100,7 +120,7 @@ namespace client.service.serverPlugins.clients
             }, TaskCreationOptions.LongRunning);
 
             //收客户端的心跳包
-            HeartEventHandles.Instance.OnHeartEventHandler += (sender, e) =>
+            heartEventHandles.OnHeartEventHandler += (sender, e) =>
             {
                 if (e.Data.SourceId > 0)
                 {
@@ -119,16 +139,12 @@ namespace client.service.serverPlugins.clients
             {
                 try
                 {
-                    AppShareData.Instance.LocalInfo.RouteLevel = Helper.GetRouteLevel();
+                    registerState.LocalInfo.RouteLevel = Helper.GetRouteLevel();
                 }
                 catch (Exception)
                 {
                 }
             });
-        }
-        public void Start()
-        {
-
         }
 
         private void OnConnectClientStep1Handler(object sender, OnConnectClientStep1EventArg e)
@@ -164,7 +180,7 @@ namespace client.service.serverPlugins.clients
         {
             if (e.State)
             {
-                AppShareData.Instance.RemoteInfo.Ip = e.Ip;
+                registerState.RemoteInfo.Ip = e.Ip;
             }
         }
 
@@ -184,7 +200,7 @@ namespace client.service.serverPlugins.clients
                     IEnumerable<long> offlines = ClientInfo.AllIds().Except(e.Data.Clients.Select(c => c.Id));
                     foreach (long offid in offlines)
                     {
-                        if (offid == AppShareData.Instance.RemoteInfo.ConnectId)
+                        if (offid == registerState.RemoteInfo.ConnectId)
                         {
                             continue;
                         }
@@ -196,7 +212,7 @@ namespace client.service.serverPlugins.clients
                     IEnumerable<ClientsClientModel> upLineClients = e.Data.Clients.Where(c => upLines.Contains(c.Id));
                     foreach (ClientsClientModel item in upLineClients)
                     {
-                        if (item.Id == AppShareData.Instance.RemoteInfo.ConnectId)
+                        if (item.Id == registerState.RemoteInfo.ConnectId)
                         {
                             continue;
                         }
@@ -240,14 +256,14 @@ namespace client.service.serverPlugins.clients
 
         private void ConnectClient(ClientInfo info)
         {
-            if (info.Id == AppShareData.Instance.RemoteInfo.ConnectId)
+            if (info.Id == registerState.RemoteInfo.ConnectId)
             {
                 return;
             }
             if (info.Connecting == false && info.Connected == false)
             {
                 info.Connecting = true;
-                ConnectClientEventHandles.Instance.SendConnectClient(new ConnectParams
+                connectClientEventHandles.SendConnectClient(new ConnectParams
                 {
                     Id = info.Id,
                     Name = info.Name,
@@ -267,7 +283,7 @@ namespace client.service.serverPlugins.clients
             if (info.TcpConnecting == false && info.TcpConnected == false)
             {
                 info.TcpConnecting = true;
-                ConnectClientEventHandles.Instance.SendTcpConnectClient(new ConnectTcpParams
+                connectClientEventHandles.SendTcpConnectClient(new ConnectTcpParams
                 {
                     Callback = (e) =>
                     {
@@ -288,6 +304,10 @@ namespace client.service.serverPlugins.clients
         public void OfflineClient(long id)
         {
             ClientInfo.OfflineBoth(id);
+        }
+        public bool Get(long id, out ClientInfo client)
+        {
+            return ClientInfo.Get(id, out client);
         }
     }
 }

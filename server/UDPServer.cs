@@ -14,22 +14,13 @@ using System.Threading.Tasks;
 
 namespace server
 {
-    public sealed class UDPServer
+    public class UDPServer : IUdpServer
     {
-        private static readonly Lazy<UDPServer> lazy = new Lazy<UDPServer>(() => new UDPServer());
-        public static UDPServer Instance { get { return lazy.Value; } }
-
-        private readonly Dictionary<MessageTypes, IPlugin[]> plugins = null;
-        private UDPServer()
+        public UDPServer()
         {
-            plugins = AppDomain.CurrentDomain.GetAssemblies()
-                 .SelectMany(c => c.GetTypes())
-                 .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)))
-                 .Select(c => (IPlugin)Activator.CreateInstance(c)).GroupBy(c => c.MsgType)
-                 .ToDictionary(g => g.Key, g => g.ToArray());
         }
 
-        public UdpClient UdpcRecv { get; set; } = null;
+        private UdpClient UdpcRecv { get; set; } = null;
         IPEndPoint IpepServer { get; set; } = null;
         long sequence = 0;
         private CancellationTokenSource cancellationTokenSource;
@@ -122,13 +113,10 @@ namespace server
                         Packet = packet,
                         ServerType = ServerType.UDP
                     };
-                    if (plugins.ContainsKey(packet.Type))
+
+                    if (Plugin.plugins.ContainsKey(packet.Type))
                     {
-                        IPlugin[] _plugins = plugins[packet.Type];
-                        for (int i = 0, length = _plugins.Length; i < length; i++)
-                        {
-                            _plugins[i].Excute(model, ServerType.UDP);
-                        }
+                        Plugin.plugins[packet.Type].Excute(model, ServerType.UDP);
                     }
                 }
             }

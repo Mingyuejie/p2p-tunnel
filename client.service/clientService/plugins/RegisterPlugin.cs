@@ -7,9 +7,21 @@ namespace client.service.clientService.plugins
 {
     public class RegisterPlugin : IClientServicePlugin
     {
+        private readonly RegisterHelper registerHelper;
+        private readonly RegisterState registerState;
+        private readonly RegisterEventHandles registerEventHandles;
+        private readonly Config config;
+        public RegisterPlugin(RegisterHelper registerHelper, RegisterState registerState, RegisterEventHandles registerEventHandles, Config config)
+        {
+            this.registerHelper = registerHelper;
+            this.registerState = registerState;
+            this.registerEventHandles = registerEventHandles;
+            this.config = config;
+        }
+
         public async Task Start(ClientServicePluginExcuteWrap arg)
         {
-            var result = await RegisterHelper.Instance.Start();
+            var result = await registerHelper.Start();
             if (!string.IsNullOrWhiteSpace(result.ErrorMsg))
             {
                 arg.SetCode(-1, result.ErrorMsg);
@@ -18,17 +30,17 @@ namespace client.service.clientService.plugins
 
         public void Stop(ClientServicePluginExcuteWrap arg)
         {
-            RegisterEventHandles.Instance.SendExitMessage();
+            registerEventHandles.SendExitMessage();
         }
 
         public RegisterInfo Info(ClientServicePluginExcuteWrap arg)
         {
             return new RegisterInfo
             {
-                ClientConfig = AppShareData.Instance.ClientConfig,
-                ServerConfig = AppShareData.Instance.ServerConfig,
-                LocalInfo = AppShareData.Instance.LocalInfo,
-                RemoteInfo = AppShareData.Instance.RemoteInfo,
+                ClientConfig = config.Client,
+                ServerConfig = config.Server,
+                LocalInfo = registerState.LocalInfo,
+                RemoteInfo = registerState.RemoteInfo,
             };
         }
     }

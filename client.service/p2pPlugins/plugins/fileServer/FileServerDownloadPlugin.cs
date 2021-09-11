@@ -4,11 +4,17 @@ namespace client.service.p2pPlugins.plugins.fileServer
 {
     public class FileServerDownloadPlugin : IFileServerPlugin
     {
+        private readonly FileServerEventHandles fileServerEventHandles;
+        public FileServerDownloadPlugin(FileServerEventHandles fileServerEventHandles)
+        {
+            this.fileServerEventHandles = fileServerEventHandles;
+        }
+
         public FileServerCmdTypes Type => FileServerCmdTypes.DOWNLOAD;
 
         public void Excute(TcpFileMessageEventArg arg)
         {
-            FileServerEventHandles.Instance.OnTcpDownload(new  TcpEventArg<FileServerDownloadModel>  
+            fileServerEventHandles.OnTcpDownload(new  TcpEventArg<FileServerDownloadModel>  
             {
                 Packet = arg.Packet,
                 RawData = arg.Data,
@@ -19,11 +25,17 @@ namespace client.service.p2pPlugins.plugins.fileServer
 
     public class FileServerFilePlugin : IFileServerPlugin
     {
+        private readonly FileServerEventHandles fileServerEventHandles;
+        public FileServerFilePlugin(FileServerEventHandles fileServerEventHandles)
+        {
+            this.fileServerEventHandles = fileServerEventHandles;
+        }
+
         public FileServerCmdTypes Type => FileServerCmdTypes.FILE;
 
         public void Excute(TcpFileMessageEventArg arg)
         {
-            FileServerEventHandles.Instance.OnTcpFile(new  TcpEventArg<FileModel>
+            fileServerEventHandles.OnTcpFile(new  TcpEventArg<FileModel>
             {
                 Packet = arg.Packet,
                 RawData = arg.Data,
@@ -34,11 +46,17 @@ namespace client.service.p2pPlugins.plugins.fileServer
 
     public class FileServerProgressPlugin : IFileServerPlugin
     {
+        private readonly FileServerEventHandles fileServerEventHandles;
+        public FileServerProgressPlugin(FileServerEventHandles fileServerEventHandles)
+        {
+            this.fileServerEventHandles = fileServerEventHandles;
+        }
+
         public FileServerCmdTypes Type => FileServerCmdTypes.PROGRESS;
 
         public void Excute(TcpFileMessageEventArg arg)
         {
-            FileServerEventHandles.Instance.OnTcpProgress(new  TcpEventArg<FileServerProgressModel>
+            fileServerEventHandles.OnTcpProgress(new  TcpEventArg<FileServerProgressModel>
             {
                 Packet = arg.Packet,
                 RawData = arg.Data,

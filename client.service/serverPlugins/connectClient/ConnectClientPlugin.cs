@@ -7,12 +7,18 @@ namespace client.service.serverPlugins.connectClient
 
     public class ConnectClientReversePlugin : IPlugin
     {
+        private readonly ConnectClientEventHandles connectClientEventHandles;
+        public ConnectClientReversePlugin(ConnectClientEventHandles connectClientEventHandles)
+        {
+            this.connectClientEventHandles = connectClientEventHandles;
+        }
+
         public MessageTypes MsgType => MessageTypes.SERVER_P2P_REVERSE;
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
         {
             ConnectClientReverseModel data = model.Packet.Chunk.DeBytes<ConnectClientReverseModel>();
-            ConnectClientEventHandles.Instance.OnConnectClientReverse(new OnConnectClientReverseEventArg
+            connectClientEventHandles.OnConnectClientReverse(new OnConnectClientReverseEventArg
             {
                 Data = data,
                 Packet = model,
@@ -22,6 +28,12 @@ namespace client.service.serverPlugins.connectClient
 
     public class ConnectClientStep1Plugin : IPlugin
     {
+        private readonly ConnectClientEventHandles connectClientEventHandles;
+        public ConnectClientStep1Plugin(ConnectClientEventHandles connectClientEventHandles)
+        {
+            this.connectClientEventHandles = connectClientEventHandles;
+        }
+
         public MessageTypes MsgType => MessageTypes.P2P_STEP_1;
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
@@ -29,7 +41,7 @@ namespace client.service.serverPlugins.connectClient
             ConnectClientStep1Model data = model.Packet.Chunk.DeBytes<ConnectClientStep1Model>();
             if (serverType == ServerType.UDP)
             {
-                ConnectClientEventHandles.Instance.OnConnectClientStep1(new OnConnectClientStep1EventArg
+                connectClientEventHandles.OnConnectClientStep1(new OnConnectClientStep1EventArg
                 {
                     Data = data,
                     Packet = model,
@@ -37,7 +49,7 @@ namespace client.service.serverPlugins.connectClient
             }
             else if (serverType == ServerType.TCP)
             {
-                ConnectClientEventHandles.Instance.OnTcpConnectClientStep1(new OnConnectClientStep1EventArg
+                connectClientEventHandles.OnTcpConnectClientStep1(new OnConnectClientStep1EventArg
                 {
                     Data = data,
                     Packet = model,
@@ -49,6 +61,12 @@ namespace client.service.serverPlugins.connectClient
 
     public class ConnectClientStep2Plugin : IPlugin
     {
+        private readonly ConnectClientEventHandles connectClientEventHandles;
+        public ConnectClientStep2Plugin(ConnectClientEventHandles connectClientEventHandles)
+        {
+            this.connectClientEventHandles = connectClientEventHandles;
+        }
+
         public MessageTypes MsgType => MessageTypes.P2P_STEP_2;
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
@@ -57,7 +75,7 @@ namespace client.service.serverPlugins.connectClient
 
             if (serverType == ServerType.UDP)
             {
-                ConnectClientEventHandles.Instance.OnConnectClientStep2(new OnConnectClientStep2EventArg
+                connectClientEventHandles.OnConnectClientStep2(new OnConnectClientStep2EventArg
                 {
                     Data = data,
                     Packet = model,
@@ -65,7 +83,7 @@ namespace client.service.serverPlugins.connectClient
             }
             else if (serverType == ServerType.TCP)
             {
-                ConnectClientEventHandles.Instance.OnTcpConnectClientStep2(new OnConnectClientStep2EventArg
+                connectClientEventHandles.OnTcpConnectClientStep2(new OnConnectClientStep2EventArg
                 {
                     Data = data,
                     Packet = model,
@@ -76,6 +94,12 @@ namespace client.service.serverPlugins.connectClient
 
     public class ConnectClientStep2RetryPlugin : IPlugin
     {
+        private readonly ConnectClientEventHandles connectClientEventHandles;
+        public ConnectClientStep2RetryPlugin(ConnectClientEventHandles connectClientEventHandles)
+        {
+            this.connectClientEventHandles = connectClientEventHandles;
+        }
+
         public MessageTypes MsgType => MessageTypes.SERVER_P2P_STEP_2_RETRY;
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
@@ -83,7 +107,7 @@ namespace client.service.serverPlugins.connectClient
             if (serverType == ServerType.TCP)
             {
                 ConnectClientStep2RetryModel data = model.Packet.Chunk.DeBytes<ConnectClientStep2RetryModel>();
-                ConnectClientEventHandles.Instance.OnTcpConnectClientStep2Retry(new OnConnectClientStep2RetryEventArg
+                connectClientEventHandles.OnTcpConnectClientStep2Retry(new OnConnectClientStep2RetryEventArg
                 {
                     Data = data,
                     Packet = model,
@@ -94,6 +118,12 @@ namespace client.service.serverPlugins.connectClient
 
     public class ConnectClientStep2FailPlugin : IPlugin
     {
+        private readonly ConnectClientEventHandles connectClientEventHandles;
+        public ConnectClientStep2FailPlugin(ConnectClientEventHandles connectClientEventHandles)
+        {
+            this.connectClientEventHandles = connectClientEventHandles;
+        }
+
         public MessageTypes MsgType => MessageTypes.SERVER_P2P_STEP_2_FAIL;
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
@@ -110,7 +140,7 @@ namespace client.service.serverPlugins.connectClient
             }
             else if (serverType == ServerType.TCP)
             {
-                ConnectClientEventHandles.Instance.OnTcpConnectClientStep2Fail(new OnTcpConnectClientStep2FailEventArg
+                connectClientEventHandles.OnTcpConnectClientStep2Fail(new OnTcpConnectClientStep2FailEventArg
                 {
                     Data = data,
                     Packet = model,
@@ -121,6 +151,12 @@ namespace client.service.serverPlugins.connectClient
 
     public class ConnectClientStep3Plugin : IPlugin
     {
+        private readonly ConnectClientEventHandles connectClientEventHandles;
+        public ConnectClientStep3Plugin(ConnectClientEventHandles connectClientEventHandles)
+        {
+            this.connectClientEventHandles = connectClientEventHandles;
+        }
+
         public MessageTypes MsgType => MessageTypes.P2P_STEP_3;
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
@@ -129,7 +165,7 @@ namespace client.service.serverPlugins.connectClient
 
             if (serverType == ServerType.UDP)
             {
-                ConnectClientEventHandles.Instance.OnConnectClientStep3(new OnConnectClientStep3EventArg
+                connectClientEventHandles.OnConnectClientStep3(new OnConnectClientStep3EventArg
                 {
                     Data = data,
                     Packet = model,
@@ -137,7 +173,7 @@ namespace client.service.serverPlugins.connectClient
             }
             else if (serverType == ServerType.TCP)
             {
-                ConnectClientEventHandles.Instance.OnTcpConnectClientStep3(new OnConnectClientStep3EventArg
+                connectClientEventHandles.OnTcpConnectClientStep3(new OnConnectClientStep3EventArg
                 {
                     Data = data,
                     Packet = model,
@@ -148,6 +184,12 @@ namespace client.service.serverPlugins.connectClient
 
     public class ConnectClientStep4Plugin : IPlugin
     {
+        private readonly ConnectClientEventHandles connectClientEventHandles;
+        public ConnectClientStep4Plugin(ConnectClientEventHandles connectClientEventHandles)
+        {
+            this.connectClientEventHandles = connectClientEventHandles;
+        }
+
         public MessageTypes MsgType => MessageTypes.P2P_STEP_4;
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
@@ -156,7 +198,7 @@ namespace client.service.serverPlugins.connectClient
 
             if (serverType == ServerType.UDP)
             {
-                ConnectClientEventHandles.Instance.OnConnectClientStep4(new OnConnectClientStep4EventArg
+                connectClientEventHandles.OnConnectClientStep4(new OnConnectClientStep4EventArg
                 {
                     Data = data,
                     Packet = model,
@@ -164,7 +206,7 @@ namespace client.service.serverPlugins.connectClient
             }
             else if (serverType == ServerType.TCP)
             {
-                ConnectClientEventHandles.Instance.OnTcpConnectClientStep4(new OnConnectClientStep4EventArg
+                connectClientEventHandles.OnTcpConnectClientStep4(new OnConnectClientStep4EventArg
                 {
                     Data = data,
                     Packet = model,
@@ -176,13 +218,19 @@ namespace client.service.serverPlugins.connectClient
 
     public class ConnectClientStep2StopPlugin : IPlugin
     {
+        private readonly ConnectClientEventHandles connectClientEventHandles;
+        public ConnectClientStep2StopPlugin(ConnectClientEventHandles connectClientEventHandles)
+        {
+            this.connectClientEventHandles = connectClientEventHandles;
+        }
+
         public MessageTypes MsgType => MessageTypes.SERVER_P2P_STEP_2_STOP;
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
             ConnectClientStep2StopModel model = data.Packet.Chunk.DeBytes<ConnectClientStep2StopModel>();
 
-            ConnectClientEventHandles.Instance.OnTcpConnectClientStep2StopMessage(model);
+            connectClientEventHandles.OnTcpConnectClientStep2StopMessage(model);
         }
     }
 }

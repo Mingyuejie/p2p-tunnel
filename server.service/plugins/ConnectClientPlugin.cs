@@ -1,7 +1,7 @@
-﻿using common.cache;
-using common.extends;
+﻿using common.extends;
 using server.model;
 using server.plugin;
+using server.service.cache;
 using server.service.model;
 
 namespace server.service.plugins
@@ -11,6 +11,17 @@ namespace server.service.plugins
     /// </summary>
     public class ConnectClientPlugin : IPlugin
     {
+        private readonly IClientRegisterCache clientRegisterCache;
+        private readonly ITcpServer tcpServer;
+        private readonly IUdpServer udpServer;
+        public ConnectClientPlugin(IClientRegisterCache clientRegisterCache, ITcpServer tcpServer, IUdpServer udpServer)
+        {
+            this.clientRegisterCache = clientRegisterCache;
+            this.tcpServer = tcpServer;
+            this.udpServer = udpServer;
+        }
+
+
         public MessageTypes MsgType => MessageTypes.SERVER_P2P;
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
@@ -18,11 +29,11 @@ namespace server.service.plugins
             ConnectClientModel model = data.Packet.Chunk.DeBytes<ConnectClientModel>();
 
             //A已注册
-            RegisterCacheModel source = ClientRegisterCache.Instance.Get(model.Id);
+            RegisterCacheModel source = clientRegisterCache.Get(model.Id);
             if (source != null)
             {
                 //B已注册
-                RegisterCacheModel target = ClientRegisterCache.Instance.Get(model.ToId);
+                RegisterCacheModel target = clientRegisterCache.Get(model.ToId);
                 if (target != null)
                 {
                     //是否在同一个组
@@ -34,7 +45,7 @@ namespace server.service.plugins
                     if (serverType == ServerType.UDP)
                     {
                         //向B发送链接请求，告诉A谁要连接你，你给它回个消息
-                        UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                        udpServer.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
@@ -53,7 +64,7 @@ namespace server.service.plugins
                     else if (serverType == ServerType.TCP)
                     {
                         //向A发送B的信息，等待A准备好
-                        TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                        tcpServer.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = source.Address,
                             TcpCoket = source.TcpSocket,
@@ -80,6 +91,16 @@ namespace server.service.plugins
     /// </summary>
     public class ConnectClientReversePlugin : IPlugin
     {
+        private readonly IClientRegisterCache clientRegisterCache;
+        private readonly ITcpServer tcpServer;
+        private readonly IUdpServer udpServer;
+        public ConnectClientReversePlugin(IClientRegisterCache clientRegisterCache, ITcpServer tcpServer, IUdpServer udpServer)
+        {
+            this.clientRegisterCache = clientRegisterCache;
+            this.tcpServer = tcpServer;
+            this.udpServer = udpServer;
+        }
+
         public MessageTypes MsgType => MessageTypes.SERVER_P2P_REVERSE;
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
@@ -87,11 +108,11 @@ namespace server.service.plugins
             ConnectClientReverseModel model = data.Packet.Chunk.DeBytes<ConnectClientReverseModel>();
 
             //A已注册
-            RegisterCacheModel source = ClientRegisterCache.Instance.Get(model.Id);
+            RegisterCacheModel source = clientRegisterCache.Get(model.Id);
             if (source != null)
             {
                 //B已注册
-                RegisterCacheModel target = ClientRegisterCache.Instance.Get(model.ToId);
+                RegisterCacheModel target = clientRegisterCache.Get(model.ToId);
                 if (target != null)
                 {
                     //是否在同一个组
@@ -102,7 +123,7 @@ namespace server.service.plugins
 
                     if (serverType == ServerType.UDP)
                     {
-                        UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                        udpServer.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
@@ -111,7 +132,7 @@ namespace server.service.plugins
                     }
                     else if (serverType == ServerType.TCP)
                     {
-                        TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                        tcpServer.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
@@ -127,18 +148,30 @@ namespace server.service.plugins
 
     public class ConnectClientStep1ResultPlugin : IPlugin
     {
+        private readonly IClientRegisterCache clientRegisterCache;
+        private readonly ITcpServer tcpServer;
+        private readonly IUdpServer udpServer;
+        public ConnectClientStep1ResultPlugin(IClientRegisterCache clientRegisterCache, ITcpServer tcpServer, IUdpServer udpServer)
+        {
+            this.clientRegisterCache = clientRegisterCache;
+            this.tcpServer = tcpServer;
+            this.udpServer = udpServer;
+        }
+
         public MessageTypes MsgType => MessageTypes.SERVER_P2P_STEP_1_RESULT;
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
             ConnectClientStep1ResultModel model = data.Packet.Chunk.DeBytes<ConnectClientStep1ResultModel>();
 
+            if (!clientRegisterCache.Verify(model.Id, data)) return;
+
             //已注册
-            RegisterCacheModel source = ClientRegisterCache.Instance.Get(model.Id);
+            RegisterCacheModel source = clientRegisterCache.Get(model.Id);
             if (source != null)
             {
                 //已注册
-                RegisterCacheModel target = ClientRegisterCache.Instance.Get(model.ToId);
+                RegisterCacheModel target = clientRegisterCache.Get(model.ToId);
 
                 if (target != null)
                 {
@@ -149,7 +182,7 @@ namespace server.service.plugins
                     if (serverType == ServerType.UDP)
                     {
                         //向A发送信息，B已经准备好了，你去连接一下吧
-                        UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                        udpServer.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
@@ -169,7 +202,7 @@ namespace server.service.plugins
                     else if (serverType == ServerType.TCP)
                     {
                         //向B发送信息，A已经准备好了，你去连接一下吧
-                        TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                        tcpServer.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
@@ -193,18 +226,30 @@ namespace server.service.plugins
 
     public class ConnectClientStep2RetryPlugin : IPlugin
     {
+        private readonly IClientRegisterCache clientRegisterCache;
+        private readonly ITcpServer tcpServer;
+        private readonly IUdpServer udpServer;
+        public ConnectClientStep2RetryPlugin(IClientRegisterCache clientRegisterCache, ITcpServer tcpServer, IUdpServer udpServer)
+        {
+            this.clientRegisterCache = clientRegisterCache;
+            this.tcpServer = tcpServer;
+            this.udpServer = udpServer;
+        }
+
         public MessageTypes MsgType => MessageTypes.SERVER_P2P_STEP_2_RETRY;
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
             ConnectClientStep2RetryModel model = data.Packet.Chunk.DeBytes<ConnectClientStep2RetryModel>();
 
+            if (!clientRegisterCache.Verify(model.Id, data)) return;
+
             //已注册
-            RegisterCacheModel source = ClientRegisterCache.Instance.Get(model.Id);
+            RegisterCacheModel source = clientRegisterCache.Get(model.Id);
             if (source != null)
             {
                 //已注册
-                RegisterCacheModel target = ClientRegisterCache.Instance.Get(model.ToId);
+                RegisterCacheModel target = clientRegisterCache.Get(model.ToId);
                 if (target != null)
                 {
                     if (source.GroupId != target.GroupId)
@@ -213,7 +258,7 @@ namespace server.service.plugins
                     }
                     if (serverType == ServerType.UDP)
                     {
-                        UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                        udpServer.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
@@ -231,7 +276,7 @@ namespace server.service.plugins
                     }
                     else if (serverType == ServerType.TCP)
                     {
-                        TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                        tcpServer.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
@@ -254,18 +299,30 @@ namespace server.service.plugins
 
     public class ConnectClientStep2FailPlugin : IPlugin
     {
+
+        private readonly IClientRegisterCache clientRegisterCache;
+        private readonly ITcpServer tcpServer;
+        private readonly IUdpServer udpServer;
+        public ConnectClientStep2FailPlugin(IClientRegisterCache clientRegisterCache, ITcpServer tcpServer, IUdpServer udpServer)
+        {
+            this.clientRegisterCache = clientRegisterCache;
+            this.tcpServer = tcpServer;
+            this.udpServer = udpServer;
+        }
+
         public MessageTypes MsgType => MessageTypes.SERVER_P2P_STEP_2_FAIL;
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
             ConnectClientStep2FailModel model = data.Packet.Chunk.DeBytes<ConnectClientStep2FailModel>();
 
+            if (!clientRegisterCache.Verify(model.Id, data)) return;
             //已注册
-            RegisterCacheModel source = ClientRegisterCache.Instance.Get(model.Id);
+            RegisterCacheModel source = clientRegisterCache.Get(model.Id);
             if (source != null)
             {
                 //已注册
-                RegisterCacheModel target = ClientRegisterCache.Instance.Get(model.ToId);
+                RegisterCacheModel target = clientRegisterCache.Get(model.ToId);
                 if (target != null)
                 {
                     if (source.GroupId != target.GroupId)
@@ -274,7 +331,7 @@ namespace server.service.plugins
                     }
                     if (serverType == ServerType.UDP)
                     {
-                        UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                        udpServer.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
@@ -287,7 +344,7 @@ namespace server.service.plugins
                     }
                     else if (serverType == ServerType.TCP)
                     {
-                        TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                        tcpServer.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
@@ -305,18 +362,30 @@ namespace server.service.plugins
 
     public class ConnectClientStep2StopPlugin : IPlugin
     {
-        public MessageTypes MsgType =>  MessageTypes.SERVER_P2P_STEP_2_STOP;
+        private readonly IClientRegisterCache clientRegisterCache;
+        private readonly ITcpServer tcpServer;
+        private readonly IUdpServer udpServer;
+        public ConnectClientStep2StopPlugin(IClientRegisterCache clientRegisterCache, ITcpServer tcpServer, IUdpServer udpServer)
+        {
+            this.clientRegisterCache = clientRegisterCache;
+            this.tcpServer = tcpServer;
+            this.udpServer = udpServer;
+        }
+
+        public MessageTypes MsgType => MessageTypes.SERVER_P2P_STEP_2_STOP;
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
             ConnectClientStep2StopModel model = data.Packet.Chunk.DeBytes<ConnectClientStep2StopModel>();
 
+            if (!clientRegisterCache.Verify(model.Id, data)) return;
+
             //已注册
-            RegisterCacheModel source = ClientRegisterCache.Instance.Get(model.Id);
+            RegisterCacheModel source = clientRegisterCache.Get(model.Id);
             if (source != null)
             {
                 //已注册
-                RegisterCacheModel target = ClientRegisterCache.Instance.Get(model.ToId);
+                RegisterCacheModel target = clientRegisterCache.Get(model.ToId);
                 if (target != null)
                 {
                     if (source.GroupId != target.GroupId)
@@ -325,7 +394,7 @@ namespace server.service.plugins
                     }
                     if (serverType == ServerType.UDP)
                     {
-                        UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                        udpServer.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
@@ -338,7 +407,7 @@ namespace server.service.plugins
                     }
                     else if (serverType == ServerType.TCP)
                     {
-                        TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                        tcpServer.Send(new RecvQueueModel<IModelBase>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
@@ -353,5 +422,5 @@ namespace server.service.plugins
             }
         }
     }
-    
+
 }

@@ -5,10 +5,7 @@ namespace client.service.serverPlugins.clients
 {
     public class ClientsEventHandles
     {
-        private static readonly Lazy<ClientsEventHandles> lazy = new Lazy<ClientsEventHandles>(() => new ClientsEventHandles());
-        public static ClientsEventHandles Instance => lazy.Value;
-
-        private ClientsEventHandles()
+        public ClientsEventHandles()
         {
 
         }

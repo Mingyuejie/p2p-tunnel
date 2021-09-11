@@ -15,25 +15,10 @@ using System.Threading.Tasks;
 
 namespace server
 {
-    public class TCPServer
+    public class TCPServer: ITcpServer
     {
-        private static readonly Lazy<TCPServer> lazy = new Lazy<TCPServer>(() => new TCPServer());
-        public static TCPServer Instance => lazy.Value;
         private long Id = 0;
-
-        private readonly Dictionary<MessageTypes, IPlugin[]> plugins = null;
-        private TCPServer()
-        {
-            plugins = AppDomain.CurrentDomain.GetAssemblies()
-                 .SelectMany(c => c.GetTypes())
-                 .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)))
-                 .Select(c => (IPlugin)Activator.CreateInstance(c)).GroupBy(c => c.MsgType)
-                 .ToDictionary(g => g.Key, g => g.ToArray());
-        }
-
-
-        public ConcurrentDictionary<int, ServerModel> servers = new ConcurrentDictionary<int, ServerModel>();
-
+        private ConcurrentDictionary<int, ServerModel> servers = new ConcurrentDictionary<int, ServerModel>();
         private CancellationTokenSource cancellationTokenSource;
         private bool Running
         {
@@ -41,6 +26,10 @@ namespace server
             {
                 return cancellationTokenSource != null && !cancellationTokenSource.IsCancellationRequested;
             }
+        }
+
+        public TCPServer()
+        {
         }
 
         public void Start(int port, IPAddress ip = null)
@@ -52,7 +41,6 @@ namespace server
             cancellationTokenSource = new CancellationTokenSource();
             BindAccept(port, ip);
         }
-
         public void BindAccept(int port, IPAddress ip = null)
         {
             if (servers.ContainsKey(port)) return;
@@ -89,6 +77,40 @@ namespace server
                 }
 
             }, TaskCreationOptions.LongRunning, cancellationTokenSource.Token);
+        }
+        public void Stop()
+        {
+            cancellationTokenSource.Cancel();
+            ReceiveModel.ClearAll();
+            foreach (ServerModel server in servers.Values)
+            {
+
+                if (server != null && server.Socket != null)
+                {
+                    server.AcceptDone.Dispose();
+                    server.Socket.SafeClose();
+                }
+            }
+            servers.Clear();
+        }
+        public void Send(RecvQueueModel<IModelBase> msg)
+        {
+            if (Running)
+            {
+                TcpPacket tcpPackets = msg.Data.ToTcpPacket();
+                if (msg.TcpCoket != null && msg.TcpCoket.Connected)
+                {
+                    try
+                    {
+                        msg.TcpCoket.SendTimeout = msg.Timeout;
+                        _ = msg.TcpCoket.Send(tcpPackets.ToArray());
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Instance.Debug(ex + "");
+                    }
+                }
+            }
         }
 
         private void Accept(IAsyncResult result)
@@ -169,7 +191,7 @@ namespace server
             model.Buffer = new byte[1024];
             _ = socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
         }
-        public void Receive(ReceiveModel model, byte[] buffer)
+        private void Receive(ReceiveModel model, byte[] buffer)
         {
             IPEndPoint address = IPEndPoint.Parse(model.Socket.RemoteEndPoint.ToString());
             lock (model.CacheBuffer)
@@ -188,49 +210,9 @@ namespace server
                         ServerType = ServerType.TCP,
                         SourcePoint = address
                     };
-                    if (plugins.ContainsKey(packet.Type))
+                    if (Plugin.plugins.ContainsKey(packet.Type))
                     {
-                        IPlugin[] _plugins = plugins[packet.Type];
-                        for (int i = 0, length = _plugins.Length; i < length; i++)
-                        {
-                            _plugins[i].Excute(excute, ServerType.TCP);
-                        }
-                    }
-                }
-            }
-        }
-
-        public void Stop()
-        {
-            cancellationTokenSource.Cancel();
-            ReceiveModel.ClearAll();
-            foreach (ServerModel server in servers.Values)
-            {
-
-                if (server != null && server.Socket != null)
-                {
-                    server.AcceptDone.Dispose();
-                    server.Socket.SafeClose();
-                }
-            }
-            servers.Clear();
-        }
-
-        public void Send(RecvQueueModel<IModelBase> msg)
-        {
-            if (Running)
-            {
-                TcpPacket tcpPackets = msg.Data.ToTcpPacket();
-                if (msg.TcpCoket != null && msg.TcpCoket.Connected)
-                {
-                    try
-                    {
-                        msg.TcpCoket.SendTimeout = msg.Timeout;
-                        _ = msg.TcpCoket.Send(tcpPackets.ToArray());
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Instance.Debug(ex + "");
+                        Plugin.plugins[packet.Type].Excute(excute, ServerType.TCP);
                     }
                 }
             }

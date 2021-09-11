@@ -14,7 +14,6 @@ namespace server.extends
             return obj.ToBytes().Split(sequence, obj.MsgType, ttl);
         }
 
-
         public static TcpPacket ToTcpPacket(this IModelBase obj)
         {
             return new TcpPacket(obj.ToBytes(), obj.MsgType);

@@ -1,4 +1,5 @@
 ﻿using client.service.events;
+using client.service.serverPlugins.register;
 using common;
 using common.extends;
 using server;
@@ -15,21 +16,23 @@ namespace client.service.serverPlugins.connectClient
 {
     public class ConnectClientEventHandles
     {
-        private static readonly Lazy<ConnectClientEventHandles> lazy = new Lazy<ConnectClientEventHandles>(() => new ConnectClientEventHandles());
-        public static ConnectClientEventHandles Instance => lazy.Value;
+        private readonly EventHandlers eventHandlers;
+        private readonly ITcpServer tcpServer;
+        private readonly RegisterState registerState;
 
-        private ConnectClientEventHandles()
+        public ConnectClientEventHandles(EventHandlers eventHandlers, ITcpServer tcpServer, RegisterState registerState)
         {
-
+            this.eventHandlers = eventHandlers;
+            this.tcpServer = tcpServer;
+            this.registerState = registerState;
         }
 
-        private EventHandlers EventHandlers => EventHandlers.Instance;
-        private IPEndPoint UdpServer => EventHandlers.UdpServer;
-        private Socket TcpServer => EventHandlers.TcpServer;
-        private long ConnectId => EventHandlers.ConnectId;
+        private IPEndPoint UdpServer => registerState.UdpAddress;
+        private Socket TcpServer => registerState.TcpSocket;
+        private long ConnectId => registerState.RemoteInfo.ConnectId;
 
-        public int ClientTcpPort => EventHandlers.ClientTcpPort;
-        public int RouteLevel => EventHandlers.RouteLevel;
+        public int ClientTcpPort => registerState.RemoteInfo.TcpPort;
+        public int RouteLevel => registerState.LocalInfo.RouteLevel;
 
         private readonly ConcurrentDictionary<long, ConnectCache> connectCache = new();
         private readonly ConcurrentDictionary<long, ConnectTcpCache> connectTcpCache = new();
@@ -72,7 +75,8 @@ namespace client.service.serverPlugins.connectClient
             {
 
                 cache.TryTimes--;
-                EventHandlers.Send(new SendEventArg
+                Console.WriteLine($"{UdpServer}");
+                eventHandlers.Send(new SendEventArg
                 {
                     Address = UdpServer,
                     Data = new ConnectClientModel
@@ -128,7 +132,7 @@ namespace client.service.serverPlugins.connectClient
                 Timeout = param.Timeout
             });
 
-            EventHandlers.SendTcp(new SendTcpEventArg
+            eventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = TcpServer,
                 Data = new ConnectClientModel
@@ -163,7 +167,7 @@ namespace client.service.serverPlugins.connectClient
         /// <param name="toid"></param>
         public void SendConnectClientReverse(long id)
         {
-            EventHandlers.Instance.SendTcp(new SendTcpEventArg
+            eventHandlers.SendTcp(new SendTcpEventArg
             {
                 Data = new ConnectClientReverseModel { Id = ConnectId, ToId = id },
                 Socket = TcpServer
@@ -200,16 +204,16 @@ namespace client.service.serverPlugins.connectClient
             List<string> ips = arg.Data.LocalIps.Split(',').Concat(new string[] { arg.Data.Ip }).ToList();
             foreach (string ip in ips)
             {
-                EventHandlers.Send(new SendEventArg
+                eventHandlers.Send(new SendEventArg
                 {
                     Address = new IPEndPoint(IPAddress.Parse(ip), arg.Data.Port),
                     Data = new ConnectClientStep1AckModel { Id = ConnectId }
                 });
             }
             //告诉服务器我已准备好
-            EventHandlers.Send(new SendEventArg
+            eventHandlers.Send(new SendEventArg
             {
-                Address = null,
+                Address = UdpServer,
                 Data = new ConnectClientStep1ResultModel
                 {
                     Id = ConnectId,
@@ -245,7 +249,7 @@ namespace client.service.serverPlugins.connectClient
                     {
                         targetSocket.Ttl = (short)(RouteLevel + 2);
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        targetSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalInfo.LocalIp, ClientTcpPort));
+                        targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
                         targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(ip), e.Data.LocalTcpPort));
                     }
                     catch (Exception)
@@ -256,7 +260,7 @@ namespace client.service.serverPlugins.connectClient
                 });
             }
 
-            EventHandlers.SendTcp(new SendTcpEventArg
+            eventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = TcpServer,
                 Data = new ConnectClientStep1ResultModel
@@ -327,7 +331,7 @@ namespace client.service.serverPlugins.connectClient
                     {
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-                        targetSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalInfo.LocalIp, ClientTcpPort));
+                        targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
                         string ip = length >= ips.Length ? ips[ips.Length - 1] : ips[length];
 
                         IAsyncResult result = targetSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(ip), e.Data.LocalTcpPort), null, null);
@@ -336,7 +340,7 @@ namespace client.service.serverPlugins.connectClient
                         {
 
                             targetSocket.EndConnect(result);
-                            TCPServer.Instance.BindReceive(targetSocket);
+                            tcpServer.BindReceive(targetSocket);
                             SendTcpConnectClientStep3(new SendTcpConnectClientStep3EventArg
                             {
                                 Socket = targetSocket,
@@ -422,7 +426,7 @@ namespace client.service.serverPlugins.connectClient
         public void SendTcpConnectClientStep2Retry(long toid)
         {
             OnSendTcpConnectClientStep2RetryHandler?.Invoke(this, toid);
-            EventHandlers.SendTcp(new SendTcpEventArg
+            eventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = TcpServer,
                 Data = new ConnectClientStep2RetryModel
@@ -446,10 +450,12 @@ namespace client.service.serverPlugins.connectClient
             Task.Run(() =>
             {
                 //随便给目标客户端发个低TTL消息
-                using Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                targetSocket.Ttl = (short)(RouteLevel + 2);
+                using Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+                {
+                    Ttl = (short)(RouteLevel + 2)
+                };
                 targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                targetSocket.Bind(new IPEndPoint(AppShareData.Instance.LocalInfo.LocalIp, ClientTcpPort));
+                targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
                 targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(e.Data.Ip), e.Data.LocalTcpPort));
                 System.Threading.Thread.Sleep(500);
                 targetSocket.SafeClose();
@@ -468,7 +474,7 @@ namespace client.service.serverPlugins.connectClient
         public void OnSendTcpConnectClientStep2Fail(OnSendTcpConnectClientStep2FailEventArg arg)
         {
             OnSendTcpConnectClientStep2FailHandler?.Invoke(this, arg);
-            EventHandlers.SendTcp(new SendTcpEventArg
+            eventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = TcpServer,
                 Data = new ConnectClientStep2FailModel
@@ -503,7 +509,7 @@ namespace client.service.serverPlugins.connectClient
 
         public void SendTcpConnectClientStep2StopMessage(long toid)
         {
-            EventHandlers.SendTcp(new SendTcpEventArg
+            eventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = TcpServer,
                 Data = new ConnectClientStep2StopModel
@@ -531,7 +537,7 @@ namespace client.service.serverPlugins.connectClient
         public void SendConnectClientStep3(SendConnectClientStep3EventArg arg)
         {
             OnSendConnectClientStep3Handler?.Invoke(this, arg);
-            EventHandlers.Send(new SendEventArg
+            eventHandlers.Send(new SendEventArg
             {
                 Address = arg.Address,
                 Data = new ConnectClientStep3Model
@@ -553,7 +559,7 @@ namespace client.service.serverPlugins.connectClient
         {
 
             OnSendTcpConnectClientStep3Handler?.Invoke(this, arg);
-            EventHandlers.SendTcp(new SendTcpEventArg
+            eventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = arg.Socket,
                 Data = new ConnectClientStep3Model
@@ -597,7 +603,7 @@ namespace client.service.serverPlugins.connectClient
                 SendTcpConnectClientStep4(new SendTcpConnectClientStep4EventArg
                 {
                     Socket = arg.Packet.TcpSocket,
-                    Id = AppShareData.Instance.RemoteInfo.ConnectId
+                    Id = registerState.RemoteInfo.ConnectId
                 });
             }
             OnTcpConnectClientStep3Handler?.Invoke(this, arg);
@@ -615,7 +621,7 @@ namespace client.service.serverPlugins.connectClient
         public void SendConnectClientStep4Message(SendConnectClientStep4EventArg arg)
         {
             OnSendConnectClientStep4Handler?.Invoke(this, arg);
-            EventHandlers.Send(new SendEventArg
+            eventHandlers.Send(new SendEventArg
             {
                 Address = arg.Address,
                 Data = new ConnectClientStep4Model
@@ -636,7 +642,7 @@ namespace client.service.serverPlugins.connectClient
         {
 
             OnSendTcpConnectClientStep4Handler?.Invoke(this, arg);
-            EventHandlers.SendTcp(new SendTcpEventArg
+            eventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = arg.Socket,
                 Data = new ConnectClientStep4Model

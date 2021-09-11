@@ -9,33 +9,43 @@ namespace client.service.clientService.plugins
 {
     public class ClientsPlugin : IClientServicePlugin
     {
+        private readonly ClientsHelper clientsHelper;
+        private readonly ConnectClientEventHandles  connectClientEventHandles;
+        
+        public ClientsPlugin(ClientsHelper clientsHelper, ConnectClientEventHandles connectClientEventHandles)
+        {
+            this.clientsHelper = clientsHelper;
+            this.connectClientEventHandles = connectClientEventHandles;
+        }
+
+
         public IEnumerable<ClientInfo> List(ClientServicePluginExcuteWrap arg)
         {
-            return AppShareData.Instance.Clients.Values.ToList();
+            return clientsHelper.Clients;
         }
 
         public void Connect(ClientServicePluginExcuteWrap arg)
         {
             ConnectModel model = arg.Content.DeJson<ConnectModel>();
-            ClientsHelper.Instance.ConnectClient(model.ID);
+            clientsHelper.ConnectClient(model.ID);
         }
 
         public void Stop(ClientServicePluginExcuteWrap arg)
         {
             ConnectModel model = arg.Content.DeJson<ConnectModel>();
-            ConnectClientEventHandles.Instance.SendTcpConnectClientStep2StopMessage(model.ID);
+            connectClientEventHandles.SendTcpConnectClientStep2StopMessage(model.ID);
         }
 
         public void Offline(ClientServicePluginExcuteWrap arg)
         {
             ConnectModel model = arg.Content.DeJson<ConnectModel>();
-            ClientsHelper.Instance.OfflineClient(model.ID);
+            clientsHelper.OfflineClient(model.ID);
         }
 
         public void ConnectReverse(ClientServicePluginExcuteWrap arg)
         {
             ConnectModel model = arg.Content.DeJson<ConnectModel>();
-            ConnectClientEventHandles.Instance.SendConnectClientReverse(model.ID);
+            connectClientEventHandles.SendConnectClientReverse(model.ID);
         }
     }
 

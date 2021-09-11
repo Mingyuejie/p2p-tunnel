@@ -1,5 +1,6 @@
 ﻿using common;
 using common.extends;
+using Microsoft.Extensions.DependencyInjection;
 using Mono.Nat;
 using System;
 using System.Collections.Generic;
@@ -161,12 +162,25 @@ namespace client.service.clientService.plugins
         public int PrivatePort { get; set; } = 8099;
         public DateTime Expiration { get; set; } = DateTime.Now;
 
-
-
         public Protocol Protocol { get; set; } = Protocol.Tcp;
 
         public string Description { get; set; } = string.Empty;
 
         public int Lifetime { get; set; } = 0;
+    }
+
+    public static class ServiceCollectionExtends
+    {
+        public static ServiceCollection AddUpnpPlugin(this ServiceCollection obj)
+        {
+            obj.AddSingleton<UpnpPlugin>();
+            obj.AddSingleton<UpnpHelper>();
+            return obj;
+        }
+        public static ServiceProvider UseUpnpPlugin(this ServiceProvider obj)
+        {
+            obj.GetService<UpnpHelper>().Start();
+            return obj;
+        }
     }
 }

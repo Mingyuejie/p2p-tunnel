@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using common.extends;
+using System.IO;
+using System.Net;
 using System.Text.Json.Serialization;
 
 namespace client.service.config
@@ -28,6 +30,26 @@ namespace client.service.config
         /// 文件服务器配置
         /// </summary>
         public FileServerConfig FileServer { get; set; } = new FileServerConfig();
+
+       
+        public static Config ReadConfig()
+        {
+            Config config = File.ReadAllText("appsettings.json").DeJson<Config>();
+            return config;
+        }
+
+        public void SaveConfig()
+        {
+            Config config = File.ReadAllText("appsettings.json").DeJson<Config>();
+
+            config.Web = Web;
+            config.Client = Client;
+            config.Server = Server;
+            config.FileServer = FileServer;
+            config.Websocket = Websocket;
+
+            File.WriteAllText("appsettings.json", config.ToJson(), System.Text.Encoding.UTF8);
+        }
     }
 
     /// <summary>

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-05 13:31:45
+ * @LastEditTime: 2021-09-11 22:51:21
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\router\index.js
@@ -55,6 +55,11 @@ const routes = [
                 path: '/about-setting.html',
                 name: 'AboutSetting',
                 component: () => import('../views/about/Setting.vue')
+            },
+            {
+                path: '/about-use.html',
+                name: 'AboutUse',
+                component: () => import('../views/about/Use.vue')
             },
             {
                 path: '/about-env.html',

@@ -11,7 +11,7 @@ namespace client.service.serverPlugins.clients
 
     public class ClientInfo
     {
-        private readonly static ConcurrentDictionary<long, ClientInfo> clients = AppShareData.Instance.Clients;
+        private readonly static ConcurrentDictionary<long, ClientInfo> clients = new ConcurrentDictionary<long, ClientInfo>();
 
         private bool connecting = false;
         public bool Connecting

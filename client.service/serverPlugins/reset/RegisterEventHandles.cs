@@ -1,4 +1,5 @@
 ﻿using client.service.events;
+using client.service.serverPlugins.register;
 using common;
 using server;
 using server.model;
@@ -11,16 +12,15 @@ namespace client.service.serverPlugins.reset
 {
     public class ResetEventHandles
     {
-        private static readonly Lazy<ResetEventHandles> lazy = new(() => new ResetEventHandles());
-        public static ResetEventHandles Instance => lazy.Value;
+        private readonly EventHandlers eventHandlers;
+        private readonly RegisterState   registerState;
 
-        private ResetEventHandles()
+        public ResetEventHandles(EventHandlers eventHandlers, RegisterState registerState)
         {
-
+            this.eventHandlers = eventHandlers;
+            this.registerState = registerState;
         }
-
-        private EventHandlers EventHandlers => EventHandlers.Instance;
-        private long ConnectId => EventHandlers.ConnectId;
+        private long ConnectId => registerState.RemoteInfo.ConnectId;
 
         /// <summary>
         /// 发送重启消息
@@ -32,7 +32,7 @@ namespace client.service.serverPlugins.reset
         /// <param name="toid"></param>
         public void SendResetMessage(Socket socket, long toid)
         {
-            EventHandlers.SendTcp(new SendTcpEventArg
+            eventHandlers.SendTcp(new SendTcpEventArg
             {
                 Socket = socket,
                 Data = new ResetModel

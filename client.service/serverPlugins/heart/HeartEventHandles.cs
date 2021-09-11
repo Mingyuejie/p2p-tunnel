@@ -1,4 +1,5 @@
 ﻿using client.service.events;
+using client.service.serverPlugins.register;
 using server.model;
 using System;
 using System.Net;
@@ -8,18 +9,12 @@ namespace client.service.serverPlugins.heart
 {
     public class HeartEventHandles
     {
-        private static readonly Lazy<HeartEventHandles> lazy = new Lazy<HeartEventHandles>(() => new HeartEventHandles());
-        public static HeartEventHandles Instance => lazy.Value;
-
-        private HeartEventHandles()
+        private readonly EventHandlers eventHandlers;
+        public HeartEventHandles(EventHandlers eventHandlersr)
         {
-
+            this.eventHandlers = eventHandlersr;
         }
 
-        private EventHandlers eventHandlers => EventHandlers.Instance;
-        private IPEndPoint UdpServer => eventHandlers.UdpServer;
-        private Socket TcpServer => eventHandlers.TcpServer;
-        private long ConnectId => eventHandlers.ConnectId;
 
         /// <summary>
         /// 发送心跳消息
@@ -29,22 +24,19 @@ namespace client.service.serverPlugins.heart
         /// 发送心跳消息
         /// </summary>
         /// <param name="arg"></param>
-        public void SendHeartMessage(IPEndPoint address = null)
+        public void SendHeartMessage(long ConnectId, IPEndPoint address)
         {
-            if (UdpServer != null || address != null)
+            SendEventArg arg = new SendEventArg
             {
-                SendEventArg arg = new SendEventArg
+                Address = address,
+                Data = new HeartModel
                 {
-                    Address = address ?? UdpServer,
-                    Data = new HeartModel
-                    {
-                        SourceId = ConnectId
-                    }
-                };
+                    SourceId = ConnectId
+                }
+            };
 
-                eventHandlers.Send(arg);
-                OnSendHeartMessageHandler?.Invoke(this, arg);
-            }
+            eventHandlers.Send(arg);
+            OnSendHeartMessageHandler?.Invoke(this, arg);
         }
         /// <summary>
         /// 发送TCP心跳消息
@@ -54,21 +46,18 @@ namespace client.service.serverPlugins.heart
         /// 发送TCP心跳消息
         /// </summary>
         /// <param name="arg"></param>
-        public void SendTcpHeartMessage(Socket socket = null)
+        public void SendTcpHeartMessage(long ConnectId, Socket socket)
         {
-            if (UdpServer != null || socket != null)
+            SendTcpEventArg arg = new SendTcpEventArg
             {
-                SendTcpEventArg arg = new SendTcpEventArg
+                Socket = socket,
+                Data = new HeartModel
                 {
-                    Socket = socket ?? TcpServer,
-                    Data = new HeartModel
-                    {
-                        SourceId = ConnectId
-                    },
-                };
-                eventHandlers.SendTcp(arg, 500);
-                OnSendTcpHeartMessageHandler?.Invoke(this, arg);
-            }
+                    SourceId = ConnectId
+                },
+            };
+            eventHandlers.SendTcp(arg, 500);
+            OnSendTcpHeartMessageHandler?.Invoke(this, arg);
         }
 
         /// <summary>

@@ -9,20 +9,20 @@ namespace client.service.serverPlugins.clients
     /// </summary>
     public class ServerSendClientsPlugin : IPlugin
     {
+        private readonly ClientsEventHandles clientsEventHandles;
+        public ServerSendClientsPlugin(ClientsEventHandles clientsEventHandles) {
+            this.clientsEventHandles = clientsEventHandles;
+        }
         public MessageTypes MsgType => MessageTypes.SERVER_SEND_CLIENTS;
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
         {
             ClientsModel res = model.Packet.Chunk.DeBytes<ClientsModel>();
-
-            if (serverType == ServerType.UDP)
+            clientsEventHandles.OnServerSendClients(new OnServerSendClientsEventArg
             {
-                ClientsEventHandles.Instance.OnServerSendClients(new OnServerSendClientsEventArg
-                {
-                    Data = res,
-                    Packet = model
-                });
-            }
+                Data = res,
+                Packet = model
+            });
         }
     }
 }

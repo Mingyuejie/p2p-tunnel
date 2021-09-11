@@ -11,13 +11,19 @@ namespace client.service.clientService.plugins
     /// </summary>
     public class ConfigPlugin : IClientServicePlugin
     {
+        private readonly Config config;
+        public ConfigPlugin(Config config)
+        {
+            this.config = config;
+        }
+
         public void Update(ClientServicePluginExcuteWrap arg)
         {
             SettingModel model = arg.Content.DeJson<SettingModel>();
 
-            AppShareData.Instance.ClientConfig = model.ClientConfig;
-            AppShareData.Instance.ServerConfig = model.ServerConfig;
-            AppShareData.Instance.SaveConfig();
+            config.Client = model.ClientConfig;
+            config.Server = model.ServerConfig;
+            config.SaveConfig();
         }
     }
 

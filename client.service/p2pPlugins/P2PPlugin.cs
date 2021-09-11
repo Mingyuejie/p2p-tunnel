@@ -1,4 +1,8 @@
-﻿using common.extends;
+﻿using client.service.p2pPlugins.plugins.fileServer;
+using client.service.p2pPlugins.plugins.forward.tcp;
+using client.service.p2pPlugins.plugins.request;
+using common.extends;
+using Microsoft.Extensions.DependencyInjection;
 using ProtoBuf;
 using server.model;
 using server.models;
@@ -12,6 +16,13 @@ namespace client.service.p2pPlugins
     /// </summary>
     public class P2PPlugin : IPlugin
     {
+        private readonly P2PEventHandles p2PEventHandles;
+        public P2PPlugin(P2PEventHandles p2PEventHandles)
+        {
+          
+            this.p2PEventHandles = p2PEventHandles;
+        }
+
         public MessageTypes MsgType => MessageTypes.P2P;
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
@@ -20,7 +31,7 @@ namespace client.service.p2pPlugins
 
             if (serverType == ServerType.TCP)
             {
-                P2PEventHandles.Instance.OnP2PTcp(new OnP2PTcpArg
+                p2PEventHandles.OnP2PTcp(new OnP2PTcpArg
                 {
                     Data = data,
                     Packet = model
@@ -28,7 +39,7 @@ namespace client.service.p2pPlugins
             }
             else
             {
-                P2PEventHandles.Instance.OnP2P(new OnP2PTcpArg
+                p2PEventHandles.OnP2P(new OnP2PTcpArg
                 {
                     Data = data,
                     Packet = model
@@ -72,5 +83,26 @@ namespace client.service.p2pPlugins
     public interface IP2PMessageBase
     {
         P2PDataTypes Type { get; }
+    }
+
+    public static class ServiceCollectionExtends
+    {
+        public static ServiceCollection AddP2PPlugin(this ServiceCollection obj)
+        {
+            obj.AddSingleton<P2PEventHandles>();
+            obj.AddTcpForwardPlugin();
+            obj.AddFileServerPlugin();
+            obj.AddRequestPlugin();
+
+            return obj;
+        }
+        public static ServiceProvider UseP2PPlugin(this ServiceProvider obj)
+        {
+            obj.UseFileServerPlugin();
+            obj.UseTcpForwardPlugin();
+            obj.UseRequestPlugin();
+            obj.GetService<P2PEventHandles>().LoadPlugins();
+            return obj;
+        }
     }
 }

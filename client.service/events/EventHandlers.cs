@@ -1,4 +1,5 @@
-﻿using server;
+﻿using client.service.serverPlugins.register;
+using server;
 using server.model;
 using System;
 using System.Net;
@@ -8,20 +9,16 @@ namespace client.service.events
 {
     public class EventHandlers
     {
-        private static readonly Lazy<EventHandlers> lazy = new Lazy<EventHandlers>(() => new EventHandlers());
-        public static EventHandlers Instance => lazy.Value;
+        private readonly ITcpServer tcpServer;
+        private readonly IUdpServer udpServer;
 
-        private EventHandlers()
+        public EventHandlers(ITcpServer tcpServer, IUdpServer udpServer)
         {
-
+            this.tcpServer = tcpServer;
+            this.udpServer = udpServer;
         }
 
         public long Sequence { get; set; } = 0;
-        public IPEndPoint UdpServer => AppShareData.Instance.UdpServer;
-        public Socket TcpServer  => AppShareData.Instance.TcpServer;
-        public long ConnectId => AppShareData.Instance.RemoteInfo.ConnectId;
-        public int ClientTcpPort => AppShareData.Instance.LocalInfo.TcpPort;
-        public int RouteLevel => AppShareData.Instance.LocalInfo.RouteLevel;
 
 
         #region 发送消息
@@ -35,14 +32,14 @@ namespace client.service.events
         /// <param name="arg"></param>
         public void Send(SendEventArg arg)
         {
-            IPEndPoint address = arg.Address ?? UdpServer;
-            if (address == null)
+            if (arg.Address == null)
             {
                 return;
             }
-            UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
+            Console.WriteLine($"-----{arg.Address}");
+            udpServer.Send(new RecvQueueModel<IModelBase>
             {
-                Address = address,
+                Address = arg.Address,
                 Data = arg.Data
             });
 
@@ -58,14 +55,14 @@ namespace client.service.events
         /// </summary>
         public void SendTcp(SendTcpEventArg arg, int timeout = 0)
         {
-            if (arg.Socket == null && TcpServer == null)
+            if (arg.Socket == null)
             {
                 return;
             }
 
-            TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
+            tcpServer.Send(new RecvQueueModel<IModelBase>
             {
-                TcpCoket = arg.Socket ?? TcpServer,
+                TcpCoket = arg.Socket,
                 Data = arg.Data,
                 Timeout = timeout
             });

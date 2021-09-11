@@ -6,19 +6,17 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
 {
     public class TcpForwardEventHandles
     {
-        private static readonly Lazy<TcpForwardEventHandles> lazy = new Lazy<TcpForwardEventHandles>(() => new TcpForwardEventHandles());
-        public static TcpForwardEventHandles Instance => lazy.Value;
-
-        private TcpForwardEventHandles()
+        private readonly P2PEventHandles p2PEventHandles;
+        public TcpForwardEventHandles(P2PEventHandles p2PEventHandles)
         {
-
+            this.p2PEventHandles = p2PEventHandles;
         }
 
         #region TCP转发
         public event EventHandler<SendTcpForwardEventArg> OnSendTcpForwardHandler;
         public void SendTcpForward(SendTcpForwardEventArg arg)
         {
-            P2PEventHandles.Instance.SendTcp(new SendP2PTcpArg
+            p2PEventHandles.SendTcp(new SendP2PTcpArg
             {
                 Socket = arg.Socket,
                 Data = arg.Data

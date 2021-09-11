@@ -1,10 +1,9 @@
 ﻿using common;
-using common.cache;
 using common.extends;
 using server.model;
 using server.plugin;
+using server.service.cache;
 using server.service.model;
-using System;
 using System.Net;
 
 namespace server.service.plugins
@@ -14,6 +13,16 @@ namespace server.service.plugins
     /// </summary>
     public class RegisterPlugin : IPlugin
     {
+        private readonly IClientRegisterCache clientRegisterCache;
+        private readonly ITcpServer tcpServer;
+        private readonly IUdpServer udpServer;
+        public RegisterPlugin(IClientRegisterCache clientRegisterCache, ITcpServer tcpServer, IUdpServer udpServer)
+        {
+            this.clientRegisterCache = clientRegisterCache;
+            this.tcpServer = tcpServer;
+            this.udpServer = udpServer;
+        }
+
         public MessageTypes MsgType => MessageTypes.SERVER_REGISTER;
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
@@ -22,7 +31,7 @@ namespace server.service.plugins
 
             if (serverType == ServerType.UDP)
             {
-                if (ClientRegisterCache.Instance.GetBySameGroup(model.GroupId, model.Name) == null)
+                if (clientRegisterCache.GetBySameGroup(model.GroupId, model.Name) == null)
                 {
                     RegisterCacheModel add = new()
                     {
@@ -37,12 +46,12 @@ namespace server.service.plugins
                         LocalPort = model.LocalTcpPort
 
                     };
-                    long id = ClientRegisterCache.Instance.Add(add, 0);
+                    long id = clientRegisterCache.Add(add, 0);
 
                     string origingid = add.OriginGroupId;
                     add.OriginGroupId = string.Empty;
 
-                    UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                    udpServer.Send(new RecvQueueModel<IModelBase>
                     {
                         Address = data.SourcePoint,
                         TcpCoket = null,
@@ -60,7 +69,7 @@ namespace server.service.plugins
                 }
                 else
                 {
-                    UDPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                    tcpServer.Send(new RecvQueueModel<IModelBase>
                     {
                         Address = data.SourcePoint,
                         TcpCoket = null,
@@ -80,9 +89,9 @@ namespace server.service.plugins
                     tcpPort = IPEndPoint.Parse(data.TcpSocket.RemoteEndPoint.ToString()).Port;
                 }
 
-                if (ClientRegisterCache.Instance.UpdateTcpInfo(model.Id, data.TcpSocket, tcpPort, model.GroupId))
+                if (clientRegisterCache.UpdateTcpInfo(model.Id, data.TcpSocket, tcpPort, model.GroupId))
                 {
-                    TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                    tcpServer.Send(new RecvQueueModel<IModelBase>
                     {
                         Address = data.SourcePoint,
                         TcpCoket = data.TcpSocket,
@@ -100,7 +109,7 @@ namespace server.service.plugins
                 }
                 else
                 {
-                    TCPServer.Instance.Send(new RecvQueueModel<IModelBase>
+                    tcpServer.Send(new RecvQueueModel<IModelBase>
                     {
                         Address = data.SourcePoint,
                         TcpCoket = data.TcpSocket,

@@ -13,9 +13,17 @@ namespace client.service.clientService.plugins
 
     public class FileServerPlugin : IClientServicePlugin
     {
+        private readonly Config config;
+        private readonly FileServerHelper fileServerHelper;
+        public FileServerPlugin(Config config, FileServerHelper fileServerHelper)
+        {
+            this.config = config;
+            this.fileServerHelper = fileServerHelper;
+        }
+
         public FileServerConfig Info(ClientServicePluginExcuteWrap arg)
         {
-            return AppShareData.Instance.FileServerConfig;
+            return config.FileServer;
         }
 
         public void Update(ClientServicePluginExcuteWrap arg)
@@ -27,27 +35,27 @@ namespace client.service.clientService.plugins
             }
             else
             {
-                AppShareData.Instance.FileServerConfig = model;
-                AppShareData.Instance.SaveConfig();
+                config.FileServer = model;
+                config.SaveConfig();
             }
         }
 
         public void Start(ClientServicePluginExcuteWrap arg)
         {
-            FileServerHelper.Instance.Start();
-            AppShareData.Instance.SaveConfig();
+            fileServerHelper.Start();
+            config.SaveConfig();
         }
 
         public void Stop(ClientServicePluginExcuteWrap arg)
         {
-            FileServerHelper.Instance.Stop();
-            AppShareData.Instance.SaveConfig();
+            fileServerHelper.Stop();
+            config.SaveConfig();
         }
 
         public void Download(ClientServicePluginExcuteWrap arg)
         {
             RequestFileDownloadModel model = arg.Content.DeJson<RequestFileDownloadModel>();
-            if (!FileServerHelper.Instance.Download(model.ToId, model.Path))
+            if (!fileServerHelper.Download(model.ToId, model.Path))
             {
                 arg.SetCode(-1, "请选择目标对象");
             }
@@ -56,7 +64,7 @@ namespace client.service.clientService.plugins
         public void Upload(ClientServicePluginExcuteWrap arg)
         {
             RequestFileUploadModel model = arg.Content.DeJson<RequestFileUploadModel>();
-            if (!FileServerHelper.Instance.Upload(model.ToId, model.Path))
+            if (!fileServerHelper.Upload(model.ToId, model.Path))
             {
                 arg.SetCode(-1, "请选择目标对象");
             }
@@ -65,7 +73,7 @@ namespace client.service.clientService.plugins
         public async Task<FileInfo[]> List(ClientServicePluginExcuteWrap arg)
         {
             RequestFileListModel model = arg.Content.DeJson<RequestFileListModel>();
-            var result = await FileServerHelper.Instance.RequestRemoteList(model.ToId, model.Path);
+            var result = await fileServerHelper.RequestRemoteList(model.ToId, model.Path);
             if (!string.IsNullOrWhiteSpace(result.ErrorMsg))
             {
                 arg.SetCode(-1, result.ErrorMsg);
@@ -78,17 +86,17 @@ namespace client.service.clientService.plugins
         public FileInfo[] LocalList(ClientServicePluginExcuteWrap arg)
         {
             RequestFileListModel model = arg.Content.DeJson<RequestFileListModel>();
-            return FileServerHelper.Instance.GetLocalFiles(model.Path, model.ToId == -1);
+            return fileServerHelper.GetLocalFiles(model.Path, model.ToId == -1);
         }
 
         public IEnumerable<object> Online(ClientServicePluginExcuteWrap arg)
         {
-            return FileServerHelper.Instance.GetOnlineList();
+            return fileServerHelper.GetOnlineList();
         }
 
         public SpecialFolderInfo SpecialFolder(ClientServicePluginExcuteWrap arg)
         {
-            return FileServerHelper.Instance.GetSpecialFolders();
+            return fileServerHelper.GetSpecialFolders();
         }
     }
 
