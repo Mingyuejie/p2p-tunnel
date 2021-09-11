@@ -93,12 +93,12 @@ namespace client.service.webServer
 
     public static class ServiceCollectionExtends
     {
-        public static ServiceCollection AddWebSercer(this ServiceCollection obj)
+        public static ServiceCollection AddWebServer(this ServiceCollection obj)
         {
             obj.AddSingleton<IWebServer, WebServer>();
             return obj;
         }
-        public static ServiceProvider UseWebSercer(this ServiceProvider obj)
+        public static ServiceProvider UseWebServer(this ServiceProvider obj)
         {
             obj.GetService<IWebServer>().Start();
             return obj;

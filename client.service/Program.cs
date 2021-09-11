@@ -28,10 +28,10 @@ namespace client.service
             var serviceCollection = new ServiceCollection();
 
             serviceCollection.AddSingleton((e) => config);
-            serviceCollection.AddServerPlugin().AddClientServer().AddWebSercer();
+            serviceCollection.AddServerPlugin().AddClientServer().AddWebServer();
 
             serviceProvider = serviceCollection.BuildServiceProvider();
-            serviceProvider.UseServerPlugin().UseClientServer().UseWebSercer();
+            serviceProvider.UseServerPlugin().UseClientServer().UseWebServer();
 
             Logger.Instance.Warning("=======================================");
             Logger.Instance.Warning("没什么报红的，就说明运行成功了");
