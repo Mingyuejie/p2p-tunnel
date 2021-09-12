@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-07 00:37:53
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-11 23:27:07
+ * @LastEditTime: 2021-09-12 21:07:36
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\home.md
@@ -28,7 +28,6 @@
 5. rdp.desktop rdp 桌面共享 
 6. rdpViewer  rdp 桌面共享查看器
 
-
-### 声明
-
-1. <font color="red">源码都是开源的，默认提供的服务器会对 **【分组编号】** 进行加密，也尽可能的做好安全防范，但是无法保证绝对安全，如果有条件，非常推荐自己部署服务器</font>
+### 一些特殊的地方
+1. 如果你使用<font color="red">虚拟机</font>，请将<font color="red">虚拟机</font>网络设置为 **【桥接模式】**，虚拟机使用物理网络
+2. 源码都是开源的，默认提供的服务器会对 **【分组编号】** 进行加密，也尽可能的做好安全防范，但是无法保证绝对安全，如果有条件，非常推荐自己部署服务器
