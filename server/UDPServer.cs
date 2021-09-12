@@ -34,32 +34,28 @@ namespace server
 
         public void Start(int port, IPAddress ip = null)
         {
-
-            if (Running)
+            if (!Running)
             {
-                return;
-            }
+                cancellationTokenSource = new CancellationTokenSource();
+                IpepServer = new IPEndPoint(ip ?? IPAddress.Any, port);
+                UdpcRecv = new UdpClient(IpepServer);
 
-            cancellationTokenSource = new CancellationTokenSource();
-            IpepServer = new IPEndPoint(ip ?? IPAddress.Any, port);
-            UdpcRecv = new UdpClient(IpepServer);
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                const uint IOC_IN = 0x80000000;
-                int IOC_VENDOR = 0x18000000;
-                int SIO_UDP_CONNRESET = (int)(IOC_IN | IOC_VENDOR | 12);
-                UdpcRecv.Client.IOControl(SIO_UDP_CONNRESET, new byte[] { Convert.ToByte(false) }, null);
-            }
-
-            _ = Task.Factory.StartNew((e) =>
-            {
-                while (Running)
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    Receive();
+                    const uint IOC_IN = 0x80000000;
+                    int IOC_VENDOR = 0x18000000;
+                    int SIO_UDP_CONNRESET = (int)(IOC_IN | IOC_VENDOR | 12);
+                    UdpcRecv.Client.IOControl(SIO_UDP_CONNRESET, new byte[] { Convert.ToByte(false) }, null);
                 }
-            }, TaskCreationOptions.LongRunning, cancellationTokenSource.Token);
 
+                _ = Task.Factory.StartNew((e) =>
+                {
+                    while (Running)
+                    {
+                        Receive();
+                    }
+                }, TaskCreationOptions.LongRunning, cancellationTokenSource.Token);
+            }
         }
 
         public void Stop()
@@ -76,24 +72,22 @@ namespace server
 
         public void Send(RecvQueueModel<IModelBase> msg)
         {
-            if (UdpcRecv == null)
+            if (UdpcRecv != null && msg.Address != null)
             {
-                return;
-            }
+                _ = Interlocked.Increment(ref sequence);
+                IEnumerable<UdpPacket> udpPackets = msg.Data.ToUdpPackets(sequence);
 
-            _ = Interlocked.Increment(ref sequence);
-            IEnumerable<UdpPacket> udpPackets = msg.Data.ToUdpPackets(sequence);
-
-            try
-            {
-                foreach (UdpPacket udpPacket in udpPackets)
+                try
                 {
-                    byte[] udpPacketDatagram = udpPacket.ToArray();
-                    _ = UdpcRecv.SendAsync(udpPacketDatagram, udpPacketDatagram.Length, msg.Address);
+                    foreach (UdpPacket udpPacket in udpPackets)
+                    {
+                        byte[] udpPacketDatagram = udpPacket.ToArray();
+                        _ = UdpcRecv.SendAsync(udpPacketDatagram, udpPacketDatagram.Length, msg.Address);
+                    }
                 }
-            }
-            catch (Exception)
-            {
+                catch (Exception)
+                {
+                }
             }
         }
 

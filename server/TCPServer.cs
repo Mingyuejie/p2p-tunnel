@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace server
 {
-    public class TCPServer: ITcpServer
+    public class TCPServer : ITcpServer
     {
         private long Id = 0;
         private ConcurrentDictionary<int, ServerModel> servers = new ConcurrentDictionary<int, ServerModel>();
@@ -95,20 +95,17 @@ namespace server
         }
         public void Send(RecvQueueModel<IModelBase> msg)
         {
-            if (Running)
+            if (Running && msg.TcpCoket != null && msg.TcpCoket.Connected)
             {
-                TcpPacket tcpPackets = msg.Data.ToTcpPacket();
-                if (msg.TcpCoket != null && msg.TcpCoket.Connected)
+                try
                 {
-                    try
-                    {
-                        msg.TcpCoket.SendTimeout = msg.Timeout;
-                        _ = msg.TcpCoket.Send(tcpPackets.ToArray());
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Instance.Debug(ex + "");
-                    }
+                    TcpPacket tcpPackets = msg.Data.ToTcpPacket();
+                    msg.TcpCoket.SendTimeout = msg.Timeout;
+                    _ = msg.TcpCoket.Send(tcpPackets.ToArray());
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance.Debug(ex + "");
                 }
             }
         }

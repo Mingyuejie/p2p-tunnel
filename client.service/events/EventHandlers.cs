@@ -32,17 +32,11 @@ namespace client.service.events
         /// <param name="arg"></param>
         public void Send(SendEventArg arg)
         {
-            if (arg.Address == null)
-            {
-                return;
-            }
-            Console.WriteLine($"-----{arg.Address}");
             udpServer.Send(new RecvQueueModel<IModelBase>
             {
                 Address = arg.Address,
                 Data = arg.Data
             });
-
             OnSendHandler?.Invoke(this, arg);
         }
         /// <summary>
@@ -55,11 +49,6 @@ namespace client.service.events
         /// </summary>
         public void SendTcp(SendTcpEventArg arg, int timeout = 0)
         {
-            if (arg.Socket == null)
-            {
-                return;
-            }
-
             tcpServer.Send(new RecvQueueModel<IModelBase>
             {
                 TcpCoket = arg.Socket,
