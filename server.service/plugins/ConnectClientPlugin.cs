@@ -57,7 +57,8 @@ namespace server.service.plugins
                                 Port = source.Address.Port,
                                 TcpPort = source.TcpPort,
                                 LocalIps = source.LocalIps,
-                                LocalTcpPort = source.LocalPort == 0 ? source.TcpPort : source.LocalPort
+                                LocalTcpPort = source.LocalTcpPort,
+                                LocalUdpPort = source.LocalUdpPort,
                             }
                         });
                     }
@@ -76,7 +77,8 @@ namespace server.service.plugins
                                 Port = target.Address.Port,
                                 TcpPort = target.TcpPort,
                                 LocalIps = target.LocalIps,
-                                LocalTcpPort = target.LocalPort == 0 ? target.TcpPort : target.LocalPort
+                                LocalTcpPort = source.LocalTcpPort,
+                                LocalUdpPort = source.LocalUdpPort,
                             }
                         });
                     }
@@ -194,7 +196,8 @@ namespace server.service.plugins
                                 Port = source.Address.Port,
                                 TcpPort = source.TcpPort,
                                 LocalIps = source.LocalIps,
-                                LocalTcpPort = source.LocalPort == 0 ? source.TcpPort : source.LocalPort
+                                LocalTcpPort = source.LocalTcpPort,
+                                LocalUdpPort = source.LocalUdpPort,
 
                             }
                         });
@@ -214,7 +217,8 @@ namespace server.service.plugins
                                 Port = source.Address.Port,
                                 TcpPort = source.TcpPort,
                                 LocalIps = source.LocalIps,
-                                LocalTcpPort = source.LocalPort == 0 ? source.TcpPort : source.LocalPort
+                                LocalTcpPort = source.LocalTcpPort,
+                                LocalUdpPort = source.LocalUdpPort,
                             }
                         });
                     }
@@ -270,7 +274,8 @@ namespace server.service.plugins
                                 Port = source.Address.Port,
                                 TcpPort = source.TcpPort,
                                 LocalIps = source.LocalIps,
-                                LocalTcpPort = source.LocalPort == 0 ? source.TcpPort : source.LocalPort
+                                LocalTcpPort = source.LocalTcpPort,
+                                LocalUdpPort = source.LocalUdpPort,
                             }
                         });
                     }
@@ -288,7 +293,8 @@ namespace server.service.plugins
                                 Port = source.Address.Port,
                                 TcpPort = source.TcpPort,
                                 LocalIps = source.LocalIps,
-                                LocalTcpPort = source.LocalPort == 0 ? source.TcpPort : source.LocalPort
+                                LocalTcpPort = source.LocalTcpPort,
+                                LocalUdpPort = source.LocalUdpPort,
                             }
                         });
                     }

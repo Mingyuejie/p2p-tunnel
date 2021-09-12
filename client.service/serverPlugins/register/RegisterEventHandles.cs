@@ -274,6 +274,7 @@ namespace client.service.serverPlugins.register
         public string LocalIps { get; set; } = string.Empty;
         public string Mac { get; set; } = string.Empty;
         public int Timeout { get; set; } = 15 * 1000;
+        public int LocalUdpPort { get; set; } = 0;
         public int LocalTcpPort { get; set; } = 0;
 
         public Action<RegisterResultModel> Callback { get; set; } = null;

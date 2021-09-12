@@ -201,15 +201,17 @@ namespace client.service.serverPlugins.connectClient
         {
             OnConnectClientStep1Handler?.Invoke(this, arg);
             //随便给来源客户端发个消息
-            List<string> ips = arg.Data.LocalIps.Split(',').Concat(new string[] { arg.Data.Ip }).ToList();
-            foreach (string ip in ips)
+            eventHandlers.Send(new SendEventArg
             {
-                eventHandlers.Send(new SendEventArg
-                {
-                    Address = new IPEndPoint(IPAddress.Parse(ip), arg.Data.Port),
-                    Data = new ConnectClientStep1AckModel { Id = ConnectId }
-                });
-            }
+                Address = new IPEndPoint(IPAddress.Parse(arg.Data.LocalIps), arg.Data.LocalUdpPort),
+                Data = new ConnectClientStep1AckModel { Id = ConnectId }
+            });
+
+            eventHandlers.Send(new SendEventArg
+            {
+                Address = new IPEndPoint(IPAddress.Parse(arg.Data.Ip), arg.Data.Port),
+                Data = new ConnectClientStep1AckModel { Id = ConnectId }
+            });
             //告诉服务器我已准备好
             eventHandlers.Send(new SendEventArg
             {
@@ -238,8 +240,11 @@ namespace client.service.serverPlugins.connectClient
         {
             OnTcpConnectClientStep1Handler?.Invoke(this, e);
 
-            List<string> ips = e.Data.LocalIps.Split(',').Concat(new string[] { e.Data.Ip }).ToList();
-            foreach (string ip in ips)
+            List<Tuple<string, int>> ips = new List<Tuple<string, int>> {
+                new Tuple<string, int>(e.Data.LocalIps,e.Data.LocalTcpPort),
+                new Tuple<string, int>(e.Data.Ip,e.Data.TcpPort),
+            };
+            foreach (Tuple<string, int> ip in ips)
             {
                 _ = Task.Run(() =>
                 {
@@ -250,7 +255,7 @@ namespace client.service.serverPlugins.connectClient
                         targetSocket.Ttl = (short)(RouteLevel + 2);
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                         targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
-                        targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(ip), e.Data.LocalTcpPort));
+                        targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2));
                     }
                     catch (Exception)
                     {
@@ -283,12 +288,15 @@ namespace client.service.serverPlugins.connectClient
         public void OnConnectClientStep2(OnConnectClientStep2EventArg e)
         {
             OnConnectClientStep2Handler?.Invoke(this, e);
-            List<string> ips = e.Data.LocalIps.Split(',').Concat(new string[] { e.Data.Ip }).ToList();
-            foreach (string ip in ips)
+            List<Tuple<string, int>> ips = new List<Tuple<string, int>> {
+                new Tuple<string, int>(e.Data.LocalIps,e.Data.LocalUdpPort),
+                new Tuple<string, int>(e.Data.Ip,e.Data.Port),
+            };
+            foreach (Tuple<string, int> ip in ips)
             {
                 SendConnectClientStep3(new SendConnectClientStep3EventArg
                 {
-                    Address = new IPEndPoint(IPAddress.Parse(ip), e.Data.Port),
+                    Address = new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2),
                     Id = ConnectId
                 });
             }
@@ -307,7 +315,11 @@ namespace client.service.serverPlugins.connectClient
         public void OnTcpConnectClientStep2(OnConnectClientStep2EventArg e)
         {
             OnTcpConnectClientStep2Handler?.Invoke(this, e);
-            string[] ips = e.Data.LocalIps.Split(',').Concat(new string[] { e.Data.Ip }).ToArray();
+            List<Tuple<string, int>> ips = new List<Tuple<string, int>> {
+                new Tuple<string, int>(e.Data.LocalIps,e.Data.LocalTcpPort),
+                new Tuple<string, int>(e.Data.Ip,e.Data.TcpPort),
+            };
+
             _ = Task.Run(() =>
             {
                 connectdIds.Add(e.Data.Id);
@@ -332,9 +344,10 @@ namespace client.service.serverPlugins.connectClient
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
                         targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
-                        string ip = length >= ips.Length ? ips[ips.Length - 1] : ips[length];
+                        Tuple<string, int> ip = length >= ips.Count ? ips[ips.Count - 1] : ips[length];
 
-                        IAsyncResult result = targetSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(ip), e.Data.LocalTcpPort), null, null);
+                        Logger.Instance.Debug($"连接 {ip.Item1}:{ip.Item2}");
+                        IAsyncResult result = targetSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2), null, null);
                         _ = result.AsyncWaitHandle.WaitOne(2000, false);
                         if (result.IsCompleted)
                         {
@@ -456,7 +469,7 @@ namespace client.service.serverPlugins.connectClient
                 };
                 targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                 targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
-                targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(e.Data.Ip), e.Data.LocalTcpPort));
+                targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(e.Data.Ip), e.Data.TcpPort));
                 System.Threading.Thread.Sleep(500);
                 targetSocket.SafeClose();
             });

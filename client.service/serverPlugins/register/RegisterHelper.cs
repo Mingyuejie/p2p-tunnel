@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 namespace client.service.serverPlugins.register
 {
 
-   
+
 
     public class RegisterHelper
     {
@@ -27,8 +27,8 @@ namespace client.service.serverPlugins.register
         private readonly ITcpServer tcpServer;
         private readonly IUdpServer udpServer;
         private readonly Config config;
-        private readonly RegisterState  registerState;
-        
+        private readonly RegisterState registerState;
+
 
         private long lastTime = 0;
         private long lastTcpTime = 0;
@@ -48,7 +48,7 @@ namespace client.service.serverPlugins.register
             //退出消息
             registerEventHandles.OnSendExitMessageHandler += (sender, e) =>
             {
-                registerState. LocalInfo.IsConnecting = false;
+                registerState.LocalInfo.IsConnecting = false;
                 registerState.LocalInfo.Connected = false;
                 registerState.LocalInfo.TcpConnected = false;
                 ResetLastTime();
@@ -155,7 +155,7 @@ namespace client.service.serverPlugins.register
                         {
                             registerState.LocalInfo.Mac = mac = Helper.GetMacAddress(IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString());
                         }
-
+                        Logger.Instance.Debug(registerState.TcpSocket.LocalEndPoint.ToString());
                         //UDP 开始监听
                         udpServer.Start(registerState.LocalInfo.Port, registerState.LocalInfo.LocalIp);
                         registerState.UdpAddress = new IPEndPoint(IPAddress.Parse(config.Server.Ip), config.Server.Port);
@@ -165,13 +165,14 @@ namespace client.service.serverPlugins.register
                         {
                             ClientName = config.Client.Name,
                             GroupId = config.Client.GroupId,
-                            LocalTcpPort = 0,
+                            LocalUdpPort = registerState.LocalInfo.Port,
+                            LocalTcpPort = registerState.LocalInfo.TcpPort,
                             Mac = mac,
                             LocalIps = IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString(),
                             Timeout = 5 * 1000,
                             Callback = (result) =>
                             {
-                                if(result.Code == 0)
+                                if (result.Code == 0)
                                 {
                                     registerState.LocalInfo.IsConnecting = false;
                                     config.Client.GroupId = result.GroupId;

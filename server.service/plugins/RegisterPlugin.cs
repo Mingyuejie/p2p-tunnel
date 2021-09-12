@@ -44,7 +44,8 @@ namespace server.service.plugins
                         OriginGroupId = model.GroupId,
                         LocalIps = model.LocalIps,
                         Mac = model.Mac,
-                        LocalPort = model.LocalTcpPort
+                        LocalUdpPort = model.LocalUdpPort,
+                        LocalTcpPort = model.LocalTcpPort,
 
                     };
                     long id = clientRegisterCache.Add(add, 0);
@@ -63,7 +64,8 @@ namespace server.service.plugins
                             TcpPort = 0,
                             GroupId = origingid,
                             Mac = add.Mac,
-                            LocalTcpPort = add.LocalPort
+                            LocalUdpPort = model.LocalUdpPort,
+                            LocalTcpPort = model.LocalTcpPort,
                         }
                     });
                 }
@@ -86,7 +88,7 @@ namespace server.service.plugins
                 var endpoint = IPEndPoint.Parse(data.TcpSocket.RemoteEndPoint.ToString());
                 var client = clientRegisterCache.Get(model.Id);
 
-                if (endpoint.Address.Equals(client.Address.Address)&& clientRegisterCache.UpdateTcpInfo(model.Id, data.TcpSocket, endpoint.Port, model.GroupId))
+                if (endpoint.Address.Equals(client.Address.Address) && clientRegisterCache.UpdateTcpInfo(model.Id, data.TcpSocket, endpoint.Port, model.GroupId))
                 {
                     tcpServer.Send(new RecvQueueModel<IModelBase>
                     {
@@ -100,7 +102,8 @@ namespace server.service.plugins
                             TcpPort = endpoint.Port,
                             GroupId = model.GroupId,
                             Mac = model.Mac,
-                            LocalTcpPort = model.LocalTcpPort
+                            LocalUdpPort = model.LocalUdpPort,
+                            LocalTcpPort = model.LocalTcpPort,
                         }
                     });
                 }

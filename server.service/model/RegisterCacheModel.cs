@@ -10,7 +10,8 @@ namespace server.service.model
         public Socket TcpSocket { get; set; } = null;
         public int TcpPort { get; set; } = 0;
 
-        public int LocalPort { get; set; } = 0;
+        public int LocalUdpPort { get; set; } = 0;
+        public int LocalTcpPort { get; set; } = 0;
 
         public string Name { get; set; } = string.Empty;
 

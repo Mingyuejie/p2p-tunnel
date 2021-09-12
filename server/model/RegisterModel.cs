@@ -36,6 +36,9 @@ namespace server.model
 
         [ProtoMember(7)]
         public int LocalTcpPort { get; set; } = 0;
+
+        [ProtoMember(8)]
+        public int LocalUdpPort { get; set; } = 0;
     }
 
     [ProtoContract]
@@ -72,5 +75,8 @@ namespace server.model
 
         [ProtoMember(10)]
         public int LocalTcpPort { get; set; } = 0;
+
+        [ProtoMember(11)]
+        public int LocalUdpPort { get; set; } = 0;
     }
 }
