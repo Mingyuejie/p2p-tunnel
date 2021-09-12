@@ -47,7 +47,6 @@ namespace server.service.plugins
 
                     };
                     long id = clientRegisterCache.Add(add, 0);
-
                     string origingid = add.OriginGroupId;
                     add.OriginGroupId = string.Empty;
 
@@ -83,13 +82,10 @@ namespace server.service.plugins
             }
             else if (serverType == ServerType.TCP)
             {
-                int tcpPort = 0;
-                if (data.TcpSocket != null)
-                {
-                    tcpPort = IPEndPoint.Parse(data.TcpSocket.RemoteEndPoint.ToString()).Port;
-                }
+                var endpoint = IPEndPoint.Parse(data.TcpSocket.RemoteEndPoint.ToString());
+                var client = clientRegisterCache.Get(model.Id);
 
-                if (clientRegisterCache.UpdateTcpInfo(model.Id, data.TcpSocket, tcpPort, model.GroupId))
+                if (endpoint == client.Address && clientRegisterCache.UpdateTcpInfo(model.Id, data.TcpSocket, endpoint.Port, model.GroupId))
                 {
                     tcpServer.Send(new RecvQueueModel<IModelBase>
                     {
@@ -100,7 +96,7 @@ namespace server.service.plugins
                             Id = model.Id,
                             Ip = data.SourcePoint.Address.ToString(),
                             Port = data.SourcePoint.Port,
-                            TcpPort = tcpPort,
+                            TcpPort = endpoint.Port,
                             GroupId = model.GroupId,
                             Mac = model.Mac,
                             LocalTcpPort = model.LocalTcpPort
