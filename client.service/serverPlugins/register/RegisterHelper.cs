@@ -80,11 +80,12 @@ namespace client.service.serverPlugins.register
                 {
                     if (e.Packet.ServerType == ServerType.UDP)
                     {
+                        Logger.Instance.Debug($"UDP收到服务器心跳~~~");
                         lastTime = Helper.GetTimeStamp();
                     }
                     else if (e.Packet.ServerType == ServerType.TCP)
                     {
-                        Logger.Instance.Info($"收到服务器心跳~~~");
+                        Logger.Instance.Debug($"TCP收到服务器心跳~~~");
                         lastTcpTime = Helper.GetTimeStamp();
                     }
                 }
@@ -170,16 +171,23 @@ namespace client.service.serverPlugins.register
                             Timeout = 5 * 1000,
                             Callback = (result) =>
                             {
-                                registerState.LocalInfo.IsConnecting = false;
-                                config.Client.GroupId = result.GroupId;
-                                registerState.RemoteInfo.Ip = result.Ip;
-                                registerState.RemoteInfo.ConnectId = result.Id;
-                                registerState.LocalInfo.Connected = true;
-                                registerState.LocalInfo.TcpConnected = true;
-                                registerState.RemoteInfo.TcpPort = result.TcpPort;
+                                if(result.Code == 0)
+                                {
+                                    registerState.LocalInfo.IsConnecting = false;
+                                    config.Client.GroupId = result.GroupId;
+                                    registerState.RemoteInfo.Ip = result.Ip;
+                                    registerState.RemoteInfo.ConnectId = result.Id;
+                                    registerState.LocalInfo.Connected = true;
+                                    registerState.LocalInfo.TcpConnected = true;
+                                    registerState.RemoteInfo.TcpPort = result.TcpPort;
 
-                                OnRegisterChange?.Invoke(this, true);
-                                tcs.SetResult(new CommonTaskResponseModel<bool> { ErrorMsg = string.Empty });
+                                    OnRegisterChange?.Invoke(this, true);
+                                    tcs.SetResult(new CommonTaskResponseModel<bool> { ErrorMsg = string.Empty });
+                                }
+                                else
+                                {
+                                    tcs.SetResult(new CommonTaskResponseModel<bool> { ErrorMsg = result.Msg });
+                                }
                             },
                             FailCallback = (fail) =>
                             {

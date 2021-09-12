@@ -109,9 +109,9 @@ namespace server.service.cache
                 switch (data.ServerType)
                 {
                     case ServerType.TCP:
-                        return model.Address == data.SourcePoint;
+                        return model.TcpSocket.RemoteEndPoint.ToString() == data.TcpSocket.RemoteEndPoint.ToString();
                     case ServerType.UDP:
-                        return model.TcpSocket.RemoteEndPoint == data.TcpSocket.RemoteEndPoint;
+                        return model.Address.Address.ToString() == data.SourcePoint.Address.ToString();
                     default:
                         break;
                 }

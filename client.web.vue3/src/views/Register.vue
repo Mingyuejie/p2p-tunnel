@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:30:19
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-07 15:40:53
+ * @LastEditTime: 2021-09-12 11:29:00
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\Register.vue
@@ -177,6 +177,7 @@ export default {
         //获取一下可修改的数据
         getRegisterInfo().then((msg) => {
             let json = JSON.parse(msg);
+            console.log(json);
             state.model.ClientName = registerState.ClientConfig.Name = json.ClientConfig.Name;
             state.model.GroupId = registerState.ClientConfig.GroupId = json.ClientConfig.GroupId;
             state.model.AutoReg = registerState.ClientConfig.AutoReg = json.ClientConfig.AutoReg;
