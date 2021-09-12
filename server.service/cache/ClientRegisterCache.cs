@@ -103,7 +103,6 @@ namespace server.service.cache
         public bool Verify(long id, PluginExcuteModel data)
         {
             RegisterCacheModel model = Get(id);
-
             if (model != null)
             {
                 switch (data.ServerType)
@@ -111,12 +110,11 @@ namespace server.service.cache
                     case ServerType.TCP:
                         return model.TcpSocket.RemoteEndPoint.ToString() == data.TcpSocket.RemoteEndPoint.ToString();
                     case ServerType.UDP:
-                        return model.Address.Address.ToString() == data.SourcePoint.Address.ToString();
+                        return model.Address.Address.Equals(data.SourcePoint.Address);
                     default:
                         break;
                 }
             }
-
             return false;
         }
     }

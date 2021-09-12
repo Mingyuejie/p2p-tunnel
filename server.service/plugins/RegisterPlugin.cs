@@ -86,7 +86,7 @@ namespace server.service.plugins
                 var endpoint = IPEndPoint.Parse(data.TcpSocket.RemoteEndPoint.ToString());
                 var client = clientRegisterCache.Get(model.Id);
 
-                if (endpoint.Address.ToString()== client.Address.Address.ToString() &&  clientRegisterCache.UpdateTcpInfo(model.Id, data.TcpSocket, endpoint.Port, model.GroupId))
+                if (endpoint.Address.Equals(client.Address.Address)&& clientRegisterCache.UpdateTcpInfo(model.Id, data.TcpSocket, endpoint.Port, model.GroupId))
                 {
                     tcpServer.Send(new RecvQueueModel<IModelBase>
                     {
