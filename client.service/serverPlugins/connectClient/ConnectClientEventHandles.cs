@@ -294,6 +294,7 @@ namespace client.service.serverPlugins.connectClient
             };
             foreach (Tuple<string, int> ip in ips)
             {
+                Logger.Instance.Debug($"UDP连接 {ip.Item1}:{ip.Item2}");
                 SendConnectClientStep3(new SendConnectClientStep3EventArg
                 {
                     Address = new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2),
@@ -324,7 +325,7 @@ namespace client.service.serverPlugins.connectClient
             {
                 connectdIds.Add(e.Data.Id);
                 bool success = false;
-                int length = 5, errLength = 10;
+                int length = 5,index = 0, errLength = 10;
                 int interval = 0;
                 while (length > 0 && errLength > 0)
                 {
@@ -344,9 +345,9 @@ namespace client.service.serverPlugins.connectClient
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
                         targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
-                        Tuple<string, int> ip = length >= ips.Count ? ips[ips.Count - 1] : ips[length];
+                        Tuple<string, int> ip = index >= ips.Count ? ips[ips.Count - 1] : ips[index];
 
-                        Logger.Instance.Debug($"连接 {ip.Item1}:{ip.Item2}");
+                        Logger.Instance.Debug($"TCP连接 {ip.Item1}:{ip.Item2}");
                         IAsyncResult result = targetSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2), null, null);
                         _ = result.AsyncWaitHandle.WaitOne(2000, false);
                         if (result.IsCompleted)
@@ -414,6 +415,8 @@ namespace client.service.serverPlugins.connectClient
                     {
                         Logger.Instance.Error(ex + "");
                     }
+
+                    index++;
                 }
                 if (!success)
                 {
