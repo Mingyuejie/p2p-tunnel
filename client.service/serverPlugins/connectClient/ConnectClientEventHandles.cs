@@ -294,7 +294,6 @@ namespace client.service.serverPlugins.connectClient
             };
             foreach (Tuple<string, int> ip in ips)
             {
-                Logger.Instance.Debug($"UDP连接 {ip.Item1}:{ip.Item2}");
                 SendConnectClientStep3(new SendConnectClientStep3EventArg
                 {
                     Address = new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2),
@@ -347,7 +346,6 @@ namespace client.service.serverPlugins.connectClient
                         targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
                         Tuple<string, int> ip = index >= ips.Count ? ips[ips.Count - 1] : ips[index];
 
-                        Logger.Instance.Debug($"TCP连接 {ip.Item1}:{ip.Item2}");
                         IAsyncResult result = targetSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2), null, null);
                         _ = result.AsyncWaitHandle.WaitOne(2000, false);
                         if (result.IsCompleted)

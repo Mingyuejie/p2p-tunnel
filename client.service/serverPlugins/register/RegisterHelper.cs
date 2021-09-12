@@ -155,7 +155,6 @@ namespace client.service.serverPlugins.register
                         {
                             registerState.LocalInfo.Mac = mac = Helper.GetMacAddress(IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString());
                         }
-                        Logger.Instance.Debug(registerState.TcpSocket.LocalEndPoint.ToString());
                         //UDP 开始监听
                         udpServer.Start(registerState.LocalInfo.Port, registerState.LocalInfo.LocalIp);
                         registerState.UdpAddress = new IPEndPoint(IPAddress.Parse(config.Server.Ip), config.Server.Port);

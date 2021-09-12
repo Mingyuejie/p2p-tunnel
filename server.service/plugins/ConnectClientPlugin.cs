@@ -77,8 +77,8 @@ namespace server.service.plugins
                                 Port = target.Address.Port,
                                 TcpPort = target.TcpPort,
                                 LocalIps = target.LocalIps,
-                                LocalTcpPort = source.LocalTcpPort,
-                                LocalUdpPort = source.LocalUdpPort,
+                                LocalTcpPort = target.LocalTcpPort,
+                                LocalUdpPort = target.LocalUdpPort,
                             }
                         });
                     }

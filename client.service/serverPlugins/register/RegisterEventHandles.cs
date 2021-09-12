@@ -15,7 +15,7 @@ namespace client.service.serverPlugins.register
         private long requestCacheId = 0;
 
         private readonly EventHandlers eventHandlers;
-        private readonly RegisterState registerState ;
+        private readonly RegisterState registerState;
         private readonly IUdpServer udpServer;
         private readonly ITcpServer tcpServer;
 
@@ -102,7 +102,8 @@ namespace client.service.serverPlugins.register
                     GroupId = param.GroupId,
                     LocalIps = param.LocalIps,
                     Mac = param.Mac,
-                    LocalTcpPort = param.LocalTcpPort
+                    LocalTcpPort = param.LocalTcpPort,
+                    LocalUdpPort = param.LocalUdpPort,
 
                 }
             });
@@ -133,7 +134,7 @@ namespace client.service.serverPlugins.register
         /// 发送Tcp注册消息
         /// </summary>
         /// <param name="arg"></param>
-        public void SendTcpRegisterMessage(long id, string clientName, string groupId = "", string mac = "", int localport = 0)
+        public void SendTcpRegisterMessage(long id, string clientName, string groupId = "", string mac = "", int localTcpport = 0, int localUdpPort = 0)
         {
             eventHandlers.SendTcp(new SendTcpEventArg
             {
@@ -144,7 +145,8 @@ namespace client.service.serverPlugins.register
                     Name = clientName,
                     GroupId = groupId,
                     Mac = mac,
-                    LocalTcpPort = localport
+                    LocalTcpPort = localTcpport,
+                    LocalUdpPort = localUdpPort
                 }
             });
             OnSendTcpRegisterMessageHandler?.Invoke(this, clientName);
@@ -190,7 +192,7 @@ namespace client.service.serverPlugins.register
             {
                 if (arg.Data.Code == 0)
                 {
-                    SendTcpRegisterMessage(arg.Data.Id, requestCache.ClientName, arg.Data.GroupId, arg.Data.Mac, arg.Data.LocalTcpPort);
+                    SendTcpRegisterMessage(arg.Data.Id, requestCache.ClientName, arg.Data.GroupId, arg.Data.Mac, arg.Data.LocalTcpPort, arg.Data.LocalUdpPort);
                     SendRegisterStateChange(new RegisterEventArg
                     {
                         ServerAddress = arg.Packet.SourcePoint,
