@@ -255,7 +255,7 @@ namespace client.service.punchHolePlugins.plugins.tcp
         public long Id { get; set; } = 0;
         public string Name { get; set; } = string.Empty;
         public int Timeout { get; set; } = 15 * 1000;
-        public Action<OnStep3EventArg> Callback { get; set; } = null;
+        public Action<OnStep4EventArg> Callback { get; set; } = null;
         public Action<ConnectFailModel> FailCallback { get; set; } = null;
     }
 
@@ -264,7 +264,7 @@ namespace client.service.punchHolePlugins.plugins.tcp
         public long Time { get; set; } = 0;
         public int TryTimes { get; set; } = 10;
         public int Timeout { get; set; } = 15 * 1000;
-        public Action<OnStep3EventArg> Callback { get; set; } = null;
+        public Action<OnStep4EventArg> Callback { get; set; } = null;
         public Action<ConnectFailModel> FailCallback { get; set; } = null;
     }
 

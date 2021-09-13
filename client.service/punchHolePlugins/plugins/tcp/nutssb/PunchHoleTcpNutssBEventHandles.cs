@@ -399,16 +399,11 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
         /// <param name="toid"></param>
         public void OnStep3(OnStep3EventArg arg)
         {
-            if (connectTcpCache.TryGetValue(arg.Data.FromId, out ConnectTcpCache cache))
+            SendStep4(new SendStep4EventArg
             {
-                connectTcpCache.TryRemove(arg.Data.FromId, out _);
-                cache?.Callback(arg);
-                SendStep4(new SendStep4EventArg
-                {
-                    Socket = arg.Packet.TcpSocket,
-                    Id = ConnectId
-                });
-            }
+                Socket = arg.Packet.TcpSocket,
+                Id = ConnectId
+            });
             OnStep3Handler?.Invoke(this, arg);
 
         }
@@ -444,6 +439,11 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
         /// <param name="toid"></param>
         public void OnStep4(OnStep4EventArg arg)
         {
+            if (connectTcpCache.TryGetValue(arg.Data.FromId, out ConnectTcpCache cache))
+            {
+                connectTcpCache.TryRemove(arg.Data.FromId, out _);
+                cache?.Callback(arg);
+            }
             replyIds.Add(arg.Data.FromId);
             OnStep4Handler?.Invoke(this, arg);
         }
