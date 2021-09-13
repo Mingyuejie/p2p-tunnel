@@ -1,21 +1,22 @@
-﻿using client.service.serverPlugins.clients;
-using client.service.serverPlugins.connectClient;
-using common;
+﻿using client.service.punchHolePlugins;
+using client.service.punchHolePlugins.plugins.tcp;
+using client.service.serverPlugins.clients;
 using common.extends;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace client.service.clientService.plugins
 {
     public class ClientsPlugin : IClientServicePlugin
     {
         private readonly ClientsHelper clientsHelper;
-        private readonly ConnectClientEventHandles  connectClientEventHandles;
-        
-        public ClientsPlugin(ClientsHelper clientsHelper, ConnectClientEventHandles connectClientEventHandles)
+        private readonly IPunchHoleTcp punchHoleTcp;
+        private readonly PunchHoleEventHandles punchHoldEventHandles;
+
+        public ClientsPlugin(ClientsHelper clientsHelper, IPunchHoleTcp punchHoleTcp, PunchHoleEventHandles punchHoldEventHandles)
         {
             this.clientsHelper = clientsHelper;
-            this.connectClientEventHandles = connectClientEventHandles;
+            this.punchHoleTcp = punchHoleTcp;
+            this.punchHoldEventHandles = punchHoldEventHandles;
         }
 
 
@@ -33,7 +34,7 @@ namespace client.service.clientService.plugins
         public void Stop(ClientServicePluginExcuteWrap arg)
         {
             ConnectModel model = arg.Content.DeJson<ConnectModel>();
-            connectClientEventHandles.SendTcpConnectClientStep2StopMessage(model.ID);
+            punchHoleTcp.SendStep2Stop(model.ID);
         }
 
         public void Offline(ClientServicePluginExcuteWrap arg)
@@ -45,7 +46,7 @@ namespace client.service.clientService.plugins
         public void ConnectReverse(ClientServicePluginExcuteWrap arg)
         {
             ConnectModel model = arg.Content.DeJson<ConnectModel>();
-            connectClientEventHandles.SendConnectClientReverse(model.ID);
+            punchHoldEventHandles.SendReverse(model.ID);
         }
     }
 

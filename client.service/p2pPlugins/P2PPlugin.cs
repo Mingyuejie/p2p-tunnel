@@ -19,7 +19,7 @@ namespace client.service.p2pPlugins
         private readonly P2PEventHandles p2PEventHandles;
         public P2PPlugin(P2PEventHandles p2PEventHandles)
         {
-          
+
             this.p2PEventHandles = p2PEventHandles;
         }
 
@@ -89,6 +89,7 @@ namespace client.service.p2pPlugins
     {
         public static ServiceCollection AddP2PPlugin(this ServiceCollection obj)
         {
+            obj.AddSingleton<P2PPlugin>();
             obj.AddSingleton<P2PEventHandles>();
             obj.AddTcpForwardPlugin();
             obj.AddFileServerPlugin();
@@ -98,6 +99,7 @@ namespace client.service.p2pPlugins
         }
         public static ServiceProvider UseP2PPlugin(this ServiceProvider obj)
         {
+            Plugin.LoadPlugin(obj.GetService<P2PPlugin>());
             obj.UseFileServerPlugin();
             obj.UseTcpForwardPlugin();
             obj.UseRequestPlugin();

@@ -80,12 +80,12 @@ namespace client.service.serverPlugins.register
                 {
                     if (e.Packet.ServerType == ServerType.UDP)
                     {
-                        Logger.Instance.Debug($"UDP收到服务器心跳~~~");
+                        //Logger.Instance.Debug($"UDP收到服务器心跳~~~");
                         lastTime = Helper.GetTimeStamp();
                     }
                     else if (e.Packet.ServerType == ServerType.TCP)
                     {
-                        Logger.Instance.Debug($"TCP收到服务器心跳~~~");
+                        //Logger.Instance.Debug($"TCP收到服务器心跳~~~");
                         lastTcpTime = Helper.GetTimeStamp();
                     }
                 }

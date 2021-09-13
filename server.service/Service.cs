@@ -101,6 +101,7 @@ namespace server.service
             obj.AddSingleton<HeartPlugin>();
             obj.AddSingleton<RegisterPlugin>();
             obj.AddSingleton<ResetPlugin>();
+            obj.AddSingleton<PunchHolePlugin>();
 
             obj.AddSingleton<ConnectClientPlugin>();
             obj.AddSingleton<ConnectClientReversePlugin>();
@@ -117,6 +118,7 @@ namespace server.service
             Plugin.LoadPlugin(obj.GetService<HeartPlugin>());
             Plugin.LoadPlugin(obj.GetService<RegisterPlugin>());
             Plugin.LoadPlugin(obj.GetService<ResetPlugin>());
+            Plugin.LoadPlugin(obj.GetService<PunchHolePlugin>());
 
             Plugin.LoadPlugin(obj.GetService<ConnectClientPlugin>());
             Plugin.LoadPlugin(obj.GetService<ConnectClientReversePlugin>());

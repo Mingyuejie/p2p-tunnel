@@ -69,10 +69,19 @@ namespace server.model
         P2P_STEP_4,
 
 
-        //P2P  客户端之间的直接消息
+        /// <summary>
+        /// P2P  客户端之间的直接消息
+        /// </summary>
         P2P,
 
-        //重启
+        /// <summary>
+        /// 重启
+        /// </summary>
         SERVER_RESET,
+
+        /// <summary>
+        /// 打洞
+        /// </summary>
+        PUNCH_HOLE,
     }
 }

@@ -71,7 +71,7 @@ namespace server.service.plugins
                 }
                 else
                 {
-                    tcpServer.Send(new RecvQueueModel<IModelBase>
+                    udpServer.Send(new RecvQueueModel<IModelBase>
                     {
                         Address = data.SourcePoint,
                         TcpCoket = null,

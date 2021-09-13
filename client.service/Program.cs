@@ -33,6 +33,12 @@ namespace client.service
             serviceProvider = serviceCollection.BuildServiceProvider();
             serviceProvider.UseServerPlugin().UseClientServer().UseWebServer();
 
+            //自动注册
+            if (serviceProvider.GetService<Config>().Client.AutoReg)
+            {
+                serviceProvider.GetService<RegisterHelper>().AutoReg();
+            }
+
             Logger.Instance.Warning("=======================================");
             Logger.Instance.Warning("没什么报红的，就说明运行成功了");
             Logger.Instance.Warning("=======================================");

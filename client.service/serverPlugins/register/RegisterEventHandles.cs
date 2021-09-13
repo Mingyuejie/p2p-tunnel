@@ -25,6 +25,9 @@ namespace client.service.serverPlugins.register
             this.registerState = registerState;
             this.udpServer = udpServer;
             this.tcpServer = tcpServer;
+
+            AppDomain.CurrentDomain.ProcessExit += (s, e) => SendExitMessage();
+            Console.CancelKeyPress += (s, e) => SendExitMessage();
         }
 
         private IPEndPoint UdpServer => registerState.UdpAddress;

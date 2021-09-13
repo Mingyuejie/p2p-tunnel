@@ -1,12 +1,14 @@
 ﻿using client.service.config;
-using client.service.serverPlugins.connectClient;
+using client.service.punchHolePlugins;
+using client.service.punchHolePlugins.plugins;
+using client.service.punchHolePlugins.plugins.tcp;
+using client.service.punchHolePlugins.plugins.tcp.nutssb;
+using client.service.punchHolePlugins.plugins.udp;
 using client.service.serverPlugins.heart;
 using client.service.serverPlugins.register;
 using common;
-using common.extends;
 using server.model;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -20,46 +22,47 @@ namespace client.service.serverPlugins.clients
 
         private readonly RegisterEventHandles registerEventHandles;
         private readonly ClientsEventHandles clientsEventHandles;
-        private readonly ConnectClientEventHandles connectClientEventHandles;
+        private readonly IPunchHoleUdp punchHoleUdp;
+        private readonly IPunchHoleTcp punchHoleTcp;
         private readonly HeartEventHandles heartEventHandles;
         private readonly RegisterHelper registerHelper;
         private readonly RegisterState registerState;
         private readonly Config config;
+        private readonly PunchHoleEventHandles punchHoldEventHandles;
 
         public IEnumerable<ClientInfo> Clients => ClientInfo.All();
 
         public ClientsHelper(RegisterEventHandles registerEventHandles,
             ClientsEventHandles clientsEventHandles,
-            ConnectClientEventHandles connectClientEventHandles,
-            HeartEventHandles heartEventHandles, RegisterHelper registerHelper, RegisterState registerState, Config config)
+           IPunchHoleUdp punchHoleUdp,
+           IPunchHoleTcp punchHoleTcp,
+            HeartEventHandles heartEventHandles, RegisterHelper registerHelper,
+            RegisterState registerState, Config config, PunchHoleEventHandles punchHoldEventHandles)
         {
             this.registerEventHandles = registerEventHandles;
             this.clientsEventHandles = clientsEventHandles;
-            this.connectClientEventHandles = connectClientEventHandles;
+            this.punchHoleUdp = punchHoleUdp;
+            this.punchHoleTcp = punchHoleTcp;
             this.heartEventHandles = heartEventHandles;
             this.registerHelper = registerHelper;
             this.registerState = registerState;
             this.config = config;
+            this.punchHoldEventHandles = punchHoldEventHandles;
 
             //本客户端注册状态
             registerEventHandles.OnSendRegisterTcpStateChangeHandler += OnRegisterTcpStateChangeHandler;
             //收到来自服务器的 在线客户端 数据
             clientsEventHandles.OnServerSendClientsHandler += OnServerSendClientsHandler;
 
-            //UDP
-            //有人想连接我
-            connectClientEventHandles.OnConnectClientStep1Handler += OnConnectClientStep1Handler;
-            //有人连接我
-            connectClientEventHandles.OnConnectClientStep3Handler += OnConnectClientStep3Handler;
+            punchHoleUdp.OnStep1Handler += UdpOnStep1Handler;
+            punchHoleUdp.OnStep3Handler += UdpOnStep3Handler;
 
-            //TCP
-            //有人回应
-            connectClientEventHandles.OnTcpConnectClientStep4Handler += OnTcpConnectClientStep4Handler;
-            //连接别人失败
-            connectClientEventHandles.OnSendTcpConnectClientStep2FailHandler += OnSendTcpConnectClientStep2FailHandler;
+
+            punchHoleTcp.OnStep4Handler += TcpOnStep4Handler;
+            punchHoleTcp.OnSendTcpStep2FailHandler += TcpOnSendTcpStep2FailHandler;
 
             //有人要求反向链接
-            connectClientEventHandles.OnConnectClientReverseHandler += (s, arg) =>
+            punchHoldEventHandles.OnReverseHandler += (s, arg) =>
             {
                 if (ClientInfo.Get(arg.Data.Id, out ClientInfo client) && client != null)
                 {
@@ -76,7 +79,7 @@ namespace client.service.serverPlugins.clients
                     client.Remove();
                     if (client.Connecting)
                     {
-                        connectClientEventHandles.SendTcpConnectClientStep2StopMessage(client.Id);
+                        punchHoleTcp.SendStep2Stop(client.Id);
                     }
                 }
                 readClientsTimes = 0;
@@ -147,7 +150,22 @@ namespace client.service.serverPlugins.clients
             });
         }
 
-        private void OnConnectClientStep1Handler(object sender, OnConnectClientStep1EventArg e)
+        private void TcpOnSendTcpStep2FailHandler(object sender, OnSendStep2FailEventArg e)
+        {
+            ClientInfo.OfflineTcp(e.ToId);
+        }
+
+        private void TcpOnStep4Handler(object sender, punchHolePlugins.plugins.tcp.OnStep4EventArg e)
+        {
+            ClientInfo.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);
+        }
+
+        private void UdpOnStep3Handler(object sender, punchHolePlugins.plugins.udp.OnStep3EventArg e)
+        {
+            ClientInfo.Online(e.Data.FromId, e.Packet.SourcePoint);
+        }
+
+        private void UdpOnStep1Handler(object sender, punchHolePlugins.plugins.udp.OnStep1EventArg e)
         {
             if (ClientInfo.Get(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null)
             {
@@ -161,20 +179,7 @@ namespace client.service.serverPlugins.clients
                 }
             }, 3000);
         }
-        private void OnConnectClientStep3Handler(object sender, OnConnectClientStep3EventArg e)
-        {
-            ClientInfo.Online(e.Data.Id, e.Packet.SourcePoint);
-        }
 
-        private void OnSendTcpConnectClientStep2FailHandler(object sender, OnSendTcpConnectClientStep2FailEventArg e)
-        {
-            ClientInfo.OfflineTcp(e.ToId);
-        }
-
-        private void OnTcpConnectClientStep4Handler(object sender, OnConnectClientStep4EventArg e)
-        {
-            ClientInfo.OnlineTcp(e.Data.Id, e.Packet.TcpSocket);
-        }
 
         private void OnRegisterTcpStateChangeHandler(object sender, RegisterTcpEventArg e)
         {
@@ -263,13 +268,13 @@ namespace client.service.serverPlugins.clients
             if (info.Connecting == false && info.Connected == false)
             {
                 info.Connecting = true;
-                connectClientEventHandles.SendConnectClient(new ConnectParams
+                punchHoleUdp.SendStep1(new ConnectParams
                 {
                     Id = info.Id,
                     Name = info.Name,
                     Callback = (e) =>
                     {
-                        ClientInfo.Online(e.Data.Id, e.Packet.SourcePoint);
+                        ClientInfo.Online(e.Data.FromId, e.Packet.SourcePoint);
                     },
                     FailCallback = (e) =>
                     {
@@ -283,11 +288,11 @@ namespace client.service.serverPlugins.clients
             if (info.TcpConnecting == false && info.TcpConnected == false)
             {
                 info.TcpConnecting = true;
-                connectClientEventHandles.SendTcpConnectClient(new ConnectTcpParams
+                punchHoleTcp.Send(new ConnectTcpParams
                 {
                     Callback = (e) =>
                     {
-                        ClientInfo.OnlineTcp(e.Data.Id, e.Packet.TcpSocket);
+                        ClientInfo.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);
                     },
                     FailCallback = (e) =>
                     {
