@@ -1,10 +1,15 @@
 ﻿using client.service.events;
+using client.service.serverPlugins.clients;
 using client.service.serverPlugins.register;
 using common;
 using common.extends;
+using PacketDotNet;
 using ProtoBuf;
 using server;
 using server.model;
+using server.models;
+using SharpPcap;
+using SharpPcap.LibPcap;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -13,16 +18,18 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
-namespace client.service.punchHolePlugins.plugins.tcp.nutssb
+namespace client.service.punchHolePlugins.plugins.tcp.nutssa
 {
-    public class PunchHoleTcpNutssBEventHandles : IPunchHoleTcp
+    public class PunchHoleTcpNutssAEventHandles : IPunchHoleTcp
     {
         private readonly PunchHoleEventHandles punchHoldEventHandles;
+        private readonly EventHandlers eventHandlers;
         private readonly ITcpServer tcpServer;
         private readonly RegisterState registerState;
 
-        public PunchHoleTcpNutssBEventHandles(PunchHoleEventHandles punchHoldEventHandles, ITcpServer tcpServer, RegisterState registerState)
+        public PunchHoleTcpNutssAEventHandles(EventHandlers eventHandlers, PunchHoleEventHandles punchHoldEventHandles, ITcpServer tcpServer, RegisterState registerState)
         {
+            this.eventHandlers = eventHandlers;
             this.punchHoldEventHandles = punchHoldEventHandles;
             this.tcpServer = tcpServer;
             this.registerState = registerState;
@@ -49,6 +56,13 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
         /// <param name="toid"></param>
         public void Send(ConnectTcpParams param)
         {
+            SendStepPacket(new SendStepPacketEventArg { FromId = ConnectId, ToId = param.Id, Socket = TcpServer });
+            SendPrivate(param);
+        }
+
+        public void SendPrivate(ConnectTcpParams param)
+        {
+            Logger.Instance.Debug($"SendPrivate {param.Id}->{param.Name}");
             OnSendTcpHandler?.Invoke(this, new SendEventArg
             {
                 Id = param.Id,
@@ -69,6 +83,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
                 Data = new Step1Model
                 {
                     FromId = ConnectId,
+                    PunchType = PunchHoleTypes.TCP_NUTSSA
                 }
             });
 
@@ -90,32 +105,8 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
         public event EventHandler<OnStep1EventArg> OnStep1Handler;
         public void OnStep1(OnStep1EventArg e)
         {
+            Logger.Instance.Debug($"OnStep1 {e.Data.Id}");
             OnStep1Handler?.Invoke(this, e);
-
-            List<Tuple<string, int>> ips = new List<Tuple<string, int>> {
-                new Tuple<string, int>(e.Data.LocalIps,e.Data.LocalTcpPort),
-                new Tuple<string, int>(e.Data.Ip,e.Data.TcpPort),
-            };
-            foreach (Tuple<string, int> ip in ips)
-            {
-                _ = Task.Run(() =>
-                {
-                    //随便给目标客户端发个低TTL消息
-                    using Socket targetSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                    try
-                    {
-                        targetSocket.Ttl = (short)(RouteLevel + 2);
-                        targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
-                        targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2));
-                    }
-                    catch (Exception)
-                    {
-                    }
-                    System.Threading.Thread.Sleep(500);
-                    targetSocket.SafeClose();
-                });
-            }
 
             punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
             {
@@ -123,11 +114,11 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
                 ToId = e.Data.Id,
                 Data = new Step2Model
                 {
-                    FromId = ConnectId
+                    FromId = ConnectId,
+                     PunchType = PunchHoleTypes.TCP_NUTSSA
                 }
             });
         }
-
 
         /// <summary>
         /// 服务器TCP消息，来源客户端已经准备好
@@ -141,6 +132,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
         /// <param name="toid"></param>
         public void OnStep2(OnStep2EventArg e)
         {
+            Logger.Instance.Debug($"OnStep2 {e.Data.Ip}->{e.Data.TcpPort}");
             OnTcpStep2Handler?.Invoke(this, e);
             List<Tuple<string, int>> ips = new List<Tuple<string, int>> {
                 new Tuple<string, int>(e.Data.LocalIps,e.Data.LocalTcpPort),
@@ -150,39 +142,69 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
             _ = Task.Run(() =>
             {
                 connectdIds.Add(e.Data.Id);
+
                 bool success = false;
-                int length = 5, index = 0, errLength = 10;
-                int interval = 0;
-                while (length > 0 && errLength > 0)
+                int index = 0;
+                foreach (var ip in ips)
                 {
                     if (!connectdIds.Contains(e.Data.Id))
                     {
                         break;
                     }
-                    if (interval > 0)
-                    {
-                        System.Threading.Thread.Sleep(interval);
-                        interval = 0;
-                    }
 
-                    Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, System.Net.Sockets.ProtocolType.Tcp);
                     try
                     {
+                        if (index > 0)
+                        {
+                           // targetSocket.Ttl = (short)(RouteLevel + 2);
+                        }
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
                         targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
-                        Tuple<string, int> ip = index >= ips.Count ? ips[ips.Count - 1] : ips[index];
+                      
+                        using var device = LibPcapLiveDeviceList.Instance[0];
+                        device.Open();
+                        device.OnPacketArrival += (object s, PacketCapture e) =>
+                        {
+                            var raw = e.GetPacket();
+                            var packet = Packet.ParsePacket(raw.LinkLayerType, raw.Data);
+                            var ipPacket = packet.Extract<IPPacket>();
+                            var tcp = ipPacket.Extract<TcpPacket>();
+                            if (tcp != null)
+                            {
+                                if (tcp.DestinationPort == (uint)ip.Item2)
+                                {
+                                    eventHandlers.SendTcp(new SendTcpEventArg
+                                    {
+                                        Data = new RawPacketModel
+                                        {
+                                            Data = packet.Bytes,
+                                            FormId = ConnectId,
+                                            LinkLayerType = (byte)raw.LinkLayerType
+                                        },
+                                        Socket = TcpServer,
+                                    });
+                                    device.StopCapture();
+                                    device.Close();
+                                }
+                            }
+                        };
+                        device.StartCapture();
 
+                        Logger.Instance.Debug($"连接 {ip.Item1}->{ip.Item2}");
                         IAsyncResult result = targetSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2), null, null);
-                        _ = result.AsyncWaitHandle.WaitOne(2000, false);
+
+                        _ = result.AsyncWaitHandle.WaitOne(5000, false);
                         if (result.IsCompleted)
                         {
+                            Logger.Instance.Debug($"连接 {ip.Item1}->{ip.Item2} 成功");
                             targetSocket.EndConnect(result);
                             tcpServer.BindReceive(targetSocket);
                             SendStep3(new SendStep3EventArg
                             {
                                 Socket = targetSocket,
-                                 ToId = ConnectId
+                                ToId = e.Data.Id
                             });
 
                             int waitReplyTimes = 10;
@@ -213,27 +235,15 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
                         }
                         else
                         {
+                            Logger.Instance.Debug($"连接 {ip.Item1}->{ip.Item2} 失败");
                             targetSocket.SafeClose();
-                            interval = 2000;
                             SendStep2Retry(e.Data.Id);
-                            length--;
                         }
                     }
-                    catch (SocketException ex)
+                    catch (SocketException)
                     {
                         targetSocket.SafeClose();
                         targetSocket = null;
-                        if (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
-                        {
-                            interval = 2000;
-                            errLength--;
-                        }
-                        else
-                        {
-                            interval = 100;
-                            SendStep2Retry(e.Data.Id);
-                            length--;
-                        }
                     }
                     catch (Exception ex)
                     {
@@ -242,6 +252,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
 
                     index++;
                 }
+
                 if (!success)
                 {
                     SendStep2Fail(new OnSendStep2FailEventArg
@@ -254,54 +265,16 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
             });
         }
 
-
-        /// <summary>
-        /// 服务器TCP消息，重试一次
-        /// </summary>
         public event EventHandler<long> OnSendStep2RetryHandler;
-        /// <summary>
-        /// 服务器TCP消息，重试一次
-        /// </summary>
-        /// <param name="toid"></param>
         public void SendStep2Retry(long toid)
         {
             OnSendStep2RetryHandler?.Invoke(this, toid);
-            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
-            {
-                Socket = TcpServer,
-                ToId = toid,
-                Data = new Step2TryModel
-                {
-                    FromId = ConnectId,
-                }
-            });
         }
-        /// <summary>
-        /// 服务器TCP消息，来源客户端已经准备好
-        /// </summary>
         public event EventHandler<OnStep2RetryEventArg> OnStep2RetryHandler;
-        /// <summary>
-        /// 服务器TCP消息，来源客户端已经准备好
-        /// </summary>
-        /// <param name="toid"></param>
         public void OnStep2Retry(OnStep2RetryEventArg e)
         {
             OnStep2RetryHandler?.Invoke(this, e);
-            Task.Run(() =>
-            {
-                //随便给目标客户端发个低TTL消息
-                using Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
-                {
-                    Ttl = (short)(RouteLevel + 2)
-                };
-                targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
-                targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(e.Data.Ip), e.Data.TcpPort));
-                System.Threading.Thread.Sleep(500);
-                targetSocket.SafeClose();
-            });
         }
-
 
         /// <summary>
         /// 服务器TCP消息，链接失败
@@ -320,7 +293,8 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
                 ToId = arg.ToId,
                 Data = new Step2FailModel
                 {
-                    FromId = arg.Id
+                    FromId = arg.Id,
+                    PunchType = PunchHoleTypes.TCP_NUTSSA
                 }
             });
         }
@@ -356,6 +330,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
                 Data = new Step2StopModel
                 {
                     FromId = ConnectId,
+                    PunchType = PunchHoleTypes.TCP_NUTSSA
 
                 }
             });
@@ -381,9 +356,11 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
             punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
             {
                 Socket = arg.Socket,
+                ToId = arg.ToId,
                 Data = new Step3Model
                 {
-                    FromId = ConnectId
+                    FromId = ConnectId,
+                    PunchType = PunchHoleTypes.TCP_NUTSSA
                 }
             });
         }
@@ -422,9 +399,11 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
             punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
             {
                 Socket = arg.Socket,
+                ToId = arg.ToId,
                 Data = new Step4Model
                 {
-                    FromId = ConnectId
+                    FromId = ConnectId,
+                    PunchType = PunchHoleTypes.TCP_NUTSSA
                 }
             });
         }
@@ -433,7 +412,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
         /// 来源客户端回应我了
         /// </summary>
         public event EventHandler<OnStep4EventArg> OnStep4Handler;
-       
+
 
         /// <summary>
         /// 来源客户端回应我了
@@ -450,17 +429,48 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
             OnStep4Handler?.Invoke(this, arg);
         }
 
-
         public event EventHandler<SendStepPacketEventArg> OnSendStepPacketHandler;
-        public event EventHandler<OnStepPacketEventArg> OnStepPacketHandler;
+
         public void SendStepPacket(SendStepPacketEventArg arg)
         {
-            OnSendStepPacketHandler?.Invoke(this,arg);
+            OnSendStepPacketHandler?.Invoke(this, arg);
+            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
+            {
+                Socket = TcpServer,
+                ToId = arg.ToId,
+                Data = new StepPacketModel
+                {
+                    FromId = arg.FromId,
+                    PunchType = PunchHoleTypes.TCP_NUTSSA
+                }
+            });
         }
 
+        public event EventHandler<OnStepPacketEventArg> OnStepPacketHandler;
         public void OnStepPacket(OnStepPacketEventArg arg)
         {
-            OnStepPacketHandler?.Invoke(this,arg);
+            Logger.Instance.Debug($"OnStepPacket {arg.Data.FromId}");
+            OnStepPacketHandler?.Invoke(this, arg);
+
+            ClientInfo.Get(arg.Data.FromId, out ClientInfo info);
+            if (info != null)
+            {
+                SendPrivate(new ConnectTcpParams
+                {
+                    Callback = (e) =>
+                    {
+                        ClientInfo.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);
+                    },
+                    FailCallback = (e) =>
+                    {
+                        Logger.Instance.Error(e.Msg);
+                        ClientInfo.OfflineTcp(info.Id);
+                    },
+                    Id = info.Id,
+                    Name = info.Name,
+                    Timeout = 300 * 1000
+                });
+            }
         }
 
         #endregion

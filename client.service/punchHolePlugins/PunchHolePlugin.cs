@@ -1,5 +1,6 @@
 ﻿using client.service.punchHolePlugins.plugins;
 using client.service.punchHolePlugins.plugins.tcp;
+using client.service.punchHolePlugins.plugins.tcp.nutssa;
 using client.service.punchHolePlugins.plugins.tcp.nutssb;
 using client.service.punchHolePlugins.plugins.udp;
 using common;
@@ -24,7 +25,7 @@ namespace client.service.punchHolePlugins
             this.punchHoldEventHandles = punchHoldEventHandles;
         }
 
-        public MessageTypes MsgType => MessageTypes.PUNCH_HOLE;
+        public MessageTypes MsgType => MessageTypes.SERVER_PUNCH_HOLE;
 
         public void Excute(PluginExcuteModel model, ServerType serverType)
         {
@@ -85,6 +86,7 @@ namespace client.service.punchHolePlugins
     public enum PunchHoleTypes
     {
         UDP, // UDP打洞
+        TCP_NUTSSA, //IP欺骗
         TCP_NUTSSB, //端口复用打洞
         REVERSE, //反向链接
     }
@@ -107,8 +109,13 @@ namespace client.service.punchHolePlugins
             obj.AddSingleton<IPunchHoleUdp, PunchHoleUdpEventHandles>();
             obj.AddSingleton<PunchHoleUdpPlugin>();
 
+            //端口复用
             obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssBEventHandles>();
             obj.AddSingleton<PunchHoleTcpNutssBPlugin>();
+
+            //IP欺骗 
+            // obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssAEventHandles>();
+            obj.AddSingleton<PunchHoleTcpNutssAPlugin>();
 
             return obj;
         }

@@ -58,6 +58,7 @@ namespace client.service.serverPlugins.clients
             punchHoleUdp.OnStep3Handler += UdpOnStep3Handler;
 
 
+            punchHoleTcp.OnStep3Handler += TcpOnStep3Handler;
             punchHoleTcp.OnStep4Handler += TcpOnStep4Handler;
             punchHoleTcp.OnSendTcpStep2FailHandler += TcpOnSendTcpStep2FailHandler;
 
@@ -150,11 +151,17 @@ namespace client.service.serverPlugins.clients
             });
         }
 
+       
+
         private void TcpOnSendTcpStep2FailHandler(object sender, OnSendStep2FailEventArg e)
         {
             ClientInfo.OfflineTcp(e.ToId);
         }
 
+        private void TcpOnStep3Handler(object sender, punchHolePlugins.plugins.tcp.OnStep3EventArg e)
+        {
+            ClientInfo.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);
+        }
         private void TcpOnStep4Handler(object sender, punchHolePlugins.plugins.tcp.OnStep4EventArg e)
         {
             ClientInfo.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);

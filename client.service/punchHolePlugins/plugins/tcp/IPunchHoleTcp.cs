@@ -46,6 +46,11 @@ namespace client.service.punchHolePlugins.plugins.tcp
         public void SendStep4(SendStep4EventArg arg);
         public event EventHandler<OnStep4EventArg> OnStep4Handler;
         public void OnStep4(OnStep4EventArg arg);
+
+        public event EventHandler<SendStepPacketEventArg> OnSendStepPacketHandler;
+        public void SendStepPacket(SendStepPacketEventArg arg);
+        public event EventHandler<OnStepPacketEventArg> OnStepPacketHandler;
+        public void OnStepPacket(OnStepPacketEventArg arg);
     }
 
 
@@ -83,14 +88,8 @@ namespace client.service.punchHolePlugins.plugins.tcp
     }
     public class SendStep3EventArg : EventArgs
     {
-        /// <summary>
-        /// 目标对象
-        /// </summary>
         public Socket Socket { get; set; }
-        /// <summary>
-        /// 我的id
-        /// </summary>
-        public long Id { get; set; }
+        public long ToId { get; set; }
     }
     public class OnStep3EventArg : EventArgs
     {
@@ -99,19 +98,26 @@ namespace client.service.punchHolePlugins.plugins.tcp
     }
     public class SendStep4EventArg : EventArgs
     {
-        /// <summary>
-        /// 目标对象
-        /// </summary>
         public Socket Socket { get; set; }
-        /// <summary>
-        /// 我的id
-        /// </summary>
-        public long Id { get; set; }
+        public long ToId { get; set; }
     }
     public class OnStep4EventArg : EventArgs
     {
         public PluginExcuteModel Packet { get; set; }
         public Step4Model Data { get; set; }
+    }
+
+
+    public class SendStepPacketEventArg : EventArgs
+    {
+        public Socket Socket { get; set; }
+        public long ToId { get; set; }
+        public long FromId { get; set; }
+    }
+    public class OnStepPacketEventArg : EventArgs
+    {
+        public PluginExcuteModel Packet { get; set; }
+        public StepPacketModel Data { get; set; }
     }
 
 
@@ -125,7 +131,7 @@ namespace client.service.punchHolePlugins.plugins.tcp
         public long FromId { get; set; } = 0;
 
         [ProtoMember(2, IsRequired = true)]
-        public PunchHoleTypes PunchType { get; } = PunchHoleTypes.TCP_NUTSSB;
+        public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
         [ProtoMember(3, IsRequired = true)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.NOTIFY;
@@ -144,7 +150,7 @@ namespace client.service.punchHolePlugins.plugins.tcp
         public long FromId { get; set; } = 0;
 
         [ProtoMember(2, IsRequired = true)]
-        public PunchHoleTypes PunchType { get; } = PunchHoleTypes.TCP_NUTSSB;
+        public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
         [ProtoMember(3, IsRequired = true)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.NOTIFY;
@@ -160,7 +166,7 @@ namespace client.service.punchHolePlugins.plugins.tcp
         public long FromId { get; set; } = 0;
 
         [ProtoMember(2, IsRequired = true)]
-        public PunchHoleTypes PunchType { get; } = PunchHoleTypes.TCP_NUTSSB;
+        public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
         [ProtoMember(3, IsRequired = true)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
@@ -175,7 +181,7 @@ namespace client.service.punchHolePlugins.plugins.tcp
         public long FromId { get; set; } = 0;
 
         [ProtoMember(2, IsRequired = true)]
-        public PunchHoleTypes PunchType { get; } = PunchHoleTypes.TCP_NUTSSB;
+        public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
         [ProtoMember(3, IsRequired = true)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.NOTIFY;
@@ -191,7 +197,7 @@ namespace client.service.punchHolePlugins.plugins.tcp
         public long FromId { get; set; } = 0;
 
         [ProtoMember(2, IsRequired = true)]
-        public PunchHoleTypes PunchType { get; } = PunchHoleTypes.TCP_NUTSSB;
+        public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
         [ProtoMember(3, IsRequired = true)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
@@ -210,7 +216,7 @@ namespace client.service.punchHolePlugins.plugins.tcp
         public long FromId { get; set; } = 0;
 
         [ProtoMember(2, IsRequired = true)]
-        public PunchHoleTypes PunchType { get; } = PunchHoleTypes.TCP_NUTSSB;
+        public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
         [ProtoMember(3, IsRequired = true)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
@@ -229,13 +235,35 @@ namespace client.service.punchHolePlugins.plugins.tcp
         public long FromId { get; set; } = 0;
 
         [ProtoMember(2, IsRequired = true)]
-        public PunchHoleTypes PunchType { get; } = PunchHoleTypes.TCP_NUTSSB;
+        public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
         [ProtoMember(3, IsRequired = true)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
         [ProtoMember(4)]
         public short PunchStep { get; } = (short)PunchHoleTcpNutssBSteps.STEP_4;
+    }
+
+    [ProtoContract]
+    public class StepPacketModel : IPunchHoleMessageBase
+    {
+        /// <summary>
+        /// 我的id
+        /// </summary>
+        [ProtoMember(1)]
+        public long FromId { get; set; } = 0;
+
+        [ProtoMember(2, IsRequired = true)]
+        public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
+
+        [ProtoMember(3, IsRequired = true)]
+        public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
+
+        [ProtoMember(4)]
+        public short PunchStep { get; } = (short)PunchHoleTcpNutssBSteps.STEP_PACKET;
+
+        [ProtoMember(5)]
+        public byte Live { get; } = 1;
     }
 
     public enum PunchHoleTcpNutssBSteps : short
@@ -247,6 +275,7 @@ namespace client.service.punchHolePlugins.plugins.tcp
         STEP_2_STOP = 5,
         STEP_3 = 6,
         STEP_4 = 7,
+        STEP_PACKET = 8,
     }
 
 
