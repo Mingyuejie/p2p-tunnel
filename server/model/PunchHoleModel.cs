@@ -31,7 +31,7 @@ namespace server.model
         /// 消息类型
         /// </summary>
         [ProtoMember(3, IsRequired = true)]
-        public MessageTypes MsgType { get; } = MessageTypes.PUNCH_HOLE;
+        public MessageTypes MsgType { get; } = MessageTypes.SERVER_PUNCH_HOLE;
 
         /// <summary>
         /// 数据

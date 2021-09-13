@@ -102,13 +102,7 @@ namespace server.service
             obj.AddSingleton<RegisterPlugin>();
             obj.AddSingleton<ResetPlugin>();
             obj.AddSingleton<PunchHolePlugin>();
-
-            obj.AddSingleton<ConnectClientPlugin>();
-            obj.AddSingleton<ConnectClientReversePlugin>();
-            obj.AddSingleton<ConnectClientStep1ResultPlugin>();
-            obj.AddSingleton<ConnectClientStep2RetryPlugin>();
-            obj.AddSingleton<ConnectClientStep2FailPlugin>();
-            obj.AddSingleton<ConnectClientStep2StopPlugin>();
+            obj.AddSingleton<RawPacketPlugin>();
             return obj;
         }
 
@@ -119,13 +113,7 @@ namespace server.service
             Plugin.LoadPlugin(obj.GetService<RegisterPlugin>());
             Plugin.LoadPlugin(obj.GetService<ResetPlugin>());
             Plugin.LoadPlugin(obj.GetService<PunchHolePlugin>());
-
-            Plugin.LoadPlugin(obj.GetService<ConnectClientPlugin>());
-            Plugin.LoadPlugin(obj.GetService<ConnectClientReversePlugin>());
-            Plugin.LoadPlugin(obj.GetService<ConnectClientStep1ResultPlugin>());
-            Plugin.LoadPlugin(obj.GetService<ConnectClientStep2RetryPlugin>());
-            Plugin.LoadPlugin(obj.GetService<ConnectClientStep2FailPlugin>());
-            Plugin.LoadPlugin(obj.GetService<ConnectClientStep2StopPlugin>());
+            Plugin.LoadPlugin(obj.GetService<RawPacketPlugin>());
 
             return obj;
         }

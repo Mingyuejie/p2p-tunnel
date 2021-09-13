@@ -24,7 +24,7 @@ namespace server.service.plugins
             this.udpServer = udpServer;
         }
 
-        public MessageTypes MsgType => MessageTypes.PUNCH_HOLE;
+        public MessageTypes MsgType => MessageTypes.SERVER_PUNCH_HOLE;
 
         public void Excute(PluginExcuteModel data, ServerType serverType)
         {
