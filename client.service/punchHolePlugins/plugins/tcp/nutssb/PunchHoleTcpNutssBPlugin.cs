@@ -73,7 +73,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
         }
         private void Step2Fail(OnPunchHoleTcpArg arg)
         {
-            punchHoleTcp.OnStep2Fail(new OnTcpStep2FailEventArg
+            punchHoleTcp.OnStep2Fail(new OnStep2FailEventArg
             {
                 Packet = arg.Packet,
                 Data = arg.Data.Data.DeBytes<Step2FailModel>()

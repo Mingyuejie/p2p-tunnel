@@ -109,14 +109,14 @@ namespace client.service.punchHolePlugins
             obj.AddSingleton<IPunchHoleUdp, PunchHoleUdpEventHandles>();
             obj.AddSingleton<PunchHoleUdpPlugin>();
 
-            //端口复用
-            obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssBEventHandles>();
+
+            obj.AddSingleton<PunchHoleTcpNutssAPlugin>();
             obj.AddSingleton<PunchHoleTcpNutssBPlugin>();
 
             //IP欺骗 
-            // obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssAEventHandles>();
-            obj.AddSingleton<PunchHoleTcpNutssAPlugin>();
-
+            //obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssAEventHandles>();
+            //端口复用
+            obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssBEventHandles>();
             return obj;
         }
         public static ServiceProvider UsePunchHolePlugin(this ServiceProvider obj)

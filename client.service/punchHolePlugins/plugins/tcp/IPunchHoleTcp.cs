@@ -27,11 +27,11 @@ namespace client.service.punchHolePlugins.plugins.tcp
         public event EventHandler<OnStep2RetryEventArg> OnStep2RetryHandler;
         public void OnStep2Retry(OnStep2RetryEventArg e);
 
-        public event EventHandler<OnSendStep2FailEventArg> OnSendTcpStep2FailHandler;
+        public event EventHandler<OnSendStep2FailEventArg> OnSendStep2FailHandler;
         public void SendStep2Fail(OnSendStep2FailEventArg arg);
 
-        public event EventHandler<OnTcpStep2FailEventArg> OnStep2FailHandler;
-        public void OnStep2Fail(OnTcpStep2FailEventArg arg);
+        public event EventHandler<OnStep2FailEventArg> OnStep2FailHandler;
+        public void OnStep2Fail(OnStep2FailEventArg arg);
 
         public void SendStep2Stop(long toid);
         public void OnStep2Stop(Step2StopModel e);
@@ -81,7 +81,7 @@ namespace client.service.punchHolePlugins.plugins.tcp
         public long ToId { get; set; }
         public long Id { get; set; }
     }
-    public class OnTcpStep2FailEventArg : EventArgs
+    public class OnStep2FailEventArg : EventArgs
     {
         public PluginExcuteModel Packet { get; set; }
         public Step2FailModel Data { get; set; }

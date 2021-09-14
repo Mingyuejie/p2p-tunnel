@@ -35,7 +35,7 @@ namespace client.service.punchHolePlugins
             plugins = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(c => c.GetTypes())
                 .Where(c => c.GetInterfaces().Contains(typeof(IPunchHolePlugin)))
-                .Select(c => (IPunchHolePlugin)Program.serviceProvider.GetService(c)).GroupBy(c => c.Type)
+                .Where(c=>c != null).Select(c => (IPunchHolePlugin)Program.serviceProvider.GetService(c)).GroupBy(c => c.Type)
                 .ToDictionary(g => g.Key, g => g.ToArray());
         }
 

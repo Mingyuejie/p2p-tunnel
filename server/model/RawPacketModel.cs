@@ -21,6 +21,6 @@ namespace server.models
         public byte LinkLayerType { get; set; } = 0;
 
         [ProtoMember(5)]
-        public string TargetIp { get; set; } = string.Empty;
+        public long ToId { get; set; } = 0;
     }
 }

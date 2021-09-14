@@ -58,9 +58,10 @@ namespace client.service.serverPlugins.clients
             punchHoleUdp.OnStep3Handler += UdpOnStep3Handler;
 
 
+            punchHoleTcp.OnStep1Handler += TcpOnStep1Handler;
             punchHoleTcp.OnStep3Handler += TcpOnStep3Handler;
             punchHoleTcp.OnStep4Handler += TcpOnStep4Handler;
-            punchHoleTcp.OnSendTcpStep2FailHandler += TcpOnSendTcpStep2FailHandler;
+            punchHoleTcp.OnStep2FailHandler += TcpOnStep2FailHandler;
 
             //有人要求反向链接
             punchHoldEventHandles.OnReverseHandler += (s, arg) =>
@@ -151,11 +152,17 @@ namespace client.service.serverPlugins.clients
             });
         }
 
-       
-
-        private void TcpOnSendTcpStep2FailHandler(object sender, OnSendStep2FailEventArg e)
+        private void TcpOnStep1Handler(object sender, punchHolePlugins.plugins.tcp.OnStep1EventArg e)
         {
-            ClientInfo.OfflineTcp(e.ToId);
+            if (ClientInfo.Get(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null)
+            {
+                cacheClient.TcpConnecting = true;
+            }
+        }
+
+        private void TcpOnStep2FailHandler(object sender, OnStep2FailEventArg e)
+        {
+            ClientInfo.OfflineTcp(e.Data.FromId);
         }
 
         private void TcpOnStep3Handler(object sender, punchHolePlugins.plugins.tcp.OnStep3EventArg e)

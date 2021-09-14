@@ -57,7 +57,8 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssa
         public void Send(ConnectTcpParams param)
         {
             SendStepPacket(new SendStepPacketEventArg { FromId = ConnectId, ToId = param.Id, Socket = TcpServer });
-            SendPrivate(param);
+            SendStepPacket(new SendStepPacketEventArg { FromId = param.Id, ToId = ConnectId, Socket = TcpServer });
+            // SendPrivate(param);
         }
 
         public void SendPrivate(ConnectTcpParams param)
@@ -115,7 +116,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssa
                 Data = new Step2Model
                 {
                     FromId = ConnectId,
-                     PunchType = PunchHoleTypes.TCP_NUTSSA
+                    PunchType = PunchHoleTypes.TCP_NUTSSA
                 }
             });
         }
@@ -141,13 +142,14 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssa
 
             _ = Task.Run(() =>
             {
-                connectdIds.Add(e.Data.Id);
+                long toid = e.Data.Id;
+                connectdIds.Add(toid);
 
                 bool success = false;
                 int index = 0;
                 foreach (var ip in ips)
                 {
-                    if (!connectdIds.Contains(e.Data.Id))
+                    if (!connectdIds.Contains(toid))
                     {
                         break;
                     }
@@ -155,47 +157,54 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssa
                     Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, System.Net.Sockets.ProtocolType.Tcp);
                     try
                     {
-                        if (index > 0)
-                        {
-                           // targetSocket.Ttl = (short)(RouteLevel + 2);
-                        }
+                        targetSocket.Ttl = (short)(RouteLevel + 2);
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
                         targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
-                      
-                        using var device = LibPcapLiveDeviceList.Instance[0];
-                        device.Open();
-                        device.OnPacketArrival += (object s, PacketCapture e) =>
+
+                        foreach (var device in LibPcapLiveDeviceList.Instance)
                         {
-                            var raw = e.GetPacket();
-                            var packet = Packet.ParsePacket(raw.LinkLayerType, raw.Data);
-                            var ipPacket = packet.Extract<IPPacket>();
-                            var tcp = ipPacket.Extract<TcpPacket>();
-                            if (tcp != null)
+                            device.Open();
+                            device.OnPacketArrival += (object s, PacketCapture e) =>
                             {
-                                if (tcp.DestinationPort == (uint)ip.Item2)
+                                var raw = e.GetPacket();
+                                var packet = Packet.ParsePacket(raw.LinkLayerType, raw.Data);
+                                var ipPacket = packet.Extract<IPPacket>();
+                                if (ipPacket != null)
                                 {
-                                    eventHandlers.SendTcp(new SendTcpEventArg
+                                    var tcp = ipPacket.Extract<TcpPacket>();
+                                    if (tcp != null)
                                     {
-                                        Data = new RawPacketModel
+                                        if (tcp.Synchronize == true && tcp.Acknowledgment == false && tcp.DestinationPort == (uint)ip.Item2)
                                         {
-                                            Data = packet.Bytes,
-                                            FormId = ConnectId,
-                                            LinkLayerType = (byte)raw.LinkLayerType
-                                        },
-                                        Socket = TcpServer,
-                                    });
-                                    device.StopCapture();
-                                    device.Close();
+                                            eventHandlers.SendTcp(new SendTcpEventArg
+                                            {
+                                                Data = new RawPacketModel
+                                                {
+                                                    Data = packet.Bytes,
+                                                    FormId = ConnectId,
+                                                    ToId = toid,
+                                                    LinkLayerType = (byte)raw.LinkLayerType
+                                                },
+                                                Socket = TcpServer,
+                                            });
+                                            // device.StopCapture();
+                                            //  device.Close();
+                                        }
+                                        if (tcp.Synchronize == true && tcp.Acknowledgment == true && tcp.DestinationPort == (ushort)registerState.RemoteInfo.TcpPort)
+                                        {
+                                            Logger.Instance.Debug($"收到ACK包");
+                                        }
+                                    }
                                 }
-                            }
-                        };
-                        device.StartCapture();
+                            };
+                            device.StartCapture();
+                        }
+
+                        System.Threading.Thread.Sleep(100);
 
                         Logger.Instance.Debug($"连接 {ip.Item1}->{ip.Item2}");
                         IAsyncResult result = targetSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2), null, null);
-
-                        _ = result.AsyncWaitHandle.WaitOne(5000, false);
+                        _ = result.AsyncWaitHandle.WaitOne(2000, false);
                         if (result.IsCompleted)
                         {
                             Logger.Instance.Debug($"连接 {ip.Item1}->{ip.Item2} 成功");
@@ -204,23 +213,23 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssa
                             SendStep3(new SendStep3EventArg
                             {
                                 Socket = targetSocket,
-                                ToId = e.Data.Id
+                                ToId = toid
                             });
 
                             int waitReplyTimes = 10;
                             while (waitReplyTimes > 0)
                             {
-                                if (replyIds.Contains(e.Data.Id))
+                                if (replyIds.Contains(toid))
                                 {
-                                    _ = replyIds.Remove(e.Data.Id);
+                                    _ = replyIds.Remove(toid);
 
                                     break;
                                 }
                                 waitReplyTimes--;
 
-                                System.Threading.Thread.Sleep(500);
+                                System.Threading.Thread.Sleep(100);
                             }
-                            if (!connectdIds.Contains(e.Data.Id))
+                            if (!connectdIds.Contains(toid))
                             {
                                 targetSocket.SafeClose();
                                 break;
@@ -229,7 +238,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssa
                             if (waitReplyTimes > 0)
                             {
                                 success = true;
-                                _ = connectdIds.Remove(e.Data.Id);
+                                _ = connectdIds.Remove(toid);
                                 break;
                             }
                         }
@@ -237,7 +246,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssa
                         {
                             Logger.Instance.Debug($"连接 {ip.Item1}->{ip.Item2} 失败");
                             targetSocket.SafeClose();
-                            SendStep2Retry(e.Data.Id);
+                            SendStep2Retry(toid);
                         }
                     }
                     catch (SocketException)
@@ -255,12 +264,17 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssa
 
                 if (!success)
                 {
+                    foreach (var device in LibPcapLiveDeviceList.Instance)
+                    {
+                        device.StopCapture();
+                        device.Close();
+                    }
                     SendStep2Fail(new OnSendStep2FailEventArg
                     {
                         Id = ConnectId,
-                        ToId = e.Data.Id
+                        ToId = toid
                     });
-                    connectdIds.Remove(e.Data.Id);
+                    connectdIds.Remove(toid);
                 }
             });
         }
@@ -279,14 +293,23 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssa
         /// <summary>
         /// 服务器TCP消息，链接失败
         /// </summary>
-        public event EventHandler<OnSendStep2FailEventArg> OnSendTcpStep2FailHandler;
+        public event EventHandler<OnSendStep2FailEventArg> OnSendStep2FailHandler;
         /// <summary>
         /// 服务器TCP消息，链接失败
         /// </summary>
         /// <param name="toid"></param>
         public void SendStep2Fail(OnSendStep2FailEventArg arg)
         {
-            OnSendTcpStep2FailHandler?.Invoke(this, arg);
+            OnSendStep2FailHandler?.Invoke(this, arg);
+            if (connectTcpCache.TryGetValue(arg.ToId, out ConnectTcpCache cache))
+            {
+                _ = connectTcpCache.TryRemove(arg.ToId, out _);
+                cache?.FailCallback(new ConnectFailModel
+                {
+                    Msg = "失败",
+                    Type = ConnectFailType.ERROR
+                });
+            }
             punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
             {
                 Socket = TcpServer,
@@ -302,22 +325,14 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssa
         /// <summary>
         /// 服务器TCP消息，链接失败
         /// </summary>
-        public event EventHandler<OnTcpStep2FailEventArg> OnStep2FailHandler;
+        public event EventHandler<OnStep2FailEventArg> OnStep2FailHandler;
         /// <summary>
         /// 服务器TCP消息，链接失败
         /// </summary>
         /// <param name="toid"></param>
-        public void OnStep2Fail(OnTcpStep2FailEventArg arg)
+        public void OnStep2Fail(OnStep2FailEventArg arg)
         {
-            if (connectTcpCache.TryGetValue(arg.Data.FromId, out ConnectTcpCache cache))
-            {
-                _ = connectTcpCache.TryRemove(arg.Data.FromId, out _);
-                cache?.FailCallback(new ConnectFailModel
-                {
-                    Msg = "失败",
-                    Type = ConnectFailType.ERROR
-                });
-            }
+
             OnStep2FailHandler?.Invoke(this, arg);
         }
 
