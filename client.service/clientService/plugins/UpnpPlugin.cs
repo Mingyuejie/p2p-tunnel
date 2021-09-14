@@ -17,43 +17,41 @@ namespace client.service.clientService.plugins
 
         public void Start()
         {
-            //Task.Run(() =>
-            //{
-            //    try
-            //    {
-            //        NatUtility.DeviceFound += (object sender, DeviceEventArgs e) =>
-            //        {
-            //            INatDevice device = e.Device;
-            //            if (device.NatProtocol == NatProtocol.Upnp)
-            //            {
-            //                try
-            //                {
-            //                    devices.Add(new DeviceModel
-            //                    {
-            //                        Device = device,
-            //                        Text = $"外网:{device.GetExternalIPAsync().Result},内网:{device.DeviceEndpoint}"
-            //                    });
-            //                }
-            //                catch (Exception)
-            //                {
-            //                }
-            //            }
-            //        };
-            //        NatUtility.StartDiscovery();
-
-
-            //    }
-            //    catch (Exception)
-            //    {
-            //    }
-            //    finally
-            //    {
-            //        Helper.SetTimeout(() =>
-            //        {
-            //            NatUtility.StopDiscovery();
-            //        }, 5000);
-            //    }
-            //});
+            Task.Run(() =>
+            {
+                try
+                {
+                    NatUtility.DeviceFound += (object sender, DeviceEventArgs e) =>
+                    {
+                        INatDevice device = e.Device;
+                        if (device.NatProtocol == NatProtocol.Upnp)
+                        {
+                            try
+                            {
+                                devices.Add(new DeviceModel
+                                {
+                                    Device = device,
+                                    Text = $"外网:{device.GetExternalIPAsync().Result},内网:{device.DeviceEndpoint}"
+                                });
+                            }
+                            catch (Exception)
+                            {
+                            }
+                        }
+                    };
+                    NatUtility.StartDiscovery();
+                }
+                catch (Exception)
+                {
+                }
+                finally
+                {
+                    Helper.SetTimeout(() =>
+                    {
+                        NatUtility.StopDiscovery();
+                    }, 5000);
+                }
+            });
 
             Logger.Instance.Info("UPNP服务已启动...");
         }
