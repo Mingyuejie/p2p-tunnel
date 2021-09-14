@@ -93,7 +93,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
             OnStep1Handler?.Invoke(this, e);
 
             List<Tuple<string, int>> ips = new List<Tuple<string, int>> {
-              new Tuple<string, int>(e.Data.LocalIps,e.Data.LocalTcpPort),
+             new Tuple<string, int>(e.Data.LocalIps,e.Data.LocalTcpPort),
                 new Tuple<string, int>(e.Data.Ip,e.Data.TcpPort),
             };
             foreach (Tuple<string, int> ip in ips)
@@ -112,7 +112,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
                     catch (Exception)
                     {
                     }
-                    System.Threading.Thread.Sleep(100);
+                    System.Threading.Thread.Sleep(500);
                     targetSocket.SafeClose();
                 });
             }
@@ -143,7 +143,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
         {
             OnTcpStep2Handler?.Invoke(this, e);
             List<Tuple<string, int>> ips = new List<Tuple<string, int>> {
-               new Tuple<string, int>(e.Data.LocalIps,e.Data.LocalTcpPort),
+              new Tuple<string, int>(e.Data.LocalIps,e.Data.LocalTcpPort),
                 new Tuple<string, int>(e.Data.Ip,e.Data.TcpPort),
             };
 
@@ -151,7 +151,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
             {
                 connectdIds.Add(e.Data.Id);
                 bool success = false;
-                int length = 5, index = 0, errLength = 10;
+                int length = 10, index = 0, errLength = 10;
                 int interval = 0;
                 while (length > 0 && errLength > 0)
                 {
@@ -169,7 +169,6 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
                     try
                     {
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        //targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
                         targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
                         Tuple<string, int> ip = index >= ips.Count ? ips[ips.Count - 1] : ips[index];
 
@@ -293,14 +292,12 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
             {
                 Logger.Instance.Debug($"低ttl {e.Data.Ip}:{ e.Data.TcpPort}");
                 //随便给目标客户端发个低TTL消息
-                using Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
-                {
-                    Ttl = (short)(RouteLevel + 2)
-                };
+                using Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                targetSocket.Ttl = (short)(RouteLevel + 2);
                 targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                 targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
                 targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(e.Data.Ip), e.Data.TcpPort));
-                System.Threading.Thread.Sleep(100);
+                System.Threading.Thread.Sleep(500);
                 targetSocket.SafeClose();
             });
         }

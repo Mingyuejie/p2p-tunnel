@@ -137,10 +137,8 @@ namespace client.service.serverPlugins.register
                         //TCP 连接服务器
                         registerState.TcpSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                         registerState.TcpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        registerState.TcpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-                        IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Parse(config.Server.Ip), config.Server.TcpPort);
                         registerState.TcpSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, registerState.LocalInfo.TcpPort));
-                        registerState.TcpSocket.Connect(remoteEndPoint);
+                        registerState.TcpSocket.Connect(new IPEndPoint(IPAddress.Parse(config.Server.Ip), config.Server.TcpPort));
                         tcpServer.BindReceive(registerState.TcpSocket, (code) =>
                         {
                             if (code == SocketError.ConnectionAborted)
