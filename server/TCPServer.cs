@@ -39,15 +39,15 @@ namespace server
                 return;
             }
             cancellationTokenSource = new CancellationTokenSource();
-            BindAccept(port, ip);
+            BindAccept(port, ip ?? IPAddress.Any, cancellationTokenSource);
         }
-        public void BindAccept(int port, IPAddress ip = null)
+        public void BindAccept(int port, IPAddress ip, CancellationTokenSource tokenSource)
         {
             if (servers.ContainsKey(port)) return;
 
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            socket.Bind(new IPEndPoint(ip ?? IPAddress.Any, port));
+            socket.Bind(new IPEndPoint(ip, port));
             socket.Listen(int.MaxValue);
 
             ServerModel server = new()
@@ -59,7 +59,7 @@ namespace server
 
             _ = Task.Factory.StartNew((e) =>
             {
-                while (!cancellationTokenSource.IsCancellationRequested)
+                while (!tokenSource.IsCancellationRequested)
                 {
                     server.AcceptDone.Reset();
                     try
@@ -75,7 +75,7 @@ namespace server
                     _ = server.AcceptDone.WaitOne();
                 }
 
-            }, TaskCreationOptions.LongRunning, cancellationTokenSource.Token);
+            }, TaskCreationOptions.LongRunning, tokenSource.Token);
         }
         public void Stop()
         {
@@ -117,6 +117,7 @@ namespace server
             try
             {
                 Socket client = server.Socket.EndAccept(result);
+                Logger.Instance.Debug($"accept {client.RemoteEndPoint}");
                 BindReceive(client);
             }
             catch (Exception ex)

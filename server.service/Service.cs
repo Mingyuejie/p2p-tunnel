@@ -103,6 +103,7 @@ namespace server.service
             obj.AddSingleton<ResetPlugin>();
             obj.AddSingleton<PunchHolePlugin>();
             obj.AddSingleton<RawPacketPlugin>();
+
             return obj;
         }
 
@@ -114,6 +115,7 @@ namespace server.service
             Plugin.LoadPlugin(obj.GetService<ResetPlugin>());
             Plugin.LoadPlugin(obj.GetService<PunchHolePlugin>());
             Plugin.LoadPlugin(obj.GetService<RawPacketPlugin>());
+
 
             return obj;
         }

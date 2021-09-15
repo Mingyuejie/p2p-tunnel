@@ -55,6 +55,6 @@ namespace server.model
         /// <summary>
         /// 发送原数据包，用来做IP欺骗
         /// </summary>
-        SERVER_RAW_PACKET = 10,
+        SERVER_RAW_PACKET = 10
     }
 }

@@ -31,7 +31,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
         private Socket TcpServer => registerState.TcpSocket;
         private long ConnectId => registerState.RemoteInfo.ConnectId;
 
-        public int ClientTcpPort => registerState.RemoteInfo.TcpPort;
+        public int ClientTcpPort => registerState.LocalInfo.TcpPort;
         public int RouteLevel => registerState.LocalInfo.RouteLevel;
 
         private readonly ConcurrentDictionary<long, ConnectTcpCache> connectTcpCache = new();
@@ -106,7 +106,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
                     {
                         targetSocket.Ttl = (short)(RouteLevel + 2);
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
+                        targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.BindIp, ClientTcpPort));
                         targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2));
                     }
                     catch (Exception)
@@ -151,7 +151,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
             {
                 connectdIds.Add(e.Data.Id);
                 bool success = false;
-                int length = 10, index = 0, errLength = 10;
+                int length = 5, index = 0, errLength = 10;
                 int interval = 0;
                 while (length > 0 && errLength > 0)
                 {
@@ -169,7 +169,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
                     try
                     {
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
+                        targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.BindIp, ClientTcpPort));
                         Tuple<string, int> ip = index >= ips.Count ? ips[ips.Count - 1] : ips[index];
 
                         IAsyncResult result = targetSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2), null, null);
@@ -255,7 +255,6 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
             });
         }
 
-
         /// <summary>
         /// 服务器TCP消息，重试一次
         /// </summary>
@@ -281,6 +280,8 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
         /// 服务器TCP消息，来源客户端已经准备好
         /// </summary>
         public event EventHandler<OnStep2RetryEventArg> OnStep2RetryHandler;
+
+
         /// <summary>
         /// 服务器TCP消息，来源客户端已经准备好
         /// </summary>
@@ -293,9 +294,9 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
                 Logger.Instance.Debug($"低ttl {e.Data.Ip}:{ e.Data.TcpPort}");
                 //随便给目标客户端发个低TTL消息
                 using Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                targetSocket.Ttl = (short)(RouteLevel + 2);
+                targetSocket.Ttl = (short)(RouteLevel + 5);
                 targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
+                targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.BindIp, ClientTcpPort));
                 targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(e.Data.Ip), e.Data.TcpPort));
                 System.Threading.Thread.Sleep(500);
                 targetSocket.SafeClose();
@@ -377,6 +378,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
         /// <param name="toid"></param>
         public void SendStep3(SendStep3EventArg arg)
         {
+            Logger.Instance.Debug($"SendStep3 {arg.Socket.RemoteEndPoint}");
             OnSendStep3Handler?.Invoke(this, arg);
             punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
             {
@@ -399,6 +401,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
         /// <param name="toid"></param>
         public void OnStep3(OnStep3EventArg arg)
         {
+            Logger.Instance.Debug($"OnStep3 {arg.Packet.TcpSocket.RemoteEndPoint}");
             SendStep4(new SendStep4EventArg
             {
                 Socket = arg.Packet.TcpSocket,
@@ -418,6 +421,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
         /// <param name="toid"></param>
         public void SendStep4(SendStep4EventArg arg)
         {
+            Logger.Instance.Debug($"SendStep4 {arg.Socket.RemoteEndPoint}");
             OnSendStep4Handler?.Invoke(this, arg);
             punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
             {
@@ -441,6 +445,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
         /// <param name="toid"></param>
         public void OnStep4(OnStep4EventArg arg)
         {
+            Logger.Instance.Debug($"OnStep4 {arg.Packet.TcpSocket.RemoteEndPoint}");
             if (connectTcpCache.TryGetValue(arg.Data.FromId, out ConnectTcpCache cache))
             {
                 connectTcpCache.TryRemove(arg.Data.FromId, out _);

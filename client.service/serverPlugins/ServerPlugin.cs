@@ -33,7 +33,8 @@ namespace client.service.serverPlugins
             obj.AddSingleton<RegisterHelper>();
             obj.AddSingleton<RegisterState>();
             obj.AddSingleton<RegisterResultPlugin>();
-           
+
+
             obj.AddP2PPlugin();
             obj.AddPunchHolePlugin();
 

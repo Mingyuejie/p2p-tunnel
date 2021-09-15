@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 23:04:50
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-05 20:02:46
+ * @LastEditTime: 2021-09-15 17:01:08
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\apis\request.js
@@ -11,6 +11,16 @@ let requestId = 0;
 let ws = null;
 //请求缓存，等待回调
 const requests = {};
+const queues = [];
+let connected = false;
+
+const sendQueueMsg = () => {
+    if (queues.length > 0 && connected) {
+        ws.send(queues.shift());
+    }
+    setTimeout(sendQueueMsg, 1000 / 60);
+}
+sendQueueMsg();
 
 //发布订阅
 const pushListener = {
@@ -46,9 +56,11 @@ export const subWebsocketState = (callback) => {
 }
 //消息处理
 const onWebsocketOpen = () => {
+    connected = true;
     pushListener.push(websocketStateChangeKey, true);
 }
 const onWebsocketClose = () => {
+    connected = false;
     pushListener.push(websocketStateChangeKey, false);
     initWebsocket();
 }
@@ -83,11 +95,16 @@ export const sendWebsocketMsg = (path, msg = {}) => {
         let id = ++requestId;
         try {
             requests[id] = { resolve, reject };
-            ws.send(JSON.stringify({
+            let str = JSON.stringify({
                 Path: path,
                 RequestId: id,
                 Content: JSON.stringify(msg)
-            }));
+            });
+            if (connected) {
+                ws.send(str);
+            } else {
+                queues.push(str);
+            }
         } catch (e) {
             reject('网络错误~');
             delete requests[id];

@@ -30,6 +30,8 @@ namespace server.service.plugins
         {
             PunchHoleModel model = data.Packet.Chunk.DeBytes<PunchHoleModel>();
 
+            if (!clientRegisterCache.Verify(model.Id, data)) return;
+
             //A已注册
             RegisterCacheModel source = clientRegisterCache.Get(model.Id);
             if (source == null) return;

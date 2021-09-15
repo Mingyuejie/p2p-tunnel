@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:39:45
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-07 15:38:08
+ * @LastEditTime: 2021-09-15 16:39:43
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\states\register.js
@@ -34,6 +34,7 @@ export const provideRegister = () => {
             IsConnecting: false,
             Connected: false,
             TcpConnected: false,
+            LocalIp: ''
         },
         RemoteInfo: {
             Ip: '',
@@ -50,6 +51,7 @@ export const provideRegister = () => {
         state.LocalInfo.Port = json.LocalInfo.Port;
         state.LocalInfo.TcpPort = json.LocalInfo.TcpPort;
         state.LocalInfo.Mac = json.LocalInfo.Mac;
+        state.LocalInfo.LocalIp = json.LocalInfo.LocalIp;
 
         state.RemoteInfo.TcpPort = json.RemoteInfo.TcpPort;
         state.RemoteInfo.Ip = json.RemoteInfo.Ip;

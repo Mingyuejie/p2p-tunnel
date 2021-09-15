@@ -1,8 +1,6 @@
 ﻿using client.service.config;
 using client.service.punchHolePlugins;
-using client.service.punchHolePlugins.plugins;
 using client.service.punchHolePlugins.plugins.tcp;
-using client.service.punchHolePlugins.plugins.tcp.nutssb;
 using client.service.punchHolePlugins.plugins.udp;
 using client.service.serverPlugins.heart;
 using client.service.serverPlugins.register;
@@ -18,7 +16,7 @@ namespace client.service.serverPlugins.clients
 {
     public class ClientsHelper
     {
-        private short readClientsTimes = 0;
+        private long readClientsTimes = 0;
 
         private readonly RegisterEventHandles registerEventHandles;
         private readonly ClientsEventHandles clientsEventHandles;
@@ -71,11 +69,10 @@ namespace client.service.serverPlugins.clients
                     ConnectClient(client);
                 }
             };
-
-
             //退出消息
             registerEventHandles.OnSendExitMessageHandler += (sender, e) =>
             {
+                readClientsTimes = 0;
                 foreach (ClientInfo client in ClientInfo.All())
                 {
                     client.Remove();
@@ -84,8 +81,14 @@ namespace client.service.serverPlugins.clients
                         punchHoleTcp.SendStep2Stop(client.Id);
                     }
                 }
-                readClientsTimes = 0;
             };
+
+
+
+            //本客户端注册状态
+            registerEventHandles.OnSendRegisterTcpStateChangeHandler += OnRegisterTcpStateChangeHandler;
+            //收到来自服务器的 在线客户端 数据
+            clientsEventHandles.OnServerSendClientsHandler += OnServerSendClientsHandler;
 
             //给各个客户端发送心跳包
             _ = Task.Factory.StartNew(() =>
@@ -194,6 +197,8 @@ namespace client.service.serverPlugins.clients
             }, 3000);
         }
 
+        
+
 
         private void OnRegisterTcpStateChangeHandler(object sender, RegisterTcpEventArg e)
         {
@@ -205,62 +210,56 @@ namespace client.service.serverPlugins.clients
 
         private void OnServerSendClientsHandler(object sender, OnServerSendClientsEventArg e)
         {
-            _ = Task.Run(() =>
+            try
             {
-                try
+                if (!registerState.LocalInfo.TcpConnected) return;
+                if (e.Data.Clients == null)
                 {
-                    ++readClientsTimes;
-                    if (e.Data.Clients == null)
+                    return;
+                }
+                System.Threading.Interlocked.Increment(ref readClientsTimes);
+                //下线了的
+                IEnumerable<long> offlines = ClientInfo.AllIds().Except(e.Data.Clients.Select(c => c.Id));
+                foreach (long offid in offlines)
+                {
+                    if (offid == registerState.RemoteInfo.ConnectId)
                     {
-                        return;
+                        continue;
                     }
+                    ClientInfo.OfflineBoth(offid);
+                    ClientInfo.Remove(offid);
+                }
+                //新上线的
+                IEnumerable<long> upLines = e.Data.Clients.Select(c => c.Id).Except(ClientInfo.AllIds());
+                IEnumerable<ClientsClientModel> upLineClients = e.Data.Clients.Where(c => upLines.Contains(c.Id) && c.Id != registerState.RemoteInfo.ConnectId);
 
-                    //下线了的
-                    IEnumerable<long> offlines = ClientInfo.AllIds().Except(e.Data.Clients.Select(c => c.Id));
-                    foreach (long offid in offlines)
-                    {
-                        if (offid == registerState.RemoteInfo.ConnectId)
-                        {
-                            continue;
-                        }
-                        ClientInfo.OfflineBoth(offid);
-                        ClientInfo.Remove(offid);
-                    }
-                    //新上线的
-                    IEnumerable<long> upLines = e.Data.Clients.Select(c => c.Id).Except(ClientInfo.AllIds());
-                    IEnumerable<ClientsClientModel> upLineClients = e.Data.Clients.Where(c => upLines.Contains(c.Id));
-                    foreach (ClientsClientModel item in upLineClients)
-                    {
-                        if (item.Id == registerState.RemoteInfo.ConnectId)
-                        {
-                            continue;
-                        }
-                        ClientInfo client = new ClientInfo
-                        {
-                            LastTime = 0,
-                            TcpLastTime = 0,
-                            Connected = false,
-                            TcpConnected = false,
-                            Connecting = false,
-                            Socket = null,
-                            Address = IPEndPoint.Parse(item.Address),
-                            Id = item.Id,
-                            Name = item.Name,
-                            Port = item.Port,
-                            TcpPort = item.TcpPort
-                        };
-                        ClientInfo.Add(client);
-                        if (readClientsTimes == 1)
-                        {
-                            ConnectClient(client);
-                        }
-                    }
-                }
-                catch (Exception ex)
+                foreach (ClientsClientModel item in upLineClients)
                 {
-                    Logger.Instance.Error("" + ex);
+                    ClientInfo client = new ClientInfo
+                    {
+                        LastTime = 0,
+                        TcpLastTime = 0,
+                        Connected = false,
+                        TcpConnected = false,
+                        Connecting = false,
+                        Socket = null,
+                        Address = IPEndPoint.Parse(item.Address),
+                        Id = item.Id,
+                        Name = item.Name,
+                        Port = item.Port,
+                        TcpPort = item.TcpPort
+                    };
+                    ClientInfo.Add(client);
+                    if (readClientsTimes == 1)
+                    {
+                        ConnectClient(client);
+                    }
                 }
-            });
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.Error("" + ex);
+            }
         }
 
 
@@ -275,49 +274,52 @@ namespace client.service.serverPlugins.clients
 
         private void ConnectClient(ClientInfo info)
         {
-            if (info.Id == registerState.RemoteInfo.ConnectId)
+            Task.Run(() =>
             {
-                return;
-            }
-            if (info.Connecting == false && info.Connected == false)
-            {
-                info.Connecting = true;
-                punchHoleUdp.SendStep1(new ConnectParams
+                if (info.Id == registerState.RemoteInfo.ConnectId)
                 {
-                    Id = info.Id,
-                    Name = info.Name,
-                    Callback = (e) =>
+                    return;
+                }
+                if (info.Connecting == false && info.Connected == false)
+                {
+                    info.Connecting = true;
+                    punchHoleUdp.SendStep1(new ConnectParams
                     {
-                        ClientInfo.Online(e.Data.FromId, e.Packet.SourcePoint);
-                    },
-                    FailCallback = (e) =>
-                    {
-                        ClientInfo.Offline(info.Id);
-                    },
-                    Timeout = 2000,
-                    TryTimes = 5
-                });
-            }
+                        Id = info.Id,
+                        Name = info.Name,
+                        Callback = (e) =>
+                        {
+                            ClientInfo.Online(e.Data.FromId, e.Packet.SourcePoint);
+                        },
+                        FailCallback = (e) =>
+                        {
+                            ClientInfo.Offline(info.Id);
+                        },
+                        Timeout = 2000,
+                        TryTimes = 5
+                    });
+                }
 
-            if (info.TcpConnecting == false && info.TcpConnected == false)
-            {
-                info.TcpConnecting = true;
-                punchHoleTcp.Send(new ConnectTcpParams
+                if (info.TcpConnecting == false && info.TcpConnected == false)
                 {
-                    Callback = (e) =>
+                    info.TcpConnecting = true;
+                    punchHoleTcp.Send(new ConnectTcpParams
                     {
-                        ClientInfo.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);
-                    },
-                    FailCallback = (e) =>
-                    {
-                        Logger.Instance.Error(e.Msg);
-                        ClientInfo.OfflineTcp(info.Id);
-                    },
-                    Id = info.Id,
-                    Name = info.Name,
-                    Timeout = 300 * 1000
-                });
-            }
+                        Callback = (e) =>
+                        {
+                            ClientInfo.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);
+                        },
+                        FailCallback = (e) =>
+                        {
+                            Logger.Instance.Error(e.Msg);
+                            ClientInfo.OfflineTcp(info.Id);
+                        },
+                        Id = info.Id,
+                        Name = info.Name,
+                        Timeout = 300 * 1000
+                    });
+                }
+            });
         }
 
         public void OfflineClient(long id)

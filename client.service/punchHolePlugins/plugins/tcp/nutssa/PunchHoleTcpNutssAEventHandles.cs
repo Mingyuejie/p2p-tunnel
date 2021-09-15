@@ -159,7 +159,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssa
                     {
                         targetSocket.Ttl = (short)(RouteLevel + 2);
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.LocalIp, ClientTcpPort));
+                        targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.BindIp, ClientTcpPort));
 
                         foreach (var device in LibPcapLiveDeviceList.Instance)
                         {

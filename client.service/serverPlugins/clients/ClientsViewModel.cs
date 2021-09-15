@@ -63,6 +63,7 @@ namespace client.service.serverPlugins.clients
 
         public string Name { get; set; } = string.Empty;
         public string Mac { get; set; } = string.Empty;
+        public string Ip { get; set; } = string.Empty;
 
         public long Id { get; set; } = 0;
 
@@ -118,6 +119,7 @@ namespace client.service.serverPlugins.clients
             TcpConnecting = false;
             TcpLastTime = Helper.GetTimeStamp();
             Socket = socket;
+            Ip = IPEndPoint.Parse(socket.RemoteEndPoint.ToString()).Address.ToString();
         }
         public void Remove()
         {

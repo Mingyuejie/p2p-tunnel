@@ -47,7 +47,7 @@ namespace server.service.plugins
             var tcpPacket = ipPacket.Extract<TcpPacket>();
 
             var sourceEnpoint = IPEndPoint.Parse(source.TcpSocket.RemoteEndPoint.ToString());
-            var targetEnpoint = new IPEndPoint(IPAddress.Parse("120.79.205.184"), 59410);
+            var targetEnpoint = new IPEndPoint(IPAddress.Parse("172.18.64.169"), 59410);
 
             ipPacket.SourceAddress = targetEnpoint.Address;
             ipPacket.DestinationAddress = sourceEnpoint.Address;

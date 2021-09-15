@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace server
@@ -12,7 +13,7 @@ namespace server
     public interface ITcpServer
     {
         public void Start(int port, IPAddress ip = null);
-        public void BindAccept(int port, IPAddress ip = null);
+        public void BindAccept(int port, IPAddress ip, CancellationTokenSource tokenSource);
         public void BindReceive(Socket socket, Action<SocketError> errorCallback = null);
         public void Stop();
         public void Send(RecvQueueModel<IModelBase> msg);
