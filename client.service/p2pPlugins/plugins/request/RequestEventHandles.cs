@@ -22,9 +22,11 @@ namespace client.service.p2pPlugins.plugins.request
         private readonly Dictionary<string, Tuple<object, MethodInfo>> plugins = new();
 
         private readonly P2PEventHandles p2PEventHandles;
-        public RequestEventHandlers(P2PEventHandles p2PEventHandles)
+        private readonly ServiceProvider serviceProvider;
+        public RequestEventHandlers(P2PEventHandles p2PEventHandles, ServiceProvider serviceProvider)
         {
             this.p2PEventHandles = p2PEventHandles;
+            this.serviceProvider = serviceProvider;
             _ = Task.Factory.StartNew(() =>
               {
                   while (true)
@@ -56,13 +58,18 @@ namespace client.service.p2pPlugins.plugins.request
 
         public void LoadPlugins()
         {
-            var types = AppDomain.CurrentDomain.GetAssemblies()
+            LoadPlugins(AppDomain.CurrentDomain.GetAssemblies());
+        }
+
+        public void LoadPlugins(Assembly[] assemblys)
+        {
+            var types = assemblys
              .SelectMany(c => c.GetTypes())
              .Where(c => c.GetInterfaces().Contains(typeof(IRequestExcutePlugin)));
             foreach (var item in types)
             {
                 string path = item.Name.Replace("Plugin", "");
-                object obj = Program.serviceProvider.GetService(item);
+                object obj = serviceProvider.GetService(item);
                 foreach (var method in item.GetMethods())
                 {
                     string key = $"{path}/{method.Name}".ToLower();
@@ -300,14 +307,31 @@ namespace client.service.p2pPlugins.plugins.request
     {
         public static ServiceCollection AddRequestPlugin(this ServiceCollection obj)
         {
-            obj.AddSingleton<RequestPlugin>();
+            obj.AddRequestPlugin(AppDomain.CurrentDomain.GetAssemblies());
             obj.AddSingleton<RequestEventHandlers>();
 
             return obj;
         }
+        public static ServiceCollection AddRequestPlugin(this ServiceCollection obj, Assembly[] assemblys)
+        {
+            var types = assemblys.SelectMany(c => c.GetTypes())
+                 .Where(c => c.GetInterfaces().Contains(typeof(IRequestExcutePlugin)));
+            foreach (var item in types)
+            {
+                obj.AddSingleton(item);
+            }
+            return obj;
+        }
+
         public static ServiceProvider UseRequestPlugin(this ServiceProvider obj)
         {
-            obj.GetService<RequestEventHandlers>().LoadPlugins();
+            obj.UseRequestPlugin(AppDomain.CurrentDomain.GetAssemblies());
+            return obj;
+        }
+
+        public static ServiceProvider UseRequestPlugin(this ServiceProvider obj, Assembly[] assemblys)
+        {
+            obj.GetService<RequestEventHandlers>().LoadPlugins(assemblys);
             return obj;
         }
     }

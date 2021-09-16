@@ -30,7 +30,6 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
             obj.AddSingleton<TcpForwardServer>();
             obj.AddSingleton<TcpForwardHelper>();
             obj.AddSingleton<TcpForwardEventHandles>();
-            obj.AddSingleton(typeof(TcpForwardPlugin));
             return obj;
         }
         public static ServiceProvider UseTcpForwardPlugin(this ServiceProvider obj)

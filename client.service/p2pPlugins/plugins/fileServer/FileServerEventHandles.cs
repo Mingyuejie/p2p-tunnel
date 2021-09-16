@@ -10,34 +10,52 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace client.service.p2pPlugins.plugins.fileServer
 {
     public class FileServerEventHandles
     {
-        private Dictionary<FileServerCmdTypes, IFileServerPlugin[]> plugins = null;
+        private Dictionary<FileServerCmdTypes, IFileServerPlugin> plugins = null;
 
         private readonly P2PEventHandles p2PEventHandles;
         private readonly RequestEventHandlers requestEventHandlers;
         private readonly RegisterState registerState;
+        private readonly ServiceProvider serviceProvider;
 
-        public FileServerEventHandles(P2PEventHandles p2PEventHandles, RequestEventHandlers requestEventHandlers, RegisterState registerState)
+        public FileServerEventHandles(P2PEventHandles p2PEventHandles, RequestEventHandlers requestEventHandlers,
+            RegisterState registerState, ServiceProvider serviceProvider)
         {
             this.p2PEventHandles = p2PEventHandles;
             this.requestEventHandlers = requestEventHandlers;
             this.registerState = registerState;
-
-           
+            this.serviceProvider = serviceProvider;
         }
 
         public void LoadPlugins()
         {
-            plugins = AppDomain.CurrentDomain.GetAssemblies()
-               .SelectMany(c => c.GetTypes())
-               .Where(c => c.GetInterfaces().Contains(typeof(IFileServerPlugin)))
-               .Select(c => (IFileServerPlugin)Program.serviceProvider.GetService(c)).GroupBy(c => c.Type)
-               .ToDictionary(g => g.Key, g => g.ToArray());
+            LoadPlugins(AppDomain.CurrentDomain.GetAssemblies());
+        }
+
+        public void LoadPlugins(Assembly[] assemblys)
+        {
+            if (plugins == null)
+            {
+                plugins = new Dictionary<FileServerCmdTypes, IFileServerPlugin>();
+            }
+
+            var types = assemblys
+                .SelectMany(c => c.GetTypes())
+                .Where(c => c.GetInterfaces().Contains(typeof(IFileServerPlugin)));
+            foreach (var item in types)
+            {
+                IFileServerPlugin obj = (IFileServerPlugin)serviceProvider.GetService(item);
+                if (!plugins.ContainsKey(obj.Type))
+                {
+                    plugins.Add(obj.Type, obj);
+                }
+            }
         }
 
         public event EventHandler<TcpFileMessageEventArg> OnTcpFileServerHandler;
@@ -45,14 +63,8 @@ namespace client.service.p2pPlugins.plugins.fileServer
         {
             if (plugins.ContainsKey(arg.Data.CmdType))
             {
-                IFileServerPlugin[] plugin = plugins[arg.Data.CmdType];
-                if (plugin.Length > 0)
-                {
-                    for (int i = 0; i < plugin.Length; i++)
-                    {
-                        plugin[i].Excute(arg);
-                    }
-                }
+                IFileServerPlugin plugin = plugins[arg.Data.CmdType];
+                plugin?.Excute(arg);
             }
 
             OnTcpFileServerHandler?.Invoke(this, arg);

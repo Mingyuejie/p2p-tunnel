@@ -10,29 +10,48 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 
 namespace client.service.p2pPlugins
 {
     public class P2PEventHandles
     {
-        private Dictionary<P2PDataTypes, IP2PPlugin[]> plugins = null;
+        private Dictionary<P2PDataTypes, IP2PPlugin> plugins = null;
 
         private readonly EventHandlers eventHandlers;
         private readonly RegisterState registerState;
+        private readonly ServiceProvider serviceProvider;
 
-        public P2PEventHandles(EventHandlers eventHandlers, RegisterState registerState)
+        public P2PEventHandles(EventHandlers eventHandlers, RegisterState registerState, ServiceProvider serviceProvider)
         {
             this.eventHandlers = eventHandlers;
             this.registerState = registerState;
+            this.serviceProvider = serviceProvider;
         }
 
         public void LoadPlugins()
         {
-            plugins = AppDomain.CurrentDomain.GetAssemblies()
+            LoadPlugins(AppDomain.CurrentDomain.GetAssemblies());
+        }
+
+        public void LoadPlugins(Assembly[] assemblys)
+        {
+            if(plugins == null)
+            {
+                plugins = new Dictionary<P2PDataTypes, IP2PPlugin>();
+            }
+
+            var types = assemblys
                 .SelectMany(c => c.GetTypes())
-                .Where(c => c.GetInterfaces().Contains(typeof(IP2PPlugin)))
-                .Select(c => (IP2PPlugin)Program.serviceProvider.GetService(c)).GroupBy(c => c.Type)
-                .ToDictionary(g => g.Key, g => g.ToArray());
+                .Where(c => c.GetInterfaces().Contains(typeof(IP2PPlugin)));
+            foreach (var item in types)
+            {
+                IP2PPlugin obj = (IP2PPlugin)serviceProvider.GetService(item);
+                if (!plugins.ContainsKey(obj.Type))
+                {
+                    plugins.Add(obj.Type, obj);
+                }
+            }
         }
 
         /// <summary>
@@ -45,14 +64,8 @@ namespace client.service.p2pPlugins
 
             if (plugins.ContainsKey(type))
             {
-                IP2PPlugin[] plugin = plugins[type];
-                if (plugin.Length > 0)
-                {
-                    for (int i = 0; i < plugin.Length; i++)
-                    {
-                        plugin[i].Excute(arg);
-                    }
-                }
+                IP2PPlugin plugin = plugins[type];
+                plugin?.Excute(arg);
             }
 
             OnP2PHandler?.Invoke(this, arg);
@@ -68,14 +81,7 @@ namespace client.service.p2pPlugins
 
             if (plugins.ContainsKey(type))
             {
-                IP2PPlugin[] plugin = plugins[type];
-                if (plugin.Length > 0)
-                {
-                    for (int i = 0; i < plugin.Length; i++)
-                    {
-                        plugin[i].Excute(arg);
-                    }
-                }
+                plugins[type]?.Excute(arg);
             }
 
             OnP2PTcpHandler?.Invoke(this, arg);

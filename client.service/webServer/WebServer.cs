@@ -23,7 +23,7 @@ namespace client.service.webServer
         public void Start()
         {
             HttpListener http = new HttpListener();
-            http.Prefixes.Add($"http://{config.Web.Ip}:{config.Web.Port}/");
+            http.Prefixes.Add($"http://{config.Web.BindIp}:{config.Web.Port}/");
             http.Start();
 
             _ = Task.Factory.StartNew(() =>
@@ -42,7 +42,7 @@ namespace client.service.webServer
                         //默认页面
                         if (path == "/") path = "index.html";
 
-                        string fullPath = Path.Join(config.Web.Path, path);
+                        string fullPath = Path.Join(config.Web.Root, path);
                         if (File.Exists(fullPath))
                         {
                             var bytes = File.ReadAllBytes(fullPath);

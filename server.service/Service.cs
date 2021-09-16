@@ -97,25 +97,25 @@ namespace server.service
         public static ServiceCollection AddPlugin(this ServiceCollection obj)
         {
             obj.AddSingleton<IClientRegisterCache, ClientRegisterCache>();
-            obj.AddSingleton<ExitPlugin>();
-            obj.AddSingleton<HeartPlugin>();
-            obj.AddSingleton<RegisterPlugin>();
-            obj.AddSingleton<ResetPlugin>();
-            obj.AddSingleton<PunchHolePlugin>();
-            obj.AddSingleton<RawPacketPlugin>();
+
+            var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(c => c.GetTypes())
+                 .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
+            foreach (var item in types)
+            {
+                obj.AddSingleton(item);
+            }
 
             return obj;
         }
 
         public static ServiceProvider UsePlugin(this ServiceProvider obj)
         {
-            Plugin.LoadPlugin(obj.GetService<ExitPlugin>());
-            Plugin.LoadPlugin(obj.GetService<HeartPlugin>());
-            Plugin.LoadPlugin(obj.GetService<RegisterPlugin>());
-            Plugin.LoadPlugin(obj.GetService<ResetPlugin>());
-            Plugin.LoadPlugin(obj.GetService<PunchHolePlugin>());
-            Plugin.LoadPlugin(obj.GetService<RawPacketPlugin>());
-
+            var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(c => c.GetTypes())
+                 .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
+            foreach (var item in types)
+            {
+                Plugin.LoadPlugin((IPlugin)obj.GetService(item));
+            }
 
             return obj;
         }

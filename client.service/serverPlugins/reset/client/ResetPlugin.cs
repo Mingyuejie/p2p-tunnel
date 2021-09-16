@@ -1,4 +1,5 @@
-﻿using client.service.config;
+﻿using client.service.clientService;
+using client.service.config;
 using client.service.serverPlugins.clients;
 using client.service.serverPlugins.reset;
 using common;
@@ -11,7 +12,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace client.service.clientService.plugins
+namespace client.service.serverPlugins.reset.client
 {
     public class ResetPlugin : IClientServicePlugin
     {

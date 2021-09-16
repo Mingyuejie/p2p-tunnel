@@ -8,6 +8,8 @@ using server.model;
 using server.models;
 using server.plugin;
 using System;
+using System.Linq;
+using System.Reflection;
 
 namespace client.service.p2pPlugins
 {
@@ -89,7 +91,8 @@ namespace client.service.p2pPlugins
     {
         public static ServiceCollection AddP2PPlugin(this ServiceCollection obj)
         {
-            obj.AddSingleton<P2PPlugin>();
+            obj.AddP2PPlugin(AppDomain.CurrentDomain.GetAssemblies());
+
             obj.AddSingleton<P2PEventHandles>();
             obj.AddTcpForwardPlugin();
             obj.AddFileServerPlugin();
@@ -97,13 +100,31 @@ namespace client.service.p2pPlugins
 
             return obj;
         }
+
+        public static ServiceCollection AddP2PPlugin(this ServiceCollection obj, Assembly[] assemblys)
+        {
+            var types = assemblys.SelectMany(c => c.GetTypes())
+                 .Where(c => c.GetInterfaces().Contains(typeof(IP2PPlugin)));
+            foreach (var item in types)
+            {
+                obj.AddSingleton(item);
+            }
+            return obj;
+        }
+
         public static ServiceProvider UseP2PPlugin(this ServiceProvider obj)
         {
-            Plugin.LoadPlugin(obj.GetService<P2PPlugin>());
             obj.UseFileServerPlugin();
             obj.UseTcpForwardPlugin();
             obj.UseRequestPlugin();
-            obj.GetService<P2PEventHandles>().LoadPlugins();
+
+            obj.UseP2PPlugin(AppDomain.CurrentDomain.GetAssemblies());
+            return obj;
+        }
+
+        public static ServiceProvider UseP2PPlugin(this ServiceProvider obj, Assembly[] assemblys)
+        {
+            obj.GetService<P2PEventHandles>().LoadPlugins(assemblys);
             return obj;
         }
     }

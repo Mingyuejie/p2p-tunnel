@@ -1,5 +1,8 @@
 ﻿using common.extends;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Linq;
+using System.Reflection;
 
 namespace client.service.p2pPlugins.plugins.fileServer
 {
@@ -34,20 +37,34 @@ namespace client.service.p2pPlugins.plugins.fileServer
     {
         public static ServiceCollection AddFileServerPlugin(this ServiceCollection obj)
         {
-            obj.AddSingleton<FileRequestPlugin>();
+            obj.AddFileServerPlugin(AppDomain.CurrentDomain.GetAssemblies());
 
-            obj.AddSingleton<FileServerDownloadPlugin>();
-            obj.AddSingleton<FileServerFilePlugin>();
-            obj.AddSingleton<FileServerProgressPlugin>();
-            obj.AddSingleton<FileServerPlugin>();
             obj.AddSingleton<FileServerHelper>();
             obj.AddSingleton<FileServerEventHandles>();
 
             return obj;
         }
+
+        public static ServiceCollection AddFileServerPlugin(this ServiceCollection obj, Assembly[] assemblys)
+        {
+            var types = assemblys.SelectMany(c => c.GetTypes())
+                 .Where(c => c.GetInterfaces().Contains(typeof(IFileServerPlugin)));
+            foreach (var item in types)
+            {
+                obj.AddSingleton(item);
+            }
+            return obj;
+        }
+
         public static ServiceProvider UseFileServerPlugin(this ServiceProvider obj)
         {
-            obj.GetService<FileServerEventHandles>().LoadPlugins();
+            obj.UseFileServerPlugin(AppDomain.CurrentDomain.GetAssemblies());
+            return obj;
+        }
+
+        public static ServiceProvider UseFileServerPlugin(this ServiceProvider obj, Assembly[] assemblys)
+        {
+            obj.GetService<FileServerEventHandles>().LoadPlugins(assemblys);
             return obj;
         }
     }

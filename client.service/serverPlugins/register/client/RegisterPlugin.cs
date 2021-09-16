@@ -1,9 +1,10 @@
-﻿using client.service.config;
+﻿using client.service.clientService;
+using client.service.config;
 using client.service.serverPlugins.register;
 using common;
 using System.Threading.Tasks;
 
-namespace client.service.clientService.plugins
+namespace client.service.serverPlugins.register.client
 {
     public class RegisterPlugin : IClientServicePlugin
     {

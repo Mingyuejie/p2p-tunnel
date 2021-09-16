@@ -132,12 +132,12 @@ namespace client.service.serverPlugins.register
 
                         //TCP 本地开始监听
                         registerState.LocalInfo.TcpPort = Helper.GetRandomPort(new List<int> { registerState.LocalInfo.Port });
-                        tcpServer.Start(registerState.LocalInfo.TcpPort, registerState.LocalInfo.BindIp);
+                        tcpServer.Start(registerState.LocalInfo.TcpPort, config.Client.BindIp);
 
                         //TCP 连接服务器
                         registerState.TcpSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                         registerState.TcpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        registerState.TcpSocket.Bind(new IPEndPoint(registerState.LocalInfo.BindIp, registerState.LocalInfo.TcpPort));
+                        registerState.TcpSocket.Bind(new IPEndPoint(config.Client.BindIp, registerState.LocalInfo.TcpPort));
                         registerState.TcpSocket.Connect(new IPEndPoint(IPAddress.Parse(config.Server.Ip), config.Server.TcpPort));
                         registerState.LocalInfo.LocalIp = IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString();
                         tcpServer.BindReceive(registerState.TcpSocket, (code) =>
@@ -155,7 +155,7 @@ namespace client.service.serverPlugins.register
                             registerState.LocalInfo.Mac = mac = Helper.GetMacAddress(IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString());
                         }
                         //UDP 开始监听
-                        udpServer.Start(registerState.LocalInfo.Port, registerState.LocalInfo.BindIp);
+                        udpServer.Start(registerState.LocalInfo.Port, config.Client.BindIp);
                         registerState.UdpAddress = new IPEndPoint(IPAddress.Parse(config.Server.Ip), config.Server.Port);
 
                         //注册
@@ -263,9 +263,6 @@ namespace client.service.serverPlugins.register
         /// 本地TCP端口
         /// </summary>
         public int TcpPort { get; set; } = 0;
-
-        [JsonIgnore]
-        public IPAddress BindIp { get; set; } = IPAddress.Any;
 
         public string LocalIp { get; set; } = string.Empty;
 

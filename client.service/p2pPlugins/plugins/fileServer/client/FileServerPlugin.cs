@@ -1,14 +1,11 @@
-﻿using client.service.config;
-using client.service.p2pPlugins.plugins.fileServer;
-using client.service.serverPlugins.clients;
-using common;
+﻿using client.service.clientService;
+using client.service.config;
 using common.extends;
 using System;
 using System.Collections.Generic;
-using System.Net.Sockets;
 using System.Threading.Tasks;
 
-namespace client.service.clientService.plugins
+namespace client.service.p2pPlugins.plugins.fileServer.client
 {
 
     public class FileServerPlugin : IClientServicePlugin

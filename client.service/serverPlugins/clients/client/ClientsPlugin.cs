@@ -1,10 +1,11 @@
-﻿using client.service.punchHolePlugins;
+﻿using client.service.clientService;
+using client.service.punchHolePlugins;
 using client.service.punchHolePlugins.plugins.tcp;
 using client.service.serverPlugins.clients;
 using common.extends;
 using System.Collections.Generic;
 
-namespace client.service.clientService.plugins
+namespace client.service.serverPlugins.clients.client
 {
     public class ClientsPlugin : IClientServicePlugin
     {

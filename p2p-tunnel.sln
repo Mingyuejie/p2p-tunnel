@@ -19,9 +19,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "rdp.viewer", "rdpViewer\rdp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "client.service", "client.service\client.service.csproj", "{077423D4-10DA-400E-AD01-F48883777205}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "mstsc.manager", "mstsc.manager\mstsc.manager.csproj", "{3D585E46-04DD-4747-BF3A-076C56558D84}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "mstsc.manager", "mstsc.manager\mstsc.manager.csproj", "{3D585E46-04DD-4747-BF3A-076C56558D84}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "rdp.desktop", "rdp.desktop\rdp.desktop.csproj", "{6CEDD250-5841-4A92-9553-08498A3578F9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "rdp.desktop", "rdp.desktop\rdp.desktop.csproj", "{6CEDD250-5841-4A92-9553-08498A3578F9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

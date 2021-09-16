@@ -1,4 +1,5 @@
-﻿using client.service.events;
+﻿using client.service.config;
+using client.service.events;
 using client.service.serverPlugins.register;
 using common;
 using common.extends;
@@ -20,12 +21,15 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
         private readonly PunchHoleEventHandles punchHoldEventHandles;
         private readonly ITcpServer tcpServer;
         private readonly RegisterState registerState;
+        private readonly Config config;
 
-        public PunchHoleTcpNutssBEventHandles(PunchHoleEventHandles punchHoldEventHandles, ITcpServer tcpServer, RegisterState registerState)
+        public PunchHoleTcpNutssBEventHandles(PunchHoleEventHandles punchHoldEventHandles, ITcpServer tcpServer,
+            RegisterState registerState, Config config)
         {
             this.punchHoldEventHandles = punchHoldEventHandles;
             this.tcpServer = tcpServer;
             this.registerState = registerState;
+            this.config = config;
         }
 
         private Socket TcpServer => registerState.TcpSocket;
@@ -106,7 +110,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
                     {
                         targetSocket.Ttl = (short)(RouteLevel + 2);
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.BindIp, ClientTcpPort));
+                        targetSocket.Bind(new IPEndPoint(config.Client.BindIp, ClientTcpPort));
                         targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2));
                     }
                     catch (Exception)
@@ -169,7 +173,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
                     try
                     {
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.BindIp, ClientTcpPort));
+                        targetSocket.Bind(new IPEndPoint(config.Client.BindIp, ClientTcpPort));
                         Tuple<string, int> ip = index >= ips.Count ? ips[ips.Count - 1] : ips[index];
 
                         IAsyncResult result = targetSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2), null, null);
@@ -296,7 +300,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssb
                 using Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 targetSocket.Ttl = (short)(RouteLevel + 5);
                 targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.BindIp, ClientTcpPort));
+                targetSocket.Bind(new IPEndPoint(config.Client.BindIp, ClientTcpPort));
                 targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(e.Data.Ip), e.Data.TcpPort));
                 System.Threading.Thread.Sleep(500);
                 targetSocket.SafeClose();

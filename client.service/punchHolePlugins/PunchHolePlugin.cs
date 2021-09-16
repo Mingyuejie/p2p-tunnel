@@ -10,6 +10,8 @@ using ProtoBuf;
 using server.model;
 using server.plugin;
 using System;
+using System.Linq;
+using System.Reflection;
 
 namespace client.service.punchHolePlugins
 {
@@ -102,26 +104,31 @@ namespace client.service.punchHolePlugins
     {
         public static ServiceCollection AddPunchHolePlugin(this ServiceCollection obj)
         {
-            obj.AddSingleton<PunchHolePlugin>();
-            obj.AddSingleton<ReversePlugin>();
+            obj.AddPunchHolePlugin(AppDomain.CurrentDomain.GetAssemblies());
+
             obj.AddSingleton<PunchHoleEventHandles>();
-
             obj.AddSingleton<IPunchHoleUdp, PunchHoleUdpEventHandles>();
-            obj.AddSingleton<PunchHoleUdpPlugin>();
-
-
-            obj.AddSingleton<PunchHoleTcpNutssAPlugin>();
-            obj.AddSingleton<PunchHoleTcpNutssBPlugin>();
-
             //IP欺骗 
             //obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssAEventHandles>();
             //端口复用
             obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssBEventHandles>();
             return obj;
         }
+
+        public static ServiceCollection AddPunchHolePlugin(this ServiceCollection obj, Assembly[] assemblys)
+        {
+            var types = assemblys.SelectMany(c => c.GetTypes())
+                 .Where(c => c.GetInterfaces().Contains(typeof(IPunchHolePlugin)));
+            foreach (var item in types)
+            {
+                obj.AddSingleton(item);
+            }
+            return obj;
+        }
+
+
         public static ServiceProvider UsePunchHolePlugin(this ServiceProvider obj)
         {
-            Plugin.LoadPlugin(obj.GetService<PunchHolePlugin>());
             obj.GetService<PunchHoleEventHandles>().LoadPlugins();
             return obj;
         }

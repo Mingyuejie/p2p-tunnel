@@ -31,7 +31,7 @@ namespace client.service.config
         /// </summary>
         public FileServerConfig FileServer { get; set; } = new FileServerConfig();
 
-       
+
         public static Config ReadConfig()
         {
             Config config = File.ReadAllText("appsettings.json").DeJson<Config>();
@@ -57,16 +57,35 @@ namespace client.service.config
     /// </summary>
     public class WebConfig
     {
-        public string Ip { get; set; } = IPAddress.Any.ToString();
         public int Port { get; set; } = 8098;
-        public string Path { get; set; } = "./web";
+        public string Root { get; set; } = "./web";
+        public bool UseIpv6 { get; set; } = false;
+
+        [JsonIgnore]
+        public IPAddress BindIp
+        {
+            get
+            {
+                return UseIpv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback;
+            }
+        }
 
     }
 
     public class WebsocketConfig
     {
-        public string Ip { get; set; } = IPAddress.Any.ToString();
         public int Port { get; set; } = 8098;
+
+        public bool UseIpv6 { get; set; } = false;
+
+        [JsonIgnore]
+        public IPAddress BindIp
+        {
+            get
+            {
+                return UseIpv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback;
+            }
+        }
     }
 
     /// <summary>
@@ -90,6 +109,17 @@ namespace client.service.config
         /// 上报MAC地址
         /// </summary>
         public bool UseMac { get; set; } = false;
+
+        public bool UseIpv6 { get; set; } = false;
+
+        [JsonIgnore]
+        public IPAddress BindIp
+        {
+            get
+            {
+                return UseIpv6 ? IPAddress.IPv6Any : IPAddress.Any;
+            }
+        }
     }
 
     /// <summary>
@@ -98,6 +128,7 @@ namespace client.service.config
     public class ServerConfig
     {
         public string Ip { get; set; } = string.Empty;
+
         public int Port { get; set; } = 8099;
         public int TcpPort { get; set; } = 8000;
     }

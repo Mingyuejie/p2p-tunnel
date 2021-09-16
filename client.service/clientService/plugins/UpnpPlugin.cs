@@ -171,7 +171,6 @@ namespace client.service.clientService.plugins
     {
         public static ServiceCollection AddUpnpPlugin(this ServiceCollection obj)
         {
-            obj.AddSingleton<UpnpPlugin>();
             obj.AddSingleton<UpnpHelper>();
             return obj;
         }

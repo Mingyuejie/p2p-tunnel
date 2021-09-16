@@ -1,4 +1,5 @@
-﻿using client.service.events;
+﻿using client.service.config;
+using client.service.events;
 using client.service.serverPlugins.clients;
 using client.service.serverPlugins.register;
 using common;
@@ -26,13 +27,16 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssa
         private readonly EventHandlers eventHandlers;
         private readonly ITcpServer tcpServer;
         private readonly RegisterState registerState;
+        private readonly Config  config;
 
-        public PunchHoleTcpNutssAEventHandles(EventHandlers eventHandlers, PunchHoleEventHandles punchHoldEventHandles, ITcpServer tcpServer, RegisterState registerState)
+        public PunchHoleTcpNutssAEventHandles(EventHandlers eventHandlers, PunchHoleEventHandles punchHoldEventHandles,
+            ITcpServer tcpServer, RegisterState registerState, Config config)
         {
             this.eventHandlers = eventHandlers;
             this.punchHoldEventHandles = punchHoldEventHandles;
             this.tcpServer = tcpServer;
             this.registerState = registerState;
+            this.config = config;
         }
 
         private Socket TcpServer => registerState.TcpSocket;
@@ -159,7 +163,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssa
                     {
                         targetSocket.Ttl = (short)(RouteLevel + 2);
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        targetSocket.Bind(new IPEndPoint(registerState.LocalInfo.BindIp, ClientTcpPort));
+                        targetSocket.Bind(new IPEndPoint(config.Client.BindIp, ClientTcpPort));
 
                         foreach (var device in LibPcapLiveDeviceList.Instance)
                         {

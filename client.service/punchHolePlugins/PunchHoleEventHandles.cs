@@ -12,31 +12,49 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 
 namespace client.service.punchHolePlugins
 {
     public class PunchHoleEventHandles
     {
-        private Dictionary<PunchHoleTypes, IPunchHolePlugin[]> plugins = null;
+        private Dictionary<PunchHoleTypes, IPunchHolePlugin> plugins = null;
 
         private readonly EventHandlers eventHandlers;
         private readonly RegisterState registerState;
+        private readonly ServiceProvider serviceProvider;
 
-        public PunchHoleEventHandles(EventHandlers eventHandlers, RegisterState registerState)
+        public PunchHoleEventHandles(EventHandlers eventHandlers, RegisterState registerState, ServiceProvider serviceProvider)
         {
             this.eventHandlers = eventHandlers;
             this.registerState = registerState;
+            this.serviceProvider = serviceProvider;
         }
 
         private Socket TcpServer => registerState.TcpSocket;
 
         public void LoadPlugins()
         {
-            plugins = AppDomain.CurrentDomain.GetAssemblies()
+            LoadPlugins(AppDomain.CurrentDomain.GetAssemblies());
+        }
+        public void LoadPlugins(Assembly[] assemblys)
+        {
+            if (plugins == null)
+            {
+                plugins = new Dictionary<PunchHoleTypes, IPunchHolePlugin>();
+            }
+
+            var types = assemblys
                 .SelectMany(c => c.GetTypes())
-                .Where(c => c.GetInterfaces().Contains(typeof(IPunchHolePlugin)))
-                .Where(c=>c != null).Select(c => (IPunchHolePlugin)Program.serviceProvider.GetService(c)).GroupBy(c => c.Type)
-                .ToDictionary(g => g.Key, g => g.ToArray());
+                .Where(c => c.GetInterfaces().Contains(typeof(IPunchHolePlugin)));
+            foreach (var item in types)
+            {
+                IPunchHolePlugin obj = (IPunchHolePlugin)serviceProvider.GetService(item);
+                if (!plugins.ContainsKey(obj.Type))
+                {
+                    plugins.Add(obj.Type, obj);
+                }
+            }
         }
 
         public event EventHandler<OnPunchHoleTcpArg> OnPunchHoleHandler;
@@ -46,14 +64,8 @@ namespace client.service.punchHolePlugins
 
             if (plugins.ContainsKey(type))
             {
-                IPunchHolePlugin[] plugin = plugins[type];
-                if (plugin.Length > 0)
-                {
-                    for (int i = 0; i < plugin.Length; i++)
-                    {
-                        plugin[i].Excute(arg);
-                    }
-                }
+                IPunchHolePlugin plugin = plugins[type];
+                plugin?.Excute(arg);
             }
 
             OnPunchHoleHandler?.Invoke(this, arg);
@@ -69,14 +81,8 @@ namespace client.service.punchHolePlugins
 
             if (plugins.ContainsKey(type))
             {
-                IPunchHolePlugin[] plugin = plugins[type];
-                if (plugin.Length > 0)
-                {
-                    for (int i = 0; i < plugin.Length; i++)
-                    {
-                        plugin[i].Excute(arg);
-                    }
-                }
+                IPunchHolePlugin plugin = plugins[type];
+                plugin?.Excute(arg);
             }
 
             OnPunchHoleTcpHandler?.Invoke(this, arg);

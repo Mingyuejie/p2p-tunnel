@@ -4,6 +4,7 @@ using client.service.p2pPlugins.plugins.fileServer;
 using client.service.p2pPlugins.plugins.forward.tcp;
 using client.service.serverPlugins.clients;
 using client.service.serverPlugins.register;
+using client.service.serverPlugins.register.client;
 using common;
 using common.extends;
 using Fleck;
@@ -11,20 +12,17 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using FileServerPlugin = client.service.clientService.plugins.FileServerPlugin;
-using TcpForwardPlugin = client.service.clientService.plugins.TcpForwardPlugin;
 
 namespace client.service.clientService
 {
     public interface IClientServer
     {
         public void Start();
+        public void LoadPlugins(Assembly[] assemblys);
     }
 
     public class ClientServer : IClientServer
@@ -38,22 +36,31 @@ namespace client.service.clientService
         private readonly FileServerHelper fileServerHelper;
         private readonly ClientsHelper clientsHelper;
         private readonly RegisterState registerState;
-       
-        public ClientServer(Config config, TcpForwardHelper tcpForwardHelper, FileServerHelper fileServerHelper, RegisterState registerState, ClientsHelper clientsHelper)
+        private readonly ServiceProvider serviceProvider;
+
+        public ClientServer(Config config, TcpForwardHelper tcpForwardHelper,
+            FileServerHelper fileServerHelper, RegisterState registerState,
+            ClientsHelper clientsHelper, ServiceProvider serviceProvider)
         {
             this.config = config;
             this.tcpForwardHelper = tcpForwardHelper;
             this.fileServerHelper = fileServerHelper;
             this.registerState = registerState;
             this.clientsHelper = clientsHelper;
+            this.serviceProvider = serviceProvider;
 
-            var types = AppDomain.CurrentDomain.GetAssemblies()
+            Notify();
+        }
+
+        public void LoadPlugins(Assembly[] assemblys)
+        {
+            var types = assemblys
                 .SelectMany(c => c.GetTypes())
                 .Where(c => c.GetInterfaces().Contains(typeof(IClientServicePlugin)));
             foreach (var item in types)
             {
                 string path = item.Name.Replace("Plugin", "");
-                object obj = Program.serviceProvider.GetService(item);
+                object obj = serviceProvider.GetService(item);
                 foreach (var method in item.GetMethods())
                 {
                     string key = $"{path}/{method.Name}".ToLower();
@@ -63,13 +70,11 @@ namespace client.service.clientService
                     }
                 }
             }
-
-            Notify();
         }
 
         public void Start()
         {
-            WebSocketServer server = new($"ws://{config.Websocket.Ip}:{config.Websocket.Port}");
+            WebSocketServer server = new($"ws://{config.Websocket.BindIp}:{config.Websocket.Port}");
             server.RestartAfterListenError = true;
             FleckLog.LogAction = (level, message, ex) =>
             {
@@ -270,26 +275,34 @@ namespace client.service.clientService
     {
         public static ServiceCollection AddClientServer(this ServiceCollection obj)
         {
-            obj.AddSingleton<ClientsPlugin>();
-            obj.AddSingleton<ConfigPlugin>();
-            obj.AddSingleton<FileServerPlugin>();
-            obj.AddSingleton<RegisterPlugin>();
-            obj.AddSingleton<ResetPlugin>();
-            obj.AddSingleton<TcpForwardPlugin>();
-            obj.AddSingleton<WakeUpPlugin>();
-
+            obj.AddClientServer(AppDomain.CurrentDomain.GetAssemblies());
             obj.AddSingleton<IClientServer, ClientServer>();
-
             obj.AddUpnpPlugin();
 
             return obj;
         }
+        public static ServiceCollection AddClientServer(this ServiceCollection obj, Assembly[] assemblys)
+        {
+            var types = assemblys.SelectMany(c => c.GetTypes())
+                 .Where(c => c.GetInterfaces().Contains(typeof(IClientServicePlugin)));
+            foreach (var item in types)
+            {
+                obj.AddSingleton(item);
+            }
+            return obj;
+        }
+
         public static ServiceProvider UseClientServer(this ServiceProvider obj)
         {
+            obj.UseClientServer(AppDomain.CurrentDomain.GetAssemblies());
             obj.GetService<IClientServer>().Start();
-
             obj.UseUpnpPlugin();
+            return obj;
+        }
 
+        public static ServiceProvider UseClientServer(this ServiceProvider obj, Assembly[] assemblys)
+        {
+            obj.GetService<IClientServer>().LoadPlugins(assemblys);
             return obj;
         }
     }

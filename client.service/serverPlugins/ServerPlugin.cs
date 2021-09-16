@@ -8,6 +8,9 @@ using client.service.serverPlugins.reset;
 using Microsoft.Extensions.DependencyInjection;
 using server;
 using server.plugin;
+using System;
+using System.Linq;
+using System.Reflection;
 
 namespace client.service.serverPlugins
 {
@@ -15,25 +18,19 @@ namespace client.service.serverPlugins
     {
         public static ServiceCollection AddServerPlugin(this ServiceCollection obj)
         {
+            obj.AddServerPlugin(AppDomain.CurrentDomain.GetAssemblies());
+
             obj.AddSingleton<ITcpServer, TCPServer>();
             obj.AddSingleton<IUdpServer, UDPServer>();
             obj.AddSingleton<EventHandlers>();
 
             obj.AddSingleton<ResetEventHandles>();
-            obj.AddSingleton<ResetPlugin>();
-
             obj.AddSingleton<HeartEventHandles>();
-            obj.AddSingleton<HeartPlugin>();
-
             obj.AddSingleton<ClientsHelper>();
             obj.AddSingleton<ClientsEventHandles>();
-            obj.AddSingleton<ServerSendClientsPlugin>();
-
             obj.AddSingleton<RegisterEventHandles>();
             obj.AddSingleton<RegisterHelper>();
             obj.AddSingleton<RegisterState>();
-            obj.AddSingleton<RegisterResultPlugin>();
-
 
             obj.AddP2PPlugin();
             obj.AddPunchHolePlugin();
@@ -41,18 +38,37 @@ namespace client.service.serverPlugins
             return obj;
         }
 
+        public static ServiceCollection AddServerPlugin(this ServiceCollection obj, Assembly[] assemblys)
+        {
+            var types = assemblys.SelectMany(c => c.GetTypes())
+                 .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
+            foreach (var item in types)
+            {
+                obj.AddSingleton(item);
+            }
+            return obj;
+        }
+
         public static ServiceProvider UseServerPlugin(this ServiceProvider obj)
         {
-            Plugin.LoadPlugin(obj.GetService<ResetPlugin>());
-            Plugin.LoadPlugin(obj.GetService<RegisterResultPlugin>());
-            Plugin.LoadPlugin(obj.GetService<HeartPlugin>());
-            Plugin.LoadPlugin(obj.GetService<ServerSendClientsPlugin>());
+            obj.UseServerPlugin(AppDomain.CurrentDomain.GetAssemblies());
 
             obj.GetService<ClientsHelper>();
-            
+
             obj.UseP2PPlugin();
             obj.UsePunchHolePlugin();
 
+            return obj;
+        }
+
+        public static ServiceProvider UseServerPlugin(this ServiceProvider obj, Assembly[] assemblys)
+        {
+            var types = assemblys.SelectMany(c => c.GetTypes())
+                 .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
+            foreach (var item in types)
+            {
+                Plugin.LoadPlugin((IPlugin)obj.GetService(item));
+            }
             return obj;
         }
     }
