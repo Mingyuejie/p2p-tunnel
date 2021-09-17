@@ -169,7 +169,7 @@ namespace client.service.punchHolePlugins
     public class OnPunchHoleTcpArg
     {
         public PunchHoleModel Data { get; set; }
-        public PluginExcuteModel Packet { get; set; }
+        public PluginParamWrap Packet { get; set; }
     }
 
 

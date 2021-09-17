@@ -18,7 +18,7 @@ namespace server.service.plugins
             this.udpServer = udpServer;
         }
 
-        public bool Excute(PluginExcuteModel data)
+        public bool Excute(PluginParamWrap data)
         {
             ResetModel model = data.Wrap.Content.DeBytes<ResetModel>();
 
@@ -40,7 +40,7 @@ namespace server.service.plugins
 
                     if (data.ServerType == ServerType.UDP)
                     {
-                        udpServer.SendReply(new RecvQueueModel<object>
+                        udpServer.SendReply(new SendMessageWrap<object>
                         {
                             Address = target.Address,
                             TcpCoket = null,
@@ -49,7 +49,7 @@ namespace server.service.plugins
                     }
                     else if (data.ServerType == ServerType.TCP)
                     {
-                        tcpServer.SendReply(new RecvQueueModel<object>
+                        tcpServer.SendReply(new SendMessageWrap<object>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,

@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using static System.Environment;
 
 namespace client.service.p2pPlugins.fileServer
@@ -193,6 +194,16 @@ namespace client.service.p2pPlugins.fileServer
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// 请求文件列表
+        /// </summary>
+        /// <param name="arg"></param>
+        public async Task<FileInfo[]> SendTcpFileList(SendTcpEventArg<FileServerListModel> arg)
+        {
+            arg.Socket = GetSocket(arg.ToId);
+            return await fileServerEventHandles.SendTcpFileList(arg);
         }
 
 

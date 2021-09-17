@@ -27,7 +27,7 @@ namespace client.service.punchHolePlugins
             this.punchHoldEventHandles = punchHoldEventHandles;
         }
 
-        public void Excute(PluginExcuteModel data)
+        public void Excute(PluginParamWrap data)
         {
             PunchHoleModel model = data.Wrap.Content.DeBytes<PunchHoleModel>();
 

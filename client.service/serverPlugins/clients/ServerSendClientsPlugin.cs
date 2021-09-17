@@ -14,7 +14,7 @@ namespace client.service.serverPlugins.clients
             this.clientsEventHandles = clientsEventHandles;
         }
 
-        public void Excute(PluginExcuteModel model)
+        public void Excute(PluginParamWrap model)
         {
             ClientsModel res = model.Wrap.Content.DeBytes<ClientsModel>();
             clientsEventHandles.OnServerSendClients(new OnServerSendClientsEventArg

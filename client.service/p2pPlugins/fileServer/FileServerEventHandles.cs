@@ -146,7 +146,7 @@ namespace client.service.p2pPlugins.fileServer
                     Data = arg.Data.ToBytes()
                 }
             });
-            if (result.Code == ServerResponeCodes.OK)
+            if (result.Code == ServerMessageResponeCodes.OK)
             {
                 return result.Data.DeBytes<FileInfo[]>();
             }
@@ -221,14 +221,14 @@ namespace client.service.p2pPlugins.fileServer
 
     public class TcpEventArg<T> : EventArgs
     {
-        public PluginExcuteModel Packet { get; set; }
+        public PluginParamWrap Packet { get; set; }
         public FileServerModel RawData { get; set; }
         public T Data { get; set; }
     }
 
     public class TcpFileMessageEventArg : EventArgs
     {
-        public PluginExcuteModel Packet { get; set; }
+        public PluginParamWrap Packet { get; set; }
         public FileServerModel Data { get; set; }
     }
 

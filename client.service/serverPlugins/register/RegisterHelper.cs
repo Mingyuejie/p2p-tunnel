@@ -185,7 +185,7 @@ namespace client.service.serverPlugins.register
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.Error(ex.Message);
+                    Logger.Instance.Error(ex+"");
                     tcs.SetResult(new CommonTaskResponseModel<bool> { Data = false, ErrorMsg = ex.Message });
                     registerState.LocalInfo.IsConnecting = false;
                     await registerEventHandles.SendExitMessage();

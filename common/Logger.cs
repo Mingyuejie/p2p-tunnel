@@ -68,7 +68,7 @@ namespace common
             {
                 content = string.Format(content, args);
             }
-            queue.Enqueue(new LoggerModel { Type = LoggerTypes.INFO, Content = content });
+            queue.Enqueue(new LoggerModel { Type = LoggerTypes.DEBUG, Content = content });
         }
 
         public void Info(string content, params object[] args)

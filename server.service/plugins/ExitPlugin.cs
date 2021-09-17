@@ -17,7 +17,7 @@ namespace server.service.plugins
             this.clientRegisterCache = clientRegisterCache;
         }
 
-        public bool Excute(PluginExcuteModel data)
+        public bool Excute(PluginParamWrap data)
         {
             ExitModel model = data.Wrap.Content.DeBytes<ExitModel>();
 

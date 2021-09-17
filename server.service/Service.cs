@@ -59,7 +59,7 @@ namespace server.service
                             //分组里的每个客户端
                             foreach (var client in group.Value)
                             {
-                                tcpserver.SendOnly(new RecvQueueModel<object>
+                                tcpserver.SendOnly(new SendMessageWrap<object>
                                 {
                                     Address = IPEndPoint.Parse(client.Address),
                                     TcpCoket = client.TcpSocket,

@@ -26,7 +26,7 @@ namespace client.service.serverPlugins.clients
 
     public class OnServerSendClientsEventArg : EventArgs
     {
-        public PluginExcuteModel Packet { get; set; }
+        public PluginParamWrap Packet { get; set; }
         public ClientsModel Data { get; set; }
     }
 

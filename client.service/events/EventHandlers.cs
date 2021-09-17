@@ -27,9 +27,9 @@ namespace client.service.events
         /// 发送消息
         /// </summary>
         /// <param name="arg"></param>
-        public async Task<ServerResponeMessageWrap> SendReply<T>(SendEventArg<T> arg)
+        public async Task<ServerMessageResponeWrap> SendReply<T>(SendEventArg<T> arg)
         {
-            return await udpServer.SendReply(new RecvQueueModel<T>
+            return await udpServer.SendReply(new SendMessageWrap<T>
             {
                 Address = arg.Address,
                 Data = arg.Data,
@@ -40,7 +40,7 @@ namespace client.service.events
 
         public void SendOnly<T>(SendEventArg<T> arg)
         {
-            udpServer.SendOnly(new RecvQueueModel<T>
+            udpServer.SendOnly(new SendMessageWrap<T>
             {
                 Address = arg.Address,
                 Data = arg.Data,
@@ -52,9 +52,9 @@ namespace client.service.events
         /// <summary>
         /// 发送消息
         /// </summary>
-        public Task<ServerResponeMessageWrap> SendReplyTcp<T>(SendTcpEventArg<T> arg)
+        public Task<ServerMessageResponeWrap> SendReplyTcp<T>(SendTcpEventArg<T> arg)
         {
-            return tcpServer.SendReply(new RecvQueueModel<T>
+            return tcpServer.SendReply(new SendMessageWrap<T>
             {
                 TcpCoket = arg.Socket,
                 Data = arg.Data,
@@ -65,7 +65,7 @@ namespace client.service.events
 
         public void SendOnlyTcp<T>(SendTcpEventArg<T> arg)
         {
-            tcpServer.SendOnly(new RecvQueueModel<T>
+            tcpServer.SendOnly(new SendMessageWrap<T>
             {
                 TcpCoket = arg.Socket,
                 Data = arg.Data,

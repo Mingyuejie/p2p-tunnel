@@ -57,10 +57,11 @@ namespace client.service.serverPlugins.register
 
             if (UdpServer != null)
             {
-                await udpServer.SendReply(new RecvQueueModel<ExitModel>
+                await udpServer.SendReply(new SendMessageWrap<ExitModel>
                 {
                     Address = arg.Address,
-                    Data = arg.Data
+                    Data = arg.Data,
+                    Path = "exit/excute"
                 });
                 udpServer.Stop();
                 tcpServer.Stop();
@@ -89,8 +90,7 @@ namespace client.service.serverPlugins.register
         public async Task<RegisterResultModel> SendRegisterMessage(RegisterParams param)
         {
             OnSendRegisterMessageHandler?.Invoke(this, param.ClientName);
-            RegisterResultModel res = new() { };
-            ServerResponeMessageWrap result = await eventHandlers.SendReply(new SendEventArg<RegisterModel>
+            ServerMessageResponeWrap result = await eventHandlers.SendReply(new SendEventArg<RegisterModel>
             {
                 Address = UdpServer,
                 Path = "register/excute",
@@ -105,47 +105,39 @@ namespace client.service.serverPlugins.register
 
                 }
             });
-            Logger.Instance.Debug($"UDP注册结果 {result.Code}");
-            if (result.Code == ServerResponeCodes.OK)
+            if (result.Code != ServerMessageResponeCodes.OK)
             {
-                res = result.Data.DeBytes<RegisterResultModel>();
+                return new RegisterResultModel { Code = -1, Msg = result.ErrorMsg };
+            }
 
-                var tcpResult = await eventHandlers.SendReplyTcp(new SendTcpEventArg<RegisterModel>
-                {
-                    Socket = TcpServer,
-                    Path = "register/excute",
-                    Data = new RegisterModel
-                    {
-                        Id = res.Id,
-                        Name = param.ClientName,
-                        GroupId = res.GroupId,
-                        Mac = param.Mac,
-                        LocalTcpPort = param.LocalTcpPort,
-                        LocalUdpPort = param.LocalUdpPort
-                    }
-                });
-                Logger.Instance.Debug($"TCP注册结果 {result.Code}");
-                if (tcpResult.Code == ServerResponeCodes.OK)
-                {
-                    res = tcpResult.Data.DeBytes<RegisterResultModel>();
-                    SendRegisterTcpStateChange(new RegisterTcpEventArg
-                    {
-                        State = true,
-                        Id = res.Id,
-                        ClientName = param.ClientName,
-                        Ip = res.Ip,
-                    });
-                }
-                else
-                {
-                    res.Code = -1; res.Msg = tcpResult.ErrorMsg;
-                }
-            }
-            else
+            var res = result.Data.DeBytes<RegisterResultModel>();
+            var tcpResult = await eventHandlers.SendReplyTcp(new SendTcpEventArg<RegisterModel>
             {
-                res.Code = -1; res.Msg = result.ErrorMsg;
+                Socket = TcpServer,
+                Path = "register/excute",
+                Data = new RegisterModel
+                {
+                    Id = res.Id,
+                    Name = param.ClientName,
+                    GroupId = res.GroupId,
+                    Mac = param.Mac,
+                    LocalTcpPort = param.LocalTcpPort,
+                    LocalUdpPort = param.LocalUdpPort
+                }
+            });
+            if (tcpResult.Code != ServerMessageResponeCodes.OK)
+            {
+                return new RegisterResultModel { Code = -1, Msg = tcpResult.ErrorMsg };
             }
-            return res;
+            SendRegisterTcpStateChange(new RegisterTcpEventArg
+            {
+                State = true,
+                Id = res.Id,
+                ClientName = param.ClientName,
+                Ip = res.Ip,
+            });
+            return tcpResult.Data.DeBytes<RegisterResultModel>();
+
         }
 
         /// <summary>

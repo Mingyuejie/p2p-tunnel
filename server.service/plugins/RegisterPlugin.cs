@@ -5,6 +5,7 @@ using server.plugin;
 using server.service.cache;
 using server.service.model;
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -18,7 +19,7 @@ namespace server.service.plugins
             this.clientRegisterCache = clientRegisterCache;
         }
 
-        public RegisterResultModel Excute(PluginExcuteModel data)
+        public RegisterResultModel Excute(PluginParamWrap data)
         {
             try
             {
@@ -59,18 +60,13 @@ namespace server.service.plugins
                     }
                     else
                     {
-                        return new RegisterResultModel
-                        {
-                            Code = -1,
-                            Msg = "组中已存在同名客户端"
-                        };
+                        data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, "组中已存在同名客户端");
                     }
                 }
                 else if (data.ServerType == ServerType.TCP)
                 {
                     var endpoint = IPEndPoint.Parse(data.TcpSocket.RemoteEndPoint.ToString());
                     var client = clientRegisterCache.Get(model.Id);
-
                     if (endpoint.Address.Equals(client.Address.Address) && clientRegisterCache.UpdateTcpInfo(model.Id, data.TcpSocket, endpoint.Port, model.GroupId))
                     {
                         return new RegisterResultModel
@@ -87,31 +83,17 @@ namespace server.service.plugins
                     }
                     else
                     {
-                        return new RegisterResultModel
-                        {
-                            Code = -1,
-                            Msg = "TCP注册失败"
-                        };
+                        data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, "TCP注册失败");
                     }
-                }
-                else
-                {
-                    return new RegisterResultModel
-                    {
-                        Code = -1,
-                        Msg = "TCP注册失败"
-                    };
                 }
             }
             catch (Exception ex)
             {
-                Logger.Instance.Error(ex.Message);
-                return new RegisterResultModel
-                {
-                    Code = -1,
-                    Msg = ex.Message
-                };
+                Logger.Instance.Error(ex + "");
+                data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, ex.Message);
             }
+
+            return null;
         }
     }
 }

@@ -32,7 +32,7 @@ namespace server.plugin
 
     public class SendCacheModel
     {
-        public TaskCompletionSource<ServerResponeMessageWrap> Tcs { get; set; }
+        public TaskCompletionSource<ServerMessageResponeWrap> Tcs { get; set; }
         public long Time { get; set; } = Helper.GetTimeStamp();
         public long RequestId { get; set; } = 0;
     }

@@ -19,12 +19,12 @@ namespace server
         /// <typeparam name="T"></typeparam>
         /// <param name="msg"></param>
         /// <returns></returns>
-        public Task<ServerResponeMessageWrap> SendReply<T>(RecvQueueModel<T> msg);
+        public Task<ServerMessageResponeWrap> SendReply<T>(SendMessageWrap<T> msg);
         /// <summary>
         /// 只管发
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="msg"></param>
-        public void SendOnly<T>(RecvQueueModel<T> msg);
+        public void SendOnly<T>(SendMessageWrap<T> msg);
     }
 }

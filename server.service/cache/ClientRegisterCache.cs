@@ -100,7 +100,7 @@ namespace server.service.cache
             }
         }
 
-        public bool Verify(long id, PluginExcuteModel data)
+        public bool Verify(long id, PluginParamWrap data)
         {
             RegisterCacheModel model = Get(id);
             if (model != null)

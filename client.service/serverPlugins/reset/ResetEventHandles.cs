@@ -27,7 +27,7 @@ namespace client.service.serverPlugins.reset
         /// 发送重启消息
         /// </summary>
         /// <param name="toid"></param>
-        public async Task<ServerResponeMessageWrap> SendResetMessage(Socket socket, long toid)
+        public async Task<ServerMessageResponeWrap> SendResetMessage(Socket socket, long toid)
         {
             return await eventHandlers.SendReplyTcp(new SendTcpEventArg<ResetModel>
             {

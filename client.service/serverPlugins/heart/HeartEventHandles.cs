@@ -68,7 +68,7 @@ namespace client.service.serverPlugins.heart
 
     public class OnHeartEventArg : EventArgs
     {
-        public PluginExcuteModel Packet { get; set; }
+        public PluginParamWrap Packet { get; set; }
         public HeartModel Data { get; set; }
     }
 

@@ -20,14 +20,14 @@ namespace client.service.p2pPlugins.fileServer
             this.fileServerHelper = fileServerHelper;
         }
 
-        public FileInfo[] List(PluginExcuteModel arg)
+        public FileInfo[] List(PluginParamWrap arg)
         {
             FileServerModel model = arg.Wrap.Content.DeBytes<FileServerModel>();
             return fileServerHelper.GetRemoteFiles(model.Data.DeBytes<FileServerListModel>().Path);
         }
 
 
-        public void Download(PluginExcuteModel arg)
+        public void Download(PluginParamWrap arg)
         {
             FileServerModel model = arg.Wrap.Content.DeBytes<FileServerModel>();
             fileServerEventHandles.OnTcpDownload(new TcpEventArg<FileServerDownloadModel>
@@ -38,7 +38,7 @@ namespace client.service.p2pPlugins.fileServer
             });
         }
 
-        public void File(PluginExcuteModel arg)
+        public void File(PluginParamWrap arg)
         {
             FileServerModel model = arg.Wrap.Content.DeBytes<FileServerModel>();
             fileServerEventHandles.OnTcpFile(new TcpEventArg<FileModel>
@@ -49,7 +49,7 @@ namespace client.service.p2pPlugins.fileServer
             });
         }
 
-        public void Progress(PluginExcuteModel arg)
+        public void Progress(PluginParamWrap arg)
         {
             FileServerModel model = arg.Wrap.Content.DeBytes<FileServerModel>();
             fileServerEventHandles.OnTcpProgress(new TcpEventArg<FileServerProgressModel>

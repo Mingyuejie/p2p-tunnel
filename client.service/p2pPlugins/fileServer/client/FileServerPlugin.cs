@@ -1,5 +1,6 @@
 ﻿using client.service.clientService;
 using client.service.config;
+using common;
 using common.extends;
 using System;
 using System.Collections.Generic;
@@ -71,14 +72,15 @@ namespace client.service.p2pPlugins.fileServer.client
             }
         }
 
-        public async Task<FileInfo[]> List(ClientServicePluginExcuteWrap arg)
+        public FileInfo[] List(ClientServicePluginExcuteWrap arg)
         {
             RequestFileListModel model = arg.Content.DeJson<RequestFileListModel>();
-            return await fileServerEventHandles.SendTcpFileList(new SendTcpEventArg<FileServerListModel>
+            var files = fileServerHelper.SendTcpFileList(new SendTcpEventArg<FileServerListModel>
             {
                 ToId = model.ToId,
                 Data = new FileServerListModel { Path = model.Path }
-            });
+            }).Result;
+            return files;
         }
 
         public FileInfo[] LocalList(ClientServicePluginExcuteWrap arg)

@@ -46,9 +46,9 @@ namespace server
                             {
                                 if (Plugin.sends.TryRemove(item.RequestId, out SendCacheModel cache) && cache != null)
                                 {
-                                    cache.Tcs?.SetResult(new ServerResponeMessageWrap
+                                    cache.Tcs?.SetResult(new ServerMessageResponeWrap
                                     {
-                                        Code = ServerResponeCodes.TIMEOUT,
+                                        Code = ServerMessageResponeCodes.TIMEOUT,
                                         ErrorMsg = "请求超时"
                                     });
                                 }
@@ -122,14 +122,14 @@ namespace server
             }
             servers.Clear();
         }
-        public async Task<ServerResponeMessageWrap> SendReply<T>(RecvQueueModel<T> msg)
+        public async Task<ServerMessageResponeWrap> SendReply<T>(SendMessageWrap<T> msg)
         {
-            var tcs = new TaskCompletionSource<ServerResponeMessageWrap>();
+            var tcs = new TaskCompletionSource<ServerMessageResponeWrap>();
             if (Running && msg.TcpCoket != null && msg.TcpCoket.Connected)
             {
                 try
                 {
-                    if (msg.RequestId == -1)
+                    if (msg.RequestId == 0)
                     {
                         Interlocked.Increment(ref Plugin.requestId);
                         msg.RequestId = Plugin.requestId;
@@ -142,6 +142,7 @@ namespace server
                         RequestId = msg.RequestId,
                         Content = msg.Data.ToBytes(),
                         Path = msg.Path,
+                        Type = msg.Type,
                         Code = msg.Code
                     };
 
@@ -156,19 +157,19 @@ namespace server
             }
             else
             {
-                tcs.SetResult(new ServerResponeMessageWrap { Code = ServerResponeCodes.BAD_GATEWAY, ErrorMsg = "未运行" });
+                tcs.SetResult(new ServerMessageResponeWrap { Code = ServerMessageResponeCodes.BAD_GATEWAY, ErrorMsg = "未运行" });
             }
             return await tcs.Task;
         }
 
-        public void SendOnly<T>(RecvQueueModel<T> msg)
+        public void SendOnly<T>(SendMessageWrap<T> msg)
         {
             if (Running && msg.TcpCoket != null && msg.TcpCoket.Connected)
             {
                 try
                 {
 
-                    if (msg.RequestId == -1)
+                    if (msg.RequestId == 0)
                     {
                         Interlocked.Increment(ref Plugin.requestId);
                         msg.RequestId = Plugin.requestId;
@@ -178,6 +179,7 @@ namespace server
                         RequestId = msg.RequestId,
                         Content = msg.Data.ToBytes(),
                         Path = msg.Path,
+                        Type = msg.Type,
                         Code = msg.Code
                     };
 
@@ -283,75 +285,95 @@ namespace server
                 foreach (TcpPacket packet in bytesArray)
                 {
                     ServerMessageWrap wrap = packet.Chunk.DeBytes<ServerMessageWrap>();
-                    if (Plugin.sends.ContainsKey(wrap.RequestId))
+                    if (wrap.Type == ServerMessageTypes.RESPONSE)
                     {
-                        Plugin.sends.TryRemove(wrap.RequestId, out SendCacheModel send);
-                        send.Tcs.SetResult(new ServerResponeMessageWrap { Code = ServerResponeCodes.OK, Data = wrap.Content });
-                    }
-                    else if (wrap.RequestId > 0)
-                    {
-                        wrap.Path = wrap.Path.ToLower();
-                        if (Plugin.plugins.ContainsKey(wrap.Path))
+                        if (Plugin.sends.TryRemove(wrap.RequestId, out SendCacheModel send) && send != null)
                         {
-                            var plugin = Plugin.plugins[wrap.Path];
-                            PluginExcuteModel excute = new PluginExcuteModel
+                            send.Tcs.SetResult(new ServerMessageResponeWrap { Code = wrap.Code, ErrorMsg = wrap.Code.ToString(), Data = wrap.Content });
+                        }
+                    }
+                    else
+                    {
+                        try
+                        {
+                            wrap.Path = wrap.Path.ToLower();
+                            if (Plugin.plugins.ContainsKey(wrap.Path))
                             {
-                                TcpSocket = model.Socket,
-                                Packet = packet,
-                                ServerType = ServerType.TCP,
-                                SourcePoint = address,
-                                Wrap = wrap
-                            };
-
-                            object resultAsync = plugin.Item2.Invoke(plugin.Item1, new object[] { excute });
-                            if (excute.Code == ServerResponeCodes.OK)
-                            {
-                                object resultObject = null;
-                                if (resultAsync is Task task)
+                                var plugin = Plugin.plugins[wrap.Path];
+                                PluginParamWrap excute = new PluginParamWrap
                                 {
-                                    task.Wait();
-                                    if (resultAsync is Task<object> task1)
+                                    TcpSocket = model.Socket,
+                                    Packet = packet,
+                                    ServerType = ServerType.TCP,
+                                    SourcePoint = address,
+                                    Wrap = wrap
+                                };
+
+                                object resultAsync = plugin.Item2.Invoke(plugin.Item1, new object[] { excute });
+                                if (excute.Code == ServerMessageResponeCodes.OK)
+                                {
+                                    object resultObject = null;
+                                    if (resultAsync is Task task)
                                     {
-                                        resultObject = task1.Result;
+                                        task.Wait();
+                                        if (resultAsync is Task<object> task1)
+                                        {
+                                            resultObject = task1.Result;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        resultObject = resultAsync;
+                                    }
+                                    if (resultObject != null)
+                                    {
+                                        SendOnly(new SendMessageWrap<object>
+                                        {
+                                            TcpCoket = model.Socket,
+                                            Code = excute.Code,
+                                            Data = resultObject,
+                                            RequestId = wrap.RequestId,
+                                            Path = wrap.Path,
+                                            Type = ServerMessageTypes.RESPONSE
+                                        });
                                     }
                                 }
                                 else
                                 {
-                                    resultObject = resultAsync;
-                                }
-                                if (resultObject != null)
-                                {
-                                    SendOnly(new RecvQueueModel<object>
+                                    SendOnly(new SendMessageWrap<object>
                                     {
                                         TcpCoket = model.Socket,
                                         Code = excute.Code,
-                                        Data = resultObject,
-                                        RequestId = 0,
-                                        Path = wrap.Path
+                                        Data = excute.ErrorMessage,
+                                        RequestId = wrap.RequestId,
+                                        Path = wrap.Path,
+                                        Type = ServerMessageTypes.RESPONSE
                                     });
                                 }
                             }
                             else
                             {
-                                SendOnly(new RecvQueueModel<object>
+                                SendOnly(new SendMessageWrap<string>
                                 {
                                     TcpCoket = model.Socket,
-                                    Code = excute.Code,
-                                    Data = excute.ErrorMessage,
-                                    RequestId = 0,
-                                    Path = wrap.Path
+                                    Code = ServerMessageResponeCodes.BAD_GATEWAY,
+                                    Data = "没找到对应的插件执行你的操作",
+                                    RequestId = wrap.RequestId,
+                                    Path = wrap.Path,
+                                    Type = ServerMessageTypes.RESPONSE
                                 });
                             }
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            SendOnly(new RecvQueueModel<object>
+                            SendOnly(new SendMessageWrap<string>
                             {
                                 TcpCoket = model.Socket,
-                                Code = ServerResponeCodes.BAD_GATEWAY,
-                                Data = "没找到对应的插件执行你的操作",
-                                RequestId = 0,
-                                Path = wrap.Path
+                                Code = ServerMessageResponeCodes.BAD_GATEWAY,
+                                Data = ex.Message,
+                                RequestId = wrap.RequestId,
+                                Path = wrap.Path,
+                                Type = ServerMessageTypes.RESPONSE
                             });
                         }
                     }

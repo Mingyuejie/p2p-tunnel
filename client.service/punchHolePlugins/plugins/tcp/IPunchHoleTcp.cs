@@ -62,18 +62,18 @@ namespace client.service.punchHolePlugins.plugins.tcp
 
     public class OnStep1EventArg : EventArgs
     {
-        public PluginExcuteModel Packet { get; set; }
+        public PluginParamWrap Packet { get; set; }
         public PunchHoleNotifyModel Data { get; set; }
     }
     public class OnStep2EventArg : EventArgs
     {
-        public PluginExcuteModel Packet { get; set; }
+        public PluginParamWrap Packet { get; set; }
         public PunchHoleNotifyModel Data { get; set; }
     }
 
     public class OnStep2RetryEventArg : EventArgs
     {
-        public PluginExcuteModel Packet { get; set; }
+        public PluginParamWrap Packet { get; set; }
         public PunchHoleNotifyModel Data { get; set; }
     }
     public class OnSendStep2FailEventArg : EventArgs
@@ -83,7 +83,7 @@ namespace client.service.punchHolePlugins.plugins.tcp
     }
     public class OnStep2FailEventArg : EventArgs
     {
-        public PluginExcuteModel Packet { get; set; }
+        public PluginParamWrap Packet { get; set; }
         public Step2FailModel Data { get; set; }
     }
     public class SendStep3EventArg : EventArgs
@@ -93,7 +93,7 @@ namespace client.service.punchHolePlugins.plugins.tcp
     }
     public class OnStep3EventArg : EventArgs
     {
-        public PluginExcuteModel Packet { get; set; }
+        public PluginParamWrap Packet { get; set; }
         public Step3Model Data { get; set; }
     }
     public class SendStep4EventArg : EventArgs
@@ -103,7 +103,7 @@ namespace client.service.punchHolePlugins.plugins.tcp
     }
     public class OnStep4EventArg : EventArgs
     {
-        public PluginExcuteModel Packet { get; set; }
+        public PluginParamWrap Packet { get; set; }
         public Step4Model Data { get; set; }
     }
 
@@ -116,7 +116,7 @@ namespace client.service.punchHolePlugins.plugins.tcp
     }
     public class OnStepPacketEventArg : EventArgs
     {
-        public PluginExcuteModel Packet { get; set; }
+        public PluginParamWrap Packet { get; set; }
         public StepPacketModel Data { get; set; }
     }
 

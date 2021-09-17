@@ -13,7 +13,7 @@ namespace client.service.p2pPlugins.forward.tcp
             this.tcpForwardEventHandles = tcpForwardEventHandles;
         }
 
-        public void Excute(PluginExcuteModel arg)
+        public void Excute(PluginParamWrap arg)
         {
             TcpForwardModel data = arg.Wrap.Content.DeBytes<TcpForwardModel>();
             tcpForwardEventHandles.OnTcpForward(new OnTcpForwardEventArg

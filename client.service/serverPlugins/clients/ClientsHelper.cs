@@ -35,8 +35,6 @@ namespace client.service.serverPlugins.clients
             this.punchHoleTcp = punchHoleTcp;
             this.registerState = registerState;
 
-            //本客户端注册状态
-            registerEventHandles.OnSendRegisterTcpStateChangeHandler += OnRegisterTcpStateChangeHandler;
             //收到来自服务器的 在线客户端 数据
             clientsEventHandles.OnServerSendClientsHandler += OnServerSendClientsHandler;
 

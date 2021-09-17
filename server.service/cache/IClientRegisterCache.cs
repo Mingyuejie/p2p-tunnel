@@ -18,6 +18,6 @@ namespace server.service.cache
         public bool UpdateTcpInfo(long id, Socket socket, int port, string groupId);
         public void Remove(long id);
         public void UpdateTime(long id);
-        public bool Verify(long id, PluginExcuteModel data);
+        public bool Verify(long id, PluginParamWrap data);
     }
 }

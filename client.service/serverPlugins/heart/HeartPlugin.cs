@@ -15,7 +15,7 @@ namespace client.service.serverPlugins.heart
             this.heartEventHandles = heartEventHandles;
         }
 
-        public void Excute(PluginExcuteModel model)
+        public void Excute(PluginParamWrap model)
         {
             HeartModel data = model.Wrap.Content.DeBytes<HeartModel>();
             heartEventHandles.OnHeartMessage(new OnHeartEventArg

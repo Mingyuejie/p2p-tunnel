@@ -46,7 +46,7 @@ namespace client.service.p2pPlugins.forward.tcp
 
     public class OnTcpForwardEventArg : EventArgs
     {
-        public PluginExcuteModel Packet { get; set; }
+        public PluginParamWrap Packet { get; set; }
         public TcpForwardModel Data { get; set; }
     }
 

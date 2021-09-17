@@ -24,7 +24,7 @@ namespace server.service.plugins
             this.udpServer = udpServer;
         }
 
-        public bool Excute(PluginExcuteModel data)
+        public bool Excute(PluginParamWrap data)
         {
             PunchHoleModel model = data.Wrap.Content.DeBytes<PunchHoleModel>();
 
@@ -58,12 +58,12 @@ namespace server.service.plugins
             {
                 case ServerType.TCP:
                     {
-                        tcpServer.SendOnly(new RecvQueueModel<PunchHoleModel>
+                        tcpServer.SendOnly(new SendMessageWrap<PunchHoleModel>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
                             Data = model,
-                            Code = ServerResponeCodes.OK,
+                            Code = ServerMessageResponeCodes.OK,
                             Path = data.Wrap.Path,
                             RequestId = data.Wrap.RequestId
                         });
@@ -71,12 +71,12 @@ namespace server.service.plugins
                     break;
                 case ServerType.UDP:
                     {
-                        udpServer.SendOnly(new RecvQueueModel<PunchHoleModel>
+                        udpServer.SendOnly(new SendMessageWrap<PunchHoleModel>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
                             Data = model,
-                            Code = ServerResponeCodes.OK,
+                            Code = ServerMessageResponeCodes.OK,
                             Path = data.Wrap.Path,
                             RequestId = data.Wrap.RequestId
                         });

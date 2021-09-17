@@ -12,7 +12,7 @@ namespace server
     {
         public void Start(int port, IPAddress ip = null);
         public void Stop();
-        public Task<ServerResponeMessageWrap> SendReply<T>(RecvQueueModel<T> msg);
-        public void SendOnly<T>(RecvQueueModel<T> msg);
+        public Task<ServerMessageResponeWrap> SendReply<T>(SendMessageWrap<T> msg);
+        public void SendOnly<T>(SendMessageWrap<T> msg);
     }
 }

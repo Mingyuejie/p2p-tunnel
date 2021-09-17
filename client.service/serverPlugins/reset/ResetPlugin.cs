@@ -12,7 +12,7 @@ namespace client.service.serverPlugins.reset
             this.registerHelper = registerHelper;
         }
 
-        public void Excute(PluginExcuteModel data)
+        public void Excute(PluginParamWrap data)
         {
             //MessageResetModel model = data.Packet.Chunk.DeBytes<MessageResetModel>();
             _ = registerHelper.Start();

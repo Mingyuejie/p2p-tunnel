@@ -14,7 +14,7 @@ namespace server.service.plugins
             this.clientRegisterCache = clientRegisterCache;
         }
 
-        public HeartModel Excute(PluginExcuteModel data)
+        public HeartModel Excute(PluginParamWrap data)
         {
             HeartModel model = data.Wrap.Content.DeBytes<HeartModel>();
 
