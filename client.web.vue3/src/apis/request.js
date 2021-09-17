@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 23:04:50
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-15 17:01:08
+ * @LastEditTime: 2021-09-17 21:11:57
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\apis\request.js
@@ -74,11 +74,19 @@ const onWebsocketMsg = (msg) => {
         } else if (json.Code == -1) {
             callback.reject(json.Content);
         } else {
+
             pushListener.push(json.Path, json.Content);
         }
         delete requests[json.RequestId];
     } else {
-        pushListener.push(json.Path, json.Content);
+        if (json.Path == 'merge') {
+            let arr = json.Content;
+            for (let i = 0, len = arr.length; i < len; i++) {
+                pushListener.push(arr[i].Path, arr[i].Content);
+            }
+        } else {
+            pushListener.push(json.Path, json.Content);
+        }
     }
 }
 const initWebsocket = () => {

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:39:45
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-15 16:39:43
+ * @LastEditTime: 2021-09-17 21:13:35
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\states\register.js
@@ -44,8 +44,7 @@ export const provideRegister = () => {
     });
     provide(provideRegisterKey, state);
 
-    subNotifyMsg('register/info', (msg) => {
-        let json = JSON.parse(msg);
+    subNotifyMsg('register/info', (json) => {
         state.LocalInfo.Connected = json.LocalInfo.Connected;
         state.LocalInfo.TcpConnected = json.LocalInfo.TcpConnected;
         state.LocalInfo.Port = json.LocalInfo.Port;

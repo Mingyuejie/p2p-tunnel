@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-05 20:05:45
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-05 20:08:24
+ * @LastEditTime: 2021-09-17 21:13:03
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\states\fileserver.js
@@ -18,8 +18,7 @@ export const provideFileserver = () => {
     });
     provide(provideFileserverKey, state);
 
-    subNotifyMsg('fileserver/info', (msg) => {
-        let json = JSON.parse(msg);
+    subNotifyMsg('fileserver/info', (json) => {
         state.IsStart = json.IsStart;
     });
     subWebsocketState((_state) => {

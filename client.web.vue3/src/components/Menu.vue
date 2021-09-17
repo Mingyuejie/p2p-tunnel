@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-06 20:20:00
+ * @LastEditTime: 2021-09-17 21:12:56
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -49,8 +49,7 @@ export default {
         const fileserverState = injectFileserver();
         const fileServerStarted = computed(() => fileserverState.IsStart);
 
-        subNotifyMsg('system/version', (msg) => {
-            let json = JSON.parse(msg);
+        subNotifyMsg('system/version', (json) => {
             let localVersion = json.Local.split('\r\n')[0];
             let remoteVersion = json.Remote.split('\n')[0];
             if (localVersion != remoteVersion && remoteVersion.length > 0) {

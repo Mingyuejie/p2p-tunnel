@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-21 14:57:33
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-05 20:04:36
+ * @LastEditTime: 2021-09-17 21:13:41
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\states\clients.js
@@ -18,7 +18,7 @@ export const provideClients = () => {
     provide(provideClientsKey, state);
 
     subNotifyMsg('clients/list', (msg) => {
-        state.clients = JSON.parse(msg);
+        state.clients = msg;
     });
     subWebsocketState((_state) => {
         if (!_state) {

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-05 19:49:43
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-06 15:00:12
+ * @LastEditTime: 2021-09-17 21:13:15
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\fileserver\Online.vue
@@ -38,8 +38,7 @@ export default {
             list: [],
             loading: false
         });
-        const onlineMsg = (msg) => {
-            let arr = JSON.parse(msg);
+        const onlineMsg = (arr) => {
             arr.forEach(c => {
                 c.FileType = { 'DOWNLOAD': '↓', 'UPLOAD': '↑' }[c.FileType];
             });

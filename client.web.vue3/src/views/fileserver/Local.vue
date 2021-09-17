@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-05 12:43:00
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-06 16:27:48
+ * @LastEditTime: 2021-09-17 21:13:29
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\fileserver\Local.vue
@@ -108,8 +108,8 @@ export default {
             }
         }
         onMounted(() => {
-            getSpecialFolder().then((msg) => {
-                state.specialFolder = [JSON.parse(msg)];
+            getSpecialFolder().then((json) => {
+                state.specialFolder = [json];
             });
             reload();
         });

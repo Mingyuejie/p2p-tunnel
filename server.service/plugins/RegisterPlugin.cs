@@ -89,7 +89,7 @@ namespace server.service.plugins
             }
             catch (Exception ex)
             {
-                Logger.Instance.Error(ex + "");
+                Logger.Instance.Debug(ex + "");
                 data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, ex.Message);
             }
 

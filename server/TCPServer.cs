@@ -289,6 +289,7 @@ namespace server
                     {
                         if (Plugin.sends.TryRemove(wrap.RequestId, out SendCacheModel send) && send != null)
                         {
+                            Logger.Instance.Debug($"TCP {wrap.Path} 花费时间 {Helper.GetTimeStamp()- send.Time} ms");
                             send.Tcs.SetResult(new ServerMessageResponeWrap { Code = wrap.Code, ErrorMsg = wrap.Code.ToString(), Data = wrap.Content });
                         }
                     }
@@ -436,6 +437,5 @@ namespace server
         public Socket Socket { get; set; }
         public ManualResetEvent AcceptDone { get; set; }
     }
-
 
 }

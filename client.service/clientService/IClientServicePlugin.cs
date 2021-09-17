@@ -9,6 +9,14 @@ namespace client.service.clientService
 
     }
 
+    public class ClientServiceMessageResponseWrap
+    {
+        public string Path { get; set; } = string.Empty;
+        public long RequestId { get; set; } = 0;
+        public int Code { get; set; } = 0;
+        public object Content { get; set; } = string.Empty;
+    }
+
     public class ClientServiceMessageWrap
     {
         public string Path { get; set; } = string.Empty;

@@ -151,32 +151,18 @@ namespace client.service.clientService
                         {
                             resultObject = resultAsync;
                         }
-                        string resultString = string.Empty;
-                        if (resultObject != null)
+                        param.Socket.Send(new ClientServiceMessageResponseWrap
                         {
-                            if (resultObject is string)
-                            {
-                                resultString = resultObject as string;
-                            }
-                            else
-                            {
-                                resultString = resultObject.ToJson();
-                            }
-                        }
-
-                        param.Socket.Send(new ClientServiceMessageWrap
-                        {
-                            Content = param.Code == 0 ? resultString : param.ErrorMessage,
+                            Content = param.Code == 0 ? resultObject : param.ErrorMessage,
                             RequestId = param.RequestId,
                             Path = param.Path,
                             Code = param.Code
                         }.ToJson());
-
                     }
                     catch (Exception ex)
                     {
                         Logger.Instance.Debug(ex + "");
-                        socket.Send(new ClientServiceMessageWrap
+                        socket.Send(new ClientServiceMessageResponseWrap
                         {
                             Content = ex.Message,
                             RequestId = model.RequestId,
@@ -196,62 +182,67 @@ namespace client.service.clientService
                 {
                     foreach (var connection in websockets.Values)
                     {
-                        connection.Send(new ClientServiceMessageWrap
+                        connection.Send(new ClientServiceMessageResponseWrap
                         {
-                            Content = clientsHelper.Clients.ToJson(),
+                            Path = "merge",
                             RequestId = 0,
-                            Path = "clients/list",
-                            Code = 0
-                        }.ToJson());
-                        connection.Send(new ClientServiceMessageWrap
-                        {
-                            Content = new RegisterInfo
-                            {
-                                ClientConfig = config.Client,
-                                ServerConfig = config.Server,
-                                LocalInfo = registerState.LocalInfo,
-                                RemoteInfo = registerState.RemoteInfo,
-                            }.ToJson(),
-                            RequestId = 0,
-                            Path = "register/info",
-                            Code = 0
-                        }.ToJson());
-                        connection.Send(new ClientServiceMessageWrap
-                        {
-                            Content = tcpForwardHelper.Mappings.ToJson(),
-                            RequestId = 0,
-                            Path = "tcpforward/list",
-                            Code = 0
-                        }.ToJson());
-                        connection.Send(new ClientServiceMessageWrap
-                        {
-                            Content = config.FileServer.ToJson(),
-                            RequestId = 0,
-                            Path = "fileserver/info",
-                            Code = 0
-                        }.ToJson());
-                        connection.Send(new ClientServiceMessageWrap
-                        {
-                            Content = fileServerHelper.GetOnlineList().ToJson(),
-                            RequestId = 0,
-                            Path = "fileserver/online",
-                            Code = 0
+                            Code = 0,
+                            Content = new List<ClientServiceMessageResponseWrap> {
+                                new ClientServiceMessageResponseWrap
+                                {
+                                    Content = clientsHelper.Clients,
+                                    RequestId = 0,
+                                    Path = "clients/list",
+                                    Code = 0
+                                },new ClientServiceMessageResponseWrap
+                                {
+                                    Content = new RegisterInfo
+                                    {
+                                        ClientConfig = config.Client,
+                                        ServerConfig = config.Server,
+                                        LocalInfo = registerState.LocalInfo,
+                                        RemoteInfo = registerState.RemoteInfo,
+                                    },
+                                    RequestId = 0,
+                                    Path = "register/info",
+                                },new ClientServiceMessageResponseWrap
+                                {
+                                    Content = tcpForwardHelper.Mappings,
+                                    RequestId = 0,
+                                    Path = "tcpforward/list",
+                                    Code = 0
+                                },
+                                 new ClientServiceMessageResponseWrap
+                                {
+                                    Content = config.FileServer,
+                                    RequestId = 0,
+                                    Path = "fileserver/info",
+                                    Code = 0
+                                },
+                                new ClientServiceMessageResponseWrap
+                                {
+                                    Content = fileServerHelper.GetOnlineList(),
+                                    RequestId = 0,
+                                    Path = "fileserver/online",
+                                    Code = 0
+                                }
+                            }
                         }.ToJson());
                     }
-                    System.Threading.Thread.Sleep(500);
+                    System.Threading.Thread.Sleep(100);
                 }
             });
         }
 
         private void NotifyVersion(IWebSocketConnection connection)
         {
-            connection.Send(new ClientServiceMessageWrap
+            connection.Send(new ClientServiceMessageResponseWrap
             {
                 Content = new
                 {
                     Local = System.IO.File.ReadAllText("version.txt"),
                     Remote = GetVersion()
-                }.ToJson(),
+                },
                 RequestId = 0,
                 Path = "system/version",
                 Code = 0
