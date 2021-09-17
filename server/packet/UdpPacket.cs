@@ -31,19 +31,17 @@ namespace server.packet
         public long Id { get; set; } = 0;
         public byte[] Chunk { get; set; }
 
-        public MessageTypes Type { get; set; }
 
         private UdpPacket()
         {
 
         }
-        public UdpPacket(long sequence, int total, int index, byte[] chunk, MessageTypes type, short ttl, long id = 0) : this()
+        public UdpPacket(long sequence, int total, int index, byte[] chunk, short ttl, long id = 0) : this()
         {
             Sequence = sequence;
             Total = total;
             Index = index;
             Chunk = chunk;
-            Type = type;
             Ttl = ttl;
             Id = id;
         }
@@ -51,18 +49,15 @@ namespace server.packet
         public byte[] ToArray()
         {
             byte[] sequenceArray = BitConverter.GetBytes(Sequence);
-            byte[] typeArray = BitConverter.GetBytes((int)Type);
             byte[] indexArray = BitConverter.GetBytes(Index);
             byte[] totalArray = BitConverter.GetBytes(Total);
             byte[] ttlArray = BitConverter.GetBytes(Ttl);
             byte[] idArray = BitConverter.GetBytes(Id);
 
-            byte[] dist = new byte[Chunk.Length + typeArray.Length + indexArray.Length + sequenceArray.Length + totalArray.Length+ ttlArray.Length+ idArray.Length];
+            byte[] dist = new byte[Chunk.Length + indexArray.Length + sequenceArray.Length + totalArray.Length+ ttlArray.Length+ idArray.Length];
 
             int distIndex = 0;
 
-            Array.Copy(typeArray, 0, dist, distIndex, typeArray.Length);
-            distIndex += typeArray.Length;
 
             Array.Copy(sequenceArray, 0, dist, distIndex, sequenceArray.Length);
             distIndex += sequenceArray.Length;
@@ -99,8 +94,6 @@ namespace server.packet
         public static UdpPacket FromArray(long ip, byte[] array)
         {
             int skipIndex = 0;
-            int type = BitConverter.ToInt32(array.Skip(skipIndex).Take(4).ToArray());
-            skipIndex += 4;
 
             long sequence = BitConverter.ToInt64(array.Skip(skipIndex).Take(8).ToArray());
             skipIndex += 8;
@@ -121,7 +114,7 @@ namespace server.packet
 
             if (total == 1)
             {
-                return new UdpPacket(sequence, total, index, chunk, (MessageTypes)type, ttl, id);
+                return new UdpPacket(sequence, total, index, chunk,  ttl, id);
             }
 
             //ip 分类
@@ -158,7 +151,7 @@ namespace server.packet
                     distIndex += item.Buffers.Length;
                 }
                 packets.Buffers.Clear();
-                return new UdpPacket(sequence, total, index, dist, (MessageTypes)type, ttl, id);
+                return new UdpPacket(sequence, total, index, dist, ttl, id);
             }
             else
             {

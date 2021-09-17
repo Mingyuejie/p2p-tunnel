@@ -180,7 +180,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssa
                                     {
                                         if (tcp.Synchronize == true && tcp.Acknowledgment == false && tcp.DestinationPort == (uint)ip.Item2)
                                         {
-                                            eventHandlers.SendTcp(new SendTcpEventArg
+                                            eventHandlers.SendOnlyTcp(new  SendTcpEventArg<RawPacketModel>
                                             {
                                                 Data = new RawPacketModel
                                                 {

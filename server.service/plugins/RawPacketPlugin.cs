@@ -25,19 +25,16 @@ namespace server.service.plugins
             this.clientRegisterCache = clientRegisterCache;
         }
 
-
-        public MessageTypes MsgType => MessageTypes.SERVER_RAW_PACKET;
-
-        public void Excute(PluginExcuteModel data, ServerType serverType)
+        public bool Excute(PluginExcuteModel data)
         {
-            RawPacketModel model = data.Packet.Chunk.DeBytes<RawPacketModel>();
+            RawPacketModel model = data.Wrap.Content.DeBytes<RawPacketModel>();
 
             //A已注册
             RegisterCacheModel source = clientRegisterCache.Get(model.FormId);
-            if (source == null) return;
+            if (source == null) return false;
             //B已注册
             RegisterCacheModel target = clientRegisterCache.Get(model.ToId);
-            if (target == null) return;
+            if (target == null) return false;
 
 
 
@@ -87,6 +84,8 @@ namespace server.service.plugins
                     Logger.Instance.Error(ex.Message);
                 }
             }
+
+            return true;
         }
     }
 }

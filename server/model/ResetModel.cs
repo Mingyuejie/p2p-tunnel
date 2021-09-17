@@ -11,7 +11,7 @@ namespace server.model
     /// 重启
     /// </summary>
     [ProtoContract]
-    public class ResetModel : IModelBase
+    public class ResetModel
     {
         public ResetModel() { }
 
@@ -26,11 +26,5 @@ namespace server.model
         /// </summary>
         [ProtoMember(2)]
         public long ToId { get; set; } = 0;
-
-        /// <summary>
-        /// 消息类型
-        /// </summary>
-        [ProtoMember(3, IsRequired = true)]
-        public MessageTypes MsgType { get; } = MessageTypes.SERVER_RESET;
     }
 }

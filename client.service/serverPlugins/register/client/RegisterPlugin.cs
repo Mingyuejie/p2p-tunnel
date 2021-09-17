@@ -23,15 +23,15 @@ namespace client.service.serverPlugins.register.client
         public async Task Start(ClientServicePluginExcuteWrap arg)
         {
             var result = await registerHelper.Start();
-            if (!string.IsNullOrWhiteSpace(result.ErrorMsg))
+            if (!result.Data)
             {
                 arg.SetCode(-1, result.ErrorMsg);
             }
         }
 
-        public void Stop(ClientServicePluginExcuteWrap arg)
+        public async Task Stop(ClientServicePluginExcuteWrap arg)
         {
-            registerEventHandles.SendExitMessage();
+            await registerEventHandles.SendExitMessage();
         }
 
         public RegisterInfo Info(ClientServicePluginExcuteWrap arg)

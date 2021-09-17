@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace client.service.p2pPlugins.plugins.forward.tcp
+namespace client.service.p2pPlugins.forward.tcp
 {
     public class TcpForwardServer
     {

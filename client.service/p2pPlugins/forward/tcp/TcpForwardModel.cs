@@ -2,10 +2,10 @@
 using ProtoBuf;
 using System;
 
-namespace client.service.p2pPlugins.plugins.forward.tcp
+namespace client.service.p2pPlugins.forward.tcp
 {
     [ProtoContract]
-    public class TcpForwardModel : IP2PMessageBase
+    public class TcpForwardModel
     {
         public TcpForwardModel() { }
 
@@ -26,9 +26,6 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
 
         [ProtoMember(6, IsRequired = true)]
         public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.UNALIVE;
-
-        [ProtoMember(7, IsRequired = true)]
-        P2PDataTypes IP2PMessageBase.Type { get; } = P2PDataTypes.TCP_FORWARD;
     }
 
 

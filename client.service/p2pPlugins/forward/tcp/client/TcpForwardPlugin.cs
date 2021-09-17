@@ -1,7 +1,7 @@
 ﻿using client.service.clientService;
 using common.extends;
 
-namespace client.service.p2pPlugins.plugins.forward.tcp.client
+namespace client.service.p2pPlugins.forward.tcp.client
 {
     public class TcpForwardPlugin : IClientServicePlugin
     {

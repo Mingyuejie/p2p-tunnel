@@ -3,7 +3,7 @@
 namespace server.model
 {
     [ProtoContract]
-    public class HeartModel : IModelBase
+    public class HeartModel
     {
         public HeartModel() { }
 
@@ -15,8 +15,5 @@ namespace server.model
         /// </summary>
         [ProtoMember(2)]
         public long SourceId { get; set; } = 0;
-
-        [ProtoMember(3, IsRequired = true)]
-        public MessageTypes MsgType { get; } = MessageTypes.HEART;
     }
 }

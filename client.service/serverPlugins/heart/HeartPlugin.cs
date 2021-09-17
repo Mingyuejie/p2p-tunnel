@@ -15,11 +15,9 @@ namespace client.service.serverPlugins.heart
             this.heartEventHandles = heartEventHandles;
         }
 
-        public MessageTypes MsgType => MessageTypes.HEART;
-
-        public void Excute(PluginExcuteModel model, ServerType serverType)
+        public void Excute(PluginExcuteModel model)
         {
-            HeartModel data = model.Packet.Chunk.DeBytes<HeartModel>();
+            HeartModel data = model.Wrap.Content.DeBytes<HeartModel>();
             heartEventHandles.OnHeartMessage(new OnHeartEventArg
             {
                 Packet = model,

@@ -18,15 +18,9 @@ namespace client.service.serverPlugins.clients
     {
         private long readClientsTimes = 0;
 
-        private readonly RegisterEventHandles registerEventHandles;
-        private readonly ClientsEventHandles clientsEventHandles;
         private readonly IPunchHoleUdp punchHoleUdp;
         private readonly IPunchHoleTcp punchHoleTcp;
-        private readonly HeartEventHandles heartEventHandles;
-        private readonly RegisterHelper registerHelper;
         private readonly RegisterState registerState;
-        private readonly Config config;
-        private readonly PunchHoleEventHandles punchHoldEventHandles;
 
         public IEnumerable<ClientInfo> Clients => ClientInfo.All();
 
@@ -37,15 +31,9 @@ namespace client.service.serverPlugins.clients
             HeartEventHandles heartEventHandles, RegisterHelper registerHelper,
             RegisterState registerState, Config config, PunchHoleEventHandles punchHoldEventHandles)
         {
-            this.registerEventHandles = registerEventHandles;
-            this.clientsEventHandles = clientsEventHandles;
             this.punchHoleUdp = punchHoleUdp;
             this.punchHoleTcp = punchHoleTcp;
-            this.heartEventHandles = heartEventHandles;
-            this.registerHelper = registerHelper;
             this.registerState = registerState;
-            this.config = config;
-            this.punchHoldEventHandles = punchHoldEventHandles;
 
             //本客户端注册状态
             registerEventHandles.OnSendRegisterTcpStateChangeHandler += OnRegisterTcpStateChangeHandler;
@@ -82,8 +70,6 @@ namespace client.service.serverPlugins.clients
                     }
                 }
             };
-
-
 
             //本客户端注册状态
             registerEventHandles.OnSendRegisterTcpStateChangeHandler += OnRegisterTcpStateChangeHandler;
@@ -197,7 +183,7 @@ namespace client.service.serverPlugins.clients
             }, 3000);
         }
 
-        
+
 
 
         private void OnRegisterTcpStateChangeHandler(object sender, RegisterTcpEventArg e)

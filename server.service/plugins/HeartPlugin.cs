@@ -2,47 +2,27 @@
 using server.model;
 using server.plugin;
 using server.service.cache;
+using System.Threading.Tasks;
 
 namespace server.service.plugins
 {
     public class HeartPlugin : IPlugin
     {
         private readonly IClientRegisterCache clientRegisterCache;
-        private readonly ITcpServer tcpServer;
-        private readonly IUdpServer udpServer;
-        public HeartPlugin(IClientRegisterCache clientRegisterCache, ITcpServer tcpServer, IUdpServer udpServer)
+        public HeartPlugin(IClientRegisterCache clientRegisterCache)
         {
             this.clientRegisterCache = clientRegisterCache;
-            this.tcpServer = tcpServer;
-            this.udpServer = udpServer;
         }
 
-        public MessageTypes MsgType => MessageTypes.HEART;
-
-        public void Excute(PluginExcuteModel data, ServerType serverType)
+        public HeartModel Excute(PluginExcuteModel data)
         {
-            HeartModel model = data.Packet.Chunk.DeBytes<HeartModel>();
+            HeartModel model = data.Wrap.Content.DeBytes<HeartModel>();
 
-            if (!clientRegisterCache.Verify(model.SourceId, data)) return;
-
-            if (serverType == ServerType.UDP)
+            if (clientRegisterCache.Verify(model.SourceId, data))
             {
-                udpServer.Send(new RecvQueueModel<IModelBase>
-                {
-                    Address = data.SourcePoint,
-                    Data = new HeartModel { TargetId = model.SourceId, SourceId = -1 }
-                });
-            }
-            else if (serverType == ServerType.TCP)
-            {
-                tcpServer.Send(new RecvQueueModel<IModelBase>
-                {
-                    Address = data.SourcePoint,
-                    TcpCoket = data.TcpSocket,
-                    Data = new HeartModel { TargetId = model.SourceId, SourceId = -1 }
-                });
-            }
-            clientRegisterCache.UpdateTime(model.SourceId);
+                clientRegisterCache.UpdateTime(model.SourceId);
+            };
+            return new HeartModel { TargetId = model.SourceId, SourceId = -1 };
         }
     }
 }

@@ -28,5 +28,11 @@ namespace server.model
         /// 超时时间，毫秒 0无限 -1一直超时 最小500
         /// </summary>
         public int Timeout { get; set; } = 0;
+
+        public string Path { get; set; } = string.Empty;
+
+        public ServerResponeCodes Code { get; set; } = ServerResponeCodes.OK;
+
+        public long RequestId { get; set; } = -1;
     }
 }

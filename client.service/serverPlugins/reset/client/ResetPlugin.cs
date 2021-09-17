@@ -16,8 +16,8 @@ namespace client.service.serverPlugins.reset.client
 {
     public class ResetPlugin : IClientServicePlugin
     {
-        private readonly ResetEventHandles  resetEventHandles;
-        private readonly ClientsHelper   clientsHelper;
+        private readonly ResetEventHandles resetEventHandles;
+        private readonly ClientsHelper clientsHelper;
         private readonly Config config;
         public ResetPlugin(ClientsHelper clientsHelper, Config config, ResetEventHandles resetEventHandles)
         {
@@ -26,7 +26,7 @@ namespace client.service.serverPlugins.reset.client
             this.resetEventHandles = resetEventHandles;
         }
 
-        public void Reset(ClientServicePluginExcuteWrap arg)
+        public async Task<bool> Reset(ClientServicePluginExcuteWrap arg)
         {
             ResetModel model = arg.Content.DeJson<ResetModel>();
 
@@ -36,10 +36,12 @@ namespace client.service.serverPlugins.reset.client
                 {
                     if (client != null)
                     {
-                        resetEventHandles.SendResetMessage(client.Socket, model.ID);
+                        await resetEventHandles.SendResetMessage(client.Socket, model.ID);
+                        return true;
                     }
                 }
             }
+            return false;
         }
     }
 

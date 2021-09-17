@@ -9,14 +9,14 @@ namespace server.extends
 {
     public static class ByteArrayExtends
     {
-        public static IEnumerable<UdpPacket> ToUdpPackets(this IModelBase obj, long sequence, short ttl = 5)
+        public static IEnumerable<UdpPacket> ToUdpPackets(this object obj, long sequence, short ttl = 5)
         {
-            return obj.ToBytes().Split(sequence, obj.MsgType, ttl);
+            return obj.ToBytes().Split(sequence,  ttl);
         }
 
-        public static TcpPacket ToTcpPacket(this IModelBase obj)
+        public static TcpPacket ToTcpPacket(this object obj)
         {
-            return new TcpPacket(obj.ToBytes(), obj.MsgType);
+            return new TcpPacket(obj.ToBytes());
         }
 
         /// <summary>
@@ -26,7 +26,7 @@ namespace server.extends
         /// <param name="sequence"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static IEnumerable<UdpPacket> Split(this byte[] datagram, long sequence, MessageTypes type, short ttl = 5)
+        public static IEnumerable<UdpPacket> Split(this byte[] datagram, long sequence,  short ttl = 5)
         {
             if (datagram == null)
             {
@@ -47,14 +47,14 @@ namespace server.extends
             {
                 byte[] chunk = new byte[chunkLength];
                 Buffer.BlockCopy(datagram, (i - 1) * chunkLength, chunk, 0, chunkLength);
-                packets.Add(new UdpPacket(sequence, total, i, chunk, type, ttl));
+                packets.Add(new UdpPacket(sequence, total, i, chunk, ttl));
             }
             if (remainder > 0)
             {
                 int length = datagram.Length - (chunkLength * chunks);
                 byte[] chunk = new byte[length];
                 Buffer.BlockCopy(datagram, chunkLength * chunks, chunk, 0, length);
-                packets.Add(new UdpPacket(sequence, total, total, chunk, type, ttl));
+                packets.Add(new UdpPacket(sequence, total, total, chunk, ttl));
             }
 
             return packets;

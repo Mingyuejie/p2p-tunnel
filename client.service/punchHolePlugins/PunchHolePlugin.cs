@@ -27,26 +27,24 @@ namespace client.service.punchHolePlugins
             this.punchHoldEventHandles = punchHoldEventHandles;
         }
 
-        public MessageTypes MsgType => MessageTypes.SERVER_PUNCH_HOLE;
-
-        public void Excute(PluginExcuteModel model, ServerType serverType)
+        public void Excute(PluginExcuteModel data)
         {
-            PunchHoleModel data = model.Packet.Chunk.DeBytes<PunchHoleModel>();
+            PunchHoleModel model = data.Wrap.Content.DeBytes<PunchHoleModel>();
 
-            if (serverType == ServerType.TCP)
+            if (data.ServerType == ServerType.TCP)
             {
                 punchHoldEventHandles.OnPunchHoleTcp(new OnPunchHoleTcpArg
                 {
-                    Data = data,
-                    Packet = model
+                    Data = model,
+                    Packet = data
                 });
             }
             else
             {
                 punchHoldEventHandles.OnPunchHole(new OnPunchHoleTcpArg
                 {
-                    Data = data,
-                    Packet = model
+                    Data = model,
+                    Packet = data
                 });
             }
         }

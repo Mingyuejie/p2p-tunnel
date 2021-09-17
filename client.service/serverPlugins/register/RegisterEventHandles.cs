@@ -1,19 +1,18 @@
 ﻿using client.service.events;
 using common;
+using common.extends;
 using server;
 using server.model;
 using server.models;
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace client.service.serverPlugins.register
 {
     public class RegisterEventHandles
     {
-        private RegisterParams requestCache;
-        private long requestCacheId = 0;
-
         private readonly EventHandlers eventHandlers;
         private readonly RegisterState registerState;
         private readonly IUdpServer udpServer;
@@ -40,16 +39,14 @@ namespace client.service.serverPlugins.register
         /// <summary>
         /// 发送退出消息
         /// </summary>
-        public event EventHandler<SendEventArg> OnSendExitMessageHandler;
+        public event EventHandler<SendEventArg<ExitModel>> OnSendExitMessageHandler;
         /// <summary>
         /// 发送退出消息
         /// </summary>
         /// <param name="arg"></param>
-        public void SendExitMessage()
+        public async Task SendExitMessage()
         {
-            requestCache = null;
-
-            SendEventArg arg = new()
+            SendEventArg<ExitModel> arg = new()
             {
                 Address = UdpServer,
                 Data = new ExitModel
@@ -60,7 +57,7 @@ namespace client.service.serverPlugins.register
 
             if (UdpServer != null)
             {
-                udpServer.Send(new RecvQueueModel<IModelBase>
+                await udpServer.SendReply(new RecvQueueModel<ExitModel>
                 {
                     Address = arg.Address,
                     Data = arg.Data
@@ -68,10 +65,6 @@ namespace client.service.serverPlugins.register
                 udpServer.Stop();
                 tcpServer.Stop();
 
-                SendRegisterStateChange(new RegisterEventArg
-                {
-                    State = false
-                });
                 SendRegisterTcpStateChange(new RegisterTcpEventArg
                 {
                     State = false
@@ -93,12 +86,14 @@ namespace client.service.serverPlugins.register
         /// 发送注册消息
         /// </summary>
         /// <param name="arg"></param>
-        public void SendRegisterMessage(RegisterParams param)
+        public async Task<RegisterResultModel> SendRegisterMessage(RegisterParams param)
         {
-            Helper.CloseTimeout(requestCacheId);
-            eventHandlers.Send(new SendEventArg
+            OnSendRegisterMessageHandler?.Invoke(this, param.ClientName);
+            RegisterResultModel res = new() { };
+            ServerResponeMessageWrap result = await eventHandlers.SendReply(new SendEventArg<RegisterModel>
             {
                 Address = UdpServer,
+                Path = "register/excute",
                 Data = new RegisterModel
                 {
                     Name = param.ClientName,
@@ -110,62 +105,47 @@ namespace client.service.serverPlugins.register
 
                 }
             });
-
-            requestCache = param;
-            requestCacheId = Helper.SetTimeout(() =>
-           {
-               if (requestCache != null)
-               {
-                   Action<RegisterMessageFailModel> callback = requestCache.FailCallback;
-                   requestCache = null;
-                   callback.Invoke(new RegisterMessageFailModel
-                   {
-                       Type = RegisterMessageFailType.TIMEOUT,
-                       Msg = "注册超时"
-                   });
-               }
-           }, param.Timeout);
-
-            OnSendRegisterMessageHandler?.Invoke(this, param.ClientName);
-        }
-
-        /// <summary>
-        /// 发送Tcp注册消息
-        /// </summary>
-        public event EventHandler<string> OnSendTcpRegisterMessageHandler;
-        /// <summary>
-        /// 发送Tcp注册消息
-        /// </summary>
-        /// <param name="arg"></param>
-        public void SendTcpRegisterMessage(long id, string clientName, string groupId = "", string mac = "", int localTcpport = 0, int localUdpPort = 0)
-        {
-            eventHandlers.SendTcp(new SendTcpEventArg
+            Logger.Instance.Debug($"UDP注册结果 {result.Code}");
+            if (result.Code == ServerResponeCodes.OK)
             {
-                Socket = TcpServer,
-                Data = new RegisterModel
-                {
-                    Id = id,
-                    Name = clientName,
-                    GroupId = groupId,
-                    Mac = mac,
-                    LocalTcpPort = localTcpport,
-                    LocalUdpPort = localUdpPort
-                }
-            });
-            OnSendTcpRegisterMessageHandler?.Invoke(this, clientName);
-        }
+                res = result.Data.DeBytes<RegisterResultModel>();
 
-        /// <summary>
-        /// 注册状态发生变化
-        /// </summary>
-        public event EventHandler<RegisterEventArg> OnSendRegisterStateChangeHandler;
-        /// <summary>
-        /// 发布注册状态变化消息
-        /// </summary>
-        /// <param name="arg"></param>
-        public void SendRegisterStateChange(RegisterEventArg arg)
-        {
-            OnSendRegisterStateChangeHandler?.Invoke(this, arg);
+                var tcpResult = await eventHandlers.SendReplyTcp(new SendTcpEventArg<RegisterModel>
+                {
+                    Socket = TcpServer,
+                    Path = "register/excute",
+                    Data = new RegisterModel
+                    {
+                        Id = res.Id,
+                        Name = param.ClientName,
+                        GroupId = res.GroupId,
+                        Mac = param.Mac,
+                        LocalTcpPort = param.LocalTcpPort,
+                        LocalUdpPort = param.LocalUdpPort
+                    }
+                });
+                Logger.Instance.Debug($"TCP注册结果 {result.Code}");
+                if (tcpResult.Code == ServerResponeCodes.OK)
+                {
+                    res = tcpResult.Data.DeBytes<RegisterResultModel>();
+                    SendRegisterTcpStateChange(new RegisterTcpEventArg
+                    {
+                        State = true,
+                        Id = res.Id,
+                        ClientName = param.ClientName,
+                        Ip = res.Ip,
+                    });
+                }
+                else
+                {
+                    res.Code = -1; res.Msg = tcpResult.ErrorMsg;
+                }
+            }
+            else
+            {
+                res.Code = -1; res.Msg = result.ErrorMsg;
+            }
+            return res;
         }
 
         /// <summary>
@@ -180,89 +160,11 @@ namespace client.service.serverPlugins.register
         {
             OnSendRegisterTcpStateChangeHandler?.Invoke(this, arg);
         }
-
-        /// <summary>
-        /// 注册消息
-        /// </summary>
-        public event EventHandler<OnRegisterResultEventArg> OnRegisterResultHandler;
-        /// <summary>
-        /// 注册消息
-        /// </summary>
-        /// <param name="arg"></param>
-        public void OnRegisterResult(OnRegisterResultEventArg arg)
-        {
-            if (requestCache != null)
-            {
-                if (arg.Data.Code == 0)
-                {
-                    SendTcpRegisterMessage(arg.Data.Id, requestCache.ClientName, arg.Data.GroupId, arg.Data.Mac, arg.Data.LocalTcpPort, arg.Data.LocalUdpPort);
-                    SendRegisterStateChange(new RegisterEventArg
-                    {
-                        ServerAddress = arg.Packet.SourcePoint,
-                        ClientAddress = new IPEndPoint(IPAddress.Parse(arg.Data.Ip), arg.Data.Port),
-                        State = true,
-                        Id = arg.Data.Id,
-                        ClientName = requestCache.ClientName
-                    });
-                }
-                else
-                {
-                    Action<RegisterMessageFailModel> callback = requestCache.FailCallback;
-                    requestCache = null;
-                    callback.Invoke(new RegisterMessageFailModel
-                    {
-                        Type = RegisterMessageFailType.ERROR,
-                        Msg = arg.Data.Msg
-                    });
-                }
-                OnRegisterResultHandler?.Invoke(this, arg);
-            }
-
-        }
-
-        /// <summary>
-        /// 注册Tcp消息
-        /// </summary>
-        public event EventHandler<OnRegisterResultEventArg> OnRegisterTcpResultHandler;
-        /// <summary>
-        /// 注册Tcp消息
-        /// </summary>
-        /// <param name="arg"></param>
-        public void OnRegisterTcpResult(OnRegisterResultEventArg arg)
-        {
-            if (requestCache != null)
-            {
-                SendRegisterTcpStateChange(new RegisterTcpEventArg
-                {
-                    State = true,
-                    Id = arg.Data.Id,
-                    ClientName = requestCache.ClientName,
-                    Ip = arg.Data.Ip,
-                });
-                requestCache.Callback?.Invoke(arg.Data);
-                requestCache = null;
-                OnRegisterTcpResultHandler?.Invoke(this, arg);
-            }
-
-        }
         #endregion
     }
 
     #region 注册model
-    public class OnRegisterResultEventArg : EventArgs
-    {
-        public PluginExcuteModel Packet { get; set; }
-        public RegisterResultModel Data { get; set; }
-    }
 
-    public class RegisterEventArg : EventArgs
-    {
-        public IPEndPoint ServerAddress { get; set; }
-        public IPEndPoint ClientAddress { get; set; }
-        public long Id { get; set; }
-        public string ClientName { get; set; }
-        public bool State { get; set; }
-    }
     public class RegisterTcpEventArg : EventArgs
     {
         public string Ip { get; set; }
@@ -282,27 +184,5 @@ namespace client.service.serverPlugins.register
         public int LocalUdpPort { get; set; } = 0;
         public int LocalTcpPort { get; set; } = 0;
 
-        public Action<RegisterResultModel> Callback { get; set; } = null;
-        public Action<RegisterMessageFailModel> FailCallback { get; set; } = null;
     }
-
-    public class RegisterMessageCache
-    {
-        public long Time { get; set; } = 0;
-        public int Timeout { get; set; } = 15 * 60 * 1000;
-        public Action<RegisterResultModel> Callback { get; set; } = null;
-        public Action<RegisterMessageFailModel> FailCallback { get; set; } = null;
-    }
-
-    public class RegisterMessageFailModel
-    {
-        public RegisterMessageFailType Type { get; set; } = RegisterMessageFailType.ERROR;
-        public string Msg { get; set; } = string.Empty;
-    }
-
-    public enum RegisterMessageFailType
-    {
-        ERROR, TIMEOUT
-    }
-
 }

@@ -11,7 +11,7 @@ namespace server.model
     /// 打洞
     /// </summary>
     [ProtoContract]
-    public class PunchHoleModel : IModelBase
+    public class PunchHoleModel
     {
         public PunchHoleModel() { }
 
@@ -26,12 +26,6 @@ namespace server.model
         /// </summary>
         [ProtoMember(2)]
         public long ToId { get; set; } = 0;
-
-        /// <summary>
-        /// 消息类型
-        /// </summary>
-        [ProtoMember(3, IsRequired = true)]
-        public MessageTypes MsgType { get; } = MessageTypes.SERVER_PUNCH_HOLE;
 
         /// <summary>
         /// 数据

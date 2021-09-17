@@ -59,14 +59,15 @@ namespace server.service
                             //分组里的每个客户端
                             foreach (var client in group.Value)
                             {
-                                tcpserver.Send(new RecvQueueModel<IModelBase>
+                                tcpserver.SendOnly(new RecvQueueModel<object>
                                 {
                                     Address = IPEndPoint.Parse(client.Address),
                                     TcpCoket = client.TcpSocket,
                                     Data = new ClientsModel
                                     {
                                         Clients = group.Value
-                                    }
+                                    },
+                                    Path = "clients/excute"
                                 });
                             }
                         }
@@ -87,9 +88,9 @@ namespace server.service
         public static ServiceProvider UseUdpServer(this ServiceProvider obj)
         {
             obj.GetService<IUdpServer>().Start(obj.GetService<Config>().Udp);
-           
+
             Logger.Instance.Info("UDP服务已开启");
-            
+
             return obj;
         }
 
@@ -114,7 +115,7 @@ namespace server.service
                  .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
             foreach (var item in types)
             {
-                Plugin.LoadPlugin((IPlugin)obj.GetService(item));
+                Plugin.LoadPlugin(item, obj.GetService(item));
             }
 
             return obj;

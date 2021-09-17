@@ -4,12 +4,9 @@ using server.model;
 namespace server.models
 {
     [ProtoContract]
-    public class RawPacketModel : IModelBase
+    public class RawPacketModel
     {
         public RawPacketModel() { }
-
-        [ProtoMember(1, IsRequired = true)]
-        public MessageTypes MsgType { get; } = MessageTypes.SERVER_RAW_PACKET;
 
         [ProtoMember(2)]
         public byte[] Data { get; set; } = System.Array.Empty<byte>();

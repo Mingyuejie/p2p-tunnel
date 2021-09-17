@@ -1,12 +1,9 @@
 ﻿using client.service.events;
-using client.service.p2pPlugins.plugins.request;
 using client.service.serverPlugins.register;
-using common;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
 using ProtoBuf;
 using server.model;
-using server.models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -88,15 +85,13 @@ namespace client.service.punchHolePlugins
             OnPunchHoleTcpHandler?.Invoke(this, arg);
         }
 
-        /// <summary>
-        /// 发送p2p的TCP消息
-        /// </summary>
         public event EventHandler<SendPunchHoleTcpArg> OnSendTcpHandler;
         public void SendTcp(SendPunchHoleTcpArg arg)
         {
-            eventHandlers.SendTcp(new SendTcpEventArg
+            eventHandlers.SendOnlyTcp(new SendTcpEventArg<PunchHoleModel>
             {
                 Socket = arg.Socket,
+                Path = "punchhole/excute",
                 Data = new PunchHoleModel
                 {
                     Data = arg.Data.ToBytes(),
@@ -117,9 +112,10 @@ namespace client.service.punchHolePlugins
         public event EventHandler<SendPunchHoleArg> OnSendHandler;
         public void Send(SendPunchHoleArg arg)
         {
-            eventHandlers.Send(new SendEventArg
+            eventHandlers.SendOnly(new SendEventArg<PunchHoleModel>
             {
                 Address = arg.Address,
+                Path = "punchhole/excute",
                 Data = new PunchHoleModel
                 {
                     Data = arg.Data.ToBytes(),

@@ -1,9 +1,7 @@
 ﻿using client.service.config;
 using client.service.serverPlugins.clients;
-using common;
 using common.extends;
 using ProtoBuf;
-using server.model;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,11 +9,9 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using static System.Environment;
 
-namespace client.service.p2pPlugins.plugins.fileServer
+namespace client.service.p2pPlugins.fileServer
 {
     /// <summary>
     /// 流程   
@@ -49,7 +45,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
         private readonly ConcurrentDictionary<string, FileSaveInfo> files = new();
 
         private readonly Config config;
-        private readonly ClientsHelper clientsHelper; 
+        private readonly ClientsHelper clientsHelper;
         private readonly FileServerEventHandles fileServerEventHandles;
 
         public FileServerHelper(Config config, ClientsHelper clientsHelper, FileServerEventHandles fileServerEventHandles)
@@ -67,7 +63,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
         private void OnTcpDownloadHandler(object sender, TcpEventArg<FileServerDownloadModel> e)
         {
             var file = GetLocalFile(e.Data.Path);
-            string md5 = $"{file.FullName}_{e.RawData.FormId}_{FileServerCmdTypes.DOWNLOAD}".Md5();
+            string md5 = $"{file.FullName}_{e.RawData.FormId}_download".Md5();
             if (!files.ContainsKey(md5))
             {
                 files.TryAdd(md5, new FileSaveInfo
@@ -75,7 +71,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
                     FileName = file.Name,
                     IndexLength = 0,
                     TotalLength = file.Length,
-                    FileType = FileServerCmdTypes.UPLOAD.ToString()
+                    FileType = "UPLOAD"
                 });
                 fileServerEventHandles.SendTcpDownload(new SendTcpEventArg<string>
                 {
@@ -105,7 +101,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
         {
             var file = e.Data;
 
-            string path = file.FileType == FileServerCmdTypes.DOWNLOAD ? localCurrentPath : RemoteCurrentPath;
+            string path = file.Type == FileTypes.DOWNLOAD ? localCurrentPath : RemoteCurrentPath;
             if (!Directory.Exists(path))
             {
                 _ = Directory.CreateDirectory(path);
@@ -124,7 +120,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
                     Stream = new FileStream(fullPath, FileMode.Create & FileMode.Append, FileAccess.Write),
                     IndexLength = 0,
                     TotalLength = file.Size,
-                    FileType = FileServerCmdTypes.DOWNLOAD.ToString(),
+                    FileType = "DOWNLOAD",
                     FileName = file.Name
                 };
                 _ = files.TryAdd(file.Md5, fs);
@@ -161,7 +157,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
             if (socket != null)
             {
                 var file = GetLocalFile(path);
-                string md5 = $"{file.FullName}_{toid}_{FileServerCmdTypes.UPLOAD}".Md5();
+                string md5 = $"{file.FullName}_{toid}_UPLOAD".Md5();
                 if (!files.ContainsKey(md5))
                 {
                     files.TryAdd(md5, new FileSaveInfo
@@ -169,7 +165,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
                         FileName = file.Name,
                         IndexLength = 0,
                         TotalLength = file.Length,
-                        FileType = FileServerCmdTypes.UPLOAD.ToString()
+                        FileType = "UPLOAD"
                     });
                     fileServerEventHandles.SendTcpUpload(new SendTcpEventArg<string>
                     {
@@ -199,39 +195,6 @@ namespace client.service.p2pPlugins.plugins.fileServer
             return false;
         }
 
-        public async Task<CommonTaskResponseModel<FileInfo[]>> RequestRemoteList(long toid, string path)
-        {
-            var socket = GetSocket(toid);
-            if (socket != null)
-            {
-                var result = await fileServerEventHandles.RequestTcpFileList(new SendTcpEventArg<FileServerListModel>
-                {
-                    ToId = toid,
-                    Socket = socket,
-                    Data = new FileServerListModel { Path = path }
-                });
-                if (string.IsNullOrWhiteSpace(result.ErrorMsg))
-                {
-                    for (int i = 0; i < result.Data.Length; i++)
-                    {
-                        if (result.Data[i].Type == 0)
-                        {
-                            result.Data[i].Image = GetDirectoryIcon();
-                        }
-                        else
-                        {
-                            result.Data[i].Image = GetFileIcon(result.Data[i].Name);
-                        }
-                    }
-                    return new CommonTaskResponseModel<FileInfo[]> { Data = result.Data };
-                }
-                else
-                {
-                    return result;
-                }
-            }
-            return new CommonTaskResponseModel<FileInfo[]> { ErrorMsg = "未选择目标客户端" };
-        }
 
         /// <summary>
         /// 上传下载中的
@@ -478,7 +441,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
         public FileStream Stream { get; set; }
         public long TotalLength { get; set; }
         public long IndexLength { get; set; }
-        public string FileType { get; set; } = FileServerCmdTypes.DOWNLOAD.ToString();
+        public string FileType { get; set; } = "DOWNLOAD";
         public string FileName { get; set; } = string.Empty;
     }
 

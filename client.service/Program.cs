@@ -1,23 +1,13 @@
 ﻿using client.service.clientService;
-using client.service.clientService.plugins;
 using client.service.config;
-using client.service.p2pPlugins;
-using client.service.p2pPlugins.plugins.forward.tcp;
-using client.service.p2pPlugins.plugins.request;
-using client.service.punchHolePlugins;
+using client.service.p2pPlugins.fileServer;
+using client.service.p2pPlugins.forward.tcp;
 using client.service.serverPlugins;
-using client.service.serverPlugins.clients;
 using client.service.serverPlugins.register;
 using client.service.webServer;
 using common;
-using common.extends;
 using Microsoft.Extensions.DependencyInjection;
-using server;
-using server.plugin;
 using System;
-using System.IO;
-using System.Linq;
-using System.Reflection;
 
 namespace client.service
 {
@@ -36,11 +26,15 @@ namespace client.service
             serviceCollection.AddSingleton((e) => serviceProvider);
 
             serviceCollection.AddServerPlugin()
+                .AddFileServerPlugin()
+                .AddTcpForwardPlugin()
                 .AddClientServer()
                 .AddWebServer();
 
             serviceProvider = serviceCollection.BuildServiceProvider();
             serviceProvider.UseServerPlugin()
+                .UseFileServerPlugin()
+                .UseTcpForwardPlugin()
                 .UseClientServer()
                 .UseWebServer();
 

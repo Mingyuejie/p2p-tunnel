@@ -12,12 +12,9 @@ namespace server.packet
     {
         public byte[] Chunk { get; set; }
 
-        public MessageTypes Type { get; set; }
-
-        public TcpPacket(byte[] chunk, MessageTypes type)
+        public TcpPacket(byte[] chunk)
         {
             Chunk = chunk;
-            Type = type;
         }
 
         /// <summary>
@@ -26,17 +23,14 @@ namespace server.packet
         /// <returns></returns>
         public byte[] ToArray()
         {
-            byte[] typeArray = BitConverter.GetBytes((int)Type);
-            byte[] lengthArray = BitConverter.GetBytes(Chunk.Length + typeArray.Length);
+            byte[] lengthArray = BitConverter.GetBytes(Chunk.Length);
 
-            byte[] result = new byte[lengthArray.Length + typeArray.Length + Chunk.Length];
+            byte[] result = new byte[lengthArray.Length + Chunk.Length];
 
             int distIndex = 0;
             Array.Copy(lengthArray, 0, result, distIndex, lengthArray.Length);
             distIndex += lengthArray.Length;
 
-            Array.Copy(typeArray, 0, result, distIndex, typeArray.Length);
-            distIndex += typeArray.Length;
 
             Array.Copy(Chunk, 0, result, distIndex, Chunk.Length);
 
@@ -65,20 +59,10 @@ namespace server.packet
                 {
                     buffer.RemoveRange(0, packageLen + 4);
                 }
-                result.Add(ToPacket(rev));
+                result.Add(new TcpPacket(rev));
             } while (buffer.Count > 4);
 
             return result;
-        }
-
-        private static TcpPacket ToPacket(byte[] array)
-        {
-            int offset = 0;
-            int type = BitConverter.ToInt32(array.Skip(offset).Take(4).ToArray());
-            offset += 4;
-            byte[] chunk = array.Skip(offset).ToArray();
-
-            return new TcpPacket(chunk, (MessageTypes)type);
         }
     }
 }

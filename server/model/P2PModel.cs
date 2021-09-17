@@ -4,12 +4,9 @@ using server.model;
 namespace server.models
 {
     [ProtoContract]
-    public class P2PModel : IModelBase
+    public class P2PModel 
     {
         public P2PModel() { }
-
-        [ProtoMember(1, IsRequired = true)]
-        public MessageTypes MsgType { get; } = MessageTypes.P2P;
 
         [ProtoMember(2)]
         public byte[] Data { get; set; } = System.Array.Empty<byte>();

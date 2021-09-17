@@ -18,13 +18,11 @@ namespace server.service.plugins
             this.udpServer = udpServer;
         }
 
-        public MessageTypes MsgType => MessageTypes.SERVER_RESET;
-
-        public void Excute(PluginExcuteModel data, ServerType serverType)
+        public bool Excute(PluginExcuteModel data)
         {
-            ResetModel model = data.Packet.Chunk.DeBytes<ResetModel>();
+            ResetModel model = data.Wrap.Content.DeBytes<ResetModel>();
 
-            if (!clientRegisterCache.Verify(model.Id, data)) return;
+            if (!clientRegisterCache.Verify(model.Id, data)) return false;
 
             //A已注册
             RegisterCacheModel source = clientRegisterCache.Get(model.Id);
@@ -37,21 +35,21 @@ namespace server.service.plugins
                     //是否在同一个组
                     if (source.GroupId != target.GroupId)
                     {
-                        return;
+                        return false;
                     }
 
-                    if (serverType == ServerType.UDP)
+                    if (data.ServerType == ServerType.UDP)
                     {
-                        udpServer.Send(new RecvQueueModel<IModelBase>
+                        udpServer.SendReply(new RecvQueueModel<object>
                         {
                             Address = target.Address,
                             TcpCoket = null,
                             Data = model
                         });
                     }
-                    else if (serverType == ServerType.TCP)
+                    else if (data.ServerType == ServerType.TCP)
                     {
-                        tcpServer.Send(new RecvQueueModel<IModelBase>
+                        tcpServer.SendReply(new RecvQueueModel<object>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
@@ -60,6 +58,8 @@ namespace server.service.plugins
                     }
                 }
             }
+
+            return true;
         }
     }
 }

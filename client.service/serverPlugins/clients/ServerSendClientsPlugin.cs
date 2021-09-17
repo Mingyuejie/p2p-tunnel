@@ -7,17 +7,16 @@ namespace client.service.serverPlugins.clients
     /// <summary>
     /// 服务器发来的客户端列表
     /// </summary>
-    public class ServerSendClientsPlugin : IPlugin
+    public class ClientsPlugin : IPlugin
     {
         private readonly ClientsEventHandles clientsEventHandles;
-        public ServerSendClientsPlugin(ClientsEventHandles clientsEventHandles) {
+        public ClientsPlugin(ClientsEventHandles clientsEventHandles) {
             this.clientsEventHandles = clientsEventHandles;
         }
-        public MessageTypes MsgType => MessageTypes.SERVER_SEND_CLIENTS;
 
-        public void Excute(PluginExcuteModel model, ServerType serverType)
+        public void Excute(PluginExcuteModel model)
         {
-            ClientsModel res = model.Packet.Chunk.DeBytes<ClientsModel>();
+            ClientsModel res = model.Wrap.Content.DeBytes<ClientsModel>();
             clientsEventHandles.OnServerSendClients(new OnServerSendClientsEventArg
             {
                 Data = res,

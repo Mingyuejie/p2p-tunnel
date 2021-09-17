@@ -1,7 +1,7 @@
 ﻿using client.service.clientService.plugins;
 using client.service.config;
-using client.service.p2pPlugins.plugins.fileServer;
-using client.service.p2pPlugins.plugins.forward.tcp;
+using client.service.p2pPlugins.fileServer;
+using client.service.p2pPlugins.forward.tcp;
 using client.service.serverPlugins.clients;
 using client.service.serverPlugins.register;
 using client.service.serverPlugins.register.client;

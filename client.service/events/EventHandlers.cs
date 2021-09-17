@@ -4,6 +4,7 @@ using server.model;
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace client.service.events
 {
@@ -25,38 +26,52 @@ namespace client.service.events
         /// <summary>
         /// 发送消息
         /// </summary>
-        public event EventHandler<SendEventArg> OnSendHandler;
-        /// <summary>
-        /// 发送消息
-        /// </summary>
         /// <param name="arg"></param>
-        public void Send(SendEventArg arg)
+        public async Task<ServerResponeMessageWrap> SendReply<T>(SendEventArg<T> arg)
         {
-            udpServer.Send(new RecvQueueModel<IModelBase>
+            return await udpServer.SendReply(new RecvQueueModel<T>
             {
                 Address = arg.Address,
-                Data = arg.Data
+                Data = arg.Data,
+                Path = arg.Path,
+                Timeout = arg.Timeout,
             });
-            OnSendHandler?.Invoke(this, arg);
         }
-        /// <summary>
-        /// 发送消息
-        /// </summary>
-        public event EventHandler<SendTcpEventArg> OnSendTcpHandler;
+
+        public void SendOnly<T>(SendEventArg<T> arg)
+        {
+            udpServer.SendOnly(new RecvQueueModel<T>
+            {
+                Address = arg.Address,
+                Data = arg.Data,
+                Path = arg.Path,
+                Timeout = arg.Timeout,
+            });
+        }
 
         /// <summary>
         /// 发送消息
         /// </summary>
-        public void SendTcp(SendTcpEventArg arg, int timeout = 0)
+        public Task<ServerResponeMessageWrap> SendReplyTcp<T>(SendTcpEventArg<T> arg)
         {
-            tcpServer.Send(new RecvQueueModel<IModelBase>
+            return tcpServer.SendReply(new RecvQueueModel<T>
             {
                 TcpCoket = arg.Socket,
                 Data = arg.Data,
-                Timeout = timeout
+                Timeout = arg.Timeout,
+                Path = arg.Path
             });
+        }
 
-            OnSendTcpHandler?.Invoke(this, arg);
+        public void SendOnlyTcp<T>(SendTcpEventArg<T> arg)
+        {
+            tcpServer.SendOnly(new RecvQueueModel<T>
+            {
+                TcpCoket = arg.Socket,
+                Data = arg.Data,
+                Timeout = arg.Timeout,
+                Path = arg.Path
+            });
         }
 
         #endregion
@@ -65,21 +80,19 @@ namespace client.service.events
 
     #region 发送消息
 
-    public class SendEventArg
+    public class SendEventArg<T>
     {
-        /// <summary>
-        /// 为 null时默认给连接的服务器发送
-        /// </summary>
         public IPEndPoint Address { get; set; }
-        public IModelBase Data { get; set; }
+        public T Data { get; set; }
+        public string Path { get; set; } = string.Empty;
+        public int Timeout { get; set; } = 0;
     }
-    public class SendTcpEventArg
+    public class SendTcpEventArg<T>
     {
-        /// <summary>
-        /// 为 null时默认给连接的服务器发送
-        /// </summary>
         public Socket Socket { get; set; }
-        public IModelBase Data { get; set; }
+        public T Data { get; set; }
+        public string Path { get; set; } = string.Empty;
+        public int Timeout { get; set; } = 0;
     }
 
     #endregion

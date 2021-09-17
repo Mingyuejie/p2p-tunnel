@@ -18,6 +18,7 @@ namespace client.service.serverPlugins
     {
         public static ServiceCollection AddServerPlugin(this ServiceCollection obj)
         {
+
             obj.AddServerPlugin(AppDomain.CurrentDomain.GetAssemblies());
 
             obj.AddSingleton<ITcpServer, TCPServer>();
@@ -32,7 +33,6 @@ namespace client.service.serverPlugins
             obj.AddSingleton<RegisterHelper>();
             obj.AddSingleton<RegisterState>();
 
-            obj.AddP2PPlugin();
             obj.AddPunchHolePlugin();
 
             return obj;
@@ -55,7 +55,6 @@ namespace client.service.serverPlugins
 
             obj.GetService<ClientsHelper>();
 
-            obj.UseP2PPlugin();
             obj.UsePunchHolePlugin();
 
             return obj;
@@ -67,7 +66,7 @@ namespace client.service.serverPlugins
                  .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
             foreach (var item in types)
             {
-                Plugin.LoadPlugin((IPlugin)obj.GetService(item));
+                Plugin.LoadPlugin(item,obj.GetService(item));
             }
             return obj;
         }

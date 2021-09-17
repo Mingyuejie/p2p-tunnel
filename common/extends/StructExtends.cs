@@ -9,7 +9,7 @@ namespace common.extends
 {
     public static class StructExtends
     {
-        public static byte[] ToBytes(this object structObj)
+        public static byte[] StructToBytes(this object structObj)
         {
             //得到结构体的大小
             int size = Marshal.SizeOf(structObj);

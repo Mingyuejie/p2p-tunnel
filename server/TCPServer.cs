@@ -2,6 +2,7 @@
 using common.extends;
 using server.extends;
 using server.model;
+using server.models;
 using server.packet;
 using server.plugin;
 using System;
@@ -18,7 +19,9 @@ namespace server
     public class TCPServer : ITcpServer
     {
         private long Id = 0;
+
         private ConcurrentDictionary<int, ServerModel> servers = new ConcurrentDictionary<int, ServerModel>();
+
         private CancellationTokenSource cancellationTokenSource;
         private bool Running
         {
@@ -30,6 +33,32 @@ namespace server
 
         public TCPServer()
         {
+            _ = Task.Factory.StartNew(() =>
+            {
+                while (true)
+                {
+                    if (!Plugin.sends.IsEmpty)
+                    {
+                        long time = Helper.GetTimeStamp();
+                        foreach (SendCacheModel item in Plugin.sends.Values)
+                        {
+                            if (time - item.Time > 15000)
+                            {
+                                if (Plugin.sends.TryRemove(item.RequestId, out SendCacheModel cache) && cache != null)
+                                {
+                                    cache.Tcs?.SetResult(new ServerResponeMessageWrap
+                                    {
+                                        Code = ServerResponeCodes.TIMEOUT,
+                                        ErrorMsg = "请求超时"
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    Thread.Sleep(1);
+                }
+
+            }, TaskCreationOptions.LongRunning);
         }
 
         public void Start(int port, IPAddress ip = null)
@@ -40,6 +69,7 @@ namespace server
             }
             cancellationTokenSource = new CancellationTokenSource();
             BindAccept(port, ip ?? IPAddress.Any, cancellationTokenSource);
+
         }
         public void BindAccept(int port, IPAddress ip, CancellationTokenSource tokenSource)
         {
@@ -92,13 +122,66 @@ namespace server
             }
             servers.Clear();
         }
-        public void Send(RecvQueueModel<IModelBase> msg)
+        public async Task<ServerResponeMessageWrap> SendReply<T>(RecvQueueModel<T> msg)
+        {
+            var tcs = new TaskCompletionSource<ServerResponeMessageWrap>();
+            if (Running && msg.TcpCoket != null && msg.TcpCoket.Connected)
+            {
+                try
+                {
+                    if (msg.RequestId == -1)
+                    {
+                        Interlocked.Increment(ref Plugin.requestId);
+                        msg.RequestId = Plugin.requestId;
+                    }
+
+                    Plugin.sends.TryAdd(msg.RequestId, new SendCacheModel { Tcs = tcs, RequestId = msg.RequestId });
+
+                    ServerMessageWrap wrap = new ServerMessageWrap
+                    {
+                        RequestId = msg.RequestId,
+                        Content = msg.Data.ToBytes(),
+                        Path = msg.Path,
+                        Code = msg.Code
+                    };
+
+                    TcpPacket tcpPackets = wrap.ToTcpPacket();
+                    msg.TcpCoket.SendTimeout = msg.Timeout;
+                    _ = msg.TcpCoket.Send(tcpPackets.ToArray());
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance.Debug(ex + "");
+                }
+            }
+            else
+            {
+                tcs.SetResult(new ServerResponeMessageWrap { Code = ServerResponeCodes.BAD_GATEWAY, ErrorMsg = "未运行" });
+            }
+            return await tcs.Task;
+        }
+
+        public void SendOnly<T>(RecvQueueModel<T> msg)
         {
             if (Running && msg.TcpCoket != null && msg.TcpCoket.Connected)
             {
                 try
                 {
-                    TcpPacket tcpPackets = msg.Data.ToTcpPacket();
+
+                    if (msg.RequestId == -1)
+                    {
+                        Interlocked.Increment(ref Plugin.requestId);
+                        msg.RequestId = Plugin.requestId;
+                    }
+                    ServerMessageWrap wrap = new ServerMessageWrap
+                    {
+                        RequestId = msg.RequestId,
+                        Content = msg.Data.ToBytes(),
+                        Path = msg.Path,
+                        Code = msg.Code
+                    };
+
+                    TcpPacket tcpPackets = wrap.ToTcpPacket();
                     msg.TcpCoket.SendTimeout = msg.Timeout;
                     _ = msg.TcpCoket.Send(tcpPackets.ToArray());
                 }
@@ -117,7 +200,6 @@ namespace server
             try
             {
                 Socket client = server.Socket.EndAccept(result);
-                Logger.Instance.Debug($"accept {client.RemoteEndPoint}");
                 BindReceive(client);
             }
             catch (Exception ex)
@@ -200,16 +282,78 @@ namespace server
             {
                 foreach (TcpPacket packet in bytesArray)
                 {
-                    PluginExcuteModel excute = new PluginExcuteModel
+                    ServerMessageWrap wrap = packet.Chunk.DeBytes<ServerMessageWrap>();
+                    if (Plugin.sends.ContainsKey(wrap.RequestId))
                     {
-                        TcpSocket = model.Socket,
-                        Packet = packet,
-                        ServerType = ServerType.TCP,
-                        SourcePoint = address
-                    };
-                    if (Plugin.plugins.ContainsKey(packet.Type))
+                        Plugin.sends.TryRemove(wrap.RequestId, out SendCacheModel send);
+                        send.Tcs.SetResult(new ServerResponeMessageWrap { Code = ServerResponeCodes.OK, Data = wrap.Content });
+                    }
+                    else if (wrap.RequestId > 0)
                     {
-                        Plugin.plugins[packet.Type].Excute(excute, ServerType.TCP);
+                        wrap.Path = wrap.Path.ToLower();
+                        if (Plugin.plugins.ContainsKey(wrap.Path))
+                        {
+                            var plugin = Plugin.plugins[wrap.Path];
+                            PluginExcuteModel excute = new PluginExcuteModel
+                            {
+                                TcpSocket = model.Socket,
+                                Packet = packet,
+                                ServerType = ServerType.TCP,
+                                SourcePoint = address,
+                                Wrap = wrap
+                            };
+
+                            object resultAsync = plugin.Item2.Invoke(plugin.Item1, new object[] { excute });
+                            if (excute.Code == ServerResponeCodes.OK)
+                            {
+                                object resultObject = null;
+                                if (resultAsync is Task task)
+                                {
+                                    task.Wait();
+                                    if (resultAsync is Task<object> task1)
+                                    {
+                                        resultObject = task1.Result;
+                                    }
+                                }
+                                else
+                                {
+                                    resultObject = resultAsync;
+                                }
+                                if (resultObject != null)
+                                {
+                                    SendOnly(new RecvQueueModel<object>
+                                    {
+                                        TcpCoket = model.Socket,
+                                        Code = excute.Code,
+                                        Data = resultObject,
+                                        RequestId = 0,
+                                        Path = wrap.Path
+                                    });
+                                }
+                            }
+                            else
+                            {
+                                SendOnly(new RecvQueueModel<object>
+                                {
+                                    TcpCoket = model.Socket,
+                                    Code = excute.Code,
+                                    Data = excute.ErrorMessage,
+                                    RequestId = 0,
+                                    Path = wrap.Path
+                                });
+                            }
+                        }
+                        else
+                        {
+                            SendOnly(new RecvQueueModel<object>
+                            {
+                                TcpCoket = model.Socket,
+                                Code = ServerResponeCodes.BAD_GATEWAY,
+                                Data = "没找到对应的插件执行你的操作",
+                                RequestId = 0,
+                                Path = wrap.Path
+                            });
+                        }
                     }
                 }
             }
@@ -270,4 +414,6 @@ namespace server
         public Socket Socket { get; set; }
         public ManualResetEvent AcceptDone { get; set; }
     }
+
+
 }

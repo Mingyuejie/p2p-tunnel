@@ -12,9 +12,7 @@ namespace client.service.serverPlugins.reset
             this.registerHelper = registerHelper;
         }
 
-        public MessageTypes MsgType => MessageTypes.SERVER_RESET;
-
-        public void Excute(PluginExcuteModel data, ServerType serverType)
+        public void Excute(PluginExcuteModel data)
         {
             //MessageResetModel model = data.Packet.Chunk.DeBytes<MessageResetModel>();
             _ = registerHelper.Start();

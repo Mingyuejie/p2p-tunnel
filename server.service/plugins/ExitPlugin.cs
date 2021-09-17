@@ -17,15 +17,15 @@ namespace server.service.plugins
             this.clientRegisterCache = clientRegisterCache;
         }
 
-        public MessageTypes MsgType => MessageTypes.SERVER_EXIT;
-
-        public void Excute(PluginExcuteModel data, ServerType serverType)
+        public bool Excute(PluginExcuteModel data)
         {
-            ExitModel model = data.Packet.Chunk.DeBytes<ExitModel>();
+            ExitModel model = data.Wrap.Content.DeBytes<ExitModel>();
 
-            if (!clientRegisterCache.Verify(model.Id, data)) return;
+            if (!clientRegisterCache.Verify(model.Id, data)) return false;
 
             clientRegisterCache.Remove(model.Id);
+
+            return true;
         }
     }
 }

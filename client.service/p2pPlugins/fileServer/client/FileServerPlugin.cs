@@ -5,17 +5,21 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace client.service.p2pPlugins.plugins.fileServer.client
+namespace client.service.p2pPlugins.fileServer.client
 {
 
     public class FileServerPlugin : IClientServicePlugin
     {
         private readonly Config config;
         private readonly FileServerHelper fileServerHelper;
-        public FileServerPlugin(Config config, FileServerHelper fileServerHelper)
+        private readonly FileServerEventHandles fileServerEventHandles;
+
+
+        public FileServerPlugin(Config config, FileServerHelper fileServerHelper, FileServerEventHandles fileServerEventHandles)
         {
             this.config = config;
             this.fileServerHelper = fileServerHelper;
+            this.fileServerEventHandles = fileServerEventHandles;
         }
 
         public FileServerConfig Info(ClientServicePluginExcuteWrap arg)
@@ -70,14 +74,11 @@ namespace client.service.p2pPlugins.plugins.fileServer.client
         public async Task<FileInfo[]> List(ClientServicePluginExcuteWrap arg)
         {
             RequestFileListModel model = arg.Content.DeJson<RequestFileListModel>();
-            var result = await fileServerHelper.RequestRemoteList(model.ToId, model.Path);
-            if (!string.IsNullOrWhiteSpace(result.ErrorMsg))
+            return await fileServerEventHandles.SendTcpFileList(new SendTcpEventArg<FileServerListModel>
             {
-                arg.SetCode(-1, result.ErrorMsg);
-                return Array.Empty<FileInfo>();
-            }
-
-            return result.Data;
+                ToId = model.ToId,
+                Data = new FileServerListModel { Path = model.Path }
+            });
         }
 
         public FileInfo[] LocalList(ClientServicePluginExcuteWrap arg)

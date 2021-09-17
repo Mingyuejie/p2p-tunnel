@@ -1,9 +1,11 @@
 ﻿using common.extends;
 using Microsoft.Extensions.DependencyInjection;
+using server.model;
+using server.plugin;
 
-namespace client.service.p2pPlugins.plugins.forward.tcp
+namespace client.service.p2pPlugins.forward.tcp
 {
-    public class TcpForwardPlugin : IP2PPlugin
+    public class TcpForwardPlugin : IPlugin
     {
         private readonly TcpForwardEventHandles tcpForwardEventHandles;
         public TcpForwardPlugin(TcpForwardEventHandles tcpForwardEventHandles)
@@ -11,13 +13,12 @@ namespace client.service.p2pPlugins.plugins.forward.tcp
             this.tcpForwardEventHandles = tcpForwardEventHandles;
         }
 
-        public P2PDataTypes Type => P2PDataTypes.TCP_FORWARD;
-        public void Excute(OnP2PTcpArg arg)
+        public void Excute(PluginExcuteModel arg)
         {
-            TcpForwardModel data = arg.Data.Data.DeBytes<TcpForwardModel>();
+            TcpForwardModel data = arg.Wrap.Content.DeBytes<TcpForwardModel>();
             tcpForwardEventHandles.OnTcpForward(new OnTcpForwardEventArg
             {
-                Packet = arg.Packet,
+                Packet = arg,
                 Data = data,
             });
         }

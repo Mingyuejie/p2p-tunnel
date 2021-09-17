@@ -1,73 +1,25 @@
 ﻿using client.service.events;
-using client.service.p2pPlugins.plugins.request;
 using client.service.serverPlugins.register;
 using common;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
 using server.model;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Threading.Tasks;
 
-namespace client.service.p2pPlugins.plugins.fileServer
+namespace client.service.p2pPlugins.fileServer
 {
     public class FileServerEventHandles
     {
-        private Dictionary<FileServerCmdTypes, IFileServerPlugin> plugins = null;
-
-        private readonly P2PEventHandles p2PEventHandles;
-        private readonly RequestEventHandlers requestEventHandlers;
         private readonly RegisterState registerState;
-        private readonly ServiceProvider serviceProvider;
+        private readonly EventHandlers eventHandlers;
 
-        public FileServerEventHandles(P2PEventHandles p2PEventHandles, RequestEventHandlers requestEventHandlers,
-            RegisterState registerState, ServiceProvider serviceProvider)
+        public FileServerEventHandles(RegisterState registerState, EventHandlers eventHandlers)
         {
-            this.p2PEventHandles = p2PEventHandles;
-            this.requestEventHandlers = requestEventHandlers;
             this.registerState = registerState;
-            this.serviceProvider = serviceProvider;
-        }
-
-        public void LoadPlugins()
-        {
-            LoadPlugins(AppDomain.CurrentDomain.GetAssemblies());
-        }
-
-        public void LoadPlugins(Assembly[] assemblys)
-        {
-            if (plugins == null)
-            {
-                plugins = new Dictionary<FileServerCmdTypes, IFileServerPlugin>();
-            }
-
-            var types = assemblys
-                .SelectMany(c => c.GetTypes())
-                .Where(c => c.GetInterfaces().Contains(typeof(IFileServerPlugin)));
-            foreach (var item in types)
-            {
-                IFileServerPlugin obj = (IFileServerPlugin)serviceProvider.GetService(item);
-                if (!plugins.ContainsKey(obj.Type))
-                {
-                    plugins.Add(obj.Type, obj);
-                }
-            }
-        }
-
-        public event EventHandler<TcpFileMessageEventArg> OnTcpFileServerHandler;
-        public void OnTcpFileServer(TcpFileMessageEventArg arg)
-        {
-            if (plugins.ContainsKey(arg.Data.CmdType))
-            {
-                IFileServerPlugin plugin = plugins[arg.Data.CmdType];
-                plugin?.Excute(arg);
-            }
-
-            OnTcpFileServerHandler?.Invoke(this, arg);
+            this.eventHandlers = eventHandlers;
         }
 
         /// <summary>
@@ -84,12 +36,12 @@ namespace client.service.p2pPlugins.plugins.fileServer
         /// <param name="arg"></param>
         public void SendTcpProgress(SendTcpEventArg<FileServerProgressModel> arg)
         {
-            p2PEventHandles.SendTcp(new SendP2PTcpArg
+            eventHandlers.SendOnlyTcp(new events.SendTcpEventArg<FileServerModel>
             {
                 Socket = arg.Socket,
+                Path = "fileserver/progress",
                 Data = new FileServerModel
                 {
-                    CmdType = FileServerCmdTypes.PROGRESS,
                     FormId = registerState.RemoteInfo.ConnectId,
                     ToId = arg.ToId,
                     Data = arg.Data.ToBytes()
@@ -122,7 +74,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
                     Size = file.Length,
                     Md5 = arg.Data,
                     Data = Array.Empty<byte>(),
-                    FileType = FileServerCmdTypes.UPLOAD
+                    Type = FileTypes.UPLOAD
                 }
             }, file);
         }
@@ -134,15 +86,15 @@ namespace client.service.p2pPlugins.plugins.fileServer
         /// <param name="arg"></param>
         public void SendTcpDownload(SendTcpEventArg<FileServerDownloadModel> arg)
         {
-            p2PEventHandles.SendTcp(new SendP2PTcpArg
+            eventHandlers.SendOnlyTcp(new events.SendTcpEventArg<FileServerModel>
             {
                 Socket = arg.Socket,
+                Path = "fileserver/download",
                 Data = new FileServerModel
                 {
-                    CmdType = FileServerCmdTypes.DOWNLOAD,
                     FormId = registerState.RemoteInfo.ConnectId,
                     ToId = arg.ToId,
-                    Data = arg.Data.ToBytes()
+                    Data = arg.Data.ToBytes(),
                 }
             });
         }
@@ -164,7 +116,7 @@ namespace client.service.p2pPlugins.plugins.fileServer
                     Size = file.Length,
                     Md5 = arg.Data,
                     Data = Array.Empty<byte>(),
-                    FileType = FileServerCmdTypes.DOWNLOAD
+                    Type = FileTypes.DOWNLOAD
                 }
             }, file);
         }
@@ -181,19 +133,24 @@ namespace client.service.p2pPlugins.plugins.fileServer
         /// 请求文件列表
         /// </summary>
         /// <param name="arg"></param>
-        public async Task<CommonTaskResponseModel<FileInfo[]>> RequestTcpFileList(SendTcpEventArg<FileServerListModel> arg)
+        public async Task<FileInfo[]> SendTcpFileList(SendTcpEventArg<FileServerListModel> arg)
         {
-            var result = await requestEventHandlers.TcpRequest(new TcpRequestParam
+            var result = await eventHandlers.SendReplyTcp(new events.SendTcpEventArg<FileServerModel>
             {
                 Socket = arg.Socket,
-                Path = "filerequest/list",
-                Data = arg.Data
+                Path = "fileserver/list",
+                Data = new FileServerModel
+                {
+                    FormId = registerState.RemoteInfo.ConnectId,
+                    ToId = arg.ToId,
+                    Data = arg.Data.ToBytes()
+                }
             });
-            if (result.Code == MessageRequestResponseCodes.OK)
+            if (result.Code == ServerResponeCodes.OK)
             {
-                return new CommonTaskResponseModel<FileInfo[]> { Data = result.Data.DeBytes<FileInfo[]>() };
+                return result.Data.DeBytes<FileInfo[]>();
             }
-            return new CommonTaskResponseModel<FileInfo[]> { ErrorMsg = result.ErrorMsg };
+            return Array.Empty<FileInfo>();
         }
 
         public event EventHandler<SendTcpEventArg<FileModel>> OnSendTcpFileHandler;
@@ -248,19 +205,18 @@ namespace client.service.p2pPlugins.plugins.fileServer
         }
         private void _SendTcpFile(SendTcpEventArg<FileModel> arg)
         {
-            p2PEventHandles.SendTcp(new SendP2PTcpArg
+            eventHandlers.SendOnlyTcp(new events.SendTcpEventArg<FileServerModel>
             {
                 Socket = arg.Socket,
+                Path = "fileserver/file",
                 Data = new FileServerModel
                 {
-                    CmdType = arg.Data.CmdType,
                     FormId = registerState.RemoteInfo.ConnectId,
                     ToId = arg.ToId,
                     Data = arg.Data.ToBytes()
                 }
             });
         }
-
     }
 
     public class TcpEventArg<T> : EventArgs

@@ -6,14 +6,11 @@ namespace server.model
 {
 
     [ProtoContract]
-    public class ClientsModel : IModelBase
+    public class ClientsModel
     {
         public ClientsModel() { }
 
-        [ProtoMember(1, IsRequired = true)]
-        public MessageTypes MsgType { get; } = MessageTypes.SERVER_SEND_CLIENTS;
-
-        [ProtoMember(2)]
+        [ProtoMember(1)]
         public IEnumerable<ClientsClientModel> Clients { get; set; }
 
     }

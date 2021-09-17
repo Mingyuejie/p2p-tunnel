@@ -8,7 +8,5 @@ namespace server.packet
 
         public byte[] Chunk { get; set; }
 
-        public MessageTypes Type { get; set; }
-
     }
 }

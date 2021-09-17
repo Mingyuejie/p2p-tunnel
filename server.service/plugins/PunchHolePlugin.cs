@@ -24,23 +24,21 @@ namespace server.service.plugins
             this.udpServer = udpServer;
         }
 
-        public MessageTypes MsgType => MessageTypes.SERVER_PUNCH_HOLE;
-
-        public void Excute(PluginExcuteModel data, ServerType serverType)
+        public bool Excute(PluginExcuteModel data)
         {
-            PunchHoleModel model = data.Packet.Chunk.DeBytes<PunchHoleModel>();
+            PunchHoleModel model = data.Wrap.Content.DeBytes<PunchHoleModel>();
 
-            if (!clientRegisterCache.Verify(model.Id, data)) return;
+            if (!clientRegisterCache.Verify(model.Id, data)) return false;
 
             //A已注册
             RegisterCacheModel source = clientRegisterCache.Get(model.Id);
-            if (source == null) return;
+            if (source == null) return false;
             //B已注册
             RegisterCacheModel target = clientRegisterCache.Get(model.ToId);
-            if (target == null) return;
+            if (target == null) return false;
 
             //是否在同一个组
-            if (source.GroupId != target.GroupId) return;
+            if (source.GroupId != target.GroupId) return false;
 
             if (model.PunchForwardType == PunchForwardTypes.NOTIFY)
             {
@@ -56,31 +54,39 @@ namespace server.service.plugins
                     LocalUdpPort = source.LocalUdpPort,
                 }.ToBytes();
             }
-            switch (serverType)
+            switch (data.ServerType)
             {
                 case ServerType.TCP:
                     {
-                        tcpServer.Send(new RecvQueueModel<IModelBase>
+                        tcpServer.SendOnly(new RecvQueueModel<PunchHoleModel>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
-                            Data = model
+                            Data = model,
+                            Code = ServerResponeCodes.OK,
+                            Path = data.Wrap.Path,
+                            RequestId = data.Wrap.RequestId
                         });
                     }
                     break;
                 case ServerType.UDP:
                     {
-                        udpServer.Send(new RecvQueueModel<IModelBase>
+                        udpServer.SendOnly(new RecvQueueModel<PunchHoleModel>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
-                            Data = model
+                            Data = model,
+                            Code = ServerResponeCodes.OK,
+                            Path = data.Wrap.Path,
+                            RequestId = data.Wrap.RequestId
                         });
                     }
                     break;
                 default:
                     break;
             }
+
+            return true;
         }
     }
 }

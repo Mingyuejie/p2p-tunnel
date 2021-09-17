@@ -6,7 +6,7 @@ namespace server.model
     /// 客户端注册数据
     /// </summary>
     [ProtoContract]
-    public class RegisterModel : IModelBase
+    public class RegisterModel
     {
         public RegisterModel() { }
 
@@ -25,9 +25,6 @@ namespace server.model
         [ProtoMember(3)]
         public string Name { get; set; } = string.Empty;
 
-        [ProtoMember(4, IsRequired = true)]
-        public MessageTypes MsgType { get; } = MessageTypes.SERVER_REGISTER;
-
         [ProtoMember(5)]
         public string LocalIps { get; set; } = string.Empty;
 
@@ -42,7 +39,7 @@ namespace server.model
     }
 
     [ProtoContract]
-    public class RegisterResultModel : IModelBase
+    public class RegisterResultModel
     {
         public RegisterResultModel() { }
 
@@ -55,28 +52,25 @@ namespace server.model
         [ProtoMember(3)]
         public long Id { get; set; } = 0;
 
-        [ProtoMember(4, IsRequired = true)]
-        public MessageTypes MsgType { get; } = MessageTypes.SERVER_REGISTER_RESULT;
-
-        [ProtoMember(5)]
+        [ProtoMember(4)]
         public string Ip { get; set; } = string.Empty;
 
-        [ProtoMember(6)]
+        [ProtoMember(5)]
         public int Port { get; set; } = 0;
 
-        [ProtoMember(7)]
+        [ProtoMember(6)]
         public int TcpPort { get; set; } = 0;
 
-        [ProtoMember(8)]
+        [ProtoMember(7)]
         public string GroupId { get; set; } = string.Empty;
 
-        [ProtoMember(9)]
+        [ProtoMember(8)]
         public string Mac { get; set; } = string.Empty;
 
-        [ProtoMember(10)]
+        [ProtoMember(9)]
         public int LocalTcpPort { get; set; } = 0;
 
-        [ProtoMember(11)]
+        [ProtoMember(10)]
         public int LocalUdpPort { get; set; } = 0;
     }
 }

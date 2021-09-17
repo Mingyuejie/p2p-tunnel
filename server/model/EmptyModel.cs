@@ -4,11 +4,11 @@ using server.model;
 namespace server.models
 {
     [ProtoContract]
-    public class ExitModel
+    public class EmptyModel
     {
-        public ExitModel() { }
+        public EmptyModel() { }
         [ProtoMember(1)]
-        public long Id { get; set; } = 0;
+        public byte Id { get; } = 0;
 
     }
 }
