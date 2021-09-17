@@ -63,7 +63,7 @@ namespace client.service.p2pPlugins.fileServer
 
         private void OnTcpDownloadHandler(object sender, TcpEventArg<FileServerDownloadModel> e)
         {
-            var file = GetLocalFile(e.Data.Path);
+            var file = GetRemoteFile(e.Data.Path);
             string md5 = $"{file.FullName}_{e.RawData.FormId}_download".Md5();
             if (!files.ContainsKey(md5))
             {
@@ -72,7 +72,7 @@ namespace client.service.p2pPlugins.fileServer
                     FileName = file.Name,
                     IndexLength = 0,
                     TotalLength = file.Length,
-                    FileType = "UPLOAD"
+                    FileType = "DOWNLOAD"
                 });
                 fileServerEventHandles.SendTcpDownload(new SendTcpEventArg<string>
                 {
@@ -205,7 +205,6 @@ namespace client.service.p2pPlugins.fileServer
             arg.Socket = GetSocket(arg.ToId);
             return await fileServerEventHandles.SendTcpFileList(arg);
         }
-
 
         /// <summary>
         /// 上传下载中的
