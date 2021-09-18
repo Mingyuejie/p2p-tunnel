@@ -42,7 +42,7 @@ namespace client.service.punchHolePlugins.plugins.tcp.nutssa
         private Socket TcpServer => registerState.TcpSocket;
         private long ConnectId => registerState.RemoteInfo.ConnectId;
 
-        public int ClientTcpPort => registerState.RemoteInfo.TcpPort;
+        public int ClientTcpPort => registerState.LocalInfo.TcpPort;
         public int RouteLevel => registerState.LocalInfo.RouteLevel;
 
         private readonly ConcurrentDictionary<long, ConnectTcpCache> connectTcpCache = new();
