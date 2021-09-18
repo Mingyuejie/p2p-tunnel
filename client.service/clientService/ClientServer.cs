@@ -229,7 +229,7 @@ namespace client.service.clientService
                             }
                         }.ToJson());
                     }
-                    System.Threading.Thread.Sleep(100);
+                    System.Threading.Thread.Sleep(300);
                 }
             });
         }

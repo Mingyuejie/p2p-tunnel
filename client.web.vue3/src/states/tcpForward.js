@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-21 19:46:50
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-17 21:13:09
+ * @LastEditTime: 2021-09-18 10:31:44
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\states\tcpForward.js
@@ -18,7 +18,7 @@ export const provideTcpForward = () => {
     });
     provide(provideTcpForwardKey, state);
 
-    subNotifyMsg('tcpforward', (list) => {
+    subNotifyMsg('tcpforward/list', (list) => {
         state.connected = list.filter(c => c.Listening == true).length > 0;
     });
     subWebsocketState(() => {

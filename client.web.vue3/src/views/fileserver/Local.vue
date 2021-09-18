@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-05 12:43:00
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-17 21:13:29
+ * @LastEditTime: 2021-09-18 09:23:57
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\fileserver\Local.vue
@@ -75,7 +75,7 @@ export default {
                     FullName: '..',
                     Type: 0,
                     Length: 0,
-                }, ...JSON.parse(res)];
+                }, ...res];
                 state.loading = false;
             }).catch(() => {
                 state.loading = false;

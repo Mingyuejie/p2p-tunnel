@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-20 00:47:21
  * @LastEditors: snltty
- * @LastEditTime: 2021-08-27 15:59:54
+ * @LastEditTime: 2021-09-18 09:35:53
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\TcpForward.vue
@@ -149,7 +149,7 @@ export default {
 
         const getData = () => {
             getTcpForwards().then((res) => {
-                state.list = JSON.parse(res);
+                state.list = res;
             });
         };
         getData();

@@ -1,6 +1,10 @@
 ﻿using client.service.events;
+using common;
+using common.extends;
 using server.model;
 using System;
+using System.IO;
+using System.IO.Compression;
 using System.Net.Sockets;
 
 namespace client.service.p2pPlugins.forward.tcp
@@ -32,6 +36,7 @@ namespace client.service.p2pPlugins.forward.tcp
         {
             OnTcpForwardHandler?.Invoke(this, arg);
         }
+
         #endregion
     }
 

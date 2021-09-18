@@ -26,6 +26,9 @@ namespace client.service.p2pPlugins.forward.tcp
 
         [ProtoMember(6, IsRequired = true)]
         public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.UNALIVE;
+
+        [ProtoMember(7)]
+        public byte Compress { get; set; } = 0;
     }
 
 

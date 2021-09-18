@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-20 00:47:21
  * @LastEditors: snltty
- * @LastEditTime: 2021-08-27 16:02:25
+ * @LastEditTime: 2021-09-18 09:44:40
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\UPNP.vue
@@ -100,7 +100,8 @@ export default {
         });
 
         getUpnpDevices().then((res) => {
-            state.devices = JSON.parse(res).map((v, i) => { return { text: v, index: i } });
+            console.log(res);
+            state.devices = res.map((v, i) => { return { text: v, index: i } });
         });
         const deviceChange = () => {
             getUpnpMappings(state.deviceIndex).then((res) => {

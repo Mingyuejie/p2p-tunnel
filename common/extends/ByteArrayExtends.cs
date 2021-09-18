@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 
@@ -72,6 +73,25 @@ namespace common.extends
                 }
             }
             return false;
+        }
+
+
+        public static byte[] GZip(this byte[] bytes)
+        {
+            using MemoryStream compressStream = new MemoryStream();
+            using var zipStream = new GZipStream(compressStream, CompressionMode.Compress);
+            zipStream.Write(bytes, 0, bytes.Length);
+            zipStream.Close();
+            return compressStream.ToArray();
+        }
+
+        public static byte[] UnGZip(this byte[] bytes)
+        {
+            using var compressStream = new MemoryStream(bytes);
+            using var zipStream = new GZipStream(compressStream, CompressionMode.Decompress);
+            using var resultStream = new MemoryStream();
+            zipStream.CopyTo(resultStream);
+            return resultStream.ToArray();
         }
     }
 }
