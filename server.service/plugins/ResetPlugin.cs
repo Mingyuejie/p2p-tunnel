@@ -1,16 +1,15 @@
 ﻿using common.extends;
 using server.model;
 using server.plugin;
-using server.service.cache;
-using server.service.model;
+using server.service.plugins.register.caching;
 
 namespace server.service.plugins
 {
     public class ResetPlugin : IPlugin
     {
-        private readonly IClientRegisterCache clientRegisterCache;
+        private readonly IClientRegisterCaching clientRegisterCache;
         private readonly ServerPluginHelper serverPluginHelper;
-        public ResetPlugin(IClientRegisterCache clientRegisterCache, ServerPluginHelper serverPluginHelper)
+        public ResetPlugin(IClientRegisterCaching clientRegisterCache, ServerPluginHelper serverPluginHelper)
         {
             this.clientRegisterCache = clientRegisterCache;
             this.serverPluginHelper = serverPluginHelper;

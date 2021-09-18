@@ -1,10 +1,11 @@
-﻿using client.service.clientService;
-using client.service.config;
-using client.service.p2pPlugins.fileServer;
-using client.service.p2pPlugins.forward.tcp;
-using client.service.serverPlugins;
-using client.service.serverPlugins.register;
-using client.service.webServer;
+﻿using client.service.plugins.p2pPlugins.fileServer;
+using client.service.plugins.p2pPlugins.forward.tcp;
+using client.service.plugins.punchHolePlugins;
+using client.service.plugins.serverPlugins;
+using client.service.plugins.serverPlugins.register;
+using client.service.servers.clientServer;
+using client.service.servers.clientServer.plugins;
+using client.service.servers.webServer;
 using common;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -17,29 +18,38 @@ namespace client.service
         {
             Logger.Instance.Info("正在启动...");
 
-            Config config = Config.ReadConfig();
-
-            var serviceCollection = new ServiceCollection();
+            ServiceCollection serviceCollection = new ServiceCollection();
             ServiceProvider serviceProvider = null;
 
+            //配置文件注入
+            Config config = Config.ReadConfig();
             serviceCollection.AddSingleton((e) => config);
+            //注入 依赖注入服务供应 使得可以在别的地方通过注入的方式获得 ServiceProvider 以用来获取其它服务
             serviceCollection.AddSingleton((e) => serviceProvider);
 
             serviceCollection.AddServerPlugin()
-                .AddFileServerPlugin()
-                .AddTcpForwardPlugin()
-                .AddClientServer()
-                .AddWebServer();
+                .AddPunchHolePlugin()//打洞
+                .AddFileServerPlugin()//文件服务
+                .AddTcpForwardPlugin()  //tcp转发
+
+                .AddClientServer() //客户端管理
+                .AddUpnpPlugin()//upnp映射
+
+                .AddWebServer();//客户端页面
 
             serviceProvider = serviceCollection.BuildServiceProvider();
             serviceProvider.UseServerPlugin()
-                .UseFileServerPlugin()
-                .UseTcpForwardPlugin()
-                .UseClientServer()
-                .UseWebServer();
+                .UsePunchHolePlugin()//打洞
+                .UseFileServerPlugin() //文件服务
+                .UseTcpForwardPlugin()//tcp转发
+
+                .UseClientServer()//客户端管理
+                .UseUpnpPlugin()//upnp映射
+
+                .UseWebServer();//客户端页面
 
             //自动注册
-            if (serviceProvider.GetService<Config>().Client.AutoReg)
+            if (config.Client.AutoReg)
             {
                 serviceProvider.GetService<RegisterHelper>().AutoReg();
             }

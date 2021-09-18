@@ -1,23 +1,16 @@
-﻿using common;
-using common.extends;
+﻿using common.extends;
 using server.model;
 using server.plugin;
-using server.service.cache;
-using server.service.model;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using server.service.plugins.register.caching;
 
 namespace server.service.plugins
 {
     public class PunchHolePlugin : IPlugin
     {
-        private readonly IClientRegisterCache clientRegisterCache;
+        private readonly IClientRegisterCaching clientRegisterCache;
         private readonly ServerPluginHelper serverPluginHelper;
 
-        public PunchHolePlugin(IClientRegisterCache clientRegisterCache, ServerPluginHelper serverPluginHelper)
+        public PunchHolePlugin(IClientRegisterCaching clientRegisterCache, ServerPluginHelper serverPluginHelper)
         {
             this.clientRegisterCache = clientRegisterCache;
             this.serverPluginHelper = serverPluginHelper;

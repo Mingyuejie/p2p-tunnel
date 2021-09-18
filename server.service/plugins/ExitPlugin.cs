@@ -2,7 +2,7 @@
 using server.model;
 using server.models;
 using server.plugin;
-using server.service.cache;
+using server.service.plugins.register.caching;
 
 namespace server.service.plugins
 {
@@ -11,8 +11,8 @@ namespace server.service.plugins
     /// </summary>
     public class ExitPlugin : IPlugin
     {
-        private readonly IClientRegisterCache clientRegisterCache;
-        public ExitPlugin(IClientRegisterCache clientRegisterCache)
+        private readonly IClientRegisterCaching clientRegisterCache;
+        public ExitPlugin(IClientRegisterCaching clientRegisterCache)
         {
             this.clientRegisterCache = clientRegisterCache;
         }

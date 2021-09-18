@@ -6,21 +6,16 @@ using server.plugin;
 using SharpPcap.LibPcap;
 using SharpPcap;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using common;
-using server.service.model;
-using server.service.cache;
+using server.service.plugins.register.caching;
 
 namespace server.service.plugins
 {
     public class RawPacketPlugin : IPlugin
     {
-        private readonly IClientRegisterCache clientRegisterCache;
-        public RawPacketPlugin(IClientRegisterCache clientRegisterCache)
+        private readonly IClientRegisterCaching clientRegisterCache;
+        public RawPacketPlugin(IClientRegisterCaching clientRegisterCache)
         {
             this.clientRegisterCache = clientRegisterCache;
         }

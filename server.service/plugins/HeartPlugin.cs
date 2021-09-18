@@ -1,15 +1,14 @@
 ﻿using common.extends;
 using server.model;
 using server.plugin;
-using server.service.cache;
-using System.Threading.Tasks;
+using server.service.plugins.register.caching;
 
 namespace server.service.plugins
 {
     public class HeartPlugin : IPlugin
     {
-        private readonly IClientRegisterCache clientRegisterCache;
-        public HeartPlugin(IClientRegisterCache clientRegisterCache)
+        private readonly IClientRegisterCaching clientRegisterCache;
+        public HeartPlugin(IClientRegisterCaching clientRegisterCache)
         {
             this.clientRegisterCache = clientRegisterCache;
         }

@@ -2,14 +2,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using server.model;
 using server.plugin;
-using server.service.cache;
-using server.service.model;
-using server.service.plugins;
+using server.service.plugins.register.caching;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace server.service
@@ -46,7 +43,7 @@ namespace server.service
 
         public static ServiceCollection AddPlugin(this ServiceCollection obj)
         {
-            obj.AddSingleton<IClientRegisterCache, ClientRegisterCache>();
+            obj.AddSingleton<IClientRegisterCaching, ClientRegisterCaching>();
             obj.AddSingleton<ServerPluginHelper>();
 
             var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(c => c.GetTypes())
@@ -76,7 +73,7 @@ namespace server.service
 
         private static void Loop(ServiceProvider obj)
         {
-            var clientRegisterCache = obj.GetService<IClientRegisterCache>();
+            var clientRegisterCache = obj.GetService<IClientRegisterCaching>();
             ServerPluginHelper serverPluginHelper = obj.GetService<ServerPluginHelper>();
             Task.Run(() =>
             {
