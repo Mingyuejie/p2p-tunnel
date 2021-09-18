@@ -8,11 +8,8 @@ using System.Threading.Tasks;
 
 namespace server
 {
-    public interface IUdpServer
+    public interface IUdpServer : IServer<byte[]>
     {
-        public void Start(int port, IPAddress ip = null);
-        public void Stop();
-        public Task<ServerMessageResponeWrap> SendReply<T>(SendMessageWrap<T> msg);
-        public void SendOnly<T>(SendMessageWrap<T> msg);
+        public bool Send(byte[] data, IPEndPoint address);
     }
 }

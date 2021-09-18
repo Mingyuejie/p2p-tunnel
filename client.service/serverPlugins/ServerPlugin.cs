@@ -23,6 +23,8 @@ namespace client.service.serverPlugins
 
             obj.AddSingleton<ITcpServer, TCPServer>();
             obj.AddSingleton<IUdpServer, UDPServer>();
+
+
             obj.AddSingleton<EventHandlers>();
 
             obj.AddSingleton<ResetEventHandles>();
@@ -40,6 +42,7 @@ namespace client.service.serverPlugins
 
         public static ServiceCollection AddServerPlugin(this ServiceCollection obj, Assembly[] assemblys)
         {
+            obj.AddSingleton<ServerPluginHelper>();
             var types = assemblys.SelectMany(c => c.GetTypes())
                  .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
             foreach (var item in types)
@@ -54,7 +57,6 @@ namespace client.service.serverPlugins
             obj.UseServerPlugin(AppDomain.CurrentDomain.GetAssemblies());
 
             obj.GetService<ClientsHelper>();
-
             obj.UsePunchHolePlugin();
 
             return obj;
@@ -62,11 +64,12 @@ namespace client.service.serverPlugins
 
         public static ServiceProvider UseServerPlugin(this ServiceProvider obj, Assembly[] assemblys)
         {
+            ServerPluginHelper serverPluginHelper = obj.GetService<ServerPluginHelper>();
             var types = assemblys.SelectMany(c => c.GetTypes())
                  .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
             foreach (var item in types)
             {
-                Plugin.LoadPlugin(item,obj.GetService(item));
+                serverPluginHelper.LoadPlugin(item, obj.GetService(item));
             }
             return obj;
         }

@@ -29,11 +29,55 @@ namespace server.service
 
         public static ServiceProvider UseTcpServer(this ServiceProvider obj)
         {
-            var config = obj.GetService<Config>();
-            var clientRegisterCache = obj.GetService<IClientRegisterCache>();
             var tcpserver = obj.GetService<ITcpServer>();
-            tcpserver.Start(config.Tcp);
+            tcpserver.Start(obj.GetService<Config>().Tcp);
+            Logger.Instance.Info("TCP服务已开启");
 
+            return obj;
+        }
+        public static ServiceProvider UseUdpServer(this ServiceProvider obj)
+        {
+            obj.GetService<IUdpServer>().Start(obj.GetService<Config>().Udp);
+            Logger.Instance.Info("UDP服务已开启");
+
+            return obj;
+        }
+
+
+        public static ServiceCollection AddPlugin(this ServiceCollection obj)
+        {
+            obj.AddSingleton<IClientRegisterCache, ClientRegisterCache>();
+            obj.AddSingleton<ServerPluginHelper>();
+
+            var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(c => c.GetTypes())
+                 .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
+            foreach (var item in types)
+            {
+                obj.AddSingleton(item);
+            }
+
+            return obj;
+        }
+
+        public static ServiceProvider UsePlugin(this ServiceProvider obj)
+        {
+            ServerPluginHelper serverPluginHelper = obj.GetService<ServerPluginHelper>();
+            var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(c => c.GetTypes())
+                 .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
+            foreach (var item in types)
+            {
+                serverPluginHelper.LoadPlugin(item, obj.GetService(item));
+            }
+
+            Loop(obj);
+
+            return obj;
+        }
+
+        private static void Loop(ServiceProvider obj)
+        {
+            var clientRegisterCache = obj.GetService<IClientRegisterCache>();
+            ServerPluginHelper serverPluginHelper = obj.GetService<ServerPluginHelper>();
             Task.Run(() =>
             {
                 while (true)
@@ -59,7 +103,7 @@ namespace server.service
                             //分组里的每个客户端
                             foreach (var client in group.Value)
                             {
-                                tcpserver.SendOnly(new SendMessageWrap<object>
+                                serverPluginHelper.SendOnlyTcp(new SendMessageWrap<object>
                                 {
                                     Address = IPEndPoint.Parse(client.Address),
                                     TcpCoket = client.TcpSocket,
@@ -80,45 +124,6 @@ namespace server.service
                     System.Threading.Thread.Sleep(1000);
                 }
             });
-
-            Logger.Instance.Info("TCP服务已开启");
-
-            return obj;
-        }
-        public static ServiceProvider UseUdpServer(this ServiceProvider obj)
-        {
-            obj.GetService<IUdpServer>().Start(obj.GetService<Config>().Udp);
-
-            Logger.Instance.Info("UDP服务已开启");
-
-            return obj;
-        }
-
-
-        public static ServiceCollection AddPlugin(this ServiceCollection obj)
-        {
-            obj.AddSingleton<IClientRegisterCache, ClientRegisterCache>();
-
-            var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(c => c.GetTypes())
-                 .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
-            foreach (var item in types)
-            {
-                obj.AddSingleton(item);
-            }
-
-            return obj;
-        }
-
-        public static ServiceProvider UsePlugin(this ServiceProvider obj)
-        {
-            var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(c => c.GetTypes())
-                 .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
-            foreach (var item in types)
-            {
-                Plugin.LoadPlugin(item, obj.GetService(item));
-            }
-
-            return obj;
         }
     }
 }

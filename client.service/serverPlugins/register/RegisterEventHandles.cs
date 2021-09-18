@@ -25,8 +25,8 @@ namespace client.service.serverPlugins.register
             this.udpServer = udpServer;
             this.tcpServer = tcpServer;
 
-            AppDomain.CurrentDomain.ProcessExit += (s, e) => SendExitMessage();
-            Console.CancelKeyPress += (s, e) => SendExitMessage();
+            AppDomain.CurrentDomain.ProcessExit += (s, e) => _ = SendExitMessage();
+            Console.CancelKeyPress += (s, e) => _ = SendExitMessage();
         }
 
         private IPEndPoint UdpServer => registerState.UdpAddress;
@@ -57,7 +57,7 @@ namespace client.service.serverPlugins.register
 
             if (UdpServer != null)
             {
-                await udpServer.SendReply(new SendMessageWrap<ExitModel>
+                await eventHandlers.SendReply(new SendEventArg<ExitModel>
                 {
                     Address = arg.Address,
                     Data = arg.Data,
@@ -89,6 +89,7 @@ namespace client.service.serverPlugins.register
         /// <param name="arg"></param>
         public async Task<RegisterResultModel> SendRegisterMessage(RegisterParams param)
         {
+            Logger.Instance.Debug("1");
             OnSendRegisterMessageHandler?.Invoke(this, param.ClientName);
             ServerMessageResponeWrap result = await eventHandlers.SendReply(new SendEventArg<RegisterModel>
             {
@@ -105,10 +106,12 @@ namespace client.service.serverPlugins.register
 
                 }
             });
+            Logger.Instance.Debug("2");
             if (result.Code != ServerMessageResponeCodes.OK)
             {
                 return new RegisterResultModel { Code = -1, Msg = result.ErrorMsg };
             }
+            Logger.Instance.Debug("3");
 
             var res = result.Data.DeBytes<RegisterResultModel>();
             var tcpResult = await eventHandlers.SendReplyTcp(new SendTcpEventArg<RegisterModel>
@@ -125,6 +128,7 @@ namespace client.service.serverPlugins.register
                     LocalUdpPort = param.LocalUdpPort
                 }
             });
+            Logger.Instance.Debug("4");
             if (tcpResult.Code != ServerMessageResponeCodes.OK)
             {
                 return new RegisterResultModel { Code = -1, Msg = tcpResult.ErrorMsg };
@@ -136,6 +140,7 @@ namespace client.service.serverPlugins.register
                 ClientName = param.ClientName,
                 Ip = res.Ip,
             });
+            Logger.Instance.Debug("5");
             return tcpResult.Data.DeBytes<RegisterResultModel>();
 
         }

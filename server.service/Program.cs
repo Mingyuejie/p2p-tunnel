@@ -26,7 +26,6 @@ namespace server.service
 
             serviceCollection.AddPlugin().AddTcpServer().AddUdpServer();
 
-
             var serviceProvider = serviceCollection.BuildServiceProvider();
             serviceProvider.UsePlugin().UseTcpServer().UseUdpServer();
 

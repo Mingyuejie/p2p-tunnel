@@ -1,13 +1,7 @@
 ﻿using common;
-using common.extends;
-using server.extends;
 using server.model;
-using server.models;
 using server.packet;
-using server.plugin;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -24,8 +18,10 @@ namespace server
 
         private UdpClient UdpcRecv { get; set; } = null;
         IPEndPoint IpepServer { get; set; } = null;
-        long sequence = 0;
         private CancellationTokenSource cancellationTokenSource;
+
+        public event IServer<byte[]>.ServerPacketEventHandler OnServerPacket;
+
         private bool Running
         {
             get
@@ -72,85 +68,21 @@ namespace server
             }
         }
 
-        public async Task<ServerMessageResponeWrap> SendReply<T>(SendMessageWrap<T> msg)
+        public bool Send(byte[] data, IPEndPoint address)
         {
-            var tcs = new TaskCompletionSource<ServerMessageResponeWrap>();
-            if (UdpcRecv != null && msg.Address != null)
+            if (UdpcRecv != null && address != null)
             {
                 try
                 {
-                    if (msg.RequestId == 0)
-                    {
-                        Interlocked.Increment(ref Plugin.requestId);
-                        msg.RequestId = Plugin.requestId;
-                    }
-
-                    Plugin.sends.TryAdd(msg.RequestId, new SendCacheModel { Tcs = tcs, RequestId = msg.RequestId });
-
-                    ServerMessageWrap wrap = new ServerMessageWrap
-                    {
-                        RequestId = msg.RequestId,
-                        Content = msg.Data.ToBytes(),
-                        Path = msg.Path,
-                        Code = msg.Code,
-                        Type = msg.Type
-                    };
-
-                    _ = Interlocked.Increment(ref sequence);
-                    IEnumerable<UdpPacket> udpPackets = wrap.ToUdpPackets(sequence);
-
-                    foreach (UdpPacket udpPacket in udpPackets)
-                    {
-                        byte[] udpPacketDatagram = udpPacket.ToArray();
-                        _ = UdpcRecv.SendAsync(udpPacketDatagram, udpPacketDatagram.Length, msg.Address);
-                    }
+                    _ = UdpcRecv.SendAsync(data, data.Length, address);
+                    return true;
                 }
                 catch (Exception ex)
                 {
                     Logger.Instance.Debug(ex + "");
                 }
             }
-            else
-            {
-                tcs.SetResult(new ServerMessageResponeWrap { Code = ServerMessageResponeCodes.BAD_GATEWAY, ErrorMsg = "未运行" });
-            }
-            return await tcs.Task;
-        }
-
-        public void SendOnly<T>(SendMessageWrap<T> msg)
-        {
-            if (UdpcRecv != null && msg.Address != null)
-            {
-                try
-                {
-                    if (msg.RequestId == 0)
-                    {
-                        Interlocked.Increment(ref Plugin.requestId);
-                        msg.RequestId = Plugin.requestId;
-                    }
-                    ServerMessageWrap wrap = new ServerMessageWrap
-                    {
-                        RequestId = msg.RequestId,
-                        Content = msg.Data.ToBytes(),
-                        Path = msg.Path,
-                        Code = msg.Code,
-                        Type = msg.Type
-                    };
-
-                    _ = Interlocked.Increment(ref sequence);
-                    IEnumerable<UdpPacket> udpPackets = wrap.ToUdpPackets(sequence);
-
-                    foreach (UdpPacket udpPacket in udpPackets)
-                    {
-                        byte[] udpPacketDatagram = udpPacket.ToArray();
-                        _ = UdpcRecv.SendAsync(udpPacketDatagram, udpPacketDatagram.Length, msg.Address);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Instance.Debug(ex + "");
-                }
-            }
+            return false;
         }
 
         private void Receive()
@@ -159,102 +91,13 @@ namespace server
             {
                 IPEndPoint ipepClient = null;
                 byte[] bytRecv = UdpcRecv.Receive(ref ipepClient);
-
-                UdpPacket packet = UdpPacket.FromArray(ipepClient, bytRecv);
-                if (packet != null)
+                OnServerPacket?.Invoke(new ServerDataWrap<byte[]>
                 {
-
-                    ServerMessageWrap wrap = packet.Chunk.DeBytes<ServerMessageWrap>();
-                    if (wrap.Type == ServerMessageTypes.RESPONSE)
-                    {
-                        if (Plugin.sends.TryRemove(wrap.RequestId, out SendCacheModel send) && send != null)
-                        {
-                            Logger.Instance.Debug($"UDP {wrap.Path} 花费时间 {Helper.GetTimeStamp() - send.Time} ms");
-                            send.Tcs.SetResult(new ServerMessageResponeWrap { Code = wrap.Code, ErrorMsg = wrap.Code.ToString(), Data = wrap.Content });
-                        }
-                    }
-                    else
-                    {
-                        try
-                        {
-                            wrap.Path = wrap.Path.ToLower();
-                            if (Plugin.plugins.ContainsKey(wrap.Path))
-                            {
-                                var plugin = Plugin.plugins[wrap.Path];
-                                PluginParamWrap excute = new PluginParamWrap
-                                {
-                                    SourcePoint = ipepClient,
-                                    Packet = packet,
-                                    ServerType = ServerType.UDP,
-                                    Wrap = wrap
-                                };
-                                object resultAsync = plugin.Item2.Invoke(plugin.Item1, new object[] { excute });
-                                if (excute.Code == ServerMessageResponeCodes.OK)
-                                {
-                                    object resultObject = null;
-                                    if (resultAsync is Task task)
-                                    {
-                                        task.Wait();
-                                        if (resultAsync is Task<object> task1)
-                                        {
-                                            resultObject = task1.Result;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        resultObject = resultAsync;
-                                    }
-                                    if (resultObject != null)
-                                    {
-                                        SendOnly(new SendMessageWrap<object>
-                                        {
-                                            Address = ipepClient,
-                                            Type = ServerMessageTypes.RESPONSE,
-                                            Data = resultObject ?? new EmptyModel(),
-                                            RequestId = wrap.RequestId,
-                                            Path = wrap.Path
-                                        });
-                                    }
-                                }
-                                else
-                                {
-                                    SendOnly(new SendMessageWrap<object>
-                                    {
-                                        Address = ipepClient,
-                                        Type = ServerMessageTypes.RESPONSE,
-                                        Data = excute.ErrorMessage,
-                                        RequestId = wrap.RequestId,
-                                        Path = wrap.Path
-                                    });
-                                }
-                            }
-                            else
-                            {
-                                SendOnly(new SendMessageWrap<object>
-                                {
-                                    Address = ipepClient,
-                                    Type = ServerMessageTypes.RESPONSE,
-                                    Code = ServerMessageResponeCodes.BAD_GATEWAY,
-                                    Data = "没找到对应的插件执行你的操作",
-                                    RequestId = wrap.RequestId,
-                                    Path = wrap.Path
-                                });
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            SendOnly(new SendMessageWrap<object>
-                            {
-                                Address = ipepClient,
-                                Type = ServerMessageTypes.RESPONSE,
-                                Code = ServerMessageResponeCodes.BAD_GATEWAY,
-                                Data = ex.Message,
-                                RequestId = wrap.RequestId,
-                                Path = wrap.Path
-                            });
-                        }
-                    }
-                }
+                    Data = bytRecv,
+                    Address = ipepClient,
+                    ServerType = ServerType.UDP,
+                    Socket = null
+                });
             }
             catch (Exception ex)
             {

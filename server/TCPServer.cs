@@ -2,13 +2,10 @@
 using common.extends;
 using server.extends;
 using server.model;
-using server.models;
 using server.packet;
-using server.plugin;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -20,9 +17,12 @@ namespace server
     {
         private long Id = 0;
 
-        private ConcurrentDictionary<int, ServerModel> servers = new ConcurrentDictionary<int, ServerModel>();
+        private readonly ConcurrentDictionary<int, ServerModel> servers = new ConcurrentDictionary<int, ServerModel>();
 
         private CancellationTokenSource cancellationTokenSource;
+
+        public event IServer<List<byte>>.ServerPacketEventHandler OnServerPacket;
+
         private bool Running
         {
             get
@@ -33,32 +33,6 @@ namespace server
 
         public TCPServer()
         {
-            _ = Task.Factory.StartNew(() =>
-            {
-                while (true)
-                {
-                    if (!Plugin.sends.IsEmpty)
-                    {
-                        long time = Helper.GetTimeStamp();
-                        foreach (SendCacheModel item in Plugin.sends.Values)
-                        {
-                            if (time - item.Time > 15000)
-                            {
-                                if (Plugin.sends.TryRemove(item.RequestId, out SendCacheModel cache) && cache != null)
-                                {
-                                    cache.Tcs?.SetResult(new ServerMessageResponeWrap
-                                    {
-                                        Code = ServerMessageResponeCodes.TIMEOUT,
-                                        ErrorMsg = "请求超时"
-                                    });
-                                }
-                            }
-                        }
-                    }
-                    Thread.Sleep(1);
-                }
-
-            }, TaskCreationOptions.LongRunning);
         }
 
         public void Start(int port, IPAddress ip = null)
@@ -113,85 +87,30 @@ namespace server
             ReceiveModel.ClearAll();
             foreach (ServerModel server in servers.Values)
             {
-
                 if (server != null && server.Socket != null)
                 {
+                    server.AcceptDone.Reset();
                     server.AcceptDone.Dispose();
                     server.Socket.SafeClose();
                 }
             }
             servers.Clear();
         }
-        public async Task<ServerMessageResponeWrap> SendReply<T>(SendMessageWrap<T> msg)
+        public bool Send(byte[] data, Socket socket)
         {
-            var tcs = new TaskCompletionSource<ServerMessageResponeWrap>();
-            if (Running && msg.TcpCoket != null && msg.TcpCoket.Connected)
+            if (socket != null && socket.Connected)
             {
                 try
                 {
-                    if (msg.RequestId == 0)
-                    {
-                        Interlocked.Increment(ref Plugin.requestId);
-                        msg.RequestId = Plugin.requestId;
-                    }
-
-                    Plugin.sends.TryAdd(msg.RequestId, new SendCacheModel { Tcs = tcs, RequestId = msg.RequestId });
-
-                    ServerMessageWrap wrap = new ServerMessageWrap
-                    {
-                        RequestId = msg.RequestId,
-                        Content = msg.Data.ToBytes(),
-                        Path = msg.Path,
-                        Type = msg.Type,
-                        Code = msg.Code
-                    };
-
-                    TcpPacket tcpPackets = wrap.ToTcpPacket();
-                    msg.TcpCoket.SendTimeout = msg.Timeout;
-                    _ = msg.TcpCoket.Send(tcpPackets.ToArray());
+                    socket.Send(data);
+                    return true;
                 }
                 catch (Exception ex)
                 {
                     Logger.Instance.Debug(ex + "");
                 }
             }
-            else
-            {
-                tcs.SetResult(new ServerMessageResponeWrap { Code = ServerMessageResponeCodes.BAD_GATEWAY, ErrorMsg = "未运行" });
-            }
-            return await tcs.Task;
-        }
-
-        public void SendOnly<T>(SendMessageWrap<T> msg)
-        {
-            if (Running && msg.TcpCoket != null && msg.TcpCoket.Connected)
-            {
-                try
-                {
-
-                    if (msg.RequestId == 0)
-                    {
-                        Interlocked.Increment(ref Plugin.requestId);
-                        msg.RequestId = Plugin.requestId;
-                    }
-                    ServerMessageWrap wrap = new ServerMessageWrap
-                    {
-                        RequestId = msg.RequestId,
-                        Content = msg.Data.ToBytes(),
-                        Path = msg.Path,
-                        Type = msg.Type,
-                        Code = msg.Code
-                    };
-
-                    TcpPacket tcpPackets = wrap.ToTcpPacket();
-                    msg.TcpCoket.SendTimeout = msg.Timeout;
-                    _ = msg.TcpCoket.Send(tcpPackets.ToArray());
-                }
-                catch (Exception ex)
-                {
-                    Logger.Instance.Debug(ex + "");
-                }
-            }
+            return false;
         }
 
         private void Accept(IAsyncResult result)
@@ -279,107 +198,13 @@ namespace server
             {
                 model.CacheBuffer.AddRange(buffer);
             }
-            List<TcpPacket> bytesArray = TcpPacket.FromArray(model.CacheBuffer);
-            if (bytesArray.Count > 0)
+            OnServerPacket?.Invoke(new ServerDataWrap<List<byte>>
             {
-                foreach (TcpPacket packet in bytesArray)
-                {
-                    ServerMessageWrap wrap = packet.Chunk.DeBytes<ServerMessageWrap>();
-                    if (wrap.Type == ServerMessageTypes.RESPONSE)
-                    {
-                        if (Plugin.sends.TryRemove(wrap.RequestId, out SendCacheModel send) && send != null)
-                        {
-                            Logger.Instance.Debug($"TCP {wrap.Path} 花费时间 {Helper.GetTimeStamp()- send.Time} ms");
-                            send.Tcs.SetResult(new ServerMessageResponeWrap { Code = wrap.Code, ErrorMsg = wrap.Code.ToString(), Data = wrap.Content });
-                        }
-                    }
-                    else
-                    {
-                        try
-                        {
-                            wrap.Path = wrap.Path.ToLower();
-                            if (Plugin.plugins.ContainsKey(wrap.Path))
-                            {
-                                var plugin = Plugin.plugins[wrap.Path];
-                                PluginParamWrap excute = new PluginParamWrap
-                                {
-                                    TcpSocket = model.Socket,
-                                    Packet = packet,
-                                    ServerType = ServerType.TCP,
-                                    SourcePoint = address,
-                                    Wrap = wrap
-                                };
-
-                                object resultAsync = plugin.Item2.Invoke(plugin.Item1, new object[] { excute });
-                                if (excute.Code == ServerMessageResponeCodes.OK)
-                                {
-                                    object resultObject = null;
-                                    if (resultAsync is Task task)
-                                    {
-                                        task.Wait();
-                                        if (resultAsync is Task<object> task1)
-                                        {
-                                            resultObject = task1.Result;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        resultObject = resultAsync;
-                                    }
-                                    if (resultObject != null)
-                                    {
-                                        SendOnly(new SendMessageWrap<object>
-                                        {
-                                            TcpCoket = model.Socket,
-                                            Code = excute.Code,
-                                            Data = resultObject,
-                                            RequestId = wrap.RequestId,
-                                            Path = wrap.Path,
-                                            Type = ServerMessageTypes.RESPONSE
-                                        });
-                                    }
-                                }
-                                else
-                                {
-                                    SendOnly(new SendMessageWrap<object>
-                                    {
-                                        TcpCoket = model.Socket,
-                                        Code = excute.Code,
-                                        Data = excute.ErrorMessage,
-                                        RequestId = wrap.RequestId,
-                                        Path = wrap.Path,
-                                        Type = ServerMessageTypes.RESPONSE
-                                    });
-                                }
-                            }
-                            else
-                            {
-                                SendOnly(new SendMessageWrap<string>
-                                {
-                                    TcpCoket = model.Socket,
-                                    Code = ServerMessageResponeCodes.BAD_GATEWAY,
-                                    Data = "没找到对应的插件执行你的操作",
-                                    RequestId = wrap.RequestId,
-                                    Path = wrap.Path,
-                                    Type = ServerMessageTypes.RESPONSE
-                                });
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            SendOnly(new SendMessageWrap<string>
-                            {
-                                TcpCoket = model.Socket,
-                                Code = ServerMessageResponeCodes.BAD_GATEWAY,
-                                Data = ex.Message,
-                                RequestId = wrap.RequestId,
-                                Path = wrap.Path,
-                                Type = ServerMessageTypes.RESPONSE
-                            });
-                        }
-                    }
-                }
-            }
+                Data = model.CacheBuffer,
+                Address = address,
+                ServerType = ServerType.TCP,
+                Socket = model.Socket
+            });
         }
     }
 

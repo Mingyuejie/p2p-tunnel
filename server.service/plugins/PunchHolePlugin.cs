@@ -15,13 +15,12 @@ namespace server.service.plugins
     public class PunchHolePlugin : IPlugin
     {
         private readonly IClientRegisterCache clientRegisterCache;
-        private readonly ITcpServer tcpServer;
-        private readonly IUdpServer udpServer;
-        public PunchHolePlugin(IClientRegisterCache clientRegisterCache, ITcpServer tcpServer, IUdpServer udpServer)
+        private readonly ServerPluginHelper serverPluginHelper;
+
+        public PunchHolePlugin(IClientRegisterCache clientRegisterCache, ServerPluginHelper serverPluginHelper)
         {
             this.clientRegisterCache = clientRegisterCache;
-            this.tcpServer = tcpServer;
-            this.udpServer = udpServer;
+            this.serverPluginHelper = serverPluginHelper;
         }
 
         public bool Excute(PluginParamWrap data)
@@ -58,7 +57,7 @@ namespace server.service.plugins
             {
                 case ServerType.TCP:
                     {
-                        tcpServer.SendOnly(new SendMessageWrap<PunchHoleModel>
+                        serverPluginHelper.SendOnlyTcp(new SendMessageWrap<PunchHoleModel>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
@@ -71,7 +70,7 @@ namespace server.service.plugins
                     break;
                 case ServerType.UDP:
                     {
-                        udpServer.SendOnly(new SendMessageWrap<PunchHoleModel>
+                        serverPluginHelper.SendOnly(new SendMessageWrap<PunchHoleModel>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,

@@ -10,13 +10,11 @@ namespace client.service.events
 {
     public class EventHandlers
     {
-        private readonly ITcpServer tcpServer;
-        private readonly IUdpServer udpServer;
+        private readonly ServerPluginHelper  serverPluginHelper;
 
-        public EventHandlers(ITcpServer tcpServer, IUdpServer udpServer)
+        public EventHandlers(ServerPluginHelper serverPluginHelper)
         {
-            this.tcpServer = tcpServer;
-            this.udpServer = udpServer;
+            this.serverPluginHelper = serverPluginHelper;
         }
 
         public long Sequence { get; set; } = 0;
@@ -29,7 +27,7 @@ namespace client.service.events
         /// <param name="arg"></param>
         public async Task<ServerMessageResponeWrap> SendReply<T>(SendEventArg<T> arg)
         {
-            return await udpServer.SendReply(new SendMessageWrap<T>
+            return await serverPluginHelper.SendReply(new SendMessageWrap<T>
             {
                 Address = arg.Address,
                 Data = arg.Data,
@@ -40,7 +38,7 @@ namespace client.service.events
 
         public void SendOnly<T>(SendEventArg<T> arg)
         {
-            udpServer.SendOnly(new SendMessageWrap<T>
+            serverPluginHelper.SendOnly(new SendMessageWrap<T>
             {
                 Address = arg.Address,
                 Data = arg.Data,
@@ -54,7 +52,7 @@ namespace client.service.events
         /// </summary>
         public Task<ServerMessageResponeWrap> SendReplyTcp<T>(SendTcpEventArg<T> arg)
         {
-            return tcpServer.SendReply(new SendMessageWrap<T>
+            return serverPluginHelper.SendReplyTcp(new SendMessageWrap<T>
             {
                 TcpCoket = arg.Socket,
                 Data = arg.Data,
@@ -65,7 +63,7 @@ namespace client.service.events
 
         public void SendOnlyTcp<T>(SendTcpEventArg<T> arg)
         {
-            tcpServer.SendOnly(new SendMessageWrap<T>
+            serverPluginHelper.SendOnlyTcp(new SendMessageWrap<T>
             {
                 TcpCoket = arg.Socket,
                 Data = arg.Data,

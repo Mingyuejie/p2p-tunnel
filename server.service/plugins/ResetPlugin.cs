@@ -9,13 +9,11 @@ namespace server.service.plugins
     public class ResetPlugin : IPlugin
     {
         private readonly IClientRegisterCache clientRegisterCache;
-        private readonly ITcpServer tcpServer;
-        private readonly IUdpServer udpServer;
-        public ResetPlugin(IClientRegisterCache clientRegisterCache, ITcpServer tcpServer, IUdpServer udpServer)
+        private readonly ServerPluginHelper serverPluginHelper;
+        public ResetPlugin(IClientRegisterCache clientRegisterCache, ServerPluginHelper serverPluginHelper)
         {
             this.clientRegisterCache = clientRegisterCache;
-            this.tcpServer = tcpServer;
-            this.udpServer = udpServer;
+            this.serverPluginHelper = serverPluginHelper;
         }
 
         public bool Excute(PluginParamWrap data)
@@ -40,7 +38,7 @@ namespace server.service.plugins
 
                     if (data.ServerType == ServerType.UDP)
                     {
-                        udpServer.SendReply(new SendMessageWrap<object>
+                        serverPluginHelper.SendOnly(new SendMessageWrap<object>
                         {
                             Address = target.Address,
                             TcpCoket = null,
@@ -49,7 +47,7 @@ namespace server.service.plugins
                     }
                     else if (data.ServerType == ServerType.TCP)
                     {
-                        tcpServer.SendReply(new SendMessageWrap<object>
+                        serverPluginHelper.SendOnlyTcp(new SendMessageWrap<object>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,

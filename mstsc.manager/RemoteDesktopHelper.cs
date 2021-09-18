@@ -1,5 +1,6 @@
 ﻿//using RDPCOMAPILib;
 using common;
+using common.extends;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -57,7 +58,7 @@ namespace mstsc.manager
         {
             if (File.Exists(configFileName))
             {
-                ConfigFileModel config = Helper.DeJsonSerializer<ConfigFileModel>(File.ReadAllText(configFileName));
+                ConfigFileModel config = File.ReadAllText(configFileName).DeJson<ConfigFileModel>();
                 if (config != null)
                 {
                     viewModel.Desktops = new ObservableCollection<RemoteDesktopInfo>(config.Desktops);
@@ -67,10 +68,10 @@ namespace mstsc.manager
 
         private void SaveConfig()
         {
-            File.WriteAllText(configFileName, Helper.JsonSerializer(new ConfigFileModel
+            File.WriteAllText(configFileName, new ConfigFileModel
             {
                 Desktops = viewModel.Desktops.ToList()
-            }));
+            }.ToJson());
         }
 
         public void Disponse()
