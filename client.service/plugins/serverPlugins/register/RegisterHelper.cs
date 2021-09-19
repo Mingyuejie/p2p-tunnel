@@ -1,4 +1,5 @@
-﻿using client.service.plugins.serverPlugins.heart;
+﻿using client.plugins.serverPlugins.register;
+using client.service.plugins.serverPlugins.heart;
 using common;
 using server;
 using server.model;
@@ -11,13 +12,9 @@ using System.Threading.Tasks;
 
 namespace client.service.plugins.serverPlugins.register
 {
-
-
-
     public class RegisterHelper
     {
         private readonly RegisterEventHandles registerEventHandles;
-        private readonly HeartEventHandles heartEventHandles;
         private readonly ITcpServer tcpServer;
         private readonly IUdpServer udpServer;
         private readonly Config config;
@@ -32,7 +29,6 @@ namespace client.service.plugins.serverPlugins.register
             ITcpServer tcpServer, IUdpServer udpServer, Config config, RegisterState registerState)
         {
             this.registerEventHandles = registerEventHandles;
-            this.heartEventHandles = heartEventHandles;
             this.tcpServer = tcpServer;
             this.udpServer = udpServer;
             this.config = config;
@@ -72,12 +68,10 @@ namespace client.service.plugins.serverPlugins.register
                 {
                     if (e.Packet.ServerType == ServerType.UDP)
                     {
-                        //Logger.Instance.Debug($"UDP收到服务器心跳~~~");
                         lastTime = Helper.GetTimeStamp();
                     }
                     else if (e.Packet.ServerType == ServerType.TCP)
                     {
-                        //Logger.Instance.Debug($"TCP收到服务器心跳~~~");
                         lastTcpTime = Helper.GetTimeStamp();
                     }
                 }
@@ -201,62 +195,5 @@ namespace client.service.plugins.serverPlugins.register
         }
     }
 
-    public class RegisterState
-    {
-        public Socket TcpSocket { get; set; }
-        public IPEndPoint UdpAddress { get; set; }
-        public RemoteInfo RemoteInfo { get; set; } = new RemoteInfo();
-        public LocalInfo LocalInfo { get; set; } = new LocalInfo();
-    }
-
-    public class RemoteInfo
-    {
-        /// <summary>
-        /// 客户端在远程的ip
-        /// </summary>
-        public string Ip { get; set; } = string.Empty;
-        /// <summary>
-        /// 客户端在远程的TCP端口
-        /// </summary>
-        public int TcpPort { get; set; } = 0;
-        /// <summary>
-        /// 客户端连接ID
-        /// </summary>
-        public long ConnectId { get; set; } = 0;
-    }
-
-    public class LocalInfo
-    {
-        /// <summary>
-        /// 外网距离
-        /// </summary>
-        public int RouteLevel { get; set; } = 0;
-        /// <summary>
-        /// 本地mac地址
-        /// </summary>
-        public string Mac { get; set; } = string.Empty;
-        /// <summary>
-        /// 本地UDP端口
-        /// </summary>
-        public int Port { get; set; } = 0;
-        /// <summary>
-        /// 本地TCP端口
-        /// </summary>
-        public int TcpPort { get; set; } = 0;
-
-        public string LocalIp { get; set; } = string.Empty;
-
-        /// <summary>
-        /// 是否正在连接服务器
-        /// </summary>
-        public bool IsConnecting { get; set; } = false;
-        /// <summary>
-        /// UDP是否已连接服务器
-        /// </summary>
-        public bool Connected { get; set; } = false;
-        /// <summary>
-        /// TCP是否已连接服务器
-        /// </summary>
-        public bool TcpConnected { get; set; } = false;
-    }
+    
 }

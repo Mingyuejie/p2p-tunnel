@@ -1,6 +1,7 @@
-﻿using client.service.plugins.serverPlugins.clients;
+﻿using client.plugins.serverPlugins.clients;
 using common;
 using common.extends;
+using server.plugins.register.caching;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,14 +12,15 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace client.service.plugins.p2pPlugins.forward.tcp
+namespace client.service.tcpforward
 {
     public class TcpForwardServer
     {
-        private readonly ClientsHelper clientsHelper;
-        public TcpForwardServer(ClientsHelper clientsHelper)
+        private readonly IClientInfoCaching  clientInfoCaching;
+        
+        public TcpForwardServer(IClientInfoCaching clientInfoCaching)
         {
-            this.clientsHelper = clientsHelper;
+            this.clientInfoCaching = clientInfoCaching;
         }
 
         private long requestId = 0;
@@ -169,7 +171,7 @@ namespace client.service.plugins.p2pPlugins.forward.tcp
                 socket = client.TargetClient.Socket;
                 if (socket == null || !socket.Connected || client.TargetClient.Name != client.TargetClient.Name)
                 {
-                    client.TargetClient = clientsHelper.Clients.FirstOrDefault(c => c.Name == client.TargetClient.Name);
+                    client.TargetClient = clientInfoCaching.All().FirstOrDefault(c => c.Name == client.TargetClient.Name);
                     if (client.TargetClient != null)
                     {
                         socket = client.TargetClient.Socket;

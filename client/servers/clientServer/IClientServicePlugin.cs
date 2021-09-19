@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 
-namespace client.service.servers.clientServer
+namespace client.servers.clientServer
 {
     public interface IClientServicePlugin
     {

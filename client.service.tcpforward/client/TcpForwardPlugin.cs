@@ -1,7 +1,7 @@
-﻿using client.service.servers.clientServer;
+﻿using client.servers.clientServer;
 using common.extends;
 
-namespace client.service.plugins.p2pPlugins.forward.tcp.client
+namespace client.service.tcpforward.client
 {
     public class TcpForwardPlugin : IClientServicePlugin
     {
@@ -61,6 +61,20 @@ namespace client.service.plugins.p2pPlugins.forward.tcp.client
         {
             ForwardSettingModel model = arg.Content.DeJson<ForwardSettingModel>();
             tcpForwardHelper.Stop(model.ID);
+        }
+    }
+
+    public class TcpForwardPushMsgPlugin : IClientServerPushMsgPlugin
+    {
+        private readonly TcpForwardHelper tcpForwardHelper;
+        public TcpForwardPushMsgPlugin(TcpForwardHelper tcpForwardHelper)
+        {
+            this.tcpForwardHelper = tcpForwardHelper;
+        }
+
+        public object List()
+        {
+            return tcpForwardHelper.Mappings;
         }
     }
 

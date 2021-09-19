@@ -6,13 +6,14 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.Json.Serialization;
 
-namespace client.service.plugins.serverPlugins.clients
+namespace client.plugins.serverPlugins.clients
 {
 
+    /// <summary>
+    /// 客户端信息
+    /// </summary>
     public class ClientInfo
     {
-        private readonly static ConcurrentDictionary<long, ClientInfo> clients = new ConcurrentDictionary<long, ClientInfo>();
-
         private bool connecting = false;
         public bool Connecting
         {
@@ -121,99 +122,5 @@ namespace client.service.plugins.serverPlugins.clients
             Socket = socket;
             Ip = IPEndPoint.Parse(socket.RemoteEndPoint.ToString()).Address.ToString();
         }
-        public void Remove()
-        {
-            Remove(Id);
-        }
-
-        public static void UpdateLastTime(long id)
-        {
-            _ = clients.TryGetValue(id, out ClientInfo client);
-            if (client != null)
-            {
-                client.UpdateLastTime();
-            }
-        }
-
-        public static void UpdateTcpLastTime(long id)
-        {
-            _ = clients.TryGetValue(id, out ClientInfo client);
-            if (client != null)
-            {
-                client.UpdateTcpLastTime();
-            }
-        }
-
-        public static bool Add(ClientInfo client)
-        {
-            return clients.TryAdd(client.Id, client);
-        }
-
-        public static bool Get(long id, out ClientInfo client)
-        {
-            return clients.TryGetValue(id, out client);
-        }
-
-        public static IEnumerable<ClientInfo> All()
-        {
-            return clients.Values;
-        }
-
-        public static IEnumerable<long> AllIds()
-        {
-            return clients.Keys;
-        }
-
-        public static void Offline(long id)
-        {
-            _ = clients.TryGetValue(id, out ClientInfo client);
-            if (client != null)
-            {
-                client.Offline();
-            }
-        }
-
-        public static void Online(long id, IPEndPoint address)
-        {
-            _ = clients.TryGetValue(id, out ClientInfo client);
-            if (client != null)
-            {
-                client.Online(address);
-            }
-        }
-
-        public static void OfflineTcp(long id)
-        {
-            _ = clients.TryGetValue(id, out ClientInfo client);
-            if (client != null)
-            {
-                client.OfflineTcp();
-            }
-        }
-
-        public static void OnlineTcp(long id, Socket socket)
-        {
-            _ = clients.TryGetValue(id, out ClientInfo client);
-            if (client != null)
-            {
-                client.OnlineTcp(socket);
-            }
-        }
-
-        public static void OfflineBoth(long id)
-        {
-            _ = clients.TryGetValue(id, out ClientInfo client);
-            if (client != null)
-            {
-                client.Offline();
-                client.OfflineTcp();
-            }
-        }
-
-        public static void Remove(long id)
-        {
-            clients.TryRemove(id, out ClientInfo c);
-        }
-
     }
 }

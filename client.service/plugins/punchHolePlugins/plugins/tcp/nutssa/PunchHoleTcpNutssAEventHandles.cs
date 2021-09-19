@@ -1,11 +1,12 @@
-﻿using client.service.plugins.serverPlugins;
-using client.service.plugins.serverPlugins.clients;
-using client.service.plugins.serverPlugins.register;
+﻿using client.plugins.serverPlugins;
+using client.plugins.serverPlugins.clients;
+using client.plugins.serverPlugins.register;
 using common;
 using common.extends;
 using PacketDotNet;
 using server;
 using server.models;
+using server.plugins.register.caching;
 using SharpPcap;
 using SharpPcap.LibPcap;
 using System;
@@ -20,19 +21,21 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
     public class PunchHoleTcpNutssAEventHandles : IPunchHoleTcp
     {
         private readonly PunchHoleEventHandles punchHoldEventHandles;
-        private readonly EventHandlers eventHandlers;
+        private readonly IServerRequest  serverRequest;
         private readonly ITcpServer tcpServer;
         private readonly RegisterState registerState;
         private readonly Config config;
+        private readonly IClientInfoCaching clientInfoCaching;
 
-        public PunchHoleTcpNutssAEventHandles(EventHandlers eventHandlers, PunchHoleEventHandles punchHoldEventHandles,
-            ITcpServer tcpServer, RegisterState registerState, Config config)
+        public PunchHoleTcpNutssAEventHandles(IServerRequest serverRequest, PunchHoleEventHandles punchHoldEventHandles,
+            ITcpServer tcpServer, RegisterState registerState, Config config, IClientInfoCaching clientInfoCaching)
         {
-            this.eventHandlers = eventHandlers;
+            this.serverRequest = serverRequest;
             this.punchHoldEventHandles = punchHoldEventHandles;
             this.tcpServer = tcpServer;
             this.registerState = registerState;
             this.config = config;
+            this.clientInfoCaching = clientInfoCaching;
         }
 
         private Socket TcpServer => registerState.TcpSocket;
@@ -176,7 +179,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
                                     {
                                         if (tcp.Synchronize == true && tcp.Acknowledgment == false && tcp.DestinationPort == (uint)ip.Item2)
                                         {
-                                            eventHandlers.SendOnlyTcp(new SendTcpEventArg<RawPacketModel>
+                                            serverRequest.SendOnlyTcp(new SendTcpEventArg<RawPacketModel>
                                             {
                                                 Data = new RawPacketModel
                                                 {
@@ -467,19 +470,19 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
             Logger.Instance.Debug($"OnStepPacket {arg.Data.FromId}");
             OnStepPacketHandler?.Invoke(this, arg);
 
-            ClientInfo.Get(arg.Data.FromId, out ClientInfo info);
+            clientInfoCaching.Get(arg.Data.FromId, out ClientInfo info);
             if (info != null)
             {
                 SendPrivate(new ConnectTcpParams
                 {
                     Callback = (e) =>
                     {
-                        ClientInfo.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);
+                        clientInfoCaching.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);
                     },
                     FailCallback = (e) =>
                     {
                         Logger.Instance.Error(e.Msg);
-                        ClientInfo.OfflineTcp(info.Id);
+                        clientInfoCaching.OfflineTcp(info.Id);
                     },
                     Id = info.Id,
                     Name = info.Name,

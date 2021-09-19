@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 using client.service.plugins.punchHolePlugins.plugins.udp;
 using client.service.plugins.punchHolePlugins.plugins.tcp;
 using client.service.plugins.punchHolePlugins;
+using client.plugins.serverPlugins.register;
+using client.plugins.serverPlugins.clients;
+using server.plugins.register.caching;
 
 namespace client.service.plugins.serverPlugins.clients
 {
@@ -20,19 +23,20 @@ namespace client.service.plugins.serverPlugins.clients
         private readonly IPunchHoleUdp punchHoleUdp;
         private readonly IPunchHoleTcp punchHoleTcp;
         private readonly RegisterState registerState;
-
-        public IEnumerable<ClientInfo> Clients => ClientInfo.All();
-
+        private readonly IClientInfoCaching  clientInfoCaching;
+        
         public ClientsHelper(RegisterEventHandles registerEventHandles,
             ClientsEventHandles clientsEventHandles,
            IPunchHoleUdp punchHoleUdp,
            IPunchHoleTcp punchHoleTcp,
             HeartEventHandles heartEventHandles,
+            IClientInfoCaching clientInfoCaching,
             RegisterState registerState, PunchHoleEventHandles punchHoldEventHandles)
         {
             this.punchHoleUdp = punchHoleUdp;
             this.punchHoleTcp = punchHoleTcp;
             this.registerState = registerState;
+            this.clientInfoCaching = clientInfoCaching;
 
             //收到来自服务器的 在线客户端 数据
             clientsEventHandles.OnServerSendClientsHandler += OnServerSendClientsHandler;
@@ -49,7 +53,7 @@ namespace client.service.plugins.serverPlugins.clients
             //有人要求反向链接
             punchHoldEventHandles.OnReverseHandler += (s, arg) =>
             {
-                if (ClientInfo.Get(arg.Data.Id, out ClientInfo client) && client != null)
+                if (clientInfoCaching.Get(arg.Data.Id, out ClientInfo client) && client != null)
                 {
                     ConnectClient(client);
                 }
@@ -58,9 +62,9 @@ namespace client.service.plugins.serverPlugins.clients
             registerEventHandles.OnSendExitMessageHandler += (sender, e) =>
             {
                 readClientsTimes = 0;
-                foreach (ClientInfo client in ClientInfo.All())
+                foreach (ClientInfo client in clientInfoCaching.All())
                 {
-                    client.Remove();
+                    clientInfoCaching.Remove(client.Id);
                     if (client.Connecting)
                     {
                         punchHoleTcp.SendStep2Stop(client.Id);
@@ -78,7 +82,7 @@ namespace client.service.plugins.serverPlugins.clients
             {
                 while (true)
                 {
-                    foreach (ClientInfo client in ClientInfo.All())
+                    foreach (ClientInfo client in clientInfoCaching.All())
                     {
                         if (client.IsTimeout())
                         {
@@ -117,11 +121,11 @@ namespace client.service.plugins.serverPlugins.clients
                 {
                     if (e.Packet.ServerType == ServerType.UDP)
                     {
-                        ClientInfo.UpdateLastTime(e.Data.SourceId);
+                        clientInfoCaching.UpdateLastTime(e.Data.SourceId);
                     }
                     else if (e.Packet.ServerType == ServerType.TCP)
                     {
-                        ClientInfo.UpdateTcpLastTime(e.Data.SourceId);
+                        clientInfoCaching.UpdateTcpLastTime(e.Data.SourceId);
                     }
                 }
             };
@@ -140,7 +144,7 @@ namespace client.service.plugins.serverPlugins.clients
 
         private void TcpOnStep1Handler(object sender, punchHolePlugins.plugins.tcp.OnStep1EventArg e)
         {
-            if (ClientInfo.Get(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null)
+            if (clientInfoCaching.Get(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null)
             {
                 cacheClient.TcpConnecting = true;
             }
@@ -148,32 +152,32 @@ namespace client.service.plugins.serverPlugins.clients
 
         private void TcpOnStep2FailHandler(object sender, OnStep2FailEventArg e)
         {
-            ClientInfo.OfflineTcp(e.Data.FromId);
+            clientInfoCaching.OfflineTcp(e.Data.FromId);
         }
 
         private void TcpOnStep3Handler(object sender, punchHolePlugins.plugins.tcp.OnStep3EventArg e)
         {
-            ClientInfo.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);
+            clientInfoCaching.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);
         }
         private void TcpOnStep4Handler(object sender, punchHolePlugins.plugins.tcp.OnStep4EventArg e)
         {
-            ClientInfo.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);
+            clientInfoCaching.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);
         }
 
         private void UdpOnStep3Handler(object sender, punchHolePlugins.plugins.udp.OnStep3EventArg e)
         {
-            ClientInfo.Online(e.Data.FromId, e.Packet.SourcePoint);
+            clientInfoCaching.Online(e.Data.FromId, e.Packet.SourcePoint);
         }
 
         private void UdpOnStep1Handler(object sender, punchHolePlugins.plugins.udp.OnStep1EventArg e)
         {
-            if (ClientInfo.Get(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null)
+            if (clientInfoCaching.Get(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null)
             {
                 cacheClient.Connecting = true;
             }
             _ = Helper.SetTimeout(() =>
             {
-                if (ClientInfo.Get(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null && !cacheClient.Connected)
+                if (clientInfoCaching.Get(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null && !cacheClient.Connected)
                 {
                     cacheClient.Connecting = false;
                 }
@@ -202,18 +206,18 @@ namespace client.service.plugins.serverPlugins.clients
                 }
                 System.Threading.Interlocked.Increment(ref readClientsTimes);
                 //下线了的
-                IEnumerable<long> offlines = ClientInfo.AllIds().Except(e.Data.Clients.Select(c => c.Id));
+                IEnumerable<long> offlines = clientInfoCaching.AllIds().Except(e.Data.Clients.Select(c => c.Id));
                 foreach (long offid in offlines)
                 {
                     if (offid == registerState.RemoteInfo.ConnectId)
                     {
                         continue;
                     }
-                    ClientInfo.OfflineBoth(offid);
-                    ClientInfo.Remove(offid);
+                    clientInfoCaching.OfflineBoth(offid);
+                    clientInfoCaching.Remove(offid);
                 }
                 //新上线的
-                IEnumerable<long> upLines = e.Data.Clients.Select(c => c.Id).Except(ClientInfo.AllIds());
+                IEnumerable<long> upLines = e.Data.Clients.Select(c => c.Id).Except(clientInfoCaching.AllIds());
                 IEnumerable<ClientsClientModel> upLineClients = e.Data.Clients.Where(c => upLines.Contains(c.Id) && c.Id != registerState.RemoteInfo.ConnectId);
 
                 foreach (ClientsClientModel item in upLineClients)
@@ -232,7 +236,7 @@ namespace client.service.plugins.serverPlugins.clients
                         Port = item.Port,
                         TcpPort = item.TcpPort
                     };
-                    ClientInfo.Add(client);
+                    clientInfoCaching.Add(client);
                     if (readClientsTimes == 1)
                     {
                         ConnectClient(client);
@@ -248,7 +252,7 @@ namespace client.service.plugins.serverPlugins.clients
 
         public void ConnectClient(long id)
         {
-            ClientInfo.Get(id, out ClientInfo client);
+            clientInfoCaching.Get(id, out ClientInfo client);
             if (client != null)
             {
                 ConnectClient(client);
@@ -272,11 +276,11 @@ namespace client.service.plugins.serverPlugins.clients
                         Name = info.Name,
                         Callback = (e) =>
                         {
-                            ClientInfo.Online(e.Data.FromId, e.Packet.SourcePoint);
+                            clientInfoCaching.Online(e.Data.FromId, e.Packet.SourcePoint);
                         },
                         FailCallback = (e) =>
                         {
-                            ClientInfo.Offline(info.Id);
+                            clientInfoCaching.Offline(info.Id);
                         },
                         Timeout = 2000,
                         TryTimes = 5
@@ -290,12 +294,12 @@ namespace client.service.plugins.serverPlugins.clients
                     {
                         Callback = (e) =>
                         {
-                            ClientInfo.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);
+                            clientInfoCaching.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);
                         },
                         FailCallback = (e) =>
                         {
                             Logger.Instance.Error(e.Msg);
-                            ClientInfo.OfflineTcp(info.Id);
+                            clientInfoCaching.OfflineTcp(info.Id);
                         },
                         Id = info.Id,
                         Name = info.Name,
@@ -307,11 +311,11 @@ namespace client.service.plugins.serverPlugins.clients
 
         public void OfflineClient(long id)
         {
-            ClientInfo.OfflineBoth(id);
+            clientInfoCaching.OfflineBoth(id);
         }
         public bool Get(long id, out ClientInfo client)
         {
-            return ClientInfo.Get(id, out client);
+            return clientInfoCaching.Get(id, out client);
         }
     }
 }

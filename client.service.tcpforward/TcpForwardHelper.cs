@@ -1,6 +1,7 @@
-﻿using client.service.plugins.serverPlugins.clients;
+﻿using client.plugins.serverPlugins.clients;
 using common;
 using common.extends;
+using server.plugins.register.caching;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace client.service.plugins.p2pPlugins.forward.tcp
+namespace client.service.tcpforward
 {
     public class TcpForwardHelper
     {
@@ -21,13 +22,14 @@ namespace client.service.plugins.p2pPlugins.forward.tcp
 
         private readonly TcpForwardServer tcpForwardServer;
         private readonly TcpForwardEventHandles tcpForwardEventHandles;
-        private readonly ClientsHelper clientsHelper;
+        private readonly IClientInfoCaching clientInfoCaching;
 
-        public TcpForwardHelper(TcpForwardServer tcpForwardServer, TcpForwardEventHandles tcpForwardEventHandles, ClientsHelper clientsHelper)
+        public TcpForwardHelper(TcpForwardServer tcpForwardServer, TcpForwardEventHandles tcpForwardEventHandles,
+            IClientInfoCaching clientInfoCaching)
         {
             this.tcpForwardServer = tcpForwardServer;
             this.tcpForwardEventHandles = tcpForwardEventHandles;
-            this.clientsHelper = clientsHelper;
+            this.clientInfoCaching = clientInfoCaching;
 
             ReadConfig();
 
@@ -334,7 +336,7 @@ namespace client.service.plugins.p2pPlugins.forward.tcp
                     TargetPort = model.TargetPort
                 };
 
-                model2.Client = clientsHelper.Clients.FirstOrDefault(c => c.Name == model.TargetName);
+                model2.Client = clientInfoCaching.All().FirstOrDefault(c => c.Name == model.TargetName);
                 if (model2.Client == null)
                 {
                     model2.Client = new ClientInfo { Name = model.TargetName };

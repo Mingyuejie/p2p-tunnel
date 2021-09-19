@@ -1,8 +1,8 @@
-﻿using client.service.servers.clientServer;
+﻿using client.servers.clientServer;
 using common.extends;
 using System.Collections.Generic;
 
-namespace client.service.plugins.p2pPlugins.fileServer.client
+namespace client.service.fileserver.client
 {
 
     public class FileServerPlugin : IClientServicePlugin

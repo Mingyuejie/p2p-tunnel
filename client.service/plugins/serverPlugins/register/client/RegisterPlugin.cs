@@ -1,4 +1,6 @@
-﻿using client.service.servers.clientServer;
+﻿using client.plugins.serverPlugins.register;
+using client.servers.clientServer;
+using client.service.servers.clientServer;
 using System.Threading.Tasks;
 
 namespace client.service.plugins.serverPlugins.register.client
@@ -32,6 +34,28 @@ namespace client.service.plugins.serverPlugins.register.client
         }
 
         public RegisterInfo Info(ClientServicePluginExcuteWrap arg)
+        {
+            return new RegisterInfo
+            {
+                ClientConfig = config.Client,
+                ServerConfig = config.Server,
+                LocalInfo = registerState.LocalInfo,
+                RemoteInfo = registerState.RemoteInfo,
+            };
+        }
+    }
+
+    public class RegisterPushMsgPlugin : IClientServerPushMsgPlugin
+    {
+        private readonly RegisterState registerState;
+        private readonly Config config;
+        public RegisterPushMsgPlugin(RegisterState registerState, Config config)
+        {
+            this.registerState = registerState;
+            this.config = config;
+        }
+
+        public object Info()
         {
             return new RegisterInfo
             {

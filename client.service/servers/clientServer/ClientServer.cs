@@ -1,9 +1,4 @@
-﻿using client.service.plugins.p2pPlugins.fileServer;
-using client.service.plugins.p2pPlugins.forward.tcp;
-using client.service.plugins.serverPlugins.clients;
-using client.service.plugins.serverPlugins.register;
-using client.service.plugins.serverPlugins.register.client;
-using client.service.servers.clientServer.plugins;
+﻿using client.servers.clientServer;
 using common;
 using common.extends;
 using Fleck;
@@ -12,42 +7,28 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 
 namespace client.service.servers.clientServer
 {
-    public interface IClientServer
-    {
-        public void Start();
-        public void LoadPlugins(Assembly[] assemblys);
-    }
+
 
     public class ClientServer : IClientServer
     {
         private readonly ConcurrentDictionary<Guid, IWebSocketConnection> websockets = new();
 
         private readonly Dictionary<string, Tuple<object, MethodInfo>> plugins = new();
+        private readonly Dictionary<string, Tuple<object, MethodInfo>> pushPlugins = new();
+
 
         private readonly Config config;
-        private readonly TcpForwardHelper tcpForwardHelper;
-        private readonly FileServerHelper fileServerHelper;
-        private readonly ClientsHelper clientsHelper;
-        private readonly RegisterState registerState;
         private readonly ServiceProvider serviceProvider;
 
-        public ClientServer(Config config, TcpForwardHelper tcpForwardHelper,
-            FileServerHelper fileServerHelper, RegisterState registerState,
-            ClientsHelper clientsHelper, ServiceProvider serviceProvider)
+        public ClientServer(Config config, ServiceProvider serviceProvider)
         {
             this.config = config;
-            this.tcpForwardHelper = tcpForwardHelper;
-            this.fileServerHelper = fileServerHelper;
-            this.registerState = registerState;
-            this.clientsHelper = clientsHelper;
             this.serviceProvider = serviceProvider;
-
             Notify();
         }
 
@@ -60,12 +41,29 @@ namespace client.service.servers.clientServer
             {
                 string path = item.Name.Replace("Plugin", "");
                 object obj = serviceProvider.GetService(item);
-                foreach (var method in item.GetMethods())
+                foreach (var method in item.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
                 {
                     string key = $"{path}/{method.Name}".ToLower();
                     if (!plugins.ContainsKey(key))
                     {
                         plugins.TryAdd(key, new Tuple<object, MethodInfo>(obj, method));
+                    }
+                }
+            }
+
+            var types2 = assemblys
+                .SelectMany(c => c.GetTypes())
+                .Where(c => c.GetInterfaces().Contains(typeof(IClientServerPushMsgPlugin)));
+            foreach (var item in types2)
+            {
+                string path = item.Name.Replace("PushMsgPlugin", "");
+                object obj = serviceProvider.GetService(item);
+                foreach (var method in item.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
+                {
+                    string key = $"{path}/{method.Name}".ToLower();
+                    if (!pushPlugins.ContainsKey(key))
+                    {
+                        pushPlugins.TryAdd(key, new Tuple<object, MethodInfo>(obj, method));
                     }
                 }
             }
@@ -105,7 +103,6 @@ namespace client.service.servers.clientServer
                 socket.OnOpen = () =>
                 {
                     _ = websockets.TryAdd(socket.ConnectionInfo.Id, socket);
-                    NotifyVersion(socket);
                 };
                 socket.OnMessage = message =>
                 {
@@ -186,78 +183,21 @@ namespace client.service.servers.clientServer
                             Path = "merge",
                             RequestId = 0,
                             Code = 0,
-                            Content = new List<ClientServiceMessageResponseWrap> {
-                                new ClientServiceMessageResponseWrap
+                            Content = pushPlugins.Select(c =>
+                            {
+                                return new ClientServiceMessageResponseWrap
                                 {
-                                    Content = clientsHelper.Clients,
                                     RequestId = 0,
-                                    Path = "clients/list",
-                                    Code = 0
-                                },new ClientServiceMessageResponseWrap
-                                {
-                                    Content = new RegisterInfo
-                                    {
-                                        ClientConfig = config.Client,
-                                        ServerConfig = config.Server,
-                                        LocalInfo = registerState.LocalInfo,
-                                        RemoteInfo = registerState.RemoteInfo,
-                                    },
-                                    RequestId = 0,
-                                    Path = "register/info",
-                                },new ClientServiceMessageResponseWrap
-                                {
-                                    Content = tcpForwardHelper.Mappings,
-                                    RequestId = 0,
-                                    Path = "tcpforward/list",
-                                    Code = 0
-                                },
-                                 new ClientServiceMessageResponseWrap
-                                {
-                                    Content = config.FileServer,
-                                    RequestId = 0,
-                                    Path = "fileserver/info",
-                                    Code = 0
-                                },
-                                new ClientServiceMessageResponseWrap
-                                {
-                                    Content = fileServerHelper.GetOnlineList(),
-                                    RequestId = 0,
-                                    Path = "fileserver/online",
-                                    Code = 0
-                                }
-                            }
+                                    Code = 0,
+                                    Content = c.Value.Item2.Invoke(c.Value.Item1, Array.Empty<object>()),
+                                    Path = c.Key
+                                };
+                            })
                         }.ToJson());
                     }
                     System.Threading.Thread.Sleep(300);
                 }
             });
-        }
-
-        private void NotifyVersion(IWebSocketConnection connection)
-        {
-            connection.Send(new ClientServiceMessageResponseWrap
-            {
-                Content = new
-                {
-                    Local = System.IO.File.ReadAllText("version.txt"),
-                    Remote = GetVersion()
-                },
-                RequestId = 0,
-                Path = "system/version",
-                Code = 0
-            }.ToJson());
-        }
-
-        private string GetVersion()
-        {
-            try
-            {
-                return new HttpClient().GetStringAsync($"https://gitee.com/snltty/p2p-tunnel/raw/master/client.service/version.txt?t={Helper.GetTimeStamp()}").Result;
-            }
-            catch (Exception)
-            {
-            }
-            return string.Empty;
         }
     }
 
@@ -275,6 +215,13 @@ namespace client.service.servers.clientServer
             var types = assemblys.SelectMany(c => c.GetTypes())
                  .Where(c => c.GetInterfaces().Contains(typeof(IClientServicePlugin)));
             foreach (var item in types)
+            {
+                obj.AddSingleton(item);
+            }
+
+            var types2 = assemblys.SelectMany(c => c.GetTypes())
+                 .Where(c => c.GetInterfaces().Contains(typeof(IClientServerPushMsgPlugin)));
+            foreach (var item in types2)
             {
                 obj.AddSingleton(item);
             }

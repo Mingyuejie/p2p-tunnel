@@ -1,4 +1,5 @@
-﻿using client.service.plugins.serverPlugins.register;
+﻿using client.plugins.serverPlugins.register;
+using client.service.plugins.serverPlugins.register;
 using common;
 using System;
 using System.Collections.Concurrent;

@@ -1,7 +1,7 @@
 ﻿using ProtoBuf;
 using System;
 
-namespace client.service.plugins.p2pPlugins.fileServer
+namespace client.service.fileserver
 {
     [ProtoContract]
     public class FileServerModel

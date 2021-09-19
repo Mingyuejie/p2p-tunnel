@@ -1,6 +1,8 @@
-﻿using client.service.plugins.serverPlugins.clients;
+﻿using client.plugins.serverPlugins.clients;
+using client.servers.clientServer;
 using common.extends;
 using ProtoBuf;
+using server.plugins.register.caching;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,7 +13,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using static System.Environment;
 
-namespace client.service.plugins.p2pPlugins.fileServer
+namespace client.service.fileserver
 {
     /// <summary>
     /// 流程   
@@ -45,13 +47,13 @@ namespace client.service.plugins.p2pPlugins.fileServer
         private readonly ConcurrentDictionary<string, FileSaveInfo> files = new();
 
         private readonly Config config;
-        private readonly ClientsHelper clientsHelper;
+        private readonly IClientInfoCaching clientInfoCaching;
         private readonly FileServerEventHandles fileServerEventHandles;
 
-        public FileServerHelper(Config config, ClientsHelper clientsHelper, FileServerEventHandles fileServerEventHandles)
+        public FileServerHelper(Config config, IClientInfoCaching clientInfoCaching, FileServerEventHandles fileServerEventHandles)
         {
             this.config = config;
-            this.clientsHelper = clientsHelper;
+            this.clientInfoCaching = clientInfoCaching;
             this.fileServerEventHandles = fileServerEventHandles;
 
             RemoteCurrentPath = config.FileServer.Root;
@@ -439,10 +441,31 @@ namespace client.service.plugins.p2pPlugins.fileServer
 
         private Socket GetSocket(long id)
         {
-            clientsHelper.Get(id, out ClientInfo client);
+            clientInfoCaching.Get(id, out ClientInfo client);
             return client?.Socket ?? null;
         }
 
+    }
+
+
+    public class FileServerPushMsgPlugin : IClientServerPushMsgPlugin
+    {
+        private readonly FileServerHelper fileServerHelper;
+        private readonly Config config;
+        public FileServerPushMsgPlugin(FileServerHelper fileServerHelper, Config config)
+        {
+            this.fileServerHelper = fileServerHelper;
+            this.config = config;
+        }
+
+        public object Online()
+        {
+            return fileServerHelper.GetOnlineList();
+        }
+        public object Info()
+        {
+            return config.FileServer;
+        }
     }
 
     public class FileSaveInfo

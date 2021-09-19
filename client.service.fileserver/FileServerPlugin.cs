@@ -6,7 +6,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 
-namespace client.service.plugins.p2pPlugins.fileServer
+namespace client.service.fileserver
 {
     public class FileServerPlugin : IPlugin
     {

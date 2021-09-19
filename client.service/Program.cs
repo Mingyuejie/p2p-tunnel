@@ -1,11 +1,11 @@
-﻿using client.service.plugins.p2pPlugins.fileServer;
-using client.service.plugins.p2pPlugins.forward.tcp;
+﻿using client.service.fileserver;
 using client.service.plugins.punchHolePlugins;
 using client.service.plugins.serverPlugins;
 using client.service.plugins.serverPlugins.register;
 using client.service.servers.clientServer;
 using client.service.servers.clientServer.plugins;
 using client.service.servers.webServer;
+using client.service.tcpforward;
 using common;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -27,10 +27,15 @@ namespace client.service
             //注入 依赖注入服务供应 使得可以在别的地方通过注入的方式获得 ServiceProvider 以用来获取其它服务
             serviceCollection.AddSingleton((e) => serviceProvider);
 
+            //外部程序集的插件
+            var externalAddembly = new[] { typeof(FileServerPlugin).Assembly, typeof(TcpForwardPlugin).Assembly };
+
             serviceCollection.AddServerPlugin()
                 .AddPunchHolePlugin()//打洞
+
                 .AddFileServerPlugin()//文件服务
                 .AddTcpForwardPlugin()  //tcp转发
+                .AddServerPlugin(externalAddembly).AddClientServer(externalAddembly)
 
                 .AddClientServer() //客户端管理
                 .AddUpnpPlugin()//upnp映射
@@ -40,8 +45,10 @@ namespace client.service
             serviceProvider = serviceCollection.BuildServiceProvider();
             serviceProvider.UseServerPlugin()
                 .UsePunchHolePlugin()//打洞
-                .UseFileServerPlugin() //文件服务
+
+                .UseFileServerPlugin()//文件服务
                 .UseTcpForwardPlugin()//tcp转发
+                .UseServerPlugin(externalAddembly).UseClientServer(externalAddembly)
 
                 .UseClientServer()//客户端管理
                 .UseUpnpPlugin()//upnp映射

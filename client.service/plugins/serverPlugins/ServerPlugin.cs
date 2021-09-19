@@ -1,4 +1,6 @@
-﻿using client.service.plugins.punchHolePlugins;
+﻿using client.plugins.serverPlugins;
+using client.plugins.serverPlugins.register;
+using client.service.plugins.punchHolePlugins;
 using client.service.plugins.serverPlugins.clients;
 using client.service.plugins.serverPlugins.heart;
 using client.service.plugins.serverPlugins.register;
@@ -6,6 +8,7 @@ using client.service.plugins.serverPlugins.reset;
 using Microsoft.Extensions.DependencyInjection;
 using server;
 using server.plugin;
+using server.plugins.register.caching;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -22,8 +25,10 @@ namespace client.service.plugins.serverPlugins
             obj.AddSingleton<ITcpServer, TCPServer>();
             obj.AddSingleton<IUdpServer, UDPServer>();
 
+            obj.AddSingleton<IClientInfoCaching, ClientInfoCache>();
 
-            obj.AddSingleton<EventHandlers>();
+
+            obj.AddSingleton<IServerRequest, ServerRequestHelper>();
 
             obj.AddSingleton<ResetEventHandles>();
             obj.AddSingleton<HeartEventHandles>();

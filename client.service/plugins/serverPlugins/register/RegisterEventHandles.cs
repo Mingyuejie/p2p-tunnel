@@ -1,4 +1,6 @@
-﻿using common;
+﻿using client.plugins.serverPlugins;
+using client.plugins.serverPlugins.register;
+using common;
 using common.extends;
 using server;
 using server.model;
@@ -12,14 +14,14 @@ namespace client.service.plugins.serverPlugins.register
 {
     public class RegisterEventHandles
     {
-        private readonly EventHandlers eventHandlers;
+        private readonly IServerRequest  serverRequest;
         private readonly RegisterState registerState;
         private readonly IUdpServer udpServer;
         private readonly ITcpServer tcpServer;
 
-        public RegisterEventHandles(EventHandlers eventHandlers, RegisterState registerState, IUdpServer udpServer, ITcpServer tcpServer)
+        public RegisterEventHandles(IServerRequest serverRequest, RegisterState registerState, IUdpServer udpServer, ITcpServer tcpServer)
         {
-            this.eventHandlers = eventHandlers;
+            this.serverRequest = serverRequest;
             this.registerState = registerState;
             this.udpServer = udpServer;
             this.tcpServer = tcpServer;
@@ -56,7 +58,7 @@ namespace client.service.plugins.serverPlugins.register
 
             if (UdpServer != null)
             {
-                await eventHandlers.SendReply(new SendEventArg<ExitModel>
+                await serverRequest.SendReply(new SendEventArg<ExitModel>
                 {
                     Address = arg.Address,
                     Data = arg.Data,
@@ -71,7 +73,6 @@ namespace client.service.plugins.serverPlugins.register
                 });
             }
             OnSendExitMessageHandler?.Invoke(this, arg);
-            eventHandlers.Sequence = 0;
 
             Helper.FlushMemory();
         }
@@ -88,9 +89,8 @@ namespace client.service.plugins.serverPlugins.register
         /// <param name="arg"></param>
         public async Task<RegisterResultModel> SendRegisterMessage(RegisterParams param)
         {
-            Logger.Instance.Debug("1");
             OnSendRegisterMessageHandler?.Invoke(this, param.ClientName);
-            ServerMessageResponeWrap result = await eventHandlers.SendReply(new SendEventArg<RegisterModel>
+            ServerMessageResponeWrap result = await serverRequest.SendReply(new SendEventArg<RegisterModel>
             {
                 Address = UdpServer,
                 Path = "register/excute",
@@ -105,15 +105,13 @@ namespace client.service.plugins.serverPlugins.register
 
                 }
             });
-            Logger.Instance.Debug("2");
             if (result.Code != ServerMessageResponeCodes.OK)
             {
                 return new RegisterResultModel { Code = -1, Msg = result.ErrorMsg };
             }
-            Logger.Instance.Debug("3");
 
             var res = result.Data.DeBytes<RegisterResultModel>();
-            var tcpResult = await eventHandlers.SendReplyTcp(new SendTcpEventArg<RegisterModel>
+            var tcpResult = await serverRequest.SendReplyTcp(new SendTcpEventArg<RegisterModel>
             {
                 Socket = TcpServer,
                 Path = "register/excute",
@@ -127,7 +125,6 @@ namespace client.service.plugins.serverPlugins.register
                     LocalUdpPort = param.LocalUdpPort
                 }
             });
-            Logger.Instance.Debug("4");
             if (tcpResult.Code != ServerMessageResponeCodes.OK)
             {
                 return new RegisterResultModel { Code = -1, Msg = tcpResult.ErrorMsg };
@@ -139,7 +136,6 @@ namespace client.service.plugins.serverPlugins.register
                 ClientName = param.ClientName,
                 Ip = res.Ip,
             });
-            Logger.Instance.Debug("5");
             return tcpResult.Data.DeBytes<RegisterResultModel>();
 
         }

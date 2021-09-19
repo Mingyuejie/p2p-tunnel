@@ -1,5 +1,5 @@
-﻿using client.service.plugins.serverPlugins;
-using client.service.plugins.serverPlugins.register;
+﻿using client.plugins.serverPlugins;
+using client.plugins.serverPlugins.register;
 using common;
 using common.extends;
 using server.model;
@@ -8,17 +8,17 @@ using System.IO;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
-namespace client.service.plugins.p2pPlugins.fileServer
+namespace client.service.fileserver
 {
     public class FileServerEventHandles
     {
         private readonly RegisterState registerState;
-        private readonly EventHandlers eventHandlers;
+        private readonly IServerRequest serverRequest;
 
-        public FileServerEventHandles(RegisterState registerState, EventHandlers eventHandlers)
+        public FileServerEventHandles(RegisterState registerState, IServerRequest serverRequest)
         {
             this.registerState = registerState;
-            this.eventHandlers = eventHandlers;
+            this.serverRequest = serverRequest;
         }
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace client.service.plugins.p2pPlugins.fileServer
         /// <param name="arg"></param>
         public void SendTcpProgress(SendTcpEventArg<FileServerProgressModel> arg)
         {
-            eventHandlers.SendOnlyTcp(new serverPlugins.SendTcpEventArg<FileServerModel>
+            serverRequest.SendOnlyTcp(new plugins.serverPlugins.SendTcpEventArg<FileServerModel>
             {
                 Socket = arg.Socket,
                 Path = "fileserver/progress",
@@ -85,7 +85,7 @@ namespace client.service.plugins.p2pPlugins.fileServer
         /// <param name="arg"></param>
         public void SendTcpDownload(SendTcpEventArg<FileServerDownloadModel> arg)
         {
-            eventHandlers.SendOnlyTcp(new serverPlugins.SendTcpEventArg<FileServerModel>
+            serverRequest.SendOnlyTcp(new plugins.serverPlugins.SendTcpEventArg<FileServerModel>
             {
                 Socket = arg.Socket,
                 Path = "fileserver/download",
@@ -134,7 +134,7 @@ namespace client.service.plugins.p2pPlugins.fileServer
         /// <param name="arg"></param>
         public async Task<FileInfo[]> SendTcpFileList(SendTcpEventArg<FileServerListModel> arg)
         {
-            var result = await eventHandlers.SendReplyTcp(new serverPlugins.SendTcpEventArg<FileServerModel>
+            var result = await serverRequest.SendReplyTcp(new plugins.serverPlugins.SendTcpEventArg<FileServerModel>
             {
                 Socket = arg.Socket,
                 Path = "fileserver/list",
@@ -204,7 +204,7 @@ namespace client.service.plugins.p2pPlugins.fileServer
         }
         private void _SendTcpFile(SendTcpEventArg<FileModel> arg)
         {
-            eventHandlers.SendOnlyTcp(new serverPlugins.SendTcpEventArg<FileServerModel>
+            serverRequest.SendOnlyTcp(new plugins.serverPlugins.SendTcpEventArg<FileServerModel>
             {
                 Socket = arg.Socket,
                 Path = "fileserver/file",

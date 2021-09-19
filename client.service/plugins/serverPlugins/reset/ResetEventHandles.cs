@@ -1,4 +1,6 @@
-﻿using client.service.plugins.serverPlugins.register;
+﻿using client.plugins.serverPlugins;
+using client.plugins.serverPlugins.register;
+using client.service.plugins.serverPlugins.register;
 using server.model;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -7,12 +9,12 @@ namespace client.service.plugins.serverPlugins.reset
 {
     public class ResetEventHandles
     {
-        private readonly EventHandlers eventHandlers;
+        private readonly IServerRequest  serverRequest;
         private readonly RegisterState registerState;
 
-        public ResetEventHandles(EventHandlers eventHandlers, RegisterState registerState)
+        public ResetEventHandles(IServerRequest serverRequest, RegisterState registerState)
         {
-            this.eventHandlers = eventHandlers;
+            this.serverRequest = serverRequest;
             this.registerState = registerState;
         }
         private long ConnectId => registerState.RemoteInfo.ConnectId;
@@ -23,7 +25,7 @@ namespace client.service.plugins.serverPlugins.reset
         /// <param name="toid"></param>
         public async Task<ServerMessageResponeWrap> SendResetMessage(Socket socket, long toid)
         {
-            return await eventHandlers.SendReplyTcp(new SendTcpEventArg<ResetModel>
+            return await serverRequest.SendReplyTcp(new SendTcpEventArg<ResetModel>
             {
                 Socket = socket,
                 Path = "reset/excute",

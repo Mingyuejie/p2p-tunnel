@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using server.model;
 using server.plugin;
 
-namespace client.service.plugins.p2pPlugins.forward.tcp
+namespace client.service.tcpforward
 {
     public class TcpForwardPlugin : IPlugin
     {

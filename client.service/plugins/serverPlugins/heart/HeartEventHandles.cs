@@ -1,4 +1,5 @@
-﻿using server.model;
+﻿using client.plugins.serverPlugins;
+using server.model;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -7,10 +8,10 @@ namespace client.service.plugins.serverPlugins.heart
 {
     public class HeartEventHandles
     {
-        private readonly EventHandlers eventHandlers;
-        public HeartEventHandles(EventHandlers eventHandlersr)
+        private readonly IServerRequest  serverRequest;
+        public HeartEventHandles(IServerRequest serverRequest)
         {
-            this.eventHandlers = eventHandlersr;
+            this.serverRequest = serverRequest;
         }
 
 
@@ -30,7 +31,7 @@ namespace client.service.plugins.serverPlugins.heart
                 }
             };
 
-            eventHandlers.SendOnly(arg);
+            serverRequest.SendOnly(arg);
         }
         /// <summary>
         /// 发送TCP心跳消息
@@ -48,7 +49,7 @@ namespace client.service.plugins.serverPlugins.heart
                 },
                 Timeout = 500
             };
-            eventHandlers.SendOnlyTcp(arg);
+            serverRequest.SendOnlyTcp(arg);
         }
 
         /// <summary>

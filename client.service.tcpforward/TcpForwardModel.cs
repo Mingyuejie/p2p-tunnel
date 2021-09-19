@@ -1,8 +1,8 @@
-﻿using client.service.plugins.serverPlugins.clients;
+﻿using client.plugins.serverPlugins.clients;
 using ProtoBuf;
 using System;
 
-namespace client.service.plugins.p2pPlugins.forward.tcp
+namespace client.service.tcpforward
 {
     [ProtoContract]
     public class TcpForwardModel

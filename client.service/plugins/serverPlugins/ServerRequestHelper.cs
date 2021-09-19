@@ -1,30 +1,21 @@
-﻿using client.service.plugins.serverPlugins.register;
+﻿using client.plugins.serverPlugins;
 using server;
 using server.model;
-using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace client.service.plugins.serverPlugins
 {
-    public class EventHandlers
+    public class ServerRequestHelper : IServerRequest
     {
-        private readonly ServerPluginHelper  serverPluginHelper;
+        private readonly ServerPluginHelper serverPluginHelper;
 
-        public EventHandlers(ServerPluginHelper serverPluginHelper)
+        public ServerRequestHelper(ServerPluginHelper serverPluginHelper)
         {
             this.serverPluginHelper = serverPluginHelper;
         }
 
-        public long Sequence { get; set; } = 0;
-
-
-        #region 发送消息
-        /// <summary>
-        /// 发送消息
-        /// </summary>
-        /// <param name="arg"></param>
         public async Task<ServerMessageResponeWrap> SendReply<T>(SendEventArg<T> arg)
         {
             return await serverPluginHelper.SendReply(new SendMessageWrap<T>
@@ -47,9 +38,6 @@ namespace client.service.plugins.serverPlugins
             });
         }
 
-        /// <summary>
-        /// 发送消息
-        /// </summary>
         public Task<ServerMessageResponeWrap> SendReplyTcp<T>(SendTcpEventArg<T> arg)
         {
             return serverPluginHelper.SendReplyTcp(new SendMessageWrap<T>
@@ -71,28 +59,5 @@ namespace client.service.plugins.serverPlugins
                 Path = arg.Path
             });
         }
-
-        #endregion
     }
-
-
-    #region 发送消息
-
-    public class SendEventArg<T>
-    {
-        public IPEndPoint Address { get; set; }
-        public T Data { get; set; }
-        public string Path { get; set; } = string.Empty;
-        public int Timeout { get; set; } = 0;
-    }
-    public class SendTcpEventArg<T>
-    {
-        public Socket Socket { get; set; }
-        public T Data { get; set; }
-        public string Path { get; set; } = string.Empty;
-        public int Timeout { get; set; } = 0;
-    }
-
-    #endregion
-
 }

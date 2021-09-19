@@ -3,7 +3,7 @@ using System.IO;
 using System.Net;
 using System.Text.Json.Serialization;
 
-namespace client.service
+namespace client
 {
     /// <summary>
     /// 配置信息

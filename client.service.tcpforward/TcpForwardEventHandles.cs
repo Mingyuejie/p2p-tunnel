@@ -1,23 +1,23 @@
-﻿using client.service.plugins.serverPlugins;
+﻿using client.plugins.serverPlugins;
 using server.model;
 using System;
 using System.Net.Sockets;
 
-namespace client.service.plugins.p2pPlugins.forward.tcp
+namespace client.service.tcpforward
 {
     public class TcpForwardEventHandles
     {
-        private readonly EventHandlers eventHandlers;
-        public TcpForwardEventHandles(EventHandlers eventHandlers)
+        private readonly IServerRequest  serverRequest;
+        public TcpForwardEventHandles(IServerRequest serverRequest)
         {
-            this.eventHandlers = eventHandlers;
+            this.serverRequest = serverRequest;
         }
 
         #region TCP转发
         public event EventHandler<SendTcpForwardEventArg> OnSendTcpForwardHandler;
         public void SendTcpForward(SendTcpForwardEventArg arg)
         {
-            eventHandlers.SendOnlyTcp(new SendTcpEventArg<TcpForwardModel>
+            serverRequest.SendOnlyTcp(new SendTcpEventArg<TcpForwardModel>
             {
                 Path = "TcpForward/excute",
                 Socket = arg.Socket,

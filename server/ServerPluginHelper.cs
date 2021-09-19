@@ -190,7 +190,7 @@ namespace server
         public void LoadPlugin(Type type, object obj)
         {
             string path = type.Name.Replace("Plugin", "");
-            foreach (var method in type.GetMethods())
+            foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
             {
                 string key = $"{path}/{method.Name}".ToLower();
                 if (!plugins.ContainsKey(key))
@@ -219,7 +219,7 @@ namespace server
             {
                 if (sends.TryRemove(wrap.RequestId, out SendCacheModel send) && send != null)
                 {
-                    Logger.Instance.Debug($"TCP {wrap.Path} 花费时间 {Helper.GetTimeStamp() - send.Time} ms");
+                    Logger.Instance.Debug($"{param.ServerType} {wrap.Path} 花费时间 {Helper.GetTimeStamp() - send.Time} ms");
                     send.Tcs.SetResult(new ServerMessageResponeWrap { Code = wrap.Code, ErrorMsg = wrap.Code.ToString(), Data = wrap.Content });
                 }
             }

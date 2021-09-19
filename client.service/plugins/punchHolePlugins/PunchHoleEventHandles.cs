@@ -1,4 +1,6 @@
-﻿using client.service.plugins.serverPlugins;
+﻿using client.plugins.serverPlugins;
+using client.plugins.serverPlugins.register;
+using client.service.plugins.serverPlugins;
 using client.service.plugins.serverPlugins.register;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,13 +19,13 @@ namespace client.service.plugins.punchHolePlugins
     {
         private Dictionary<PunchHoleTypes, IPunchHolePlugin> plugins = null;
 
-        private readonly EventHandlers eventHandlers;
+        private readonly IServerRequest  serverRequest;
         private readonly RegisterState registerState;
         private readonly ServiceProvider serviceProvider;
 
-        public PunchHoleEventHandles(EventHandlers eventHandlers, RegisterState registerState, ServiceProvider serviceProvider)
+        public PunchHoleEventHandles(IServerRequest serverRequest, RegisterState registerState, ServiceProvider serviceProvider)
         {
-            this.eventHandlers = eventHandlers;
+            this.serverRequest = serverRequest;
             this.registerState = registerState;
             this.serviceProvider = serviceProvider;
         }
@@ -68,9 +70,6 @@ namespace client.service.plugins.punchHolePlugins
             OnPunchHoleHandler?.Invoke(this, arg);
         }
 
-        /// <summary>
-        /// 收到p2p的TCP消息
-        /// </summary>
         public event EventHandler<OnPunchHoleTcpArg> OnPunchHoleTcpHandler;
         public void OnPunchHoleTcp(OnPunchHoleTcpArg arg)
         {
@@ -88,7 +87,7 @@ namespace client.service.plugins.punchHolePlugins
         public event EventHandler<SendPunchHoleTcpArg> OnSendTcpHandler;
         public void SendTcp(SendPunchHoleTcpArg arg)
         {
-            eventHandlers.SendOnlyTcp(new SendTcpEventArg<PunchHoleModel>
+            serverRequest.SendOnlyTcp(new SendTcpEventArg<PunchHoleModel>
             {
                 Socket = arg.Socket,
                 Path = "punchhole/excute",
@@ -106,13 +105,10 @@ namespace client.service.plugins.punchHolePlugins
             OnSendTcpHandler?.Invoke(this, arg);
         }
 
-        /// <summary>
-        /// 发送p2p的UDP消息
-        /// </summary>
         public event EventHandler<SendPunchHoleArg> OnSendHandler;
         public void Send(SendPunchHoleArg arg)
         {
-            eventHandlers.SendOnly(new SendEventArg<PunchHoleModel>
+            serverRequest.SendOnly(new SendEventArg<PunchHoleModel>
             {
                 Address = arg.Address,
                 Path = "punchhole/excute",
