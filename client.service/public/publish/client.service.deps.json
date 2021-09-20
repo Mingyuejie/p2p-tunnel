@@ -8,11 +8,11 @@
     ".NETCoreApp,Version=v5.0": {
       "client.service/1.0.0": {
         "dependencies": {
-          "Fleck": "1.2.0",
-          "Microsoft.Extensions.DependencyInjection": "5.0.2",
           "Mono.Nat": "3.0.1",
           "SharpPcap": "6.0.0",
-          "System.Drawing.Common": "5.0.2",
+          "client": "1.0.0",
+          "client.service.fileserver": "1.0.0",
+          "client.service.tcpforward": "1.0.0",
           "common": "1.0.0",
           "server": "1.0.0"
         },
@@ -144,6 +144,38 @@
       },
       "System.Memory/4.5.4": {},
       "System.Runtime.CompilerServices.Unsafe/4.7.0": {},
+      "client/1.0.0": {
+        "dependencies": {
+          "Fleck": "1.2.0",
+          "Microsoft.Extensions.DependencyInjection": "5.0.2",
+          "common": "1.0.0",
+          "server": "1.0.0"
+        },
+        "runtime": {
+          "client.dll": {}
+        }
+      },
+      "client.service.fileserver/1.0.0": {
+        "dependencies": {
+          "System.Drawing.Common": "5.0.2",
+          "client": "1.0.0",
+          "common": "1.0.0",
+          "server": "1.0.0"
+        },
+        "runtime": {
+          "client.service.fileserver.dll": {}
+        }
+      },
+      "client.service.tcpforward/1.0.0": {
+        "dependencies": {
+          "client": "1.0.0",
+          "common": "1.0.0",
+          "server": "1.0.0"
+        },
+        "runtime": {
+          "client.service.tcpforward.dll": {}
+        }
+      },
       "common/1.0.0": {
         "dependencies": {
           "protobuf-net": "3.0.101"
@@ -258,6 +290,21 @@
       "sha512": "sha512-IpU1lcHz8/09yDr9N+Juc7SCgNUz+RohkCQI+KsWKR67XxpFr8Z6c8t1iENCXZuRuNCc4HBwme/MDHNVCwyAKg==",
       "path": "system.runtime.compilerservices.unsafe/4.7.0",
       "hashPath": "system.runtime.compilerservices.unsafe.4.7.0.nupkg.sha512"
+    },
+    "client/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "client.service.fileserver/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "client.service.tcpforward/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
     },
     "common/1.0.0": {
       "type": "project",

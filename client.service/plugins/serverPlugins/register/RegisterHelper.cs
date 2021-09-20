@@ -95,7 +95,7 @@ namespace client.service.plugins.serverPlugins.register
                     registerState.TcpSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     registerState.TcpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                     registerState.TcpSocket.Bind(new IPEndPoint(config.Client.BindIp, registerState.LocalInfo.TcpPort));
-                    registerState.TcpSocket.Connect(new IPEndPoint(IPAddress.Parse(config.Server.Ip), config.Server.TcpPort));
+                    registerState.TcpSocket.Connect(new DnsEndPoint(config.Server.Ip, config.Server.TcpPort));
                     registerState.LocalInfo.LocalIp = IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString();
                     tcpServer.BindReceive(registerState.TcpSocket, (code) =>
                     {
@@ -113,7 +113,7 @@ namespace client.service.plugins.serverPlugins.register
                     }
                     //UDP 开始监听
                     udpServer.Start(registerState.LocalInfo.Port, config.Client.BindIp);
-                    registerState.UdpAddress = new IPEndPoint(IPAddress.Parse(config.Server.Ip), config.Server.Port);
+                    registerState.UdpAddress = new IPEndPoint(Dns.GetHostAddresses(config.Server.Ip)[0], config.Server.Port);
 
 
                     //注册

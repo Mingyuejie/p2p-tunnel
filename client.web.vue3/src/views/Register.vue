@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:30:19
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-17 21:12:27
+ * @LastEditTime: 2021-09-20 18:24:07
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\Register.vue
@@ -27,8 +27,8 @@
             <el-form-item label="服务信息">
                 <el-row>
                     <el-col :span="8">
-                        <el-form-item label="IP" label-width="55" prop="ServerIp">
-                            <el-input v-model="model.ServerIp"></el-input>
+                        <el-form-item label="地址" :label-width="55" prop="ServerIp">
+                            <el-input v-model="model.ServerIp" placeholder="域名或IP地址"></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="8">
@@ -46,7 +46,7 @@
             <el-form-item label="客户信息">
                 <el-row>
                     <el-col :span="8">
-                        <el-form-item label="IP" label-width="50" prop="Ip">
+                        <el-form-item label="IP" :label-width="55" prop="Ip">
                             <el-input readonly v-model="registerState.RemoteInfo.Ip"></el-input>
                         </el-form-item>
                     </el-col>
@@ -65,7 +65,7 @@
             <el-form-item label="注册信息">
                 <el-row>
                     <el-col :span="8">
-                        <el-form-item label="ID" label-width="50" prop="ConnectId">
+                        <el-form-item label="ID" :label-width="55" prop="ConnectId">
                             <el-input readonly v-model="registerState.RemoteInfo.ConnectId"></el-input>
                         </el-form-item>
                     </el-col>
@@ -84,7 +84,7 @@
             <el-form-item label="Mac地址">
                 <el-row>
                     <el-col :span="8">
-                        <el-form-item label="地址" label-width="50" prop="Mac">
+                        <el-form-item label="地址" :label-width="55" prop="Mac">
                             <el-input readonly v-model="registerState.LocalInfo.Mac"></el-input>
                         </el-form-item>
                     </el-col>
