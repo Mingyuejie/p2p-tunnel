@@ -1,4 +1,5 @@
-﻿using server.model;
+﻿using common;
+using server.model;
 using server.packet;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ namespace server
 
         public void Stop();
 
-        public void OnPacket(Action<ServerDataWrap<T>> action);
+        public SimplePushSubHandler<ServerDataWrap<T>> OnPacketPushSub { get; }
     }
 
     public struct ServerDataWrap<T>

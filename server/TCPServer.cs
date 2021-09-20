@@ -200,7 +200,7 @@ namespace server
             {
                 model.CacheBuffer.AddRange(buffer);
             }
-            action?.Invoke(new ServerDataWrap<List<byte>>
+            OnPacketPushSub.Push(new ServerDataWrap<List<byte>>
             {
                 Data = model.CacheBuffer,
                 Address = address,
@@ -212,11 +212,9 @@ namespace server
             watch.Output($"TCP 包处理时间：");
         }
 
-        private Action<ServerDataWrap<List<byte>>> action;
-        public void OnPacket(Action<ServerDataWrap<List<byte>>> action)
-        {
-            this.action = action;
-        }
+        private SimplePushSubHandler<ServerDataWrap<List<byte>>> onPacketPushSub = new SimplePushSubHandler<ServerDataWrap<List<byte>>>();
+        public SimplePushSubHandler<ServerDataWrap<List<byte>>> OnPacketPushSub => onPacketPushSub;
+
     }
 
     public class ReceiveModel

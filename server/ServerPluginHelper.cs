@@ -29,7 +29,7 @@ namespace server
             this.tcpserver = tcpserver;
             this.udpserver = udpserver;
 
-            this.tcpserver.OnPacket((wrap) =>
+            this.tcpserver.OnPacketPushSub.Sub((wrap) =>
             {
                 List<TcpPacket> bytesArray = TcpPacket.FromArray(wrap.Data);
                 if (bytesArray.Count > 0)
@@ -40,7 +40,7 @@ namespace server
                     }
                 }
             });
-            this.udpserver.OnPacket((wrap) =>
+            this.udpserver.OnPacketPushSub.Sub((wrap) =>
             {
                 UdpPacket packet = UdpPacket.FromArray(wrap.Address, wrap.Data);
                 if (packet != null)
