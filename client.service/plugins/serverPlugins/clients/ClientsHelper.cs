@@ -24,42 +24,35 @@ namespace client.service.plugins.serverPlugins.clients
         private readonly IPunchHoleTcp punchHoleTcp;
         private readonly RegisterState registerState;
         private readonly IClientInfoCaching clientInfoCaching;
+        private readonly HeartEventHandles heartEventHandles;
 
-        public ClientsHelper(RegisterEventHandles registerEventHandles,
-            ClientsEventHandles clientsEventHandles,
-           IPunchHoleUdp punchHoleUdp,
-           IPunchHoleTcp punchHoleTcp,
-            HeartEventHandles heartEventHandles,
-            IClientInfoCaching clientInfoCaching,
-            RegisterState registerState, PunchHoleEventHandles punchHoldEventHandles)
+        public ClientsHelper(
+            RegisterEventHandles registerEventHandles, ClientsEventHandles clientsEventHandles,
+            IPunchHoleUdp punchHoleUdp, IPunchHoleTcp punchHoleTcp,
+            HeartEventHandles heartEventHandles, IClientInfoCaching clientInfoCaching,
+            RegisterState registerState, PunchHoleEventHandles punchHoldEventHandles
+        )
         {
             this.punchHoleUdp = punchHoleUdp;
             this.punchHoleTcp = punchHoleTcp;
             this.registerState = registerState;
             this.clientInfoCaching = clientInfoCaching;
+            this.heartEventHandles = heartEventHandles;
 
-            //收到来自服务器的 在线客户端 数据
-            clientsEventHandles.OnServerSendClientsHandler += OnServerSendClientsHandler;
-
-            punchHoleUdp.OnStep1Handler += UdpOnStep1Handler;
-            punchHoleUdp.OnStep3Handler += UdpOnStep3Handler;
-
-
-            punchHoleTcp.OnStep1Handler += TcpOnStep1Handler;
-            punchHoleTcp.OnStep3Handler += TcpOnStep3Handler;
-            punchHoleTcp.OnStep4Handler += TcpOnStep4Handler;
-            punchHoleTcp.OnStep2FailHandler += TcpOnStep2FailHandler;
+            UdpSubs();
+            TcpSubs();
+            Heart();
 
             //有人要求反向链接
-            punchHoldEventHandles.OnReverseHandler += (s, arg) =>
-            {
-                if (clientInfoCaching.Get(arg.Data.Id, out ClientInfo client) && client != null)
-                {
-                    ConnectClient(client);
-                }
-            };
+            punchHoldEventHandles.OnReverse.Sub((arg) =>
+           {
+               if (clientInfoCaching.Get(arg.Data.Id, out ClientInfo client) && client != null)
+               {
+                   ConnectClient(client);
+               }
+           });
             //退出消息
-            registerEventHandles.OnSendExitMessageHandler += (sender, e) =>
+            registerEventHandles.OnExitMessage.Sub((e) =>
             {
                 readClientsTimes = 0;
                 foreach (ClientInfo client in clientInfoCaching.All())
@@ -70,65 +63,17 @@ namespace client.service.plugins.serverPlugins.clients
                         punchHoleTcp.SendStep2Stop(client.Id);
                     }
                 }
-            };
-
+            });
             //本客户端注册状态
-            registerEventHandles.OnSendRegisterTcpStateChangeHandler += OnRegisterTcpStateChangeHandler;
+            registerEventHandles.OnRegisterStateChange.Sub((e) =>
+            {
+                if (e.State)
+                {
+                    registerState.RemoteInfo.Ip = e.Ip;
+                }
+            });
             //收到来自服务器的 在线客户端 数据
-            clientsEventHandles.OnServerSendClientsHandler += OnServerSendClientsHandler;
-
-            //给各个客户端发送心跳包
-            _ = Task.Factory.StartNew(() =>
-            {
-                while (true)
-                {
-                    foreach (ClientInfo client in clientInfoCaching.All())
-                    {
-                        if (client.IsTimeout())
-                        {
-                            if (client.Connected && !client.Connecting)
-                            {
-                                client.Offline();
-                            }
-                        }
-                        else if (client.Connected)
-                        {
-                            heartEventHandles.SendHeartMessage(registerState.RemoteInfo.ConnectId, client.Address);
-                        }
-
-                        if (client.IsTcpTimeout())
-                        {
-                            if (client.TcpConnected && !client.TcpConnecting)
-                            {
-                                client.OfflineTcp();
-                            }
-                        }
-                        else if (client.TcpConnected)
-                        {
-                            heartEventHandles.SendTcpHeartMessage(registerState.RemoteInfo.ConnectId, client.Socket);
-                        }
-
-                    }
-                    System.Threading.Thread.Sleep(5000);
-                }
-
-            }, TaskCreationOptions.LongRunning);
-
-            //收客户端的心跳包
-            heartEventHandles.OnHeartEventHandler += (sender, e) =>
-            {
-                if (e.Data.SourceId > 0)
-                {
-                    if (e.Packet.ServerType == ServerType.UDP)
-                    {
-                        clientInfoCaching.UpdateLastTime(e.Data.SourceId);
-                    }
-                    else if (e.Packet.ServerType == ServerType.TCP)
-                    {
-                        clientInfoCaching.UpdateTcpLastTime(e.Data.SourceId);
-                    }
-                }
-            };
+            clientsEventHandles.OnData.Sub(OnServerSendClients);
 
             _ = Task.Run(() =>
             {
@@ -142,60 +87,7 @@ namespace client.service.plugins.serverPlugins.clients
             });
         }
 
-        private void TcpOnStep1Handler(object sender, punchHolePlugins.plugins.tcp.OnStep1EventArg e)
-        {
-            if (clientInfoCaching.Get(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null)
-            {
-                cacheClient.TcpConnecting = true;
-            }
-        }
-
-        private void TcpOnStep2FailHandler(object sender, OnStep2FailEventArg e)
-        {
-            clientInfoCaching.OfflineTcp(e.Data.FromId);
-        }
-
-        private void TcpOnStep3Handler(object sender, punchHolePlugins.plugins.tcp.OnStep3EventArg e)
-        {
-            clientInfoCaching.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);
-        }
-        private void TcpOnStep4Handler(object sender, punchHolePlugins.plugins.tcp.OnStep4EventArg e)
-        {
-            clientInfoCaching.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket);
-        }
-
-        private void UdpOnStep3Handler(object sender, punchHolePlugins.plugins.udp.OnStep3EventArg e)
-        {
-            clientInfoCaching.Online(e.Data.FromId, e.Packet.SourcePoint);
-        }
-
-        private void UdpOnStep1Handler(object sender, punchHolePlugins.plugins.udp.OnStep1EventArg e)
-        {
-            if (clientInfoCaching.Get(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null)
-            {
-                cacheClient.Connecting = true;
-            }
-            _ = Helper.SetTimeout(() =>
-            {
-                if (clientInfoCaching.Get(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null && !cacheClient.Connected)
-                {
-                    cacheClient.Connecting = false;
-                }
-            }, 3000);
-        }
-
-
-
-
-        private void OnRegisterTcpStateChangeHandler(object sender, RegisterTcpEventArg e)
-        {
-            if (e.State)
-            {
-                registerState.RemoteInfo.Ip = e.Ip;
-            }
-        }
-
-        private void OnServerSendClientsHandler(object sender, OnServerSendClientsEventArg e)
+        private void OnServerSendClients(OnServerSendClientsEventArg e)
         {
             try
             {
@@ -204,8 +96,6 @@ namespace client.service.plugins.serverPlugins.clients
                 {
                     return;
                 }
-
-                
 
                 System.Threading.Interlocked.Increment(ref readClientsTimes);
                 //下线了的
@@ -261,7 +151,6 @@ namespace client.service.plugins.serverPlugins.clients
                 ConnectClient(client);
             }
         }
-
         private void ConnectClient(ClientInfo info)
         {
             Task.Run(() =>
@@ -319,6 +208,95 @@ namespace client.service.plugins.serverPlugins.clients
         public bool Get(long id, out ClientInfo client)
         {
             return clientInfoCaching.Get(id, out client);
+        }
+
+        private void UdpSubs()
+        {
+            punchHoleUdp.OnStep1Handler.Sub((e) =>
+            {
+                if (clientInfoCaching.Get(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null)
+                {
+                    cacheClient.Connecting = true;
+                }
+                _ = Helper.SetTimeout(() =>
+                {
+                    if (clientInfoCaching.Get(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null && !cacheClient.Connected)
+                    {
+                        cacheClient.Connecting = false;
+                    }
+                }, 3000);
+            });
+            punchHoleUdp.OnStep3Handler.Sub((e) => { clientInfoCaching.Online(e.Data.FromId, e.Packet.SourcePoint); });
+        }
+
+        private void TcpSubs()
+        {
+            punchHoleTcp.OnStep1Handler.Sub((e) =>
+            {
+                if (clientInfoCaching.Get(e.Data.Id, out ClientInfo cacheClient) && cacheClient != null)
+                {
+                    cacheClient.TcpConnecting = true;
+                }
+            });
+            punchHoleTcp.OnStep3Handler.Sub((e) => clientInfoCaching.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket));
+            punchHoleTcp.OnStep4Handler.Sub((e) => clientInfoCaching.OnlineTcp(e.Data.FromId, e.Packet.TcpSocket));
+            punchHoleTcp.OnStep2FailHandler.Sub((e) => clientInfoCaching.OfflineTcp(e.Data.FromId));
+        }
+
+        private void Heart()
+        {
+            //给各个客户端发送心跳包
+            _ = Task.Factory.StartNew(() =>
+            {
+                while (true)
+                {
+                    foreach (ClientInfo client in clientInfoCaching.All())
+                    {
+                        if (client.IsTimeout())
+                        {
+                            if (client.Connected && !client.Connecting)
+                            {
+                                client.Offline();
+                            }
+                        }
+                        else if (client.Connected)
+                        {
+                            heartEventHandles.SendHeartMessage(registerState.RemoteInfo.ConnectId, client.Address);
+                        }
+
+                        if (client.IsTcpTimeout())
+                        {
+                            if (client.TcpConnected && !client.TcpConnecting)
+                            {
+                                client.OfflineTcp();
+                            }
+                        }
+                        else if (client.TcpConnected)
+                        {
+                            heartEventHandles.SendTcpHeartMessage(registerState.RemoteInfo.ConnectId, client.Socket);
+                        }
+
+                    }
+                    System.Threading.Thread.Sleep(5000);
+                }
+
+            }, TaskCreationOptions.LongRunning);
+
+            //收客户端的心跳包
+            heartEventHandles.OnHeart.Sub((e) =>
+            {
+                if (e.Data.SourceId > 0)
+                {
+                    if (e.Packet.ServerType == ServerType.UDP)
+                    {
+                        clientInfoCaching.UpdateLastTime(e.Data.SourceId);
+                    }
+                    else if (e.Packet.ServerType == ServerType.TCP)
+                    {
+                        clientInfoCaching.UpdateTcpLastTime(e.Data.SourceId);
+                    }
+                }
+            });
         }
     }
 }

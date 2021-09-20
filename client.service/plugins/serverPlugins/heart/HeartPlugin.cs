@@ -19,7 +19,7 @@ namespace client.service.plugins.serverPlugins.heart
         {
 
             HeartModel data = model.Wrap.Content.DeBytes<HeartModel>();
-            heartEventHandles.OnHeartMessage(new OnHeartEventArg
+            heartEventHandles.OnHeart.Push(new OnHeartEventArg
             {
                 Packet = model,
                 Data = data

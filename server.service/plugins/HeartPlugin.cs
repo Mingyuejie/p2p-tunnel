@@ -8,12 +8,15 @@ namespace server.service.plugins
     public class HeartPlugin : IPlugin
     {
         private readonly IClientRegisterCaching clientRegisterCache;
-        public HeartPlugin(IClientRegisterCaching clientRegisterCache)
+        private readonly ServerPluginHelper serverPluginHelper;
+
+        public HeartPlugin(IClientRegisterCaching clientRegisterCache, ServerPluginHelper serverPluginHelper)
         {
             this.clientRegisterCache = clientRegisterCache;
+            this.serverPluginHelper = serverPluginHelper;
         }
 
-        public HeartModel Excute(PluginParamWrap data)
+        public void Excute(PluginParamWrap data)
         {
             HeartModel model = data.Wrap.Content.DeBytes<HeartModel>();
 
@@ -21,7 +24,28 @@ namespace server.service.plugins
             {
                 clientRegisterCache.UpdateTime(model.SourceId);
             };
-            return new HeartModel { TargetId = model.SourceId, SourceId = -1 };
+            if (data.ServerType == ServerType.UDP)
+            {
+                serverPluginHelper.SendOnly(new SendMessageWrap<HeartModel>
+                {
+                    Address = data.SourcePoint,
+                    Data = new HeartModel { TargetId = model.SourceId, SourceId = -1 },
+                    Type = ServerMessageTypes.REQUEST,
+                    Path = data.Wrap.Path,
+                    Code = ServerMessageResponeCodes.OK
+                });
+            }
+            else
+            {
+                serverPluginHelper.SendOnlyTcp(new SendMessageWrap<HeartModel>
+                {
+                    TcpCoket = data.TcpSocket,
+                    Data = new HeartModel { TargetId = model.SourceId, SourceId = -1 },
+                    Type = ServerMessageTypes.REQUEST,
+                    Path = data.Wrap.Path,
+                    Code = ServerMessageResponeCodes.OK
+                });
+            }
         }
     }
 }

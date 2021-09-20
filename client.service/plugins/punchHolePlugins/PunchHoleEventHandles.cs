@@ -1,7 +1,6 @@
 ﻿using client.plugins.serverPlugins;
 using client.plugins.serverPlugins.register;
-using client.service.plugins.serverPlugins;
-using client.service.plugins.serverPlugins.register;
+using common;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
 using ProtoBuf;
@@ -19,7 +18,7 @@ namespace client.service.plugins.punchHolePlugins
     {
         private Dictionary<PunchHoleTypes, IPunchHolePlugin> plugins = null;
 
-        private readonly IServerRequest  serverRequest;
+        private readonly IServerRequest serverRequest;
         private readonly RegisterState registerState;
         private readonly ServiceProvider serviceProvider;
 
@@ -56,7 +55,6 @@ namespace client.service.plugins.punchHolePlugins
             }
         }
 
-        public event EventHandler<OnPunchHoleTcpArg> OnPunchHoleHandler;
         public void OnPunchHole(OnPunchHoleTcpArg arg)
         {
             PunchHoleTypes type = (PunchHoleTypes)arg.Data.PunchType;
@@ -66,11 +64,7 @@ namespace client.service.plugins.punchHolePlugins
                 IPunchHolePlugin plugin = plugins[type];
                 plugin?.Excute(arg);
             }
-
-            OnPunchHoleHandler?.Invoke(this, arg);
         }
-
-        public event EventHandler<OnPunchHoleTcpArg> OnPunchHoleTcpHandler;
         public void OnPunchHoleTcp(OnPunchHoleTcpArg arg)
         {
             PunchHoleTypes type = (PunchHoleTypes)arg.Data.PunchType;
@@ -80,11 +74,8 @@ namespace client.service.plugins.punchHolePlugins
                 IPunchHolePlugin plugin = plugins[type];
                 plugin?.Excute(arg);
             }
-
-            OnPunchHoleTcpHandler?.Invoke(this, arg);
         }
 
-        public event EventHandler<SendPunchHoleTcpArg> OnSendTcpHandler;
         public void SendTcp(SendPunchHoleTcpArg arg)
         {
             serverRequest.SendOnlyTcp(new SendTcpEventArg<PunchHoleModel>
@@ -101,11 +92,8 @@ namespace client.service.plugins.punchHolePlugins
                     ToId = arg.ToId
                 }
             });
-
-            OnSendTcpHandler?.Invoke(this, arg);
         }
 
-        public event EventHandler<SendPunchHoleArg> OnSendHandler;
         public void Send(SendPunchHoleArg arg)
         {
             serverRequest.SendOnly(new SendEventArg<PunchHoleModel>
@@ -122,15 +110,9 @@ namespace client.service.plugins.punchHolePlugins
                     ToId = arg.ToId
                 }
             });
-            OnSendHandler?.Invoke(this, arg);
         }
 
-
-        public event EventHandler<OnPunchHoleTcpArg> OnReverseHandler;
-        public void OnReverse(OnPunchHoleTcpArg arg)
-        {
-            OnReverseHandler?.Invoke(this, arg);
-        }
+        public SimplePushSubHandler<OnPunchHoleTcpArg> OnReverse { get; } = new SimplePushSubHandler<OnPunchHoleTcpArg>();
         public void SendReverse(long toid)
         {
             SendTcp(new SendPunchHoleTcpArg

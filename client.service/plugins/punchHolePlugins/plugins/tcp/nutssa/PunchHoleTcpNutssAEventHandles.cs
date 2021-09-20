@@ -21,7 +21,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
     public class PunchHoleTcpNutssAEventHandles : IPunchHoleTcp
     {
         private readonly PunchHoleEventHandles punchHoldEventHandles;
-        private readonly IServerRequest  serverRequest;
+        private readonly IServerRequest serverRequest;
         private readonly ITcpServer tcpServer;
         private readonly RegisterState registerState;
         private readonly Config config;
@@ -52,10 +52,6 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
         /// <summary>
         /// 发送TCP连接客户端请求消息（给服务器）
         /// </summary>
-        public event EventHandler<SendEventArg> OnSendTcpHandler;
-        /// <summary>
-        /// 发送TCP连接客户端请求消息（给服务器）
-        /// </summary>
         /// <param name="toid"></param>
         public void Send(ConnectTcpParams param)
         {
@@ -67,12 +63,6 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
         public void SendPrivate(ConnectTcpParams param)
         {
             Logger.Instance.Debug($"SendPrivate {param.Id}->{param.Name}");
-            OnSendTcpHandler?.Invoke(this, new SendEventArg
-            {
-                Id = param.Id,
-                Name = param.Name
-            });
-
             connectTcpCache.TryAdd(param.Id, new ConnectTcpCache
             {
                 Callback = param.Callback,
@@ -106,11 +96,11 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
             }, param.Timeout);
         }
 
-        public event EventHandler<OnStep1EventArg> OnStep1Handler;
+        public SimplePushSubHandler<OnStep1EventArg> OnStep1Handler { get; } = new SimplePushSubHandler<OnStep1EventArg>();
         public void OnStep1(OnStep1EventArg e)
         {
             Logger.Instance.Debug($"OnStep1 {e.Data.Id}");
-            OnStep1Handler?.Invoke(this, e);
+            OnStep1Handler.Push(e);
 
             punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
             {
@@ -127,7 +117,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
         /// <summary>
         /// 服务器TCP消息，来源客户端已经准备好
         /// </summary>
-        public event EventHandler<OnStep2EventArg> OnTcpStep2Handler;
+        public SimplePushSubHandler<OnStep2EventArg> OnStep2Handler { get; } = new SimplePushSubHandler<OnStep2EventArg>();
         private readonly List<long> replyIds = new();
         private readonly List<long> connectdIds = new();
         /// <summary>
@@ -137,7 +127,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
         public void OnStep2(OnStep2EventArg e)
         {
             Logger.Instance.Debug($"OnStep2 {e.Data.Ip}->{e.Data.TcpPort}");
-            OnTcpStep2Handler?.Invoke(this, e);
+            OnStep2Handler.Push(e);
             List<Tuple<string, int>> ips = new List<Tuple<string, int>> {
                 new Tuple<string, int>(e.Data.LocalIps,e.Data.LocalTcpPort),
                 new Tuple<string, int>(e.Data.Ip,e.Data.TcpPort),
@@ -282,28 +272,20 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
             });
         }
 
-        public event EventHandler<long> OnSendStep2RetryHandler;
         public void SendStep2Retry(long toid)
         {
-            OnSendStep2RetryHandler?.Invoke(this, toid);
         }
-        public event EventHandler<OnStep2RetryEventArg> OnStep2RetryHandler;
+        public SimplePushSubHandler<OnStep2RetryEventArg> OnStep2RetryHandler { get; } = new SimplePushSubHandler<OnStep2RetryEventArg>();
         public void OnStep2Retry(OnStep2RetryEventArg e)
         {
-            OnStep2RetryHandler?.Invoke(this, e);
+            OnStep2RetryHandler.Push(e);
         }
-
-        /// <summary>
-        /// 服务器TCP消息，链接失败
-        /// </summary>
-        public event EventHandler<OnSendStep2FailEventArg> OnSendStep2FailHandler;
         /// <summary>
         /// 服务器TCP消息，链接失败
         /// </summary>
         /// <param name="toid"></param>
         public void SendStep2Fail(OnSendStep2FailEventArg arg)
         {
-            OnSendStep2FailHandler?.Invoke(this, arg);
             if (connectTcpCache.TryGetValue(arg.ToId, out ConnectTcpCache cache))
             {
                 _ = connectTcpCache.TryRemove(arg.ToId, out _);
@@ -328,7 +310,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
         /// <summary>
         /// 服务器TCP消息，链接失败
         /// </summary>
-        public event EventHandler<OnStep2FailEventArg> OnStep2FailHandler;
+        public SimplePushSubHandler<OnStep2FailEventArg> OnStep2FailHandler { get; } = new SimplePushSubHandler<OnStep2FailEventArg>();
         /// <summary>
         /// 服务器TCP消息，链接失败
         /// </summary>
@@ -336,7 +318,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
         public void OnStep2Fail(OnStep2FailEventArg arg)
         {
 
-            OnStep2FailHandler?.Invoke(this, arg);
+            OnStep2FailHandler.Push(arg);
         }
 
         public void SendStep2Stop(long toid)
@@ -361,16 +343,11 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
 
 
         /// <summary>
-        /// TCP消息，已经连接了对方，发个3告诉对方已连接
-        /// </summary>
-        public event EventHandler<SendStep3EventArg> OnSendStep3Handler;
-        /// <summary>
         /// 开始连接目标客户端
         /// </summary>
         /// <param name="toid"></param>
         public void SendStep3(SendStep3EventArg arg)
         {
-            OnSendStep3Handler?.Invoke(this, arg);
             punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
             {
                 Socket = arg.Socket,
@@ -387,7 +364,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
         /// <summary>
         /// 对方连接我了
         /// </summary>
-        public event EventHandler<OnStep3EventArg> OnStep3Handler;
+        public SimplePushSubHandler<OnStep3EventArg> OnStep3Handler { get;} = new SimplePushSubHandler<OnStep3EventArg>();
         /// <summary>
         /// 对方连接我了
         /// </summary>
@@ -399,21 +376,16 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
                 Socket = arg.Packet.TcpSocket,
                 ToId = ConnectId
             });
-            OnStep3Handler?.Invoke(this, arg);
+            OnStep3Handler.Push(arg);
 
         }
 
         /// <summary>
         /// 回应目标客户端
         /// </summary>
-        public event EventHandler<SendStep4EventArg> OnSendStep4Handler;
-        /// <summary>
-        /// 回应目标客户端
-        /// </summary>
         /// <param name="toid"></param>
         public void SendStep4(SendStep4EventArg arg)
         {
-            OnSendStep4Handler?.Invoke(this, arg);
             punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
             {
                 Socket = arg.Socket,
@@ -429,9 +401,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
         /// <summary>
         /// 来源客户端回应我了
         /// </summary>
-        public event EventHandler<OnStep4EventArg> OnStep4Handler;
-
-
+        public SimplePushSubHandler<OnStep4EventArg> OnStep4Handler { get;} = new SimplePushSubHandler<OnStep4EventArg>();
         /// <summary>
         /// 来源客户端回应我了
         /// </summary>
@@ -444,14 +414,11 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
                 cache?.Callback(arg);
             }
             replyIds.Add(arg.Data.FromId);
-            OnStep4Handler?.Invoke(this, arg);
+            OnStep4Handler.Push(arg);
         }
-
-        public event EventHandler<SendStepPacketEventArg> OnSendStepPacketHandler;
 
         public void SendStepPacket(SendStepPacketEventArg arg)
         {
-            OnSendStepPacketHandler?.Invoke(this, arg);
             punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
             {
                 Socket = TcpServer,
@@ -464,11 +431,11 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
             });
         }
 
-        public event EventHandler<OnStepPacketEventArg> OnStepPacketHandler;
+        public SimplePushSubHandler<OnStepPacketEventArg> OnStepPacketHandler { get;} = new SimplePushSubHandler<OnStepPacketEventArg>();
         public void OnStepPacket(OnStepPacketEventArg arg)
         {
             Logger.Instance.Debug($"OnStepPacket {arg.Data.FromId}");
-            OnStepPacketHandler?.Invoke(this, arg);
+            OnStepPacketHandler.Push(arg);
 
             clientInfoCaching.Get(arg.Data.FromId, out ClientInfo info);
             if (info != null)

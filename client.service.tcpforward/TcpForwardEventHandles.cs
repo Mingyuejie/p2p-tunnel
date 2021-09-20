@@ -1,4 +1,5 @@
 ﻿using client.plugins.serverPlugins;
+using common;
 using server.model;
 using System;
 using System.Net.Sockets;
@@ -14,7 +15,7 @@ namespace client.service.tcpforward
         }
 
         #region TCP转发
-        public event EventHandler<SendTcpForwardEventArg> OnSendTcpForwardHandler;
+        
         public void SendTcpForward(SendTcpForwardEventArg arg)
         {
             serverRequest.SendOnlyTcp(new SendTcpEventArg<TcpForwardModel>
@@ -23,14 +24,12 @@ namespace client.service.tcpforward
                 Socket = arg.Socket,
                 Data = arg.Data
             });
-
-            OnSendTcpForwardHandler?.Invoke(this, arg);
         }
 
-        public event EventHandler<OnTcpForwardEventArg> OnTcpForwardHandler;
+        public SimplePushSubHandler<OnTcpForwardEventArg> OnTcpForwardHandler { get; } = new SimplePushSubHandler<OnTcpForwardEventArg>();
         public void OnTcpForward(OnTcpForwardEventArg arg)
         {
-            OnTcpForwardHandler?.Invoke(this, arg);
+            OnTcpForwardHandler.Push(arg);
         }
 
         #endregion

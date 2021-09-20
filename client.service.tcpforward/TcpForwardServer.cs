@@ -24,8 +24,9 @@ namespace client.service.tcpforward
         }
 
         private long requestId = 0;
-        public event EventHandler<TcpForwardRequestModel> OnRequest;
-        public event EventHandler<ListeningChangeModel> OnListeningChange;
+
+        public SimplePushSubHandler<TcpForwardRequestModel> OnRequest { get; } = new SimplePushSubHandler<TcpForwardRequestModel>();
+        public SimplePushSubHandler<ListeningChangeModel> OnListeningChange { get; } = new SimplePushSubHandler<ListeningChangeModel>();
 
         public void Start(TcpForwardRecordModel mapping)
         {
@@ -48,7 +49,7 @@ namespace client.service.tcpforward
                 SourcePort = mapping.SourcePort
             };
             ServerModel.Add(server);
-            OnListeningChange?.Invoke(this, new ListeningChangeModel
+            OnListeningChange.Push(new ListeningChangeModel
             {
                 SourcePort = mapping.SourcePort,
                 Listening = true
@@ -178,7 +179,7 @@ namespace client.service.tcpforward
                     }
                 }
             }
-            OnRequest?.Invoke(this, new TcpForwardRequestModel
+            OnRequest.Push(new TcpForwardRequestModel
             {
                 Msg = new TcpForwardModel
                 {
@@ -277,7 +278,7 @@ namespace client.service.tcpforward
 
         public void Stop(ServerModel model)
         {
-            OnListeningChange?.Invoke(this, new ListeningChangeModel
+            OnListeningChange.Push(new ListeningChangeModel
             {
                 SourcePort = model.SourcePort,
                 Listening = false

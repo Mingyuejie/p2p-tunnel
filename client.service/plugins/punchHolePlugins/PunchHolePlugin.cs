@@ -60,7 +60,7 @@ namespace client.service.plugins.punchHolePlugins
 
         public void Excute(OnPunchHoleTcpArg arg)
         {
-            punchHoldEventHandles.OnReverse(arg);
+            punchHoldEventHandles.OnReverse.Push(arg);
         }
     }
 

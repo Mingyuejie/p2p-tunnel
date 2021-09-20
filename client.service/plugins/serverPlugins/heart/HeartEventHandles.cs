@@ -1,4 +1,5 @@
 ﻿using client.plugins.serverPlugins;
+using common;
 using server.model;
 using System;
 using System.Net;
@@ -52,18 +53,8 @@ namespace client.service.plugins.serverPlugins.heart
             serverRequest.SendOnlyTcp(arg);
         }
 
-        /// <summary>
-        /// 收到心跳信息
-        /// </summary>
-        public event EventHandler<OnHeartEventArg> OnHeartEventHandler;
-        /// <summary>
-        /// 收到心跳信息
-        /// </summary>
-        /// <param name="arg"></param>
-        public void OnHeartMessage(OnHeartEventArg arg)
-        {
-            OnHeartEventHandler?.Invoke(this, arg);
-        }
+
+        public SimplePushSubHandler<OnHeartEventArg> OnHeart { get; } = new SimplePushSubHandler<OnHeartEventArg>();
     }
 
     public class OnHeartEventArg : EventArgs

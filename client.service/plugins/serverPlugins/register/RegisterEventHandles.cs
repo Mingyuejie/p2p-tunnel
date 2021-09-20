@@ -37,10 +37,8 @@ namespace client.service.plugins.serverPlugins.register
         public int ClientTcpPort => registerState.RemoteInfo.TcpPort;
         public int RouteLevel => registerState.LocalInfo.RouteLevel;
 
-        /// <summary>
-        /// 发送退出消息
-        /// </summary>
-        public event EventHandler<SendEventArg<ExitModel>> OnSendExitMessageHandler;
+        public SimplePushSubHandler<SendEventArg<ExitModel>> OnExitMessage { get; } = new SimplePushSubHandler<SendEventArg<ExitModel>>();
+
         /// <summary>
         /// 发送退出消息
         /// </summary>
@@ -67,12 +65,12 @@ namespace client.service.plugins.serverPlugins.register
                 udpServer.Stop();
                 tcpServer.Stop();
 
-                SendRegisterTcpStateChange(new RegisterTcpEventArg
+                OnRegisterStateChange.Push(new RegisterEventArg
                 {
                     State = false
                 });
             }
-            OnSendExitMessageHandler?.Invoke(this, arg);
+            OnExitMessage.Push( arg);
 
             Helper.FlushMemory();
         }
@@ -82,14 +80,9 @@ namespace client.service.plugins.serverPlugins.register
         /// <summary>
         /// 发送注册消息
         /// </summary>
-        public event EventHandler<string> OnSendRegisterMessageHandler;
-        /// <summary>
-        /// 发送注册消息
-        /// </summary>
         /// <param name="arg"></param>
         public async Task<RegisterResultModel> SendRegisterMessage(RegisterParams param)
         {
-            OnSendRegisterMessageHandler?.Invoke(this, param.ClientName);
             ServerMessageResponeWrap result = await serverRequest.SendReply(new SendEventArg<RegisterModel>
             {
                 Address = UdpServer,
@@ -129,7 +122,7 @@ namespace client.service.plugins.serverPlugins.register
             {
                 return new RegisterResultModel { Code = -1, Msg = tcpResult.ErrorMsg };
             }
-            SendRegisterTcpStateChange(new RegisterTcpEventArg
+            OnRegisterStateChange.Push(new RegisterEventArg
             {
                 State = true,
                 Id = res.Id,
@@ -143,21 +136,14 @@ namespace client.service.plugins.serverPlugins.register
         /// <summary>
         /// 注册Tcp状态发生变化
         /// </summary>
-        public event EventHandler<RegisterTcpEventArg> OnSendRegisterTcpStateChangeHandler;
-        /// <summary>
-        /// 发布注册Tcp状态变化消息
-        /// </summary>
-        /// <param name="arg"></param>
-        public void SendRegisterTcpStateChange(RegisterTcpEventArg arg)
-        {
-            OnSendRegisterTcpStateChangeHandler?.Invoke(this, arg);
-        }
+        public SimplePushSubHandler<RegisterEventArg> OnRegisterStateChange { get; } = new SimplePushSubHandler<RegisterEventArg>();
+       
         #endregion
     }
 
     #region 注册model
 
-    public class RegisterTcpEventArg : EventArgs
+    public class RegisterEventArg : EventArgs
     {
         public string Ip { get; set; }
         public long Id { get; set; }

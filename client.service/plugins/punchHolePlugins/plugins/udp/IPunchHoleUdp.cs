@@ -1,4 +1,5 @@
-﻿using ProtoBuf;
+﻿using common;
+using ProtoBuf;
 using server.model;
 using System;
 using System.Collections.Generic;
@@ -11,25 +12,21 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
 {
     public interface IPunchHoleUdp
     {
-        public event EventHandler<SendPunchHoleEventArg> OnSendPunchHoleHandler;
         public void SendStep1(ConnectParams param);
-        public event EventHandler<OnStep1EventArg> OnStep1Handler;
+        public SimplePushSubHandler<OnStep1EventArg> OnStep1Handler { get; }
         public void OnStep1(OnStep1EventArg arg);
 
-        public event EventHandler<SendStep2EventArg> OnSendStep2Handler;
         public void SendStep2(SendStep2EventArg arg);
-        public event EventHandler<OnStep2EventArg> OnStep2Handler;
+        public SimplePushSubHandler<OnStep2EventArg> OnStep2Handler { get; }
         public void OnStep2(OnStep2EventArg e);
 
-        public event EventHandler<SendStep3EventArg> OnSendStep3Handler;
         public void SendStep3(SendStep3EventArg arg);
-        public event EventHandler<OnStep3EventArg> OnStep3Handler;
+        public SimplePushSubHandler<OnStep3EventArg> OnStep3Handler { get; }
         public void OnStep3(OnStep3EventArg e);
 
-        public event EventHandler<SendStep4EventArg> OnSendStep4Handler;
         public void SendStep4(SendStep4EventArg arg);
 
-        public event EventHandler<OnStep4EventArg> OnStep4Handler;
+        public SimplePushSubHandler<OnStep4EventArg> OnStep4Handler { get; }
         public void OnStep4(OnStep4EventArg arg);
     }
 

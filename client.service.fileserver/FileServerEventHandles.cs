@@ -24,11 +24,8 @@ namespace client.service.fileserver
         /// <summary>
         /// 文件进度
         /// </summary>
-        public event EventHandler<TcpEventArg<FileServerProgressModel>> OnTcpProgressHandler;
-        public void OnTcpProgress(TcpEventArg<FileServerProgressModel> arg)
-        {
-            OnTcpProgressHandler?.Invoke(this, arg);
-        }
+        public SimplePushSubHandler<TcpEventArg<FileServerProgressModel>> OnTcpProgress { get; } = new SimplePushSubHandler<TcpEventArg<FileServerProgressModel>>();
+        
         /// <summary>
         /// 发送文件进度
         /// </summary>
@@ -51,11 +48,7 @@ namespace client.service.fileserver
         /// <summary>
         /// 收到文件
         /// </summary>
-        public event EventHandler<TcpEventArg<FileModel>> OnTcpFileHandler;
-        public void OnTcpFile(TcpEventArg<FileModel> arg)
-        {
-            OnTcpFileHandler?.Invoke(this, arg);
-        }
+        public SimplePushSubHandler<TcpEventArg<FileModel>> OnTcpFile { get; } = new SimplePushSubHandler<TcpEventArg<FileModel>>();
 
         /// <summary>
         /// 上传文件
@@ -119,15 +112,8 @@ namespace client.service.fileserver
                 }
             }, file);
         }
-        public event EventHandler<TcpEventArg<FileServerDownloadModel>> OnTcpDownloadHandler;
-        /// <summary>
-        /// 有人请求下载
-        /// </summary>
-        /// <param name="arg"></param>
-        public void OnTcpDownload(TcpEventArg<FileServerDownloadModel> arg)
-        {
-            OnTcpDownloadHandler?.Invoke(this, arg);
-        }
+
+        public SimplePushSubHandler<TcpEventArg<FileServerDownloadModel>> OnTcpDownload { get; } = new SimplePushSubHandler<TcpEventArg<FileServerDownloadModel>>();
         /// <summary>
         /// 请求文件列表
         /// </summary>
@@ -152,7 +138,6 @@ namespace client.service.fileserver
             return Array.Empty<FileInfo>();
         }
 
-        public event EventHandler<SendTcpEventArg<FileModel>> OnSendTcpFileHandler;
         /// <summary>
         /// 发送文件
         /// </summary>
@@ -163,7 +148,6 @@ namespace client.service.fileserver
             if (file == null)
             {
                 _SendTcpFile(arg);
-                OnSendTcpFileHandler?.Invoke(this, arg);
             }
             else
             {
@@ -198,7 +182,6 @@ namespace client.service.fileserver
                     {
                         Logger.Instance.Debug(ex + "");
                     }
-                    OnSendTcpFileHandler?.Invoke(this, arg);
                 });
             }
         }

@@ -34,18 +34,18 @@ namespace client.service.tcpforward
             ReadConfig();
 
             //A来了请求 ，转发到B，
-            tcpForwardServer.OnRequest += OnRequest;
+            tcpForwardServer.OnRequest.Sub(OnRequest);
             //B那边发生了错误，无法完成请求
-            tcpForwardEventHandles.OnTcpForwardHandler += OnTcpForwardMessageHandler;
+            tcpForwardEventHandles.OnTcpForwardHandler.Sub(OnTcpForwardMessageHandler);
 
-            tcpForwardServer.OnListeningChange += (sender, model) =>
+            tcpForwardServer.OnListeningChange.Sub((model) =>
             {
                 TcpForwardRecordBaseModel mapping = Mappings.FirstOrDefault(c => c.SourcePort == model.SourcePort);
                 if (mapping != null)
                 {
                     mapping.Listening = model.Listening;
                 }
-            };
+            });
 
         }
         public void Start()
@@ -54,7 +54,7 @@ namespace client.service.tcpforward
             Logger.Instance.Info("TCP转发服务已启动...");
         }
 
-        private void OnRequest(object sender, TcpForwardRequestModel arg)
+        private void OnRequest(TcpForwardRequestModel arg)
         {
             if (arg.Socket != null)
             {
@@ -69,7 +69,7 @@ namespace client.service.tcpforward
                 tcpForwardServer.Fail(arg.Msg, "未选择转发对象，或者未与转发对象建立连接");
             }
         }
-        private void OnTcpForwardMessageHandler(object sender, OnTcpForwardEventArg arg)
+        private void OnTcpForwardMessageHandler(OnTcpForwardEventArg arg)
         {
             switch (arg.Data.Type)
             {

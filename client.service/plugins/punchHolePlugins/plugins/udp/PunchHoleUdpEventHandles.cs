@@ -29,10 +29,6 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         /// <summary>
         /// 发送连接客户端请求消息（给服务器）
         /// </summary>
-        public event EventHandler<SendPunchHoleEventArg> OnSendPunchHoleHandler;
-        /// <summary>
-        /// 发送连接客户端请求消息（给服务器）
-        /// </summary>
         /// <param name="toid"></param>
         public void SendStep1(ConnectParams param)
         {
@@ -48,13 +44,6 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
                 Timeout = param.Timeout,
                 TryTimes = param.TryTimes
             });
-
-            OnSendPunchHoleHandler?.Invoke(this, new SendPunchHoleEventArg
-            {
-                Id = param.Id,
-                Name = param.Name
-            });
-
             TryConnect(param.Id);
         }
         private void TryConnect(long id)
@@ -93,14 +82,14 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         /// <summary>
         /// 服务器消息，某个客户端要跟我连接
         /// </summary>
-        public event EventHandler<OnStep1EventArg> OnStep1Handler;
+        public SimplePushSubHandler<OnStep1EventArg> OnStep1Handler { get; } = new SimplePushSubHandler<OnStep1EventArg>();
         /// <summary>
         /// 服务器消息，某个客户端要跟我连接
         /// </summary>
         /// <param name="toid"></param>
         public void OnStep1(OnStep1EventArg arg)
         {
-            OnStep1Handler?.Invoke(this, arg);
+            OnStep1Handler.Push(arg);
             //随便给来源客户端发个消息
             punchHoldEventHandles.Send(new SendPunchHoleArg
             {
@@ -120,10 +109,8 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         }
 
 
-        public event EventHandler<SendStep2EventArg> OnSendStep2Handler;
         public void SendStep2(SendStep2EventArg arg)
         {
-            OnSendStep2Handler?.Invoke(this, arg);
             punchHoldEventHandles.Send(new SendPunchHoleArg
             {
                 Address = UdpServer,
@@ -139,14 +126,14 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         /// <summary>
         /// 服务器消息，目标客户端已经准备好
         /// </summary>
-        public event EventHandler<OnStep2EventArg> OnStep2Handler;
+        public SimplePushSubHandler<OnStep2EventArg> OnStep2Handler { get; } = new SimplePushSubHandler<OnStep2EventArg>();
         /// <summary>
         /// 服务器消息，目标客户端已经准备好
         /// </summary>
         /// <param name="toid"></param>
         public void OnStep2(OnStep2EventArg e)
         {
-            OnStep2Handler?.Invoke(this, e);
+            OnStep2Handler.Push(e);
             List<Tuple<string, int>> ips = new List<Tuple<string, int>> {
                 new Tuple<string, int>(e.Data.LocalIps,e.Data.LocalUdpPort),
                 new Tuple<string, int>(e.Data.Ip,e.Data.Port),
@@ -164,14 +151,9 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         /// <summary>
         /// 开始连接目标客户端
         /// </summary>
-        public event EventHandler<SendStep3EventArg> OnSendStep3Handler;
-        /// <summary>
-        /// 开始连接目标客户端
-        /// </summary>
         /// <param name="toid"></param>
         public void SendStep3(SendStep3EventArg arg)
         {
-            OnSendStep3Handler?.Invoke(this, arg);
             punchHoldEventHandles.Send(new SendPunchHoleArg
             {
                 Address = arg.Address,
@@ -185,14 +167,14 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         /// <summary>
         /// 来源客户端开始连接我了
         /// </summary>
-        public event EventHandler<OnStep3EventArg> OnStep3Handler;
+        public SimplePushSubHandler<OnStep3EventArg> OnStep3Handler { get; } = new SimplePushSubHandler<OnStep3EventArg>();
         /// <summary>
         /// 来源客户端开始连接我了
         /// </summary>
         /// <param name="toid"></param>
         public void OnStep3(OnStep3EventArg e)
         {
-            OnStep3Handler?.Invoke(this, e);
+            OnStep3Handler.Push( e);
             SendStep4(new SendStep4EventArg
             {
                 Address = e.Packet.SourcePoint,
@@ -203,14 +185,9 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         /// <summary>
         /// 回应来源客户端
         /// </summary>
-        public event EventHandler<SendStep4EventArg> OnSendStep4Handler;
-        /// <summary>
-        /// 回应来源客户端
-        /// </summary>
         /// <param name="toid"></param>
         public void SendStep4(SendStep4EventArg arg)
         {
-            OnSendStep4Handler?.Invoke(this, arg);
             punchHoldEventHandles.Send(new SendPunchHoleArg
             {
                 Address = arg.Address,
@@ -223,7 +200,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         /// <summary>
         /// 目标客户端回应我了
         /// </summary>
-        public event EventHandler<OnStep4EventArg> OnStep4Handler;
+        public SimplePushSubHandler<OnStep4EventArg> OnStep4Handler { get; } = new SimplePushSubHandler<OnStep4EventArg>();
         /// <summary>
         /// 目标客户端回应我了
         /// </summary>
@@ -234,7 +211,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
             {
                 cache?.Callback(arg);
             }
-            OnStep4Handler?.Invoke(this, arg);
+            OnStep4Handler.Push(arg);
         }
 
         #endregion

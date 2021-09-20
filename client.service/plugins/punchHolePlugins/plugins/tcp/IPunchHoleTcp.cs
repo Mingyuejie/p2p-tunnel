@@ -1,4 +1,5 @@
-﻿using ProtoBuf;
+﻿using common;
+using ProtoBuf;
 using server.model;
 using System;
 using System.Collections.Generic;
@@ -12,44 +13,37 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp
 {
     public interface IPunchHoleTcp
     {
-        public event EventHandler<SendEventArg> OnSendTcpHandler;
         public void Send(ConnectTcpParams param);
 
-        public event EventHandler<OnStep1EventArg> OnStep1Handler;
+        public SimplePushSubHandler<OnStep1EventArg> OnStep1Handler { get; }
         public void OnStep1(OnStep1EventArg e);
 
-        public event EventHandler<OnStep2EventArg> OnTcpStep2Handler;
+        public SimplePushSubHandler<OnStep2EventArg> OnStep2Handler { get; }
         public void OnStep2(OnStep2EventArg e);
 
-        public event EventHandler<long> OnSendStep2RetryHandler;
         public void SendStep2Retry(long toid);
 
-        public event EventHandler<OnStep2RetryEventArg> OnStep2RetryHandler;
+        public SimplePushSubHandler<OnStep2RetryEventArg> OnStep2RetryHandler { get; }
         public void OnStep2Retry(OnStep2RetryEventArg e);
 
-        public event EventHandler<OnSendStep2FailEventArg> OnSendStep2FailHandler;
         public void SendStep2Fail(OnSendStep2FailEventArg arg);
 
-        public event EventHandler<OnStep2FailEventArg> OnStep2FailHandler;
+        public SimplePushSubHandler<OnStep2FailEventArg> OnStep2FailHandler { get; }
         public void OnStep2Fail(OnStep2FailEventArg arg);
 
         public void SendStep2Stop(long toid);
         public void OnStep2Stop(Step2StopModel e);
 
-        public event EventHandler<SendStep3EventArg> OnSendStep3Handler;
         public void SendStep3(SendStep3EventArg arg);
-        public event EventHandler<OnStep3EventArg> OnStep3Handler;
+        public SimplePushSubHandler<OnStep3EventArg> OnStep3Handler { get; }
         public void OnStep3(OnStep3EventArg arg);
 
-
-        public event EventHandler<SendStep4EventArg> OnSendStep4Handler;
         public void SendStep4(SendStep4EventArg arg);
-        public event EventHandler<OnStep4EventArg> OnStep4Handler;
+        public SimplePushSubHandler<OnStep4EventArg> OnStep4Handler { get; }
         public void OnStep4(OnStep4EventArg arg);
 
-        public event EventHandler<SendStepPacketEventArg> OnSendStepPacketHandler;
         public void SendStepPacket(SendStepPacketEventArg arg);
-        public event EventHandler<OnStepPacketEventArg> OnStepPacketHandler;
+        public SimplePushSubHandler<OnStepPacketEventArg> OnStepPacketHandler { get; }
         public void OnStepPacket(OnStepPacketEventArg arg);
     }
 

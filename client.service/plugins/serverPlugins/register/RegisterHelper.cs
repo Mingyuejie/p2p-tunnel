@@ -19,63 +19,36 @@ namespace client.service.plugins.serverPlugins.register
         private readonly IUdpServer udpServer;
         private readonly Config config;
         private readonly RegisterState registerState;
+        private readonly HeartEventHandles heartEventHandles;
 
 
         private long lastTime = 0;
         private long lastTcpTime = 0;
         private readonly int heartInterval = 5000;
 
-        public RegisterHelper(RegisterEventHandles registerEventHandles, HeartEventHandles heartEventHandles,
-            ITcpServer tcpServer, IUdpServer udpServer, Config config, RegisterState registerState)
+        public RegisterHelper(
+            RegisterEventHandles registerEventHandles, HeartEventHandles heartEventHandles,
+            ITcpServer tcpServer, IUdpServer udpServer,
+            Config config, RegisterState registerState
+        )
         {
             this.registerEventHandles = registerEventHandles;
             this.tcpServer = tcpServer;
             this.udpServer = udpServer;
             this.config = config;
             this.registerState = registerState;
+            this.heartEventHandles = heartEventHandles;
 
             //退出消息
-            registerEventHandles.OnSendExitMessageHandler += (sender, e) =>
+            registerEventHandles.OnExitMessage.Sub((e) =>
             {
                 registerState.LocalInfo.IsConnecting = false;
                 registerState.LocalInfo.Connected = false;
                 registerState.LocalInfo.TcpConnected = false;
                 ResetLastTime();
-            };
+            });
 
-            //给服务器发送心跳包
-            _ = Task.Factory.StartNew(() =>
-            {
-                while (true)
-                {
-                    if (IsTimeout())
-                    {
-                        registerEventHandles.SendExitMessage().Wait();
-                    }
-                    if (registerState.LocalInfo.Connected && registerState.LocalInfo.TcpConnected)
-                    {
-                        heartEventHandles.SendHeartMessage(registerState.RemoteInfo.ConnectId, registerState.UdpAddress);
-                        heartEventHandles.SendTcpHeartMessage(registerState.RemoteInfo.ConnectId, registerState.TcpSocket);
-                    }
-                    Thread.Sleep(heartInterval);
-                }
-            }, TaskCreationOptions.LongRunning);
-
-            //收服务器的心跳包
-            heartEventHandles.OnHeartEventHandler += (sender, e) =>
-            {
-                if (e.Data.SourceId == -1)
-                {
-                    if (e.Packet.ServerType == ServerType.UDP)
-                    {
-                        lastTime = Helper.GetTimeStamp();
-                    }
-                    else if (e.Packet.ServerType == ServerType.TCP)
-                    {
-                        lastTcpTime = Helper.GetTimeStamp();
-                    }
-                }
-            };
+            Heart();
         }
 
         public void AutoReg()
@@ -173,7 +146,7 @@ namespace client.service.plugins.serverPlugins.register
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.Error(ex+"");
+                    Logger.Instance.Error(ex + "");
                     tcs.SetResult(new CommonTaskResponseModel<bool> { Data = false, ErrorMsg = ex.Message });
                     registerState.LocalInfo.IsConnecting = false;
                     await registerEventHandles.SendExitMessage();
@@ -193,7 +166,42 @@ namespace client.service.plugins.serverPlugins.register
             long time = Helper.GetTimeStamp();
             return (lastTime > 0 && time - lastTime > 20000) || (lastTcpTime > 0 && time - lastTcpTime > 20000);
         }
-    }
 
-    
+        private void Heart()
+        {
+            //给服务器发送心跳包
+            _ = Task.Factory.StartNew(() =>
+            {
+                while (true)
+                {
+                    if (IsTimeout())
+                    {
+                        registerEventHandles.SendExitMessage().Wait();
+                    }
+                    if (registerState.LocalInfo.Connected && registerState.LocalInfo.TcpConnected)
+                    {
+                        heartEventHandles.SendHeartMessage(registerState.RemoteInfo.ConnectId, registerState.UdpAddress);
+                        heartEventHandles.SendTcpHeartMessage(registerState.RemoteInfo.ConnectId, registerState.TcpSocket);
+                    }
+                    Thread.Sleep(heartInterval);
+                }
+            }, TaskCreationOptions.LongRunning);
+
+            //收服务器的心跳包
+            heartEventHandles.OnHeart.Sub((e) =>
+            {
+                if (e.Data.SourceId == -1)
+                {
+                    if (e.Packet.ServerType == ServerType.UDP)
+                    {
+                        lastTime = Helper.GetTimeStamp();
+                    }
+                    else if (e.Packet.ServerType == ServerType.TCP)
+                    {
+                        lastTcpTime = Helper.GetTimeStamp();
+                    }
+                }
+            });
+        }
+    }
 }

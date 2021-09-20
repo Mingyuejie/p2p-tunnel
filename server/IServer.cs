@@ -17,7 +17,7 @@ namespace server
 
         public void Stop();
 
-        public SimplePushSubHandler<ServerDataWrap<T>> OnPacketPushSub { get; }
+        public SimplePushSubHandler<ServerDataWrap<T>> OnPacket { get; }
     }
 
     public struct ServerDataWrap<T>

@@ -30,7 +30,7 @@ namespace client.service.fileserver
         public void Download(PluginParamWrap arg)
         {
             FileServerModel model = arg.Wrap.Content.DeBytes<FileServerModel>();
-            fileServerEventHandles.OnTcpDownload(new TcpEventArg<FileServerDownloadModel>
+            fileServerEventHandles.OnTcpDownload.Push(new TcpEventArg<FileServerDownloadModel>
             {
                 Packet = arg,
                 RawData = model,
@@ -41,7 +41,7 @@ namespace client.service.fileserver
         public void File(PluginParamWrap arg)
         {
             FileServerModel model = arg.Wrap.Content.DeBytes<FileServerModel>();
-            fileServerEventHandles.OnTcpFile(new TcpEventArg<FileModel>
+            fileServerEventHandles.OnTcpFile.Push(new TcpEventArg<FileModel>
             {
                 Packet = arg,
                 RawData = model,
@@ -52,7 +52,7 @@ namespace client.service.fileserver
         public void Progress(PluginParamWrap arg)
         {
             FileServerModel model = arg.Wrap.Content.DeBytes<FileServerModel>();
-            fileServerEventHandles.OnTcpProgress(new TcpEventArg<FileServerProgressModel>
+            fileServerEventHandles.OnTcpProgress.Push(new TcpEventArg<FileServerProgressModel>
             {
                 Packet = arg,
                 RawData = model,

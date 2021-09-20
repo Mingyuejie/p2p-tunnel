@@ -90,7 +90,7 @@ namespace server
             {
                 IPEndPoint ipepClient = null;
                 byte[] bytRecv = UdpcRecv.Receive(ref ipepClient);
-                OnPacketPushSub.Push(new ServerDataWrap<byte[]>
+                OnPacket.Push(new ServerDataWrap<byte[]>
                 {
                     Data = bytRecv,
                     Address = ipepClient,
@@ -104,7 +104,6 @@ namespace server
             }
         }
 
-        private SimplePushSubHandler<ServerDataWrap<byte[]>> onPacketPushSub = new SimplePushSubHandler<ServerDataWrap<byte[]>>();
-        public SimplePushSubHandler<ServerDataWrap<byte[]>> OnPacketPushSub => onPacketPushSub;
+        public SimplePushSubHandler<ServerDataWrap<byte[]>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<byte[]>>();
     }
 }

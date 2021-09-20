@@ -1,4 +1,5 @@
-﻿using server.model;
+﻿using common;
+using server.model;
 using System;
 
 namespace client.service.plugins.serverPlugins.clients
@@ -7,21 +8,10 @@ namespace client.service.plugins.serverPlugins.clients
     {
         public ClientsEventHandles()
         {
-
         }
 
-        /// <summary>
-        /// 服务器发来的客户端列表数据
-        /// </summary>
-        public event EventHandler<OnServerSendClientsEventArg> OnServerSendClientsHandler;
-        /// <summary>
-        /// 服务器发来的客户端列表数据
-        /// </summary>
-        /// <param name="arg"></param>
-        public void OnServerSendClients(OnServerSendClientsEventArg arg)
-        {
-            OnServerSendClientsHandler?.Invoke(this, arg);
-        }
+        public SimplePushSubHandler<OnServerSendClientsEventArg> OnData { get; } = new SimplePushSubHandler<OnServerSendClientsEventArg>();
+
     }
 
     public class OnServerSendClientsEventArg : EventArgs

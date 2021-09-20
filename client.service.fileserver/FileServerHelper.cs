@@ -57,12 +57,12 @@ namespace client.service.fileserver
             this.fileServerEventHandles = fileServerEventHandles;
 
             RemoteCurrentPath = config.FileServer.Root;
-            fileServerEventHandles.OnTcpFileHandler += OnTcpFileHandler;
-            fileServerEventHandles.OnTcpProgressHandler += OnTcpProgressHandler;
-            fileServerEventHandles.OnTcpDownloadHandler += OnTcpDownloadHandler;
+            fileServerEventHandles.OnTcpFile.Sub(OnTcpFile);
+            fileServerEventHandles.OnTcpProgress.Sub(OnTcpProgress);
+            fileServerEventHandles.OnTcpDownload.Sub(OnTcpDownload);
         }
 
-        private void OnTcpDownloadHandler(object sender, TcpEventArg<FileServerDownloadModel> e)
+        private void OnTcpDownload( TcpEventArg<FileServerDownloadModel> e)
         {
             var file = GetRemoteFile(e.Data.Path);
             string md5 = $"{file.FullName}_{e.RawData.FormId}_download".Md5();
@@ -84,7 +84,7 @@ namespace client.service.fileserver
             }
         }
 
-        private void OnTcpProgressHandler(object sender, TcpEventArg<FileServerProgressModel> e)
+        private void OnTcpProgress( TcpEventArg<FileServerProgressModel> e)
         {
             if (files.TryGetValue(e.Data.Md5, out FileSaveInfo info))
             {
@@ -99,7 +99,7 @@ namespace client.service.fileserver
             }
         }
 
-        private void OnTcpFileHandler(object sender, TcpEventArg<FileModel> e)
+        private void OnTcpFile(TcpEventArg<FileModel> e)
         {
             var file = e.Data;
 
