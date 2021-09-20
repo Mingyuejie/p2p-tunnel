@@ -6,6 +6,7 @@ using server.packet;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -20,8 +21,6 @@ namespace server
         private readonly ConcurrentDictionary<int, ServerModel> servers = new ConcurrentDictionary<int, ServerModel>();
 
         private CancellationTokenSource cancellationTokenSource;
-
-        public event IServer<List<byte>>.ServerPacketEventHandler OnServerPacket;
 
         private bool Running
         {
@@ -193,18 +192,30 @@ namespace server
         }
         private void Receive(ReceiveModel model, byte[] buffer)
         {
+            MyStopwatch watch = new MyStopwatch();
+            watch.Start();
+
             IPEndPoint address = IPEndPoint.Parse(model.Socket.RemoteEndPoint.ToString());
             lock (model.CacheBuffer)
             {
                 model.CacheBuffer.AddRange(buffer);
             }
-            OnServerPacket?.Invoke(new ServerDataWrap<List<byte>>
+            action?.Invoke(new ServerDataWrap<List<byte>>
             {
                 Data = model.CacheBuffer,
                 Address = address,
                 ServerType = ServerType.TCP,
                 Socket = model.Socket
             });
+
+            watch.Stop();
+            watch.Output($"TCP 包处理时间：");
+        }
+
+        private Action<ServerDataWrap<List<byte>>> action;
+        public void OnPacket(Action<ServerDataWrap<List<byte>>> action)
+        {
+            this.action = action;
         }
     }
 

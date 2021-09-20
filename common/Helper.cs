@@ -233,7 +233,6 @@ namespace common
             }
         }
 
-
         public static string GetStackTrace()
         {
             List<string> strs = new();
@@ -272,7 +271,6 @@ namespace common
             }
             return mac;
         }
-
 
         private static string[] fileSizeFormatArray = new string[] { "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB", "BB" };
         public static string FileSizeFormat(long size)

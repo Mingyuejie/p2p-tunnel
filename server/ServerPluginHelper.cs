@@ -6,6 +6,7 @@ using server.packet;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,7 +29,7 @@ namespace server
             this.tcpserver = tcpserver;
             this.udpserver = udpserver;
 
-            this.tcpserver.OnServerPacket += (wrap) =>
+            this.tcpserver.OnPacket((wrap) =>
             {
                 List<TcpPacket> bytesArray = TcpPacket.FromArray(wrap.Data);
                 if (bytesArray.Count > 0)
@@ -38,15 +39,15 @@ namespace server
                         InputData(packet, wrap);
                     }
                 }
-            };
-            this.udpserver.OnServerPacket += (wrap) =>
+            });
+            this.udpserver.OnPacket((wrap) =>
             {
                 UdpPacket packet = UdpPacket.FromArray(wrap.Address, wrap.Data);
                 if (packet != null)
                 {
                     InputData(packet, wrap);
                 }
-            };
+            });
 
             _ = Task.Factory.StartNew(() =>
             {
@@ -108,7 +109,7 @@ namespace server
         }
         public bool SendOnlyTcp<T>(SendMessageWrap<T> msg)
         {
-            if(msg.TcpCoket != null)
+            if (msg.TcpCoket != null)
             {
                 try
                 {
@@ -219,7 +220,6 @@ namespace server
             {
                 if (sends.TryRemove(wrap.RequestId, out SendCacheModel send) && send != null)
                 {
-                    Logger.Instance.Debug($"{param.ServerType} {wrap.Path} 花费时间 {Helper.GetTimeStamp() - send.Time} ms");
                     send.Tcs.SetResult(new ServerMessageResponeWrap { Code = wrap.Code, ErrorMsg = wrap.Code.ToString(), Data = wrap.Content });
                 }
             }
@@ -243,31 +243,34 @@ namespace server
                         object resultAsync = plugin.Item2.Invoke(plugin.Item1, new object[] { excute });
                         if (excute.Code == ServerMessageResponeCodes.OK)
                         {
-                            object resultObject = null;
-                            if (resultAsync is Task task)
+                            if (resultAsync != null)
                             {
-                                task.Wait();
-                                if (resultAsync is Task<object> task1)
+                                object resultObject = null;
+                                if (resultAsync is Task task)
                                 {
-                                    resultObject = task1.Result;
+                                    task.Wait();
+                                    if (resultAsync is Task<object> task1)
+                                    {
+                                        resultObject = task1.Result;
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                resultObject = resultAsync;
-                            }
-                            if (resultObject != null)
-                            {
-                                ReplayData(new SendMessageWrap<object>
+                                else
                                 {
-                                    TcpCoket = param.Socket,
-                                    Address = param.Address,
-                                    Code = excute.Code,
-                                    Data = resultObject,
-                                    RequestId = wrap.RequestId,
-                                    Path = wrap.Path,
-                                    Type = ServerMessageTypes.RESPONSE
-                                }, param.ServerType);
+                                    resultObject = resultAsync;
+                                }
+                                if (resultObject != null)
+                                {
+                                    ReplayData(new SendMessageWrap<object>
+                                    {
+                                        TcpCoket = param.Socket,
+                                        Address = param.Address,
+                                        Code = excute.Code,
+                                        Data = resultObject,
+                                        RequestId = wrap.RequestId,
+                                        Path = wrap.Path,
+                                        Type = ServerMessageTypes.RESPONSE
+                                    }, param.ServerType);
+                                }
                             }
                         }
                         else

@@ -23,8 +23,8 @@ namespace client.service.plugins.serverPlugins.clients
         private readonly IPunchHoleUdp punchHoleUdp;
         private readonly IPunchHoleTcp punchHoleTcp;
         private readonly RegisterState registerState;
-        private readonly IClientInfoCaching  clientInfoCaching;
-        
+        private readonly IClientInfoCaching clientInfoCaching;
+
         public ClientsHelper(RegisterEventHandles registerEventHandles,
             ClientsEventHandles clientsEventHandles,
            IPunchHoleUdp punchHoleUdp,
@@ -204,6 +204,9 @@ namespace client.service.plugins.serverPlugins.clients
                 {
                     return;
                 }
+
+                
+
                 System.Threading.Interlocked.Increment(ref readClientsTimes);
                 //下线了的
                 IEnumerable<long> offlines = clientInfoCaching.AllIds().Except(e.Data.Clients.Select(c => c.Id));

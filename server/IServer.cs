@@ -12,12 +12,11 @@ namespace server
 {
     public interface IServer<T>
     {
-        public delegate void ServerPacketEventHandler(ServerDataWrap<T> param);
-        public event ServerPacketEventHandler OnServerPacket;
-
         public void Start(int port, IPAddress ip = null);
 
         public void Stop();
+
+        public void OnPacket(Action<ServerDataWrap<T>> action);
     }
 
     public struct ServerDataWrap<T>

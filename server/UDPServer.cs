@@ -2,6 +2,7 @@
 using server.model;
 using server.packet;
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -19,8 +20,6 @@ namespace server
         private UdpClient UdpcRecv { get; set; } = null;
         IPEndPoint IpepServer { get; set; } = null;
         private CancellationTokenSource cancellationTokenSource;
-
-        public event IServer<byte[]>.ServerPacketEventHandler OnServerPacket;
 
         private bool Running
         {
@@ -91,7 +90,7 @@ namespace server
             {
                 IPEndPoint ipepClient = null;
                 byte[] bytRecv = UdpcRecv.Receive(ref ipepClient);
-                OnServerPacket?.Invoke(new ServerDataWrap<byte[]>
+                action?.Invoke(new ServerDataWrap<byte[]>
                 {
                     Data = bytRecv,
                     Address = ipepClient,
@@ -103,6 +102,12 @@ namespace server
             {
                 Logger.Instance.Error(ex.Message);
             }
+        }
+
+        private Action<ServerDataWrap<byte[]>> action;
+        public void OnPacket(Action<ServerDataWrap<byte[]>> action)
+        {
+            this.action = action;
         }
     }
 }
