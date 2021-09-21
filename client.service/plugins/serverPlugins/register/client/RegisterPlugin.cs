@@ -1,6 +1,7 @@
 ﻿using client.plugins.serverPlugins.register;
 using client.servers.clientServer;
 using client.service.servers.clientServer;
+using ProtoBuf;
 using System.Threading.Tasks;
 
 namespace client.service.plugins.serverPlugins.register.client
@@ -55,7 +56,7 @@ namespace client.service.plugins.serverPlugins.register.client
             this.config = config;
         }
 
-        public object Info()
+        public RegisterInfo Info()
         {
             return new RegisterInfo
             {
@@ -67,11 +68,16 @@ namespace client.service.plugins.serverPlugins.register.client
         }
     }
 
+    [ProtoContract]
     public class RegisterInfo
     {
+        [ProtoMember(1)]
         public ClientConfig ClientConfig { get; set; } = new ClientConfig();
+        [ProtoMember(2)]
         public ServerConfig ServerConfig { get; set; } = new ServerConfig();
+        [ProtoMember(3)]
         public LocalInfo LocalInfo { get; set; } = new LocalInfo();
+        [ProtoMember(4)]
         public RemoteInfo RemoteInfo { get; set; } = new RemoteInfo();
     }
 }

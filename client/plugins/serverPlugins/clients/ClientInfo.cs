@@ -1,5 +1,8 @@
 ﻿using common;
 using common.extends;
+using ProtoBuf;
+using Swifter.RW;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
@@ -12,63 +15,38 @@ namespace client.plugins.serverPlugins.clients
     /// <summary>
     /// 客户端信息
     /// </summary>
+    [ProtoContract, Serializable]
     public class ClientInfo
     {
-        private bool connecting = false;
-        public bool Connecting
-        {
-            get => connecting;
-            set
-            {
-                connecting = value;
-            }
-        }
+        [ProtoMember(1)]
+        public bool Connecting { get; set; } = false;
+        [ProtoMember(2)]
+        public bool TcpConnecting { get; set; } = false;
+        [ProtoMember(3)]
+        public bool Connected { get; set; } = false;
+        [ProtoMember(4)]
+        public bool TcpConnected { get; set; } = false;
 
-        private bool tcpConnecting = false;
-        public bool TcpConnecting
-        {
-            get => tcpConnecting;
-            set
-            {
-                tcpConnecting = value;
-            }
-        }
-
-        private bool connected = false;
-        public bool Connected
-        {
-            get => connected;
-            set
-            {
-                connected = value;
-            }
-        }
-
-        private bool tcpConnected = false;
-        public bool TcpConnected
-        {
-            get => tcpConnected;
-            set
-            {
-                tcpConnected = value;
-            }
-        }
-
-        [JsonIgnore]
+        [ProtoIgnore, JsonIgnore, RWField(Access = RWFieldAccess.Ignore)]
         public Socket Socket { get; set; } = null;
-        [JsonIgnore]
+
+        [ProtoIgnore, JsonIgnore, RWField(Access = RWFieldAccess.Ignore)]
         public IPEndPoint Address { get; set; } = null;
-
+        [ProtoMember(5)]
         public int Port { get; set; } = 0;
+        [ProtoMember(6)]
         public int TcpPort { get; set; } = 0;
-
+        [ProtoMember(7)]
         public string Name { get; set; } = string.Empty;
+        [ProtoMember(8)]
         public string Mac { get; set; } = string.Empty;
+        [ProtoMember(9)]
         public string Ip { get; set; } = string.Empty;
-
+        [ProtoMember(10)]
         public long Id { get; set; } = 0;
-
+        [ProtoMember(11)]
         public long LastTime { get; set; } = 0;
+        [ProtoMember(12)]
         public long TcpLastTime { get; set; } = 0;
 
         public bool IsTimeout()

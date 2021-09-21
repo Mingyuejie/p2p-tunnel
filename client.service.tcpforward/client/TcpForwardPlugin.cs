@@ -1,5 +1,6 @@
 ﻿using client.servers.clientServer;
 using common.extends;
+using System.Collections.Generic;
 
 namespace client.service.tcpforward.client
 {
@@ -73,7 +74,7 @@ namespace client.service.tcpforward.client
             this.tcpForwardHelper = tcpForwardHelper;
         }
 
-        public object List()
+        public IEnumerable<TcpForwardRecordBaseModel> List()
         {
             return tcpForwardHelper.Mappings;
         }

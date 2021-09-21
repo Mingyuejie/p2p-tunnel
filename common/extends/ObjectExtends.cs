@@ -25,5 +25,14 @@ namespace common.extends
                 PropertyNameCaseInsensitive = true
             });
         }
+
+        public static string ToJsonSwifter(this object obj)
+        {
+            return Swifter.Json.JsonFormatter.SerializeObject(obj);
+        }
+        public static T DeJsonSwifter<T>(this string json)
+        {
+            return Swifter.Json.JsonFormatter.DeserializeObject<T>(json);
+        }
     }
 }

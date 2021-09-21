@@ -153,7 +153,7 @@ namespace client.service.servers.clientServer
                             RequestId = param.RequestId,
                             Path = param.Path,
                             Code = param.Code
-                        }.ToJson());
+                        }.ToJsonSwifter());
                     }
                     catch (Exception ex)
                     {
@@ -164,7 +164,7 @@ namespace client.service.servers.clientServer
                             RequestId = model.RequestId,
                             Path = model.Path,
                             Code = -1
-                        }.ToJson());
+                        }.ToJsonSwifter());
                     }
                 }
             });
@@ -193,7 +193,7 @@ namespace client.service.servers.clientServer
                                     Path = c.Key
                                 };
                             })
-                        }.ToJson());
+                        }.ToJsonSwifter());
                     }
                     System.Threading.Thread.Sleep(300);
                 }

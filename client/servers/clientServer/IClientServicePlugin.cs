@@ -1,4 +1,5 @@
 ﻿using Fleck;
+using ProtoBuf;
 using System;
 using System.Collections.Concurrent;
 
@@ -9,11 +10,16 @@ namespace client.servers.clientServer
 
     }
 
+    [ProtoContract]
     public class ClientServiceMessageResponseWrap
     {
+        [ProtoMember(1)]
         public string Path { get; set; } = string.Empty;
+        [ProtoMember(2)]
         public long RequestId { get; set; } = 0;
+        [ProtoMember(3)]
         public int Code { get; set; } = 0;
+        [ProtoMember(4)]
         public object Content { get; set; } = string.Empty;
     }
 

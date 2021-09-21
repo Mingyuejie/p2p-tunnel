@@ -62,7 +62,7 @@ namespace client.service.fileserver
             fileServerEventHandles.OnTcpDownload.Sub(OnTcpDownload);
         }
 
-        private void OnTcpDownload( TcpEventArg<FileServerDownloadModel> e)
+        private void OnTcpDownload(TcpEventArg<FileServerDownloadModel> e)
         {
             var file = GetRemoteFile(e.Data.Path);
             string md5 = $"{file.FullName}_{e.RawData.FormId}_download".Md5();
@@ -84,7 +84,7 @@ namespace client.service.fileserver
             }
         }
 
-        private void OnTcpProgress( TcpEventArg<FileServerProgressModel> e)
+        private void OnTcpProgress(TcpEventArg<FileServerProgressModel> e)
         {
             if (files.TryGetValue(e.Data.Md5, out FileSaveInfo info))
             {
@@ -211,14 +211,14 @@ namespace client.service.fileserver
         /// 上传下载中的
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<object> GetOnlineList()
+        public IEnumerable<OnlineInfo> GetOnlineList()
         {
-            return files.Values.Select(c => new
+            return files.Values.Select(c => new OnlineInfo
             {
-                c.FileType,
-                c.IndexLength,
-                c.TotalLength,
-                c.FileName
+                FileType = c.FileType,
+                IndexLength = c.IndexLength,
+                TotalLength = c.TotalLength,
+                FileName = c.FileName
             });
         }
 
@@ -458,11 +458,11 @@ namespace client.service.fileserver
             this.config = config;
         }
 
-        public object Online()
+        public IEnumerable<OnlineInfo> Online()
         {
             return fileServerHelper.GetOnlineList();
         }
-        public object Info()
+        public FileServerConfig Info()
         {
             return config.FileServer;
         }
@@ -527,5 +527,18 @@ namespace client.service.fileserver
         public string Name { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public SpecialFolderInfo[] Child { get; set; } = Array.Empty<SpecialFolderInfo>();
+    }
+
+    [ProtoContract]
+    public class OnlineInfo
+    {
+        [ProtoMember(1)]
+        public long TotalLength { get; set; }
+        [ProtoMember(2)]
+        public long IndexLength { get; set; }
+        [ProtoMember(3)]
+        public string FileType { get; set; } = "DOWNLOAD";
+        [ProtoMember(4)]
+        public string FileName { get; set; } = string.Empty;
     }
 }

@@ -66,7 +66,7 @@ namespace client.service.plugins.serverPlugins.clients.client
             this.clientInfoCaching = clientInfoCaching;
         }
 
-        public object List()
+        public IEnumerable<ClientInfo> List()
         {
             return clientInfoCaching.All();
         }

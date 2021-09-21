@@ -39,16 +39,24 @@ namespace client.service.tcpforward
         REQUEST, RESPONSE, FAIL, RESPONSE_END
     }
 
-
+    [ProtoContract]
     public class TcpForwardRecordBaseModel
     {
+        [ProtoMember(1)]
         public int ID { get; set; } = 0;
+        [ProtoMember(2)]
         public string SourceIp { get; set; } = "0.0.0.0";
+        [ProtoMember(3)]
         public int SourcePort { get; set; } = 8080;
+        [ProtoMember(4)]
         public string TargetName { get; set; } = string.Empty;
+        [ProtoMember(5)]
         public string TargetIp { get; set; } = "127.0.0.1";
+        [ProtoMember(6)]
         public int TargetPort { get; set; } = 8080;
+        [ProtoMember(7)]
         public bool Listening { get; set; } = false;
+        [ProtoMember(8)]
         public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.UNALIVE;
     }
 

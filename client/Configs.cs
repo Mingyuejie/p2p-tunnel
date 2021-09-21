@@ -1,4 +1,6 @@
 ﻿using common.extends;
+using ProtoBuf;
+using Swifter.RW;
 using System.IO;
 using System.Net;
 using System.Text.Json.Serialization;
@@ -55,13 +57,17 @@ namespace client
     /// <summary>
     /// 本地web管理端配置
     /// </summary>
+    [ProtoContract]
     public class WebConfig
     {
+        [ProtoMember(1)]
         public int Port { get; set; } = 8098;
+        [ProtoMember(2)]
         public string Root { get; set; } = "./web";
+        [ProtoMember(3)]
         public bool UseIpv6 { get; set; } = false;
 
-        [JsonIgnore]
+        [JsonIgnore,ProtoIgnore, RWField(Access = RWFieldAccess.Ignore)]
         public IPAddress BindIp
         {
             get
@@ -71,14 +77,15 @@ namespace client
         }
 
     }
-
+    [ProtoContract]
     public class WebsocketConfig
     {
+        [ProtoMember(1)]
         public int Port { get; set; } = 8098;
-
+        [ProtoMember(2)]
         public bool UseIpv6 { get; set; } = false;
 
-        [JsonIgnore]
+        [JsonIgnore, ProtoIgnore, RWField(Access = RWFieldAccess.Ignore)]
         public IPAddress BindIp
         {
             get
@@ -91,28 +98,36 @@ namespace client
     /// <summary>
     /// 客户端配置
     /// </summary>
+    [ProtoContract]
     public class ClientConfig
     {
         /// <summary>
         /// 分组编号
         /// </summary>
+        [ProtoMember(1)]
         public string GroupId { get; set; } = string.Empty;
         /// <summary>
         /// 客户端名
         /// </summary>
+        [ProtoMember(2)]
         public string Name { get; set; } = string.Empty;
         /// <summary>
         /// 自动注册
         /// </summary>
+        [ProtoMember(3)]
         public bool AutoReg { get; set; } = false;
         /// <summary>
         /// 上报MAC地址
         /// </summary>
+        [ProtoMember(4)]
         public bool UseMac { get; set; } = false;
-
+        /// <summary>
+        /// 使用ipv6
+        /// </summary>
+        [ProtoMember(5)]
         public bool UseIpv6 { get; set; } = false;
 
-        [JsonIgnore]
+        [JsonIgnore, ProtoIgnore, RWField(Access = RWFieldAccess.Ignore)]
         public IPAddress BindIp
         {
             get
@@ -125,17 +140,23 @@ namespace client
     /// <summary>
     /// 服务器配置
     /// </summary>
+    [ProtoContract]
     public class ServerConfig
     {
+        [ProtoMember(1)]
         public string Ip { get; set; } = string.Empty;
-
+        [ProtoMember(2)]
         public int Port { get; set; } = 8099;
+        [ProtoMember(3)]
         public int TcpPort { get; set; } = 8000;
     }
 
+    [ProtoContract]
     public class FileServerConfig
     {
+        [ProtoMember(1)]
         public bool IsStart { get; set; } = true;
+        [ProtoMember(2)]
         public string Root { get; set; } = "./ftp";
     }
 }
