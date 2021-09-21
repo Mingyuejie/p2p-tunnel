@@ -276,10 +276,10 @@ namespace client.service.tcpforward
             return SaveConfig();
         }
 
-        public string Add(TcpForwardRecordBaseModel model, int id = 0)
+        public string Add(TcpForwardRecordBaseModel model)
         {
             TcpForwardRecordBaseModel portmap = Mappings.FirstOrDefault(c => c.SourcePort == model.SourcePort);
-            if (id == 0)
+            if (model.ID == 0)
             {
                 if (portmap != null)
                 {
@@ -297,7 +297,7 @@ namespace client.service.tcpforward
             }
             else
             {
-                TcpForwardRecordBaseModel idmap = Mappings.FirstOrDefault(c => c.ID == id);
+                TcpForwardRecordBaseModel idmap = Mappings.FirstOrDefault(c => c.ID == model.ID);
 
                 if (idmap.SourcePort == model.SourcePort && idmap.ID != portmap.ID)
                 {

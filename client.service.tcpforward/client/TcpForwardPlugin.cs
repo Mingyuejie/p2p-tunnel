@@ -23,8 +23,9 @@ namespace client.service.tcpforward.client
                 SourcePort = fmodel.SourcePort,
                 TargetIp = fmodel.TargetIp,
                 TargetName = fmodel.TargetName,
-                TargetPort = fmodel.TargetPort
-            }, model.ID);
+                TargetPort = fmodel.TargetPort,
+                ID = model.ID
+            });
             if (!string.IsNullOrWhiteSpace(errmsg))
             {
                 arg.SetCode(-1, errmsg);
