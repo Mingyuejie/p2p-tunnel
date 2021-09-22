@@ -122,7 +122,6 @@ namespace client.service.plugins.punchHolePlugins
             return obj;
         }
 
-
         public static ServiceProvider UsePunchHolePlugin(this ServiceProvider obj)
         {
             obj.GetService<PunchHoleEventHandles>().LoadPlugins();

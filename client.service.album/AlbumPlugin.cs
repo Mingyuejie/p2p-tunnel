@@ -70,19 +70,19 @@ namespace client.service.album
 
         public static AlbumSettingModel ReadConfig()
         {
-            AlbumSettingModel config = File.ReadAllText("appsettings.json").DeJson<AlbumSettingModel>();
+            AlbumSettingModel config = File.ReadAllText("album-appsettings.json").DeJson<AlbumSettingModel>();
             return config;
         }
 
         public void SaveConfig()
         {
-            AlbumSettingModel config = File.ReadAllText("appsettings.json").DeJson<AlbumSettingModel>();
+            AlbumSettingModel config = File.ReadAllText("album-appsettings.json").DeJson<AlbumSettingModel>();
 
             config.SourcePort = SourcePort;
             config.TargetName = TargetName;
             config.TargetPort = TargetPort;
 
-            File.WriteAllText("appsettings.json", config.ToJson(), System.Text.Encoding.UTF8);
+            File.WriteAllText("album-appsettings.json", config.ToJson(), System.Text.Encoding.UTF8);
         }
     }
 

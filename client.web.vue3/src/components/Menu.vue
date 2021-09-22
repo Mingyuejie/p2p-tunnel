@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-22 12:27:05
+ * @LastEditTime: 2021-09-22 17:32:41
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -16,18 +16,21 @@
             <router-link :to="{name:'Home'}">首页</router-link>
             <router-link :to="{name:'Register'}">注册服务 <i class="el-icon-circle-check" :class="{active:LocalInfo.TcpConnected}"></i></router-link>
             <el-dropdown>
-                <!-- <router-link class="el-dropdown-link" :to="{name:'Home'}">插件<i class="el-icon-arrow-down el-icon--right"></i></router-link> -->
-                <span class="el-dropdown-link">插件<i class="el-icon-arrow-down el-icon--right"></i></span>
+                <router-link class="el-dropdown-link" :to="{name:'Pugins'}">插件设置<i class="el-icon-arrow-down el-icon--right"></i></router-link>
+                <!-- <span class="el-dropdown-link">插件<i class="el-icon-arrow-down el-icon--right"></i></span> -->
                 <template #dropdown>
                     <el-dropdown-menu>
                         <el-dropdown-item>
-                            <router-link :to="{name:'TcpForward'}">TCP转发 <i class="el-icon-circle-check" :class="{active:tcpForwardConnected}"></i></router-link>
+                            <router-link :to="{name:'PluginTcpForward'}">TCP转发 <i class="el-icon-circle-check" :class="{active:tcpForwardConnected}"></i></router-link>
                         </el-dropdown-item>
                         <el-dropdown-item>
-                            <router-link :to="{name:'UPNP'}">UPNP映射</router-link>
+                            <router-link :to="{name:'PluginTcpForward'}">图片相册</router-link>
                         </el-dropdown-item>
                         <el-dropdown-item>
-                            <router-link :to="{name:'WakeUp'}">幻数据包</router-link>
+                            <router-link :to="{name:'PluginUPNP'}">UPNP映射</router-link>
+                        </el-dropdown-item>
+                        <el-dropdown-item>
+                            <router-link :to="{name:'PluginWakeUp'}">幻数据包</router-link>
                         </el-dropdown-item>
                         <!-- <el-dropdown-item>
                             <router-link :to="{name:'FileServer'}">文件服务 <i class="el-icon-circle-check" :class="{active:fileServerStarted}"></i></router-link>

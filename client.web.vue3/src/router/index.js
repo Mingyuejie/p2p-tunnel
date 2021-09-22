@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-11 22:51:21
+ * @LastEditTime: 2021-09-22 17:29:24
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\router\index.js
@@ -20,25 +20,38 @@ const routes = [
         name: 'Register',
         component: () => import('../views/Register.vue')
     },
+
     {
-        path: '/upnp.html',
-        name: 'UPNP',
-        component: () => import('../views/UPNP.vue')
-    },
-    {
-        path: '/tcp-forward.html',
-        name: 'TcpForward',
-        component: () => import('../views/TcpForward.vue')
-    },
-    {
-        path: '/fileserver.html',
-        name: 'FileServer',
-        component: () => import('../views/fileserver/Index.vue')
-    },
-    {
-        path: '/wakeup.html',
-        name: 'WakeUp',
-        component: () => import('../views/WakeUp.vue')
+        path: '/plugins.html',
+        name: 'Pugins',
+        component: () => import('../views/plugin/Index.vue'),
+        children: [
+            {
+                path: '/plugin-setting.html',
+                name: 'PluginSetting',
+                component: () => import('../views/plugin/Setting.vue')
+            },
+            {
+                path: '/plugin-upnp.html',
+                name: 'PluginUPNP',
+                component: () => import('../views/plugin/UPNP.vue')
+            },
+            {
+                path: '/plugin-tcp-forward.html',
+                name: 'PluginTcpForward',
+                component: () => import('../views/plugin/TcpForward.vue')
+            },
+            {
+                path: '/plugin-fileserver.html',
+                name: 'PluginFileServer',
+                component: () => import('../views/plugin/fileserver/Index.vue')
+            },
+            {
+                path: '/plugin-wakeup.html',
+                name: 'PluginWakeUp',
+                component: () => import('../views/plugin/WakeUp.vue')
+            },
+        ]
     },
     {
         path: '/about.html',
