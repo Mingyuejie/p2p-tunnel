@@ -11,6 +11,7 @@
           "Mono.Nat": "3.0.1",
           "SharpPcap": "6.0.0",
           "client": "1.0.0",
+          "client.service.album": "1.0.0",
           "client.service.fileserver": "1.0.0",
           "client.service.tcpforward": "1.0.0",
           "common": "1.0.0",
@@ -39,32 +40,11 @@
           }
         }
       },
-      "Microsoft.Extensions.DependencyInjection.Abstractions/5.0.0": {
-        "runtime": {
-          "lib/netstandard2.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll": {
-            "assemblyVersion": "5.0.0.0",
-            "fileVersion": "5.0.20.51904"
-          }
-        }
-      },
+      "Microsoft.Extensions.DependencyInjection.Abstractions/5.0.0": {},
       "Microsoft.NETCore.Platforms/5.0.0": {},
       "Microsoft.Win32.SystemEvents/5.0.0": {
         "dependencies": {
           "Microsoft.NETCore.Platforms": "5.0.0"
-        },
-        "runtime": {
-          "lib/netstandard2.0/Microsoft.Win32.SystemEvents.dll": {
-            "assemblyVersion": "5.0.0.0",
-            "fileVersion": "5.0.20.51904"
-          }
-        },
-        "runtimeTargets": {
-          "runtimes/win/lib/netcoreapp3.0/Microsoft.Win32.SystemEvents.dll": {
-            "rid": "win",
-            "assetType": "runtime",
-            "assemblyVersion": "5.0.0.0",
-            "fileVersion": "5.0.20.51904"
-          }
         }
       },
       "Mono.Nat/3.0.1": {
@@ -183,6 +163,17 @@
         },
         "runtime": {
           "client.dll": {}
+        }
+      },
+      "client.service.album/1.0.0": {
+        "dependencies": {
+          "client": "1.0.0",
+          "client.service.tcpforward": "1.0.0",
+          "common": "1.0.0",
+          "server": "1.0.0"
+        },
+        "runtime": {
+          "client.service.album.dll": {}
         }
       },
       "client.service.fileserver/1.0.0": {
@@ -344,6 +335,11 @@
       "hashPath": "system.runtime.compilerservices.unsafe.4.7.0.nupkg.sha512"
     },
     "client/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "client.service.album/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

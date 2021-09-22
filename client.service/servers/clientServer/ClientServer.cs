@@ -20,6 +20,7 @@ namespace client.service.servers.clientServer
 
         private readonly Dictionary<string, Tuple<object, MethodInfo>> plugins = new();
         private readonly Dictionary<string, Tuple<object, MethodInfo>> pushPlugins = new();
+        private readonly Dictionary<int, IClientServiceSettingPlugin> settingPlugins = new();
 
 
         private readonly Config config;
@@ -66,6 +67,15 @@ namespace client.service.servers.clientServer
                         pushPlugins.TryAdd(key, new Tuple<object, MethodInfo>(obj, method));
                     }
                 }
+            }
+
+            var types3 = assemblys
+                .SelectMany(c => c.GetTypes())
+                .Where(c => c.GetInterfaces().Contains(typeof(IClientServiceSettingPlugin)));
+            foreach (var item in types3)
+            {
+                if (!settingPlugins.ContainsKey(item.GetHashCode()))
+                    settingPlugins.Add(item.GetHashCode(), (IClientServiceSettingPlugin)serviceProvider.GetService(item));
             }
         }
 
@@ -153,7 +163,7 @@ namespace client.service.servers.clientServer
                             RequestId = param.RequestId,
                             Path = param.Path,
                             Code = param.Code
-                        }.ToJsonSwifter());
+                        }.ToJson());
                     }
                     catch (Exception ex)
                     {
@@ -164,7 +174,7 @@ namespace client.service.servers.clientServer
                             RequestId = model.RequestId,
                             Path = model.Path,
                             Code = -1
-                        }.ToJsonSwifter());
+                        }.ToJson());
                     }
                 }
             });
@@ -193,10 +203,25 @@ namespace client.service.servers.clientServer
                                     Path = c.Key
                                 };
                             })
-                        }.ToJsonSwifter());
+                        }.ToJson());
                     }
                     System.Threading.Thread.Sleep(300);
                 }
+            });
+        }
+
+        public IClientServiceSettingPlugin GetSettingPlugin(int code)
+        {
+            settingPlugins.TryGetValue(code, out IClientServiceSettingPlugin plugin);
+            return plugin;
+        }
+
+        public IEnumerable<SettingPluginInfo> GetSettingPlugins()
+        {
+            return settingPlugins.Select(c => new SettingPluginInfo
+            {
+                Code = c.Key,
+                Name = c.Value.Name
             });
         }
     }
@@ -225,6 +250,14 @@ namespace client.service.servers.clientServer
             {
                 obj.AddSingleton(item);
             }
+
+            var types3 = assemblys.SelectMany(c => c.GetTypes())
+                .Where(c => c.GetInterfaces().Contains(typeof(IClientServiceSettingPlugin)));
+            foreach (var item in types3)
+            {
+                obj.AddSingleton(item);
+            }
+
             return obj;
         }
 

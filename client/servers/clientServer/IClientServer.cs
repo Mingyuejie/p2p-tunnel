@@ -11,5 +11,13 @@ namespace client.servers.clientServer
     {
         public void Start();
         public void LoadPlugins(Assembly[] assemblys);
+        public IEnumerable<SettingPluginInfo> GetSettingPlugins();
+        public IClientServiceSettingPlugin GetSettingPlugin(int code);
+    }
+
+    public class SettingPluginInfo
+    {
+        public int Code { get; set; } = 0;
+        public string Name { get; set; } = string.Empty;
     }
 }

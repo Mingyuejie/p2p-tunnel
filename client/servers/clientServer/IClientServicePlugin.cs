@@ -13,6 +13,14 @@ namespace client.servers.clientServer
         //void Enable(ClientServicePluginExcuteWrap arg);
     }
 
+    public interface IClientServiceSettingPlugin
+    {
+        string Name { get; }
+        string Author { get; }
+        object LoadSetting();
+        void SaveSetting(string jsonStr);
+    }
+
     [ProtoContract]
     public class ClientServiceMessageResponseWrap
     {

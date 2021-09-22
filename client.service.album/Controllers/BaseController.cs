@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace client.service.album.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("[controller]/[action]")]
     public class BaseController : ControllerBase
     {
 

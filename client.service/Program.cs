@@ -1,4 +1,5 @@
-﻿using client.service.fileserver;
+﻿using client.service.album;
+using client.service.fileserver;
 using client.service.plugins.punchHolePlugins;
 using client.service.plugins.serverPlugins;
 using client.service.plugins.serverPlugins.register;
@@ -30,31 +31,33 @@ namespace client.service
             //外部程序集的插件
             var externalAddembly = new[] { 
                // typeof(FileServerPlugin).Assembly,
+               
+                typeof(AlbumSettingPlugin).Assembly,
                 typeof(TcpForwardPlugin).Assembly };
 
             serviceCollection.AddServerPlugin()
-                .AddPunchHolePlugin()//打洞
+                    .AddPunchHolePlugin()//打洞
 
-               // .AddFileServerPlugin()//文件服务
-                .AddTcpForwardPlugin()  //tcp转发
-                .AddServerPlugin(externalAddembly).AddClientServer(externalAddembly)
+                    // .AddFileServerPlugin()//文件服务
+                    .AddTcpForwardPlugin()  //tcp转发
+                    .AddServerPlugin(externalAddembly).AddClientServer(externalAddembly)
 
-                .AddClientServer() //客户端管理
-                .AddUpnpPlugin()//upnp映射
-
-                .AddWebServer();//客户端页面
+                    .AddAlbumPlugin() //图片相册插件
+                    .AddClientServer() //客户端管理
+                    .AddUpnpPlugin()//upnp映射
+                    .AddWebServer();//客户端页面
 
             serviceProvider = serviceCollection.BuildServiceProvider();
             serviceProvider.UseServerPlugin()
                 .UsePunchHolePlugin()//打洞
 
-               // .UseFileServerPlugin()//文件服务
+                // .UseFileServerPlugin()//文件服务
                 .UseTcpForwardPlugin()//tcp转发
                 .UseServerPlugin(externalAddembly).UseClientServer(externalAddembly)
 
+                .UseAlbumPlugin() //图片相册插件
                 .UseClientServer()//客户端管理
                 .UseUpnpPlugin()//upnp映射
-
                 .UseWebServer();//客户端页面
 
             //自动注册

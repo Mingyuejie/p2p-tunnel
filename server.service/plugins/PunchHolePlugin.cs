@@ -2,6 +2,7 @@
 using server.model;
 using server.plugin;
 using server.service.plugins.register.caching;
+using System.Net;
 
 namespace server.service.plugins
 {
@@ -36,7 +37,9 @@ namespace server.service.plugins
             {
                 model.Data = new PunchHoleNotifyModel
                 {
-                    Ip = source.Address.Address.ToString(),
+                    Ip = data.ServerType == ServerType.UDP
+                    ? source.Address.Address.ToString()
+                    : IPEndPoint.Parse(source.TcpSocket.RemoteEndPoint.ToString()).Address.ToString(),
                     Id = source.Id,
                     Name = source.Name,
                     Port = source.Address.Port,
