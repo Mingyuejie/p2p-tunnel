@@ -53,6 +53,7 @@ body{
 .table-search  .el-form--inline .el-form-item{margin-bottom:0;}
 .el-dropdown{font-size: 1.3rem;}
 .el-dropdown-menu__item{font-size: 1.3rem;}
+.el-dropdown-menu__item a{color: #333;}
 .el-input__inner:focus{border-color: var(--main-color);}
 
 .el-date-editor.el-input.w-auto, .el-date-editor.el-input__inner.w-auto{width:auto;}

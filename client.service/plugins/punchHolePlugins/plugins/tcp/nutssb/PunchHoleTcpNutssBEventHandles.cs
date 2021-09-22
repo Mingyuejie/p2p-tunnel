@@ -100,7 +100,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                     catch (Exception)
                     {
                     }
-                    System.Threading.Thread.Sleep(500);
+                    //System.Threading.Thread.Sleep(500);
                     targetSocket.SafeClose();
                 });
             }

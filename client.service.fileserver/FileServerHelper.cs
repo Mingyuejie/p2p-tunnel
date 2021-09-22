@@ -359,7 +359,7 @@ namespace client.service.fileserver
             })).ToArray();
         }
 
-        private Dictionary<string, string> icons = new Dictionary<string, string>();
+        private ConcurrentDictionary<string, string> icons = new ConcurrentDictionary<string, string>();
         public string GetFileIcon(string p_Path)
         {
             string ext = Path.GetExtension(p_Path);
@@ -373,7 +373,7 @@ namespace client.service.fileserver
                 SHFILEINFO _SHFILEINFO = new SHFILEINFO();
                 IntPtr _IconIntPtr = SHGetFileInfo(p_Path, 0, ref _SHFILEINFO, (uint)Marshal.SizeOf(_SHFILEINFO), (uint)(SHGFI.SHGFI_ICON | SHGFI.SHGFI_LARGEICON | SHGFI.SHGFI_USEFILEATTRIBUTES));
                 if (_IconIntPtr.Equals(IntPtr.Zero)) return null;
-                icons.Add(ext, Icon2Base64(System.Drawing.Icon.FromHandle(_SHFILEINFO.hIcon)));
+                icons.TryAdd(ext, Icon2Base64(System.Drawing.Icon.FromHandle(_SHFILEINFO.hIcon)));
                 return icons[ext];
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))

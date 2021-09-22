@@ -6,6 +6,10 @@ using System.Threading.Tasks;
 
 namespace common
 {
+    /// <summary>
+    /// 简单发布订阅，取代 “事件”
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class SimplePushSubHandler<T>
     {
         List<Action<T>> actions = new List<Action<T>>();

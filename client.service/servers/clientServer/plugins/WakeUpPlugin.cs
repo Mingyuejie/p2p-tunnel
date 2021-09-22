@@ -21,6 +21,7 @@ namespace client.service.servers.clientServer.plugins
             this.clientsHelper = clientsHelper;
         }
 
+
         public void WakeUp(ClientServicePluginExcuteWrap arg)
         {
             WakeUpModel model = arg.Content.DeJson<WakeUpModel>();

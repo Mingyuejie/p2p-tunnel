@@ -178,6 +178,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
                                                     ToId = toid,
                                                     LinkLayerType = (byte)raw.LinkLayerType
                                                 },
+                                                 Path = "RawPacket/excute",
                                                 Socket = TcpServer,
                                             });
                                             // device.StopCapture();

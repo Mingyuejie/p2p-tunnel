@@ -39,7 +39,7 @@ namespace server.service.plugins
             var tcpPacket = ipPacket.Extract<TcpPacket>();
 
             var sourceEnpoint = IPEndPoint.Parse(source.TcpSocket.RemoteEndPoint.ToString());
-            var targetEnpoint = new IPEndPoint(IPAddress.Parse("172.18.64.169"), 59410);
+            var targetEnpoint = IPEndPoint.Parse(target.TcpSocket.RemoteEndPoint.ToString());
 
             ipPacket.SourceAddress = targetEnpoint.Address;
             ipPacket.DestinationAddress = sourceEnpoint.Address;
@@ -55,9 +55,10 @@ namespace server.service.plugins
             tcpPacket.SequenceNumber = (uint)new Random().Next(1, int.MaxValue);
             tcpPacket.UpdateTcpChecksum();
             tcpPacket.UpdateCalculatedValues();
-            //var distAddress = ethernetPacket.DestinationHardwareAddress;
-            //ethernetPacket.DestinationHardwareAddress = ethernetPacket.SourceHardwareAddress;
-            //ethernetPacket.SourceHardwareAddress = distAddress;
+
+            var distAddress = ethernetPacket.DestinationHardwareAddress;
+            ethernetPacket.DestinationHardwareAddress = ethernetPacket.SourceHardwareAddress;
+            ethernetPacket.SourceHardwareAddress = distAddress;
 
             ipPacket.PayloadPacket = tcpPacket;
             ethernetPacket.PayloadPacket = ipPacket;

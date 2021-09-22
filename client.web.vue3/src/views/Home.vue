@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-15 16:51:54
+ * @LastEditTime: 2021-09-22 08:55:07
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\Home.vue
@@ -13,8 +13,8 @@
             <el-table-column prop="Name" label="客户端">
                 <template #default="scope">
                     <span style="margin-right:.6rem">{{scope.row.Name}}</span>
-                    <el-tag v-if="localIp == scope.row.Ip.split('.').slice(0, 3).join('.')" size="mini" effect="plain">局域网</el-tag>
-                    <el-tag v-else size="mini" effect="plain" type="success">广域网</el-tag>
+                    <el-tag v-if="localIp == scope.row.Ip.split('.').slice(0, 3).join('.')" size="mini" effect="plain">局域网({{scope.row.Ip}})</el-tag>
+                    <el-tag v-else size="mini" effect="plain" type="success">广域网({{scope.row.Ip}})</el-tag>
                 </template>
             </el-table-column>
             <el-table-column prop="Mac" label="Mac"></el-table-column>

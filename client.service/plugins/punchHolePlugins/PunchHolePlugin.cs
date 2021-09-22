@@ -1,4 +1,5 @@
 ﻿using client.service.plugins.punchHolePlugins.plugins.tcp;
+using client.service.plugins.punchHolePlugins.plugins.tcp.nutssa;
 using client.service.plugins.punchHolePlugins.plugins.tcp.nutssb;
 using client.service.plugins.punchHolePlugins.plugins.udp;
 using common.extends;
@@ -104,9 +105,9 @@ namespace client.service.plugins.punchHolePlugins
             obj.AddSingleton<PunchHoleEventHandles>();
             obj.AddSingleton<IPunchHoleUdp, PunchHoleUdpEventHandles>();
             //IP欺骗 
-            //obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssAEventHandles>();
+            obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssAEventHandles>();
             //端口复用
-            obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssBEventHandles>();
+            //obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssBEventHandles>();
             return obj;
         }
 

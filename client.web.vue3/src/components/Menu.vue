@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-17 21:12:56
+ * @LastEditTime: 2021-09-22 10:06:52
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -15,10 +15,26 @@
         <div class="navs flex-1">
             <router-link :to="{name:'Home'}">首页</router-link>
             <router-link :to="{name:'Register'}">注册服务 <i class="el-icon-circle-check" :class="{active:LocalInfo.TcpConnected}"></i></router-link>
-            <router-link :to="{name:'TcpForward'}">TCP转发 <i class="el-icon-circle-check" :class="{active:tcpForwardConnected}"></i></router-link>
-            <router-link :to="{name:'UPNP'}">UPNP映射</router-link>
-            <router-link :to="{name:'WakeUp'}">幻数据包</router-link>
-            <router-link :to="{name:'FileServer'}">文件服务 <i class="el-icon-circle-check" :class="{active:fileServerStarted}"></i></router-link>
+            <el-dropdown>
+                <!-- <router-link class="el-dropdown-link" :to="{name:'Home'}">插件<i class="el-icon-arrow-down el-icon--right"></i></router-link> -->
+                <span class="el-dropdown-link">插件<i class="el-icon-arrow-down el-icon--right"></i></span>
+                <template #dropdown>
+                    <el-dropdown-menu>
+                        <el-dropdown-item>
+                            <router-link :to="{name:'TcpForward'}">TCP转发 <i class="el-icon-circle-check" :class="{active:tcpForwardConnected}"></i></router-link>
+                        </el-dropdown-item>
+                        <el-dropdown-item>
+                            <router-link :to="{name:'UPNP'}">UPNP映射</router-link>
+                        </el-dropdown-item>
+                        <el-dropdown-item>
+                            <router-link :to="{name:'WakeUp'}">幻数据包</router-link>
+                        </el-dropdown-item>
+                        <el-dropdown-item>
+                            <router-link :to="{name:'FileServer'}">文件服务 <i class="el-icon-circle-check" :class="{active:fileServerStarted}"></i></router-link>
+                        </el-dropdown-item>
+                    </el-dropdown-menu>
+                </template>
+            </el-dropdown>
             <router-link :to="{name:'About'}">关于</router-link>
         </div>
         <div class="meta">
@@ -83,7 +99,7 @@ export default {
 .navs
     padding-left: 2rem;
 
-    a
+    a, .el-dropdown-link
         margin-left: 0.4rem;
         padding: 0.6rem 1rem;
         border-radius: 0.4rem;

@@ -81,7 +81,7 @@ namespace common.extends
             using MemoryStream compressStream = new MemoryStream();
             using var zipStream = new GZipStream(compressStream, CompressionMode.Compress);
             zipStream.Write(bytes, 0, bytes.Length);
-            zipStream.Close();
+            zipStream.Close();//不先关闭会有 解压结果为0的bug
             return compressStream.ToArray();
         }
 

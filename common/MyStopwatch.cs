@@ -7,7 +7,9 @@ using System.Threading.Tasks;
 
 namespace common
 {
-
+    /// <summary>
+    /// 计时器，只在DEBUG下有效
+    /// </summary>
     public class MyStopwatch : Stopwatch
     {
         [Conditional("DEBUG")]

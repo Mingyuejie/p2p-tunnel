@@ -11,7 +11,7 @@ namespace server.extends
     {
         public static IEnumerable<UdpPacket> ToUdpPackets(this object obj, long sequence, short ttl = 5)
         {
-            return obj.ToBytes().Split(sequence,  ttl);
+            return obj.ToBytes().Split(sequence, ttl);
         }
 
         public static TcpPacket ToTcpPacket(this object obj)
@@ -26,7 +26,7 @@ namespace server.extends
         /// <param name="sequence"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static IEnumerable<UdpPacket> Split(this byte[] datagram, long sequence,  short ttl = 5)
+        public static IEnumerable<UdpPacket> Split(this byte[] datagram, long sequence, short ttl = 5)
         {
             if (datagram == null)
             {
@@ -34,7 +34,7 @@ namespace server.extends
             }
 
             // 8UDP数据包头  20ip数据包头  8sequence长度 4type长度  4index长度 2ttl长度
-            int chunkLength = 1500 - 8 - 20 - 8 - 4 - 4-2;
+            int chunkLength = 1500 - 8 - 20 - 8 - 4 - 4 - 2;
 
             List<UdpPacket> packets = new();
 

@@ -33,11 +33,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "remoteDektop", "remoteDekto
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "p2p", "p2p", "{D425C224-EA5F-4F17-A9F5-06AD501854C4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "client", "client\client.csproj", "{A1B3FC5A-2AEF-49C8-B7E4-2575D33463A2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "client", "client\client.csproj", "{A1B3FC5A-2AEF-49C8-B7E4-2575D33463A2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "client.service.fileserver", "client.service.fileserver\client.service.fileserver.csproj", "{C518161C-C659-4469-9724-F1CBC153E57D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "client.service.fileserver", "client.service.fileserver\client.service.fileserver.csproj", "{C518161C-C659-4469-9724-F1CBC153E57D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "client.service.tcpforward", "client.service.tcpforward\client.service.tcpforward.csproj", "{4DB84416-5DCD-4EF2-AE66-5E4BCEA62949}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "client.service.tcpforward", "client.service.tcpforward\client.service.tcpforward.csproj", "{4DB84416-5DCD-4EF2-AE66-5E4BCEA62949}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

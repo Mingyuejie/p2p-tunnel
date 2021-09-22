@@ -39,12 +39,6 @@ namespace common.extends
             {
                 try
                 {
-                    //if(IPEndPoint.Parse(socket.RemoteEndPoint.ToString()).Address.ToString() == "124.227.80.202")
-                    //{
-                    //    Logger.Instance.Error($"关闭socket:{socket.RemoteEndPoint}");
-                    //    Logger.Instance.Error(Helper.GetStackTrace());
-                    //}
-
                     socket.Shutdown(SocketShutdown.Both);
                 }
                 catch (Exception)

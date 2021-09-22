@@ -12,6 +12,4 @@ namespace client.servers.clientServer
         public void Start();
         public void LoadPlugins(Assembly[] assemblys);
     }
-
-
 }

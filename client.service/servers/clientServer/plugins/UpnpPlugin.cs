@@ -12,8 +12,6 @@ namespace client.service.servers.clientServer.plugins
 {
     public class UpnpHelper
     {
-        private static readonly Lazy<UpnpHelper> lazy = new(() => new UpnpHelper());
-        public static UpnpHelper Instance => lazy.Value;
         public List<DeviceModel> devices = new();
 
         public void Start()
@@ -60,11 +58,18 @@ namespace client.service.servers.clientServer.plugins
 
     public class UpnpPlugin : IClientServicePlugin
     {
+        private readonly UpnpHelper upnpHelper;
+
+        public UpnpPlugin(UpnpHelper upnpHelper)
+        {
+            this.upnpHelper = upnpHelper;
+        }
+
         public string[] Devices(ClientServicePluginExcuteWrap arg)
         {
             try
             {
-                return UpnpHelper.Instance.devices.Select(c => c.Text).ToArray();
+                return upnpHelper.devices.Select(c => c.Text).ToArray();
             }
             catch (Exception ex)
             {
@@ -78,7 +83,7 @@ namespace client.service.servers.clientServer.plugins
             RequestModel model = arg.Content.DeJson<RequestModel>();
             try
             {
-                return UpnpHelper.Instance.devices[model.DeviceIndex].GetMappings().Select(c => new MappingModel
+                return upnpHelper.devices[model.DeviceIndex].GetMappings().Select(c => new MappingModel
                 {
                     Description = c.Description,
                     DeviceIndex = model.DeviceIndex,
@@ -101,7 +106,7 @@ namespace client.service.servers.clientServer.plugins
             MappingModel model = arg.Content.DeJson<MappingModel>();
             try
             {
-                UpnpHelper.Instance.devices[model.DeviceIndex].Device.CreatePortMap(new Mapping(model.Protocol, model.PrivatePort, model.PublicPort, model.Lifetime, model.Description));
+                upnpHelper.devices[model.DeviceIndex].Device.CreatePortMap(new Mapping(model.Protocol, model.PrivatePort, model.PublicPort, model.Lifetime, model.Description));
             }
             catch (Exception ex)
             {
@@ -115,13 +120,15 @@ namespace client.service.servers.clientServer.plugins
             RequestModel model = arg.Content.DeJson<RequestModel>();
             try
             {
-                UpnpHelper.Instance.devices[model.DeviceIndex].DelMapping(model.MappingIndex);
+                upnpHelper.devices[model.DeviceIndex].DelMapping(model.MappingIndex);
             }
             catch (Exception ex)
             {
                 arg.SetCode(-1, ex.Message);
             }
         }
+
+
     }
 
 

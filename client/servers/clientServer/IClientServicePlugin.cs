@@ -7,7 +7,10 @@ namespace client.servers.clientServer
 {
     public interface IClientServicePlugin
     {
+        //string Name { get; }
+        //bool Enabled { get; set; }
 
+        //void Enable(ClientServicePluginExcuteWrap arg);
     }
 
     [ProtoContract]
