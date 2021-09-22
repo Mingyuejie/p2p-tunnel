@@ -28,7 +28,9 @@ namespace client.service
             serviceCollection.AddSingleton((e) => serviceProvider);
 
             //外部程序集的插件
-            var externalAddembly = new[] { typeof(FileServerPlugin).Assembly, typeof(TcpForwardPlugin).Assembly };
+            var externalAddembly = new[] { 
+               // typeof(FileServerPlugin).Assembly,
+                typeof(TcpForwardPlugin).Assembly };
 
             serviceCollection.AddServerPlugin()
                 .AddPunchHolePlugin()//打洞

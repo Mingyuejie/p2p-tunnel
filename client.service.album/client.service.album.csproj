@@ -4,4 +4,11 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\client.service.tcpforward\client.service.tcpforward.csproj" />
+    <ProjectReference Include="..\client\client.csproj" />
+    <ProjectReference Include="..\common\common.csproj" />
+    <ProjectReference Include="..\server\server.csproj" />
+  </ItemGroup>
+
 </Project>
