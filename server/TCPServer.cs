@@ -192,8 +192,8 @@ namespace server
         }
         private void Receive(ReceiveModel model, byte[] buffer)
         {
-            MyStopwatch watch = new MyStopwatch();
-            watch.Start();
+           //MyStopwatch watch = new MyStopwatch();
+            //watch.Start();
 
             IPEndPoint address = IPEndPoint.Parse(model.Socket.RemoteEndPoint.ToString());
             lock (model.CacheBuffer)
@@ -208,8 +208,8 @@ namespace server
                 Socket = model.Socket
             });
 
-            watch.Stop();
-            watch.Output($"TCP 包处理时间：");
+           // watch.Stop();
+           // watch.Output($"TCP 包处理时间：");
         }
 
         public SimplePushSubHandler<ServerDataWrap<List<byte>>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<List<byte>>>();

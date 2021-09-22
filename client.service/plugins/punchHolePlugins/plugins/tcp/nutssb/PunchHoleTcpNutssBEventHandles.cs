@@ -279,7 +279,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                 targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                 targetSocket.Bind(new IPEndPoint(config.Client.BindIp, ClientTcpPort));
                 targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(e.Data.Ip), e.Data.TcpPort));
-                System.Threading.Thread.Sleep(500);
+                //System.Threading.Thread.Sleep(500);
                 targetSocket.SafeClose();
             });
         }
