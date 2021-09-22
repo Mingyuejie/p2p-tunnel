@@ -33,7 +33,7 @@ namespace client.service
             serviceCollection.AddServerPlugin()
                 .AddPunchHolePlugin()//打洞
 
-                .AddFileServerPlugin()//文件服务
+               // .AddFileServerPlugin()//文件服务
                 .AddTcpForwardPlugin()  //tcp转发
                 .AddServerPlugin(externalAddembly).AddClientServer(externalAddembly)
 
@@ -46,7 +46,7 @@ namespace client.service
             serviceProvider.UseServerPlugin()
                 .UsePunchHolePlugin()//打洞
 
-                .UseFileServerPlugin()//文件服务
+               // .UseFileServerPlugin()//文件服务
                 .UseTcpForwardPlugin()//tcp转发
                 .UseServerPlugin(externalAddembly).UseClientServer(externalAddembly)
 

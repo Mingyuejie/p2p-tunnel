@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-22 10:06:52
+ * @LastEditTime: 2021-09-22 12:27:05
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -29,9 +29,9 @@
                         <el-dropdown-item>
                             <router-link :to="{name:'WakeUp'}">幻数据包</router-link>
                         </el-dropdown-item>
-                        <el-dropdown-item>
+                        <!-- <el-dropdown-item>
                             <router-link :to="{name:'FileServer'}">文件服务 <i class="el-icon-circle-check" :class="{active:fileServerStarted}"></i></router-link>
-                        </el-dropdown-item>
+                        </el-dropdown-item> -->
                     </el-dropdown-menu>
                 </template>
             </el-dropdown>

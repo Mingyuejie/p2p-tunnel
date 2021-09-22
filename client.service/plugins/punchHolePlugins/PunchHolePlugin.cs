@@ -105,9 +105,9 @@ namespace client.service.plugins.punchHolePlugins
             obj.AddSingleton<PunchHoleEventHandles>();
             obj.AddSingleton<IPunchHoleUdp, PunchHoleUdpEventHandles>();
             //IP欺骗 
-            obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssAEventHandles>();
+            //obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssAEventHandles>();
             //端口复用
-            //obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssBEventHandles>();
+            obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssBEventHandles>();
             return obj;
         }
 
