@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-22 17:32:41
+ * @LastEditTime: 2021-09-23 17:45:49
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -15,9 +15,9 @@
         <div class="navs flex-1">
             <router-link :to="{name:'Home'}">首页</router-link>
             <router-link :to="{name:'Register'}">注册服务 <i class="el-icon-circle-check" :class="{active:LocalInfo.TcpConnected}"></i></router-link>
+            <router-link class="el-dropdown-link" :to="{name:'Pugins'}">插件设置</router-link>
             <el-dropdown>
-                <router-link class="el-dropdown-link" :to="{name:'Pugins'}">插件设置<i class="el-icon-arrow-down el-icon--right"></i></router-link>
-                <!-- <span class="el-dropdown-link">插件<i class="el-icon-arrow-down el-icon--right"></i></span> -->
+                <span class="el-dropdown-link">使用插件<i class="el-icon-arrow-down el-icon--right"></i></span>
                 <template #dropdown>
                     <el-dropdown-menu>
                         <el-dropdown-item>
@@ -32,9 +32,6 @@
                         <el-dropdown-item>
                             <router-link :to="{name:'PluginWakeUp'}">幻数据包</router-link>
                         </el-dropdown-item>
-                        <!-- <el-dropdown-item>
-                            <router-link :to="{name:'FileServer'}">文件服务 <i class="el-icon-circle-check" :class="{active:fileServerStarted}"></i></router-link>
-                        </el-dropdown-item> -->
                     </el-dropdown-menu>
                 </template>
             </el-dropdown>
