@@ -1,3 +1,5 @@
+using client.service.album.db;
+using client.service.album.filters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -24,7 +26,12 @@ namespace client.service.album
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            services.AddSingleton(typeof(DBHelper<>));
+            services.AddControllers(options =>
+            {
+                options.Filters.Add(typeof(WebApiResultMiddleware));
+                options.Filters.Add(typeof(WebApiExceptionMiddleware));
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -19,13 +19,13 @@ namespace client.service.tcpforward.client
             string errmsg = tcpForwardHelper.Add(new TcpForwardRecordBaseModel
             {
                 AliveType = fmodel.AliveType,
-                Listening = false,
                 SourceIp = fmodel.SourceIp,
                 SourcePort = fmodel.SourcePort,
                 TargetIp = fmodel.TargetIp,
                 TargetName = fmodel.TargetName,
                 TargetPort = fmodel.TargetPort,
-                ID = model.ID
+                ID = model.ID,
+                Desc = fmodel.Desc
             });
             if (!string.IsNullOrWhiteSpace(errmsg))
             {
@@ -44,7 +44,7 @@ namespace client.service.tcpforward.client
             }
         }
 
-        public System.Collections.Generic.List<TcpForwardRecordBaseModel> List(ClientServicePluginExcuteWrap arg)
+        public List<TcpForwardRecordBaseModel> List(ClientServicePluginExcuteWrap arg)
         {
             return tcpForwardHelper.Mappings;
         }

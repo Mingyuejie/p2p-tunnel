@@ -3,6 +3,7 @@ using client.service.tcpforward;
 using common;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -14,7 +15,6 @@ namespace client.service.album
         private readonly AlbumSettingModel albumSettingModel;
         private readonly TcpForwardHelper tcpForwardHelper;
 
-
         public AlbumSettingPlugin(AlbumSettingModel albumSettingModel, TcpForwardHelper tcpForwardHelper)
         {
             this.albumSettingModel = albumSettingModel;
@@ -24,6 +24,8 @@ namespace client.service.album
 
         public string Author => "snltty";
 
+        public string Desc => $"目标:{albumSettingModel.TargetName}";
+
         public object LoadSetting()
         {
             return albumSettingModel;
@@ -31,20 +33,14 @@ namespace client.service.album
 
         public void SaveSetting(string jsonStr)
         {
-            AlbumSettingModel model = jsonStr.DeJson<AlbumSettingModel>();
+            AlbumSettingModel setting = jsonStr.DeJson<AlbumSettingModel>();
 
-            var mapping = tcpForwardHelper.Mappings.FirstOrDefault(c => c.SourcePort == albumSettingModel.SourcePort);
-            if (mapping != null)
-            {
-                tcpForwardHelper.Del(mapping.ID);
-            }
-
-            albumSettingModel.SourcePort = model.SourcePort;
-            albumSettingModel.TargetName = model.TargetName;
-            albumSettingModel.TargetPort = model.TargetPort;
+            albumSettingModel.SourcePort = setting.SourcePort;
+            albumSettingModel.TargetName = setting.TargetName;
+            albumSettingModel.TargetPort = setting.TargetPort;
             albumSettingModel.SaveConfig();
 
-            tcpForwardHelper.Add(new TcpForwardRecordBaseModel
+            var model = new TcpForwardRecordBaseModel
             {
                 AliveType = TcpForwardAliveTypes.UNALIVE,
                 ID = 0,
@@ -52,13 +48,18 @@ namespace client.service.album
                 SourceIp = IPAddress.Any.ToString(),
                 TargetPort = albumSettingModel.TargetPort,
                 TargetIp = IPAddress.Loopback.ToString(),
-                TargetName = albumSettingModel.TargetName
-            });
+                TargetName = albumSettingModel.TargetName,
+                Editable = false,
+                Desc = "图片相册插件"
+            };
+            tcpForwardHelper.DelByPort(albumSettingModel.SourcePort);
+            tcpForwardHelper.Add(model);
+            tcpForwardHelper.Start(model.ID);
 
             Program.Stop();
             Logger.Instance.Info($"图片相册服务已关闭...");
             Program.Run();
-            Logger.Instance.Info($"图片相册服务已启动...");
+            Logger.Instance.Info($"图片相册服务已启动...\nhttp://{model.SourceIp}:{model.SourcePort} -> [{model.TargetName}] http://{model.TargetIp}:{model.TargetPort}\n");
         }
     }
 
@@ -100,7 +101,8 @@ namespace client.service.album
         {
             TcpForwardHelper helper = obj.GetService<TcpForwardHelper>();
             AlbumSettingModel config = obj.GetService<AlbumSettingModel>();
-            helper.Add(new TcpForwardRecordBaseModel
+
+            var model = new TcpForwardRecordBaseModel
             {
                 AliveType = TcpForwardAliveTypes.UNALIVE,
                 ID = 0,
@@ -108,11 +110,16 @@ namespace client.service.album
                 SourceIp = IPAddress.Any.ToString(),
                 TargetPort = config.TargetPort,
                 TargetIp = IPAddress.Loopback.ToString(),
-                TargetName = config.TargetName
-            });
+                TargetName = config.TargetName,
+                Editable = false,
+                Desc = "图片相册插件"
+            };
+            helper.Del(model.SourcePort);
+            helper.Add(model);
+            helper.Start(model.ID);
 
             Program.Run();
-            Logger.Instance.Info($"图片相册服务已启动...");
+            Logger.Instance.Info($"图片相册服务已启动...\nhttp://{model.SourceIp}:{model.SourcePort} -> [{model.TargetName}] http://{model.TargetIp}:{model.TargetPort}\n");
             return obj;
         }
     }

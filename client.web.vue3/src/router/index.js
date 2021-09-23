@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-22 17:29:24
+ * @LastEditTime: 2021-09-23 10:15:18
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\router\index.js
@@ -25,6 +25,7 @@ const routes = [
         path: '/plugins.html',
         name: 'Pugins',
         component: () => import('../views/plugin/Index.vue'),
+        redirect: { name: 'PluginSetting' },
         children: [
             {
                 path: '/plugin-setting.html',
@@ -40,11 +41,6 @@ const routes = [
                 path: '/plugin-tcp-forward.html',
                 name: 'PluginTcpForward',
                 component: () => import('../views/plugin/TcpForward.vue')
-            },
-            {
-                path: '/plugin-fileserver.html',
-                name: 'PluginFileServer',
-                component: () => import('../views/plugin/fileserver/Index.vue')
             },
             {
                 path: '/plugin-wakeup.html',

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-20 00:47:21
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-22 17:31:05
+ * @LastEditTime: 2021-09-23 15:45:18
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\TcpForward.vue
@@ -14,27 +14,32 @@
             <el-button size="mini" @click="getData">刷新列表</el-button>
         </div>
         <el-table v-loading="loading" :data="list" border size="mini">
-            <el-table-column prop="SourceIp" label="源地址" width="140">
-                <template #default="scope"><span>{{scope.row.SourceIp}}:{{scope.row.SourcePort}}</span></template>
+            <el-table-column prop="Desc" label="说明"></el-table-column>
+            <el-table-column prop="Sopurce" label="来源">
+                <template #default="scope">
+                    <span>{{scope.row.SourceIp}}:{{scope.row.SourcePort}}</span>
+                </template>
             </el-table-column>
-            <el-table-column prop="TargetName" label="目标"></el-table-column>
-            <el-table-column prop="TargetIp" label="目标地址" width="140">
-                <template #default="scope"><span>{{scope.row.TargetIp}}:{{scope.row.TargetPort}}</span></template>
+            <el-table-column prop="Desc" label="目标">
+                <template #default="scope">
+                    <span>【{{scope.row.TargetName}}】</span>
+                    <span>{{scope.row.TargetIp}}:{{scope.row.TargetPort}}</span>
+                </template>
             </el-table-column>
             <el-table-column prop="AliveType" label="连接类型" width="80">
                 <template #default="scope"><span>{{aliveTypes[scope.row.AliveType]}}</span></template>
             </el-table-column>
             <el-table-column prop="Listening" label="状态" width="65">
                 <template #default="scope">
-                    <el-switch @click.stop @change="onListeningChange(scope.row)" v-model="scope.row.Listening"></el-switch>
+                    <el-switch :disabled="!scope.row.Editable" @click.stop @change="onListeningChange(scope.row)" v-model="scope.row.Listening"></el-switch>
                 </template>
             </el-table-column>
             <el-table-column prop="todo" label="操作" width="145" fixed="right" class="t-c">
                 <template #default="scope">
-                    <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
+                    <el-button size="mini" :disabled="!scope.row.Editable" @click="handleEdit(scope.row)">编辑</el-button>
                     <el-popconfirm title="删除不可逆，是否确认" @confirm="handleDel(scope.row)">
                         <template #reference>
-                            <el-button type="danger" size="mini" icon="el-icon-delete"></el-button>
+                            <el-button type="danger" :disabled="!scope.row.Editable" size="mini" icon="el-icon-delete"></el-button>
                         </template>
                     </el-popconfirm>
                 </template>
@@ -97,6 +102,9 @@
                         </el-col>
                     </el-row>
                 </el-form-item>
+                <el-form-item label="说明" prop="Desc">
+                    <el-input v-model="form.Desc"></el-input>
+                </el-form-item>
             </el-form>
             <template #footer>
                 <el-button @click="showAdd = false">取 消</el-button>
@@ -107,7 +115,7 @@
 </template>
 <script>
 import { reactive, ref, toRefs } from '@vue/reactivity'
-import { getTcpForwards, sendTcpForwardAdd, sendTcpForwardDel, sendTcpForwardStart, sendTcpForwardStop } from '../../apis/tcp-forward'
+import { getTcpForwards, sendTcpForwardAdd, sendTcpForwardDel, sendTcpForwardStart, sendTcpForwardStop } from '../../apis/plugins/tcp-forward'
 import { ElMessage } from 'element-plus'
 import { injectClients } from '../../states/clients'
 export default {
@@ -123,7 +131,8 @@ export default {
                 ID: 0,
                 SourceIp: '0.0.0.0', SourcePort: 0,
                 TargetName: 'B客户端', TargetIp: '127.0.0.1', TargetPort: 0,
-                AliveType: 0
+                AliveType: 0,
+                Desc: ''
             },
             rules: {
                 SourceIp: [{ required: true, message: '必填', trigger: 'blur' }],
@@ -180,7 +189,7 @@ export default {
                 }
                 state.loading = true;
                 state.form.SourcePort = Number(state.form.SourcePort)
-                state.form.TargetPort = Number(state.form.TargetPort)
+                state.form.TargetPort = Number(state.form.TargetPort);
                 sendTcpForwardAdd(state.form).then(() => {
                     state.loading = false;
                     state.showAdd = false;

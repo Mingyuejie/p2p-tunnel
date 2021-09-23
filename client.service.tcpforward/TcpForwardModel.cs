@@ -58,6 +58,12 @@ namespace client.service.tcpforward
         public bool Listening { get; set; } = false;
         [ProtoMember(8)]
         public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.UNALIVE;
+
+        [ProtoMember(9)]
+        public string Desc { get; set; } = "";
+
+        [ProtoMember(10)]
+        public bool Editable { get; set; } = true;
     }
 
     public class TcpForwardRecordModel : TcpForwardRecordBaseModel

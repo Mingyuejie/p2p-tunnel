@@ -52,7 +52,6 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\client.service.album\client.service.album.csproj" />
-		<ProjectReference Include="..\client.service.fileserver\client.service.fileserver.csproj" />
 		<ProjectReference Include="..\client.service.tcpforward\client.service.tcpforward.csproj" />
 		<ProjectReference Include="..\client\client.csproj" />
 		<ProjectReference Include="..\common\common.csproj" />

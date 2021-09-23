@@ -17,6 +17,7 @@ namespace client.servers.clientServer
     {
         string Name { get; }
         string Author { get; }
+        string Desc { get; }
         object LoadSetting();
         void SaveSetting(string jsonStr);
     }

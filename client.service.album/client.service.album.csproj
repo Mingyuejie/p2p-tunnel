@@ -5,6 +5,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="db\album.db" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="db\album.db">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper.Contrib" Version="2.0.78" />
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="5.0.10" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\client.service.tcpforward\client.service.tcpforward.csproj" />
     <ProjectReference Include="..\client\client.csproj" />
     <ProjectReference Include="..\common\common.csproj" />

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-20 00:47:21
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-22 17:30:56
+ * @LastEditTime: 2021-09-23 10:22:37
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\UPNP.vue
@@ -86,7 +86,7 @@
 </template>
 <script>
 import { reactive, toRefs } from '@vue/reactivity'
-import { getUpnpDevices, getUpnpMappings, sendUpnpDelMapping, sendUpnpAddMapping } from '../../apis/upnp'
+import { getUpnpDevices, getUpnpMappings, sendUpnpDelMapping, sendUpnpAddMapping } from '../../apis/plugins/upnp'
 import { ElMessage } from 'element-plus'
 export default {
     setup () {

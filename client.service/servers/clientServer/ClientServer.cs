@@ -221,7 +221,9 @@ namespace client.service.servers.clientServer
             return settingPlugins.Select(c => new SettingPluginInfo
             {
                 Code = c.Key,
-                Name = c.Value.Name
+                Name = c.Value.Name,
+                Author = c.Value.Author,
+                Desc = c.Value.Desc
             });
         }
     }

@@ -5,6 +5,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="tcpforward-appsettings.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="tcpforward-appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\client\client.csproj" />
     <ProjectReference Include="..\common\common.csproj" />
     <ProjectReference Include="..\server\server.csproj" />

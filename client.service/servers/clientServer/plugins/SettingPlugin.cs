@@ -23,8 +23,8 @@ namespace client.service.servers.clientServer.plugins
 
         public object Load(ClientServicePluginExcuteWrap arg)
         {
-            int code = int.Parse(arg.Content);
-            var plugin = clientServer.GetSettingPlugin(code);
+            SaveParam model = arg.Content.DeJson<SaveParam>();
+            var plugin = clientServer.GetSettingPlugin(model.Code);
             if (plugin != null)
             {
                 return plugin.LoadSetting();
@@ -38,7 +38,7 @@ namespace client.service.servers.clientServer.plugins
             var plugin = clientServer.GetSettingPlugin(model.Code);
             if (plugin != null)
             {
-                plugin.SaveSetting(arg.Content);
+                plugin.SaveSetting(model.Content);
             }
         }
     }

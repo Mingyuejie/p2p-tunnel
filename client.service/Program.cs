@@ -1,5 +1,4 @@
 ﻿using client.service.album;
-using client.service.fileserver;
 using client.service.plugins.punchHolePlugins;
 using client.service.plugins.serverPlugins;
 using client.service.plugins.serverPlugins.register;
@@ -30,15 +29,12 @@ namespace client.service
 
             //外部程序集的插件
             var externalAddembly = new[] { 
-               // typeof(FileServerPlugin).Assembly,
-               
                 typeof(AlbumSettingPlugin).Assembly,
                 typeof(TcpForwardPlugin).Assembly };
 
             serviceCollection.AddServerPlugin()
                     .AddPunchHolePlugin()//打洞
 
-                    // .AddFileServerPlugin()//文件服务
                     .AddTcpForwardPlugin()  //tcp转发
                     .AddServerPlugin(externalAddembly).AddClientServer(externalAddembly)
 
@@ -51,7 +47,6 @@ namespace client.service
             serviceProvider.UseServerPlugin()
                 .UsePunchHolePlugin()//打洞
 
-                // .UseFileServerPlugin()//文件服务
                 .UseTcpForwardPlugin()//tcp转发
                 .UseServerPlugin(externalAddembly).UseClientServer(externalAddembly)
 

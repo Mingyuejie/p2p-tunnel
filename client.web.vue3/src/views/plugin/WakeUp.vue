@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:30:19
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-22 17:31:01
+ * @LastEditTime: 2021-09-23 10:18:44
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\WakeUp.vue
@@ -35,7 +35,7 @@
 
 <script>
 import { reactive, ref, toRefs } from '@vue/reactivity';
-import { sendWakeUp } from '../../apis/wakeup'
+import { sendWakeUp } from '../../apis/plugins/wakeup'
 import { ElMessage } from 'element-plus'
 export default {
     setup () {

@@ -23,13 +23,15 @@ namespace client.service.tcpforward
         private readonly TcpForwardServer tcpForwardServer;
         private readonly TcpForwardEventHandles tcpForwardEventHandles;
         private readonly IClientInfoCaching clientInfoCaching;
+        private readonly TcpForwardSettingModel tcpForwardSettingModel;
 
         public TcpForwardHelper(TcpForwardServer tcpForwardServer, TcpForwardEventHandles tcpForwardEventHandles,
-            IClientInfoCaching clientInfoCaching)
+            IClientInfoCaching clientInfoCaching, TcpForwardSettingModel tcpForwardSettingModel)
         {
             this.tcpForwardServer = tcpForwardServer;
             this.tcpForwardEventHandles = tcpForwardEventHandles;
             this.clientInfoCaching = clientInfoCaching;
+            this.tcpForwardSettingModel = tcpForwardSettingModel;
 
             ReadConfig();
 
@@ -56,17 +58,17 @@ namespace client.service.tcpforward
 
         private void OnRequest(TcpForwardRequestModel arg)
         {
-            if (arg.Socket != null)
+            if (arg.Socket == null)
+            {
+                tcpForwardServer.Fail(arg.Msg, "未选择转发对象，或者未与转发对象建立连接");
+            }
+            else
             {
                 tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
                 {
                     Data = arg.Msg,
                     Socket = arg.Socket
                 });
-            }
-            else
-            {
-                tcpForwardServer.Fail(arg.Msg, "未选择转发对象，或者未与转发对象建立连接");
             }
         }
         private void OnTcpForwardMessageHandler(OnTcpForwardEventArg arg)
@@ -97,6 +99,36 @@ namespace client.service.tcpforward
 
         private void Request(OnTcpForwardEventArg arg)
         {
+            if (tcpForwardSettingModel.PortWhiteList.Length > 0 && !tcpForwardSettingModel.PortWhiteList.Contains(arg.Data.TargetPort))
+            {
+                tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
+                {
+                    Data = new TcpForwardModel
+                    {
+                        RequestId = arg.Data.RequestId,
+                        Type = TcpForwardType.FAIL,
+                        Buffer = Encoding.UTF8.GetBytes("目标端口未在端口白名单中"),
+                        AliveType = arg.Data.AliveType
+                    },
+                    Socket = arg.Packet.TcpSocket
+                });
+                return;
+            }
+            if (tcpForwardSettingModel.PortBlackList.Contains(arg.Data.TargetPort))
+            {
+                tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
+                {
+                    Data = new TcpForwardModel
+                    {
+                        RequestId = arg.Data.RequestId,
+                        Type = TcpForwardType.FAIL,
+                        Buffer = Encoding.UTF8.GetBytes("目标端口在端口黑名单中"),
+                        AliveType = arg.Data.AliveType
+                    },
+                    Socket = arg.Packet.TcpSocket
+                });
+                return;
+            }
             ClientModel.Get(arg.Data.RequestId, out ClientModel client);
             try
             {
@@ -266,8 +298,17 @@ namespace client.service.tcpforward
 
         public string Del(int id)
         {
-
             TcpForwardRecordBaseModel map = Mappings.FirstOrDefault(c => c.ID == id);
+            if (map != null)
+            {
+                Stop(map);
+                _ = Mappings.Remove(map);
+            }
+            return SaveConfig();
+        }
+        public string DelByPort(int port)
+        {
+            TcpForwardRecordBaseModel map = Mappings.FirstOrDefault(c => c.SourcePort == port);
             if (map != null)
             {
                 Stop(map);
@@ -310,6 +351,8 @@ namespace client.service.tcpforward
                 idmap.TargetPort = model.TargetPort;
                 idmap.AliveType = model.AliveType;
                 idmap.TargetIp = model.TargetIp;
+                idmap.Desc = model.Desc;
+                idmap.Editable = model.Editable;
             }
 
             _ = SaveConfig();
@@ -333,7 +376,9 @@ namespace client.service.tcpforward
                     SourcePort = model.SourcePort,
                     TargetIp = model.TargetIp,
                     TargetName = model.TargetName,
-                    TargetPort = model.TargetPort
+                    TargetPort = model.TargetPort,
+                    Desc = model.Desc,
+                    Editable = model.Editable
                 };
 
                 model2.Client = clientInfoCaching.All().FirstOrDefault(c => c.Name == model.TargetName);
@@ -385,11 +430,11 @@ namespace client.service.tcpforward
                 ConfigFileModel config = File.ReadAllText(configFileName).DeJson<ConfigFileModel>();
                 if (config != null)
                 {
-                    Mappings = config.Mappings;
-                    Mappings.ForEach(c =>
+                    config.Mappings.ForEach(c =>
                     {
                         c.Listening = false;
                     });
+                    Mappings = config.Mappings;
                 }
             }
         }
