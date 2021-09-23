@@ -12,7 +12,6 @@
           "SharpPcap": "6.0.0",
           "client": "1.0.0",
           "client.service.album": "1.0.0",
-          "client.service.fileserver": "1.0.0",
           "client.service.tcpforward": "1.0.0",
           "common": "1.0.0",
           "server": "1.0.0"
@@ -21,11 +20,41 @@
           "client.service.dll": {}
         }
       },
+      "Dapper/2.0.78": {
+        "runtime": {
+          "lib/net5.0/Dapper.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.0.78.45418"
+          }
+        }
+      },
+      "Dapper.Contrib/2.0.78": {
+        "dependencies": {
+          "Dapper": "2.0.78"
+        },
+        "runtime": {
+          "lib/net5.0/Dapper.Contrib.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.0.78.45418"
+          }
+        }
+      },
       "Fleck/1.2.0": {
         "runtime": {
           "lib/netcoreapp2.0/Fleck.dll": {
             "assemblyVersion": "1.2.0.0",
             "fileVersion": "1.2.0.0"
+          }
+        }
+      },
+      "Microsoft.Data.Sqlite.Core/5.0.10": {
+        "dependencies": {
+          "SQLitePCLRaw.core": "2.0.4"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.Data.Sqlite.dll": {
+            "assemblyVersion": "5.0.10.0",
+            "fileVersion": "5.0.1021.41011"
           }
         }
       },
@@ -41,12 +70,6 @@
         }
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions/5.0.0": {},
-      "Microsoft.NETCore.Platforms/5.0.0": {},
-      "Microsoft.Win32.SystemEvents/5.0.0": {
-        "dependencies": {
-          "Microsoft.NETCore.Platforms": "5.0.0"
-        }
-      },
       "Mono.Nat/3.0.1": {
         "runtime": {
           "lib/netstandard2.1/Mono.Nat.dll": {
@@ -97,6 +120,17 @@
           }
         }
       },
+      "SQLitePCLRaw.core/2.0.4": {
+        "dependencies": {
+          "System.Memory": "4.5.4"
+        },
+        "runtime": {
+          "lib/netstandard2.0/SQLitePCLRaw.core.dll": {
+            "assemblyVersion": "2.0.4.976",
+            "fileVersion": "2.0.4.976"
+          }
+        }
+      },
       "Swifter.Core/1.5.0.3": {
         "dependencies": {
           "Swifter.Underlying": "1.3.1"
@@ -127,31 +161,6 @@
           }
         }
       },
-      "System.Drawing.Common/5.0.2": {
-        "dependencies": {
-          "Microsoft.Win32.SystemEvents": "5.0.0"
-        },
-        "runtime": {
-          "lib/netcoreapp3.0/System.Drawing.Common.dll": {
-            "assemblyVersion": "5.0.0.2",
-            "fileVersion": "5.0.421.11614"
-          }
-        },
-        "runtimeTargets": {
-          "runtimes/unix/lib/netcoreapp3.0/System.Drawing.Common.dll": {
-            "rid": "unix",
-            "assetType": "runtime",
-            "assemblyVersion": "5.0.0.2",
-            "fileVersion": "5.0.421.11614"
-          },
-          "runtimes/win/lib/netcoreapp3.0/System.Drawing.Common.dll": {
-            "rid": "win",
-            "assetType": "runtime",
-            "assemblyVersion": "5.0.0.2",
-            "fileVersion": "5.0.421.11614"
-          }
-        }
-      },
       "System.Memory/4.5.4": {},
       "System.Runtime.CompilerServices.Unsafe/4.7.0": {},
       "client/1.0.0": {
@@ -167,6 +176,8 @@
       },
       "client.service.album/1.0.0": {
         "dependencies": {
+          "Dapper.Contrib": "2.0.78",
+          "Microsoft.Data.Sqlite.Core": "5.0.10",
           "client": "1.0.0",
           "client.service.tcpforward": "1.0.0",
           "common": "1.0.0",
@@ -174,17 +185,6 @@
         },
         "runtime": {
           "client.service.album.dll": {}
-        }
-      },
-      "client.service.fileserver/1.0.0": {
-        "dependencies": {
-          "System.Drawing.Common": "5.0.2",
-          "client": "1.0.0",
-          "common": "1.0.0",
-          "server": "1.0.0"
-        },
-        "runtime": {
-          "client.service.fileserver.dll": {}
         }
       },
       "client.service.tcpforward/1.0.0": {
@@ -222,12 +222,33 @@
       "serviceable": false,
       "sha512": ""
     },
+    "Dapper/2.0.78": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-vLPwL2HZXp/DN17Eu7sg6GMEj02alq7jcy6atn5Gv8i96b9Hu1UoxlCrhInUPfSFLQQiD8O7pdWAE1fdUEO/1Q==",
+      "path": "dapper/2.0.78",
+      "hashPath": "dapper.2.0.78.nupkg.sha512"
+    },
+    "Dapper.Contrib/2.0.78": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-sUfDVIf8LlHNiz3MfUFodeyRiemfN1JFkPxYjCxFWlwNPg1iQ49mB+0E89TkywWs4X8fiRWOVDQgtH5FtzK5Kw==",
+      "path": "dapper.contrib/2.0.78",
+      "hashPath": "dapper.contrib.2.0.78.nupkg.sha512"
+    },
     "Fleck/1.2.0": {
       "type": "package",
       "serviceable": true,
       "sha512": "sha512-bPLXn6QbLAFoviur6XbrKB0Zn6x04E8VibHXyHZeJsoC7bkUl5DVtzM5cZgDuqHkIrBqAXJyTNJwSNIc6wBJ2Q==",
       "path": "fleck/1.2.0",
       "hashPath": "fleck.1.2.0.nupkg.sha512"
+    },
+    "Microsoft.Data.Sqlite.Core/5.0.10": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Uv/pSj1qu+yhAmGtel1rGAjBplcH8BfNaDTgeeCat4Y3nW4b17zdUffvKGBYKcrVfzInf5teHclKKv2fIsm01A==",
+      "path": "microsoft.data.sqlite.core/5.0.10",
+      "hashPath": "microsoft.data.sqlite.core.5.0.10.nupkg.sha512"
     },
     "Microsoft.Extensions.DependencyInjection/5.0.2": {
       "type": "package",
@@ -242,20 +263,6 @@
       "sha512": "sha512-ORj7Zh81gC69TyvmcUm9tSzytcy8AVousi+IVRAI8nLieQjOFryRusSFh7+aLk16FN9pQNqJAiMd7BTKINK0kA==",
       "path": "microsoft.extensions.dependencyinjection.abstractions/5.0.0",
       "hashPath": "microsoft.extensions.dependencyinjection.abstractions.5.0.0.nupkg.sha512"
-    },
-    "Microsoft.NETCore.Platforms/5.0.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-VyPlqzH2wavqquTcYpkIIAQ6WdenuKoFN0BdYBbCWsclXacSOHNQn66Gt4z5NBqEYW0FAPm5rlvki9ZiCij5xQ==",
-      "path": "microsoft.netcore.platforms/5.0.0",
-      "hashPath": "microsoft.netcore.platforms.5.0.0.nupkg.sha512"
-    },
-    "Microsoft.Win32.SystemEvents/5.0.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-Bh6blKG8VAKvXiLe2L+sEsn62nc1Ij34MrNxepD2OCrS5cpCwQa9MeLyhVQPQ/R4Wlzwuy6wMK8hLb11QPDRsQ==",
-      "path": "microsoft.win32.systemevents/5.0.0",
-      "hashPath": "microsoft.win32.systemevents.5.0.0.nupkg.sha512"
     },
     "Mono.Nat/3.0.1": {
       "type": "package",
@@ -292,6 +299,13 @@
       "path": "sharppcap/6.0.0",
       "hashPath": "sharppcap.6.0.0.nupkg.sha512"
     },
+    "SQLitePCLRaw.core/2.0.4": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-4XlDZpDAsboMD6qZQcz9AaKblKDUTVHF+8f3lvbP7QjoqSRr2Xc0Lm34IK2pjRIYnyFLhI3yOJ5YWfOiCid2yg==",
+      "path": "sqlitepclraw.core/2.0.4",
+      "hashPath": "sqlitepclraw.core.2.0.4.nupkg.sha512"
+    },
     "Swifter.Core/1.5.0.3": {
       "type": "package",
       "serviceable": true,
@@ -313,13 +327,6 @@
       "path": "swifter.underlying/1.3.1",
       "hashPath": "swifter.underlying.1.3.1.nupkg.sha512"
     },
-    "System.Drawing.Common/5.0.2": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-rvr/M1WPf24ljpvvrVd74+NdjRUJu1bBkspkZcnzSZnmAUQWSvanlQ0k/hVHk+cHufZbZfu7vOh/vYc0q5Uu/A==",
-      "path": "system.drawing.common/5.0.2",
-      "hashPath": "system.drawing.common.5.0.2.nupkg.sha512"
-    },
     "System.Memory/4.5.4": {
       "type": "package",
       "serviceable": true,
@@ -340,11 +347,6 @@
       "sha512": ""
     },
     "client.service.album/1.0.0": {
-      "type": "project",
-      "serviceable": false,
-      "sha512": ""
-    },
-    "client.service.fileserver/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
