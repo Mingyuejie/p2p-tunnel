@@ -90,7 +90,7 @@ namespace client.service.album.filters
             else if (context.Result is ErrorResult)
             {
                 ErrorResult objectResult = context.Result as ErrorResult;
-                context.Result = new JsonResult(new JsonResultModel { Msg = objectResult.Content, Data = objectResult.Data });
+                context.Result = new JsonResult(new JsonResultModel { Msg = objectResult.Content, Data = objectResult.Data, Code = -1 });
             }
             else if (context.Result is ContentResult)
             {

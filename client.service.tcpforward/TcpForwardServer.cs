@@ -258,9 +258,14 @@ namespace client.service.tcpforward
                     try
                     {
                         var bodyBytes = Encoding.UTF8.GetBytes(body);
-                        _ = client.Socket.Send(Encoding.UTF8.GetBytes("HTTP/1.1 200 OK\r\n"));
+                        _ = client.Socket.Send(Encoding.UTF8.GetBytes("HTTP/1.1 500 OK\r\n"));
                         _ = client.Socket.Send(Encoding.UTF8.GetBytes("Content-Type: text/html;charset=utf-8\r\n"));
                         _ = client.Socket.Send(Encoding.UTF8.GetBytes($"Content-Length:{bodyBytes.Length}\r\n"));
+                        _ = client.Socket.Send(Encoding.UTF8.GetBytes($"Access-Control-Allow-Credentials: true\r\n"));
+                        _ = client.Socket.Send(Encoding.UTF8.GetBytes($"Access-Control-Allow-Headers: *\r\n"));
+                        _ = client.Socket.Send(Encoding.UTF8.GetBytes($"Access-Control-Allow-Methods: *\r\n"));
+                        _ = client.Socket.Send(Encoding.UTF8.GetBytes($"Access-Control-Allow-Origin: *\r\n"));
+
                         _ = client.Socket.Send(Encoding.UTF8.GetBytes("\r\n"));
                         _ = client.Socket.Send(bodyBytes);
                     }
@@ -270,7 +275,7 @@ namespace client.service.tcpforward
                 }
                 if (failModel.Buffer != null)
                 {
-                    Logger.Instance.Info(failModel.Buffer.Length.ToString());
+                    //Logger.Instance.Info(failModel.Buffer.Length.ToString());
                 }
                 client.Remove();
             }

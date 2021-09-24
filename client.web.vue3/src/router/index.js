@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-23 10:15:18
+ * @LastEditTime: 2021-09-24 15:19:44
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\router\index.js
@@ -30,22 +30,32 @@ const routes = [
             {
                 path: '/plugin-setting.html',
                 name: 'PluginSetting',
-                component: () => import('../views/plugin/Setting.vue')
+                component: () => import('../views/plugin/Setting.vue'),
+                meta: { name: '插件设置' }
             },
             {
                 path: '/plugin-upnp.html',
                 name: 'PluginUPNP',
-                component: () => import('../views/plugin/UPNP.vue')
+                component: () => import('../views/plugin/UPNP.vue'),
+                meta: { name: 'UPNP映射' }
+            },
+            {
+                path: '/plugin-album.html',
+                name: 'PluginAlbum',
+                component: () => import('../views/plugin/album/Index.vue'),
+                meta: { name: '图片相册' }
             },
             {
                 path: '/plugin-tcp-forward.html',
                 name: 'PluginTcpForward',
-                component: () => import('../views/plugin/TcpForward.vue')
+                component: () => import('../views/plugin/TcpForward.vue'),
+                meta: { name: 'TCP转发' }
             },
             {
                 path: '/plugin-wakeup.html',
                 name: 'PluginWakeUp',
-                component: () => import('../views/plugin/WakeUp.vue')
+                component: () => import('../views/plugin/WakeUp.vue'),
+                meta: { name: '幻数据包' }
             },
         ]
     },

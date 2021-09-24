@@ -10,7 +10,7 @@ using System.Net;
 
 namespace client.service.album
 {
-    public class AlbumSettingPlugin : IClientServiceSettingPlugin
+    public class AlbumSettingPlugin : IClientServiceSettingPlugin, IClientServicePlugin
     {
         private readonly AlbumSettingModel albumSettingModel;
         private readonly TcpForwardHelper tcpForwardHelper;
@@ -24,7 +24,7 @@ namespace client.service.album
 
         public string Author => "snltty";
 
-        public string Desc => $"目标:{albumSettingModel.TargetName}";
+        public string Desc => $"服务端口:{albumSettingModel.ServerPort}";
 
         public object LoadSetting()
         {
@@ -35,39 +35,48 @@ namespace client.service.album
         {
             AlbumSettingModel setting = jsonStr.DeJson<AlbumSettingModel>();
 
-            albumSettingModel.SourcePort = setting.SourcePort;
-            albumSettingModel.TargetName = setting.TargetName;
-            albumSettingModel.TargetPort = setting.TargetPort;
+            albumSettingModel.Clients = setting.Clients;
+            albumSettingModel.ServerPort = setting.ServerPort;
             albumSettingModel.SaveConfig();
 
-            var model = new TcpForwardRecordBaseModel
+            foreach (var item in albumSettingModel.Clients)
             {
-                AliveType = TcpForwardAliveTypes.UNALIVE,
-                ID = 0,
-                SourcePort = albumSettingModel.SourcePort,
-                SourceIp = IPAddress.Any.ToString(),
-                TargetPort = albumSettingModel.TargetPort,
-                TargetIp = IPAddress.Loopback.ToString(),
-                TargetName = albumSettingModel.TargetName,
-                Editable = false,
-                Desc = "图片相册插件"
-            };
-            tcpForwardHelper.DelByPort(albumSettingModel.SourcePort);
-            tcpForwardHelper.Add(model);
-            tcpForwardHelper.Start(model.ID);
+                var model = new TcpForwardRecordBaseModel
+                {
+                    AliveType = TcpForwardAliveTypes.UNALIVE,
+                    ID = 0,
+                    SourcePort = item.SourcePort,
+                    SourceIp = IPAddress.Any.ToString(),
+                    TargetPort = item.TargetPort,
+                    TargetIp = IPAddress.Loopback.ToString(),
+                    TargetName = item.TargetName,
+                    Editable = false,
+                    Desc = "图片相册插件"
+                };
+                tcpForwardHelper.DelByPort(item.SourcePort);
+                tcpForwardHelper.Add(model);
+                tcpForwardHelper.Start(tcpForwardHelper.GetByPort(item.SourcePort));
+            }
 
             Program.Stop();
             Logger.Instance.Info($"图片相册服务已关闭...");
             Program.Run();
-            Logger.Instance.Info($"图片相册服务已启动...\nhttp://{model.SourceIp}:{model.SourcePort} -> [{model.TargetName}] http://{model.TargetIp}:{model.TargetPort}\n");
+        }
+
+        public object Load(ClientServicePluginExcuteWrap arg)
+        {
+            return albumSettingModel;
         }
     }
 
     public class AlbumSettingModel
     {
-        public int SourcePort { get; set; } = 5411;
-        public string TargetName { get; set; } = string.Empty;
-        public int TargetPort { get; set; } = 5412;
+        public AlbumSettingClientModel[] Clients { get; set; } = new AlbumSettingClientModel[]
+        {
+           new AlbumSettingClientModel{  SourcePort = 5411, TargetPort = 5412,TargetName = string.Empty}
+        };
+        public int ServerPort { get; set; } = 5412;
+        public string Password { get; set; } = string.Empty;
 
         public static AlbumSettingModel ReadConfig()
         {
@@ -79,12 +88,17 @@ namespace client.service.album
         {
             AlbumSettingModel config = File.ReadAllText("album-appsettings.json").DeJson<AlbumSettingModel>();
 
-            config.SourcePort = SourcePort;
-            config.TargetName = TargetName;
-            config.TargetPort = TargetPort;
+            config.Clients = Clients;
+            config.ServerPort = ServerPort;
 
             File.WriteAllText("album-appsettings.json", config.ToJson(), System.Text.Encoding.UTF8);
         }
+    }
+    public class AlbumSettingClientModel
+    {
+        public int SourcePort { get; set; } = 5411;
+        public string TargetName { get; set; } = string.Empty;
+        public int TargetPort { get; set; } = 5412;
     }
 
     public static class ServiceCollectionExtends
@@ -99,27 +113,29 @@ namespace client.service.album
 
         public static ServiceProvider UseAlbumPlugin(this ServiceProvider obj)
         {
-            TcpForwardHelper helper = obj.GetService<TcpForwardHelper>();
+            TcpForwardHelper tcpForwardHelper = obj.GetService<TcpForwardHelper>();
             AlbumSettingModel config = obj.GetService<AlbumSettingModel>();
 
-            var model = new TcpForwardRecordBaseModel
+            foreach (var item in config.Clients)
             {
-                AliveType = TcpForwardAliveTypes.UNALIVE,
-                ID = 0,
-                SourcePort = config.SourcePort,
-                SourceIp = IPAddress.Any.ToString(),
-                TargetPort = config.TargetPort,
-                TargetIp = IPAddress.Loopback.ToString(),
-                TargetName = config.TargetName,
-                Editable = false,
-                Desc = "图片相册插件"
-            };
-            helper.Del(model.SourcePort);
-            helper.Add(model);
-            helper.Start(model.ID);
+                var model = new TcpForwardRecordBaseModel
+                {
+                    AliveType = TcpForwardAliveTypes.UNALIVE,
+                    ID = 0,
+                    SourcePort = item.SourcePort,
+                    SourceIp = IPAddress.Any.ToString(),
+                    TargetPort = item.TargetPort,
+                    TargetIp = IPAddress.Loopback.ToString(),
+                    TargetName = item.TargetName,
+                    Editable = false,
+                    Desc = "图片相册插件"
+                };
+                tcpForwardHelper.DelByPort(item.SourcePort);
+                tcpForwardHelper.Add(model);
+                tcpForwardHelper.Start(tcpForwardHelper.GetByPort(item.SourcePort));
+            }
 
             Program.Run();
-            Logger.Instance.Info($"图片相册服务已启动...\nhttp://{model.SourceIp}:{model.SourcePort} -> [{model.TargetName}] http://{model.TargetIp}:{model.TargetPort}\n");
             return obj;
         }
     }

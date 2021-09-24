@@ -1,5 +1,6 @@
 {
   "SourcePort": 5411,
   "TargetName": "",
-  "TargetPort": 5412
+  "TargetPort": 5412,
+  "Password": "000000"
 }

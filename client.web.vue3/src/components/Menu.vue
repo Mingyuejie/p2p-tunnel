@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-23 17:45:49
+ * @LastEditTime: 2021-09-24 16:18:54
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -15,16 +15,19 @@
         <div class="navs flex-1">
             <router-link :to="{name:'Home'}">首页</router-link>
             <router-link :to="{name:'Register'}">注册服务 <i class="el-icon-circle-check" :class="{active:LocalInfo.TcpConnected}"></i></router-link>
-            <router-link class="el-dropdown-link" :to="{name:'Pugins'}">插件设置</router-link>
             <el-dropdown>
-                <span class="el-dropdown-link">使用插件<i class="el-icon-arrow-down el-icon--right"></i></span>
+                <!-- <router-link class="el-dropdown-link" :to="{name:'Pugins'}">应用插件 <i class="el-icon-arrow-down el-icon--right"></i></router-link> -->
+                <span class="el-dropdown-link">应用插件 <i class="el-icon-arrow-down el-icon--right"></i></span>
                 <template #dropdown>
                     <el-dropdown-menu>
+                        <!-- <el-dropdown-item>
+                            <router-link class="el-dropdown-link" :to="{name:'Pugins'}">插件设置</router-link>
+                        </el-dropdown-item> -->
                         <el-dropdown-item>
                             <router-link :to="{name:'PluginTcpForward'}">TCP转发 <i class="el-icon-circle-check" :class="{active:tcpForwardConnected}"></i></router-link>
                         </el-dropdown-item>
                         <el-dropdown-item>
-                            <router-link :to="{name:'PluginTcpForward'}">图片相册</router-link>
+                            <router-link :to="{name:'PluginAlbum'}">图片相册</router-link>
                         </el-dropdown-item>
                         <el-dropdown-item>
                             <router-link :to="{name:'PluginUPNP'}">UPNP映射</router-link>
@@ -113,12 +116,12 @@ export default {
             color: #fff;
             background-color: rgba(0, 0, 0, 0.5);
 
-        i
-            opacity: 0.5;
+    i
+        opacity: 0.5;
 
-            &.active
-                color: #10da10;
-                opacity: 1;
+i.active
+    color: #10da10;
+    opacity: 1;
 
 .meta
     a

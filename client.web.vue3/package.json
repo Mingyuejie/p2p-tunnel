@@ -8,6 +8,7 @@
     },
     "dependencies": {
         "@kangc/v-md-editor": "^2.2.2",
+        "axios": "^0.21.4",
         "core-js": "^3.6.5",
         "element-plus": "^1.0.2-beta.71",
         "vue": "^3.0.0",

@@ -10,9 +10,10 @@ namespace client.service.album.db
     [Table("CategoryInfo")]
     public class CategoryInfo
     {
-        [System.ComponentModel.DataAnnotations.Key]
+        [Dapper.Contrib.Extensions.Key]
         public int ID { get; set; }
         public string Name { get; set; } = string.Empty;
         public long AddTime { get; set; } = 0;
+        public string Cover { get; set; } = string.Empty;
     }
 }

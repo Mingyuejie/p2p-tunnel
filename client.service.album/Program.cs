@@ -59,7 +59,7 @@ namespace client.service.album
                 {
                     webBuilder.UseKestrel().ConfigureKestrel((context, options) =>
                     {
-                        options.Listen(System.Net.IPAddress.Loopback, config.TargetPort);
+                        options.Listen(System.Net.IPAddress.Loopback, config.ServerPort);
 
                     }).UseStartup<Startup>();
                 });

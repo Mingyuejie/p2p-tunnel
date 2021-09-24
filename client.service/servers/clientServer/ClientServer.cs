@@ -20,7 +20,7 @@ namespace client.service.servers.clientServer
 
         private readonly Dictionary<string, Tuple<object, MethodInfo>> plugins = new();
         private readonly Dictionary<string, Tuple<object, MethodInfo>> pushPlugins = new();
-        private readonly Dictionary<int, IClientServiceSettingPlugin> settingPlugins = new();
+        private readonly Dictionary<string, IClientServiceSettingPlugin> settingPlugins = new();
 
 
         private readonly Config config;
@@ -74,8 +74,8 @@ namespace client.service.servers.clientServer
                 .Where(c => c.GetInterfaces().Contains(typeof(IClientServiceSettingPlugin)));
             foreach (var item in types3)
             {
-                if (!settingPlugins.ContainsKey(item.GetHashCode()))
-                    settingPlugins.Add(item.GetHashCode(), (IClientServiceSettingPlugin)serviceProvider.GetService(item));
+                if (!settingPlugins.ContainsKey(item.Name))
+                    settingPlugins.Add(item.Name, (IClientServiceSettingPlugin)serviceProvider.GetService(item));
             }
         }
 
@@ -210,9 +210,9 @@ namespace client.service.servers.clientServer
             });
         }
 
-        public IClientServiceSettingPlugin GetSettingPlugin(int code)
+        public IClientServiceSettingPlugin GetSettingPlugin(string className)
         {
-            settingPlugins.TryGetValue(code, out IClientServiceSettingPlugin plugin);
+            settingPlugins.TryGetValue(className, out IClientServiceSettingPlugin plugin);
             return plugin;
         }
 
@@ -220,10 +220,10 @@ namespace client.service.servers.clientServer
         {
             return settingPlugins.Select(c => new SettingPluginInfo
             {
-                Code = c.Key,
                 Name = c.Value.Name,
                 Author = c.Value.Author,
-                Desc = c.Value.Desc
+                Desc = c.Value.Desc,
+                ClassName = c.Value.GetType().Name
             });
         }
     }

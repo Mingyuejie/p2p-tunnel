@@ -70,6 +70,7 @@ body{
 .el-table-filter,.el-table td, .el-table th.is-leaf{border-color: var(--main-border-color);}
 .el-pagination.is-background .el-pager li:not(.disabled).active{background-color: var(--main-color);}
 .el-pagination.is-background .el-pager li:not(.disabled):hover{color: var(--main-color);}
+.el-pagination .btn-next .el-icon, .el-pagination .btn-prev .el-icon{width: inherit;}
 
 .el-dialog__body .el-form-item:last-child{margin-bottom:0;}
 

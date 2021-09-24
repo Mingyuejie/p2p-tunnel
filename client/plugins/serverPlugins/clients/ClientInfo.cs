@@ -1,10 +1,7 @@
 ﻿using common;
 using common.extends;
 using ProtoBuf;
-using Swifter.RW;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json.Serialization;
@@ -27,10 +24,10 @@ namespace client.plugins.serverPlugins.clients
         [ProtoMember(4)]
         public bool TcpConnected { get; set; } = false;
 
-        [ProtoIgnore, JsonIgnore, RWField(Access = RWFieldAccess.Ignore)]
+        [ProtoIgnore, JsonIgnore]
         public Socket Socket { get; set; } = null;
 
-        [ProtoIgnore, JsonIgnore, RWField(Access = RWFieldAccess.Ignore)]
+        [ProtoIgnore, JsonIgnore]
         public IPEndPoint Address { get; set; } = null;
         [ProtoMember(5)]
         public int Port { get; set; } = 0;

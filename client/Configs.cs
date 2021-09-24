@@ -1,6 +1,5 @@
 ﻿using common.extends;
 using ProtoBuf;
-using Swifter.RW;
 using System.IO;
 using System.Net;
 using System.Text.Json.Serialization;
@@ -67,7 +66,7 @@ namespace client
         [ProtoMember(3)]
         public bool UseIpv6 { get; set; } = false;
 
-        [JsonIgnore,ProtoIgnore, RWField(Access = RWFieldAccess.Ignore)]
+        [JsonIgnore,ProtoIgnore]
         public IPAddress BindIp
         {
             get
@@ -85,7 +84,7 @@ namespace client
         [ProtoMember(2)]
         public bool UseIpv6 { get; set; } = false;
 
-        [JsonIgnore, ProtoIgnore, RWField(Access = RWFieldAccess.Ignore)]
+        [JsonIgnore, ProtoIgnore]
         public IPAddress BindIp
         {
             get
@@ -127,7 +126,7 @@ namespace client
         [ProtoMember(5)]
         public bool UseIpv6 { get; set; } = false;
 
-        [JsonIgnore, ProtoIgnore, RWField(Access = RWFieldAccess.Ignore)]
+        [JsonIgnore, ProtoIgnore]
         public IPAddress BindIp
         {
             get

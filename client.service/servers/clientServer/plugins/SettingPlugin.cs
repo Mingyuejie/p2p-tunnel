@@ -24,7 +24,7 @@ namespace client.service.servers.clientServer.plugins
         public object Load(ClientServicePluginExcuteWrap arg)
         {
             SaveParam model = arg.Content.DeJson<SaveParam>();
-            var plugin = clientServer.GetSettingPlugin(model.Code);
+            var plugin = clientServer.GetSettingPlugin(model.ClassName);
             if (plugin != null)
             {
                 return plugin.LoadSetting();
@@ -35,7 +35,7 @@ namespace client.service.servers.clientServer.plugins
         public void Save(ClientServicePluginExcuteWrap arg)
         {
             SaveParam model = arg.Content.DeJson<SaveParam>();
-            var plugin = clientServer.GetSettingPlugin(model.Code);
+            var plugin = clientServer.GetSettingPlugin(model.ClassName);
             if (plugin != null)
             {
                 plugin.SaveSetting(model.Content);
@@ -45,7 +45,7 @@ namespace client.service.servers.clientServer.plugins
 
     public class SaveParam
     {
-        public int Code { get; set; }
+        public string ClassName { get; set; }
         public string Content { get; set; }
     }
 }

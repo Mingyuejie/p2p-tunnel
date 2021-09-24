@@ -10,7 +10,7 @@ namespace client.service.album.db
     [Table("AlbumInfo")]
     public class AlbumInfo
     {
-        [System.ComponentModel.DataAnnotations.Key]
+        [Dapper.Contrib.Extensions.Key]
         public int ID { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Path { get; set; } = string.Empty;

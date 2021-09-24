@@ -1,4 +1,5 @@
 ﻿using client.plugins.serverPlugins.clients;
+using client.service.tcpforward.client;
 using common;
 using common.extends;
 using server.plugins.register.caching;
@@ -315,6 +316,10 @@ namespace client.service.tcpforward
                 _ = Mappings.Remove(map);
             }
             return SaveConfig();
+        }
+        public TcpForwardRecordBaseModel GetByPort(int port)
+        {
+            return Mappings.FirstOrDefault(c => c.SourcePort == port);
         }
 
         public string Add(TcpForwardRecordBaseModel model)

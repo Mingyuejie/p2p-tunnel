@@ -13,7 +13,7 @@ namespace client.service.album.db
     {
         private IDbConnection Connection()
         {
-            return new SqliteConnection($"data source=.\\db\\album.db;version=3;");
+            return new SqliteConnection($"data source=.\\db\\album.db");
         }
 
         public async Task<T> Get(int id)
