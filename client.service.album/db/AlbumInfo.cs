@@ -18,4 +18,18 @@ namespace client.service.album.db
         public long AddTime { get; set; } = 0;
         public int CID { get; set; } = 0;
     }
+
+    public class AlbumAddInfo
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Path { get; set; } = string.Empty;
+        public string Remark { get; set; } = string.Empty;
+        public int CID { get; set; } = 0;
+    }
+
+    public class AlbumEditNameInfo
+    {
+        public int ID { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
 }

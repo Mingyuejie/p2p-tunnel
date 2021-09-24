@@ -9,6 +9,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -54,10 +55,15 @@ namespace client.service.album
             {
                 app.UseDeveloperExceptionPage();
             }
+            if (string.IsNullOrWhiteSpace(env.WebRootPath))
+            {
+                env.WebRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            }
 
+            app.UseStaticFiles();
             app.UseRouting();
             app.UseCors();
-            app.UseStaticFiles();
+           
 
             app.UseEndpoints(endpoints =>
             {

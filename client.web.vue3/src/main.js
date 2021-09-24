@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-20 09:12:44
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-03 11:14:04
+ * @LastEditTime: 2021-09-24 22:14:21
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\main.js
@@ -13,7 +13,6 @@ import router from './router'
 
 import './assets/style.css'
 import './extends/index'
-
 
 import ElementPlus from 'element-plus';
 import 'element-plus/lib/theme-chalk/index.css';

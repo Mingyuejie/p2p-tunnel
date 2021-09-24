@@ -26,4 +26,8 @@
     <ProjectReference Include="..\server\server.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
 </Project>

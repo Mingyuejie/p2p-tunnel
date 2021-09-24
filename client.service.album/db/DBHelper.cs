@@ -28,16 +28,32 @@ namespace client.service.album.db
             return await connection.GetAllAsync<T>();
         }
 
-        public async Task<IEnumerable<T>> Query(string sql, object param = null)
+        public async Task<int> QueryCount(string where = "", object param = null)
         {
             using IDbConnection connection = Connection();
-            return await connection.QueryAsync<T>(sql, param);
+            return await connection.QueryFirstAsync<int>($"SELECT count(1) FROM {typeof(T).Name} WHERE 1=1 {where}", param);
+        }
+
+        public async Task<IEnumerable<T>> Query(string where = "",string order = "",string limit = "", object param = null)
+        {
+            using IDbConnection connection = Connection();
+            return await connection.QueryAsync<T>($"SELECT * FROM {typeof(T).Name} WHERE 1=1 {where} {order} {limit}", param);
         }
 
         public async Task<int> Execute(string sql, object param = null)
         {
             using IDbConnection connection = Connection();
             return await connection.ExecuteAsync(sql, param);
+        }
+
+        public async Task<int> Update(string set,string where, object param = null)
+        {
+            return await Execute($"UPDATE {typeof(T).Name} SET {set} WHERE 1=1 AND {where}", param);
+        }
+
+        public async Task<int> Delete(string where, object param = null)
+        {
+            return await Execute($"DELETE FROM {typeof(T).Name} WHERE {where}", param);
         }
 
 
@@ -58,5 +74,13 @@ namespace client.service.album.db
             using IDbConnection connection = Connection();
             return await connection.DeleteAsync(model);
         }
+    }
+
+    public class PageWrap<T>
+    {
+        public int Page { get; set; }
+        public int PageSize { get; set; }
+        public int Count { get; set; }
+        public T Data { get; set; }
     }
 }
