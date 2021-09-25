@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-24 16:18:54
+ * @LastEditTime: 2021-09-25 23:46:02
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -94,10 +94,9 @@ export default {
     height: 8rem;
 
 .logo
-    margin-left: -1rem;
-
     img
-        height: 8rem;
+        height: 4rem;
+        vertical-align: middle;
 
 .navs
     padding-left: 2rem;

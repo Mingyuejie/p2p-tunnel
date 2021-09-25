@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-03 14:39:29
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-11 22:59:41
+ * @LastEditTime: 2021-09-25 23:27:44
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\setting.md
@@ -34,29 +34,30 @@
 2. 修改或者使用默认的  appsettings.json 里对应的配置 【没啥特殊需求的不改就行】
 ```
 {
-  //web服务，浏览器打开  127.0.0.1:5410  使用web端管理界面
+    //web管理端
   "web": {
-    "Ip": "127.0.0.1",
     "Port": 5410,
-    "Path": "./web"
+    "Root": "./public/web",
+    "UseIpv6": false // 使用ipv6
   },
-  //web管理端和客户端的通信 
-  //如果你修改了这个配置 ，则需要自己修改配置发布一遍 web管理端，然后发布后的代码放到 “web”配置的path目录下
+  //web管理与客户端的通信
   "websocket": {
-    "Ip": "127.0.0.1",
-    "Port": 59410
+    "Port": 59410,
+    "UseIpv6": false // 使用ipv6
   },
   //客户端
   "client": {
-    "GroupId": "", //分组id
-    "Name": "A客户端", //客户端名
-    "AutoReg": false //启动服务自动注册到服务器
+    "GroupId": "", //分组编号
+    "Name": "A客户端",
+    "AutoReg": false, //自动注册
+    "UseMac": false, //上报 mac
+    "UseIpv6": false // 使用ipv6
   },
-  //服务器，与服务端对应
+  //信令服务器
   "server": {
-    "Ip": "120.79.205.184", //地址
-    "Port": 5410,  //udp端口
-    "TcpPort": 59410 //tcp端口 
+    "Ip": "p2p.snltty.com",
+    "Port": 5410,
+    "TcpPort": 59410
   }
 }
 ```

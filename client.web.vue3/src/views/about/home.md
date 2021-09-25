@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-07 00:37:53
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-22 17:43:27
+ * @LastEditTime: 2021-09-25 23:34:50
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\home.md
@@ -14,6 +14,8 @@
 2. UDP,TCP打洞实现点对点直连
 3. 访问内网web，内网桌面，及其它TCP上层协议服务
 4. 服务端只承受 客户端注册，客户端信息的交换。不承受数据转发，几乎无压力
+
+# QQ群 1121552990   一起打造
 
 # 项目结构
 1. p2p  打洞项目
