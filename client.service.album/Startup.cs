@@ -40,7 +40,7 @@ namespace client.service.album
             {
                 options.AddDefaultPolicy((policy) =>
                 {
-                    policy.AllowCredentials().AllowAnyHeader().AllowAnyMethod().SetIsOriginAllowed(_ => true);
+                    policy.AllowCredentials().AllowAnyHeader().AllowAnyMethod().SetPreflightMaxAge(TimeSpan.FromMinutes(30)).SetIsOriginAllowed(_ => true);
                 });
             });
 

@@ -46,6 +46,11 @@ namespace client.service.plugins.serverPlugins.clients
             return clients.TryGetValue(id, out client);
         }
 
+        public ClientInfo GetByName(string name)
+        {
+            return clients.Values.FirstOrDefault(c=>c.Name == name);
+        }
+
         public IEnumerable<ClientInfo> All()
         {
             return clients.Values;

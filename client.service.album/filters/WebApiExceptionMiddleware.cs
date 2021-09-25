@@ -13,36 +13,13 @@ namespace client.service.album.filters
     /// </summary>
     public class WebApiExceptionMiddleware : IExceptionFilter
     {
-        readonly IWebHostEnvironment _env;
-       // readonly ILogger<WebApiExceptionMiddleware> logger;
-
-        public WebApiExceptionMiddleware(IWebHostEnvironment env)
+        public WebApiExceptionMiddleware()
         {
-            _env = env;
-           // this.logger = logger;
         }
 
         public void OnException(ExceptionContext context)
         {
-            try
-            {
-                JsonResultModel result = new() { Code = 500, Msg = "未知错误，请稍后重试" };
-
-                result.Msg = context.Exception.Message;
-                if (_env.IsDevelopment())
-                {
-                    result.Msg = context.Exception.Message;
-                }
-                //logger.LogError("错误:{0}\n堆栈:{1}",
-                //    context.Exception.Message,
-                //    context.Exception.StackTrace
-                //    );
-                context.Result = new ObjectResult(result);
-            }
-            catch (Exception ex)
-            {
-               // logger.LogError("错误拦截器异常:{0}\n堆栈:{1}", ex.Message, ex.StackTrace);
-            }
+            context.Result = new ObjectResult(new JsonResultModel() { Code = 500, Msg = context.Exception.Message });
             context.HttpContext.Response.StatusCode = (int)HttpStatusCode.OK;
             context.ExceptionHandled = true;
         }

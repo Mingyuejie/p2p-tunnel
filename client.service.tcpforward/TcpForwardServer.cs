@@ -156,6 +156,49 @@ namespace client.service.tcpforward
                 ClientCacheModel.Remove(client.RequestId);
             }, TaskCreationOptions.LongRunning);
         }
+        public void BindUnlveReceive(ClientModel2 client)
+        {
+            client.BufferSize = new byte[1024];
+            client.Stream.BeginRead(client.BufferSize, 0, client.BufferSize.Length, Read, client);
+        }
+        private void Read(IAsyncResult result)
+        {
+            result.AsyncWaitHandle.Close();
+            ClientModel2 client = (ClientModel2)result.AsyncState;
+            try
+            {
+                int count = client.Stream.EndRead(result);
+                if (count == 0)
+                {
+                    ClientCacheModel.Remove(client.RequestId);
+                }
+                else
+                {
+                    if (count < 1024)
+                    {
+                        byte[] temp = new byte[count];
+                        Array.Copy(client.BufferSize, 0, temp, 0, count);
+                        client.BufferSize = temp;
+                    }
+                    Receive(client, client.BufferSize);
+
+                    if (client.Stream.CanRead && ClientCacheModel.Contains(client.RequestId))
+                    {
+                        client.BufferSize = new byte[1024];
+                        client.Stream.BeginRead(client.BufferSize, 0, client.BufferSize.Length, Read, client);
+                    }
+                    else
+                    {
+                        ClientCacheModel.Remove(client.RequestId);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                ClientCacheModel.Remove(client.RequestId);
+            }
+        }
+
 
         private void Receive(ClientModel2 client, byte[] data)
         {
@@ -223,41 +266,38 @@ namespace client.service.tcpforward
             }
         }
 
-
         public void Fail(TcpForwardModel failModel, string body = "")
         {
             if (ClientCacheModel.Get(failModel.RequestId, out ClientCacheModel client) && client != null)
             {
                 if (failModel.AliveType == TcpForwardAliveTypes.UNALIVE)
                 {
-                    byte[] bodyBytes = Array.Empty<byte>();
+                    StringBuilder sb = new StringBuilder();
                     if (failModel.Buffer.IsOptionsMethod())
                     {
-                        client.Socket.Send(Encoding.UTF8.GetBytes("HTTP/1.1 204 No Content\r\n"));
+                        sb.Append("HTTP/1.1 204 No Content\r\n");
                     }
                     else
                     {
-                        client.Socket.Send(Encoding.UTF8.GetBytes("HTTP/1.1 404 Not Found\r\n"));
-                        if (string.IsNullOrWhiteSpace(body))
-                        {
-                            bodyBytes = failModel.Buffer;
-                        }
-                        else
-                        {
-                            bodyBytes = Encoding.UTF8.GetBytes(body);
-                        }
+                        sb.Append("HTTP/1.1 404 Not Found\r\n");
                     }
-                    client.Socket.Send(Encoding.UTF8.GetBytes($"Content-Length:{bodyBytes.Length}\r\n"));
-                    client.Socket.Send(Encoding.UTF8.GetBytes("Content-Type: text/html;charset=utf-8\r\n"));
-                    client.Socket.Send(Encoding.UTF8.GetBytes($"Access-Control-Allow-Credentials: true\r\n"));
-                    client.Socket.Send(Encoding.UTF8.GetBytes($"Access-Control-Allow-Headers: *\r\n"));
-                    client.Socket.Send(Encoding.UTF8.GetBytes($"Access-Control-Allow-Methods: *\r\n"));
-                    client.Socket.Send(Encoding.UTF8.GetBytes($"Access-Control-Allow-Origin: *\r\n"));
-                    client.Socket.Send(Encoding.UTF8.GetBytes("\r\n"));
-                    if (bodyBytes.Length > 0)
+                    sb.Append("Content-Type: text/html;charset=utf-8\r\n");
+                    sb.Append("Access-Control-Allow-Credentials: true\r\n");
+                    sb.Append("Access-Control-Allow-Headers: *\r\n");
+                    sb.Append("Access-Control-Allow-Methods: *\r\n");
+                    sb.Append("Access-Control-Allow-Origin: *\r\n");
+                    sb.Append("\r\n");
+                    client.Stream.Write(Encoding.UTF8.GetBytes(sb.ToString()));
+
+                    if (!string.IsNullOrWhiteSpace(body))
                     {
-                        client.Socket.Send(bodyBytes);
+                        client.Stream.Write(Encoding.UTF8.GetBytes(body));
                     }
+                    else if (failModel.Buffer != null && failModel.Buffer.Length > 0)
+                    {
+                        client.Stream.Write(failModel.Buffer);
+                    }
+                    client.Stream.Flush();
                 }
                 client.Remove();
             }

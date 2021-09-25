@@ -201,6 +201,49 @@ namespace client.service.tcpforward
             }, TaskCreationOptions.LongRunning);
         }
 
+        public void BindUnlveReceive(ClientModel client)
+        {
+            client.BufferSize = new byte[1024];
+            client.Stream.BeginRead(client.BufferSize, 0, client.BufferSize.Length, Read, client);
+        }
+        private void Read(IAsyncResult result)
+        {
+            result.AsyncWaitHandle.Close();
+            ClientModel client = (ClientModel)result.AsyncState;
+            try
+            {
+                int count = client.Stream.EndRead(result);
+                if (count == 0)
+                {
+                    ClientCacheModel.Remove(client.RequestId);
+                }
+                else
+                {
+                    if (count < 1024)
+                    {
+                        byte[] temp = new byte[count];
+                        Array.Copy(client.BufferSize, 0, temp, 0, count);
+                        client.BufferSize = temp;
+                    }
+                    Receive(client, client.BufferSize);
+
+                    if (client.Stream.CanRead && ClientCacheModel.Contains(client.RequestId))
+                    {
+                        client.BufferSize = new byte[1024];
+                        client.Stream.BeginRead(client.BufferSize, 0, client.BufferSize.Length, Read, client);
+                    }
+                    else
+                    {
+                        ClientCacheModel.Remove(client.RequestId);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                ClientCacheModel.Remove(client.RequestId);
+            }
+        }
+
         private void Receive(ClientModel client, byte[] data)
         {
             tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg

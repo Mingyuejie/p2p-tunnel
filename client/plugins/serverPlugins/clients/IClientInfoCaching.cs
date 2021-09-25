@@ -15,6 +15,7 @@ namespace server.plugins.register.caching
         public void UpdateTcpLastTime(long id);
         public bool Add(ClientInfo client);
         public bool Get(long id, out ClientInfo client);
+        public ClientInfo GetByName(string name);
         public IEnumerable<ClientInfo> All();
         public IEnumerable<long> AllIds();
         public void Offline(long id);
