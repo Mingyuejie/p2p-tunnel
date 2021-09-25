@@ -16,8 +16,8 @@ namespace client.service.tcpforward
 {
     public class TcpForwardServer
     {
-        private readonly IClientInfoCaching  clientInfoCaching;
-        
+        private readonly IClientInfoCaching clientInfoCaching;
+
         public TcpForwardServer(IClientInfoCaching clientInfoCaching)
         {
             this.clientInfoCaching = clientInfoCaching;
@@ -37,6 +37,7 @@ namespace client.service.tcpforward
 
             Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
             socket.Bind(new IPEndPoint(IPAddress.Any, mapping.SourcePort));
             socket.Listen(int.MaxValue);
 
@@ -100,39 +101,30 @@ namespace client.service.tcpforward
             {
                 Socket socket = server.SourceSocket.EndAccept(result);
                 _ = Interlocked.Increment(ref requestId);
-                long _requestId = requestId;
-                ClientCacheModel.Add(new ClientCacheModel { RequestId = _requestId, SourcePort = server.SourcePort, Socket = socket });
 
-                ClientModel2 client = new()
+                ClientCacheModel client = new ClientCacheModel
                 {
-                    RequestId = _requestId,
+                    RequestId = requestId,
+                    SourcePort = server.SourcePort,
+                    Socket = socket
+                };
+                ClientCacheModel.Add(client);
+                client.Stream = new NetworkStream(socket, false);
+                ClientModel2 client1 = new()
+                {
+                    RequestId = client.RequestId,
                     TargetPort = server.TargetPort,
                     AliveType = server.AliveType,
                     TargetIp = server.TargetIp,
                     SourceSocket = socket,
-                    TargetClient = server.TargetClient
+                    TargetClient = server.TargetClient,
+                    Stream = client.Stream
                 };
-                if (server.AliveType == TcpForwardAliveTypes.UNALIVE)
-                {
-                    var bytes = client.SourceSocket.ReceiveAll();
-                    if (bytes.Length > 0)
-                    {
-                        Receive(client, bytes);
-                    }
-                    else
-                    {
-                        ClientCacheModel.Remove(client.RequestId);
-                    }
-                }
-                else
-                {
-                    BindReceive(client);
-                }
+                BindReceive(client1);
             }
             catch (Exception)
             {
                 Stop(server.SourcePort);
-
             }
         }
 
@@ -140,11 +132,11 @@ namespace client.service.tcpforward
         {
             Task.Factory.StartNew((e) =>
             {
-                while (client.SourceSocket.Connected && ClientCacheModel.Contains(client.RequestId))
+                while (client.Stream.CanRead && ClientCacheModel.Contains(client.RequestId))
                 {
                     try
                     {
-                        var bytes = client.SourceSocket.ReceiveAll();
+                        var bytes = client.Stream.ReceiveAll();
                         if (bytes.Length > 0)
                         {
                             Receive(client, bytes);
@@ -161,6 +153,7 @@ namespace client.service.tcpforward
                         break;
                     }
                 }
+                ClientCacheModel.Remove(client.RequestId);
             }, TaskCreationOptions.LongRunning);
         }
 
@@ -179,6 +172,7 @@ namespace client.service.tcpforward
                     }
                 }
             }
+
             OnRequest.Push(new TcpForwardRequestModel
             {
                 Msg = new TcpForwardModel
@@ -217,9 +211,10 @@ namespace client.service.tcpforward
             {
                 try
                 {
-                    if (client.Socket.Connected)
+                    if (client.Stream.CanWrite)
                     {
-                        int length = client.Socket.Send(model.Buffer, SocketFlags.None);
+                        client.Stream.Write(model.Buffer);
+                        client.Stream.Flush();
                     }
                 }
                 catch (Exception)
@@ -228,54 +223,41 @@ namespace client.service.tcpforward
             }
         }
 
-        public void ResponseEnd(TcpForwardModel model)
-        {
-            if (ClientCacheModel.Get(model.RequestId, out ClientCacheModel client) && client != null)
-            {
-                try
-                {
-                    if (client.Socket.Connected)
-                    {
-                        int length = client.Socket.Send(model.Buffer, SocketFlags.None);
-                    }
-                }
-                catch (Exception)
-                {
-                }
-                if (model.AliveType == TcpForwardAliveTypes.UNALIVE)
-                {
-                    client.Remove();
-                }
-            }
-        }
 
-        public void Fail(TcpForwardModel failModel, string body = "snltty")
+        public void Fail(TcpForwardModel failModel, string body = "")
         {
             if (ClientCacheModel.Get(failModel.RequestId, out ClientCacheModel client) && client != null)
             {
                 if (failModel.AliveType == TcpForwardAliveTypes.UNALIVE)
                 {
-                    try
+                    byte[] bodyBytes = Array.Empty<byte>();
+                    if (failModel.Buffer.IsOptionsMethod())
                     {
-                        var bodyBytes = Encoding.UTF8.GetBytes(body);
-                        _ = client.Socket.Send(Encoding.UTF8.GetBytes("HTTP/1.1 500 OK\r\n"));
-                        _ = client.Socket.Send(Encoding.UTF8.GetBytes("Content-Type: text/html;charset=utf-8\r\n"));
-                        _ = client.Socket.Send(Encoding.UTF8.GetBytes($"Content-Length:{bodyBytes.Length}\r\n"));
-                        _ = client.Socket.Send(Encoding.UTF8.GetBytes($"Access-Control-Allow-Credentials: true\r\n"));
-                        _ = client.Socket.Send(Encoding.UTF8.GetBytes($"Access-Control-Allow-Headers: *\r\n"));
-                        _ = client.Socket.Send(Encoding.UTF8.GetBytes($"Access-Control-Allow-Methods: *\r\n"));
-                        _ = client.Socket.Send(Encoding.UTF8.GetBytes($"Access-Control-Allow-Origin: *\r\n"));
-
-                        _ = client.Socket.Send(Encoding.UTF8.GetBytes("\r\n"));
-                        _ = client.Socket.Send(bodyBytes);
+                        client.Socket.Send(Encoding.UTF8.GetBytes("HTTP/1.1 204 No Content\r\n"));
                     }
-                    catch (Exception)
+                    else
                     {
+                        client.Socket.Send(Encoding.UTF8.GetBytes("HTTP/1.1 404 Not Found\r\n"));
+                        if (string.IsNullOrWhiteSpace(body))
+                        {
+                            bodyBytes = failModel.Buffer;
+                        }
+                        else
+                        {
+                            bodyBytes = Encoding.UTF8.GetBytes(body);
+                        }
                     }
-                }
-                if (failModel.Buffer != null)
-                {
-                    //Logger.Instance.Info(failModel.Buffer.Length.ToString());
+                    client.Socket.Send(Encoding.UTF8.GetBytes($"Content-Length:{bodyBytes.Length}\r\n"));
+                    client.Socket.Send(Encoding.UTF8.GetBytes("Content-Type: text/html;charset=utf-8\r\n"));
+                    client.Socket.Send(Encoding.UTF8.GetBytes($"Access-Control-Allow-Credentials: true\r\n"));
+                    client.Socket.Send(Encoding.UTF8.GetBytes($"Access-Control-Allow-Headers: *\r\n"));
+                    client.Socket.Send(Encoding.UTF8.GetBytes($"Access-Control-Allow-Methods: *\r\n"));
+                    client.Socket.Send(Encoding.UTF8.GetBytes($"Access-Control-Allow-Origin: *\r\n"));
+                    client.Socket.Send(Encoding.UTF8.GetBytes("\r\n"));
+                    if (bodyBytes.Length > 0)
+                    {
+                        client.Socket.Send(bodyBytes);
+                    }
                 }
                 client.Remove();
             }
@@ -338,6 +320,8 @@ namespace client.service.tcpforward
         public Socket Socket { get; set; }
         public long RequestId { get; set; }
 
+        public NetworkStream Stream { get; set; }
+
         public static bool Add(ClientCacheModel model)
         {
             return clients.TryAdd(model.RequestId, model);
@@ -358,6 +342,14 @@ namespace client.service.tcpforward
             if (clients.TryRemove(id, out ClientCacheModel c))
             {
                 c.Socket.SafeClose();
+                try
+                {
+                    c.Stream.Close();
+                    c.Stream.Dispose();
+                }
+                catch (Exception)
+                {
+                }
             }
         }
         public static void Clear(int sourcePort)

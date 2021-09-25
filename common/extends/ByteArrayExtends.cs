@@ -23,6 +23,17 @@ namespace common.extends
         }
 
 
+        private static byte[] optionsBytes = Encoding.ASCII.GetBytes("OPTIONS");
+        public static bool IsOptionsMethod(this byte[] lines)
+        {
+            return lines.IsMethod(optionsBytes);
+        }
+
+        public static bool IsMethod(this byte[] lines, byte[] method)
+        {
+            return lines.Length > method.Length && Enumerable.SequenceEqual(lines.Take(method.Length), method);
+        }
+
         private static byte[] chunkedHeaderBytes = Encoding.ASCII.GetBytes("Transfer-Encoding: chunked");
         /// <summary>
         /// 判断是否分块传输
@@ -52,6 +63,12 @@ namespace common.extends
         public static bool IsKeepAline(this byte[] lines)
         {
             return HeaderEqual(lines, keepaliveHeaderBytes);
+        }
+
+        private static byte[] contentLengthHeaderBytes = Encoding.ASCII.GetBytes("Content-Length:");
+        public static bool IsContentLength(this byte[] lines)
+        {
+            return HeaderEqual(lines, contentLengthHeaderBytes);
         }
 
         public static bool HeaderEqual(this byte[] lines, byte[] headerBytes)

@@ -1,6 +1,12 @@
 {
-  "SourcePort": 5411,
-  "TargetName": "",
-  "TargetPort": 5412,
+  "Clients": [
+    {
+      "SourcePort": 5411,
+      "TargetName": "",
+      "TargetPort": 5412
+    }
+  ],
+  "ServerPort": 5412,
+  "UseServer": false,
   "Password": "000000"
 }

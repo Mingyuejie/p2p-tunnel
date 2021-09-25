@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-24 14:36:58
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-24 14:58:37
+ * @LastEditTime: 2021-09-25 17:08:47
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\SettingModal.vue
@@ -13,10 +13,10 @@
             <el-button size="mini">配置</el-button>
         </slot>
     </span>
-    <el-dialog title="配置" destroy-on-close v-model="showAdd" center :close-on-click-modal="false" width="80rem">
+    <el-dialog title="配置" v-model="showAdd" center :close-on-click-modal="false" width="80rem">
         <el-form ref="formDom" :model="form" :rules="rules" label-width="0">
             <el-form-item label="" prop="Content" label-width="0">
-                <vue-json-editor v-if="showAdd" ref="editor" :value="form.Content" style="height:400px" mode="code" :exapndedOnStart="true" />
+                <div id="editor"></div>
             </el-form-item>
         </el-form>
         <template #footer>
@@ -30,26 +30,43 @@
 import { toRefs, reactive, ref } from '@vue/reactivity';
 import { loadSetting, saveSetting } from '../../apis/plugins/setting'
 import { ElMessage } from 'element-plus'
-import vueJsonEditor from 'vue-json-editor'
+import { nextTick } from '@vue/runtime-core';
+import JSONEditor from 'jsoneditor'
 export default {
     props: ['className'],
     emits: ['success'],
-    components: { vueJsonEditor },
     setup (props, { emit }) {
         const state = reactive({
             loading: false,
             showAdd: false,
+            showEditor: false,
             form: {
                 ClassName: props.className,
-                Content: { a: 111 }
+                Content: ''
             },
             rules: {
             }
         });
         const handleEdit = () => {
+            state.showAdd = false;
+            state.showEditor = false;
             loadSetting(state.form.ClassName).then((res) => {
                 state.form.Content = res;
                 state.showAdd = true;
+                initEditor();
+            });
+        }
+
+        let editor = null;
+        const initEditor = () => {
+            nextTick(() => {
+                const container = document.getElementById("editor");
+                container.innerHTML = '';
+                const options = {
+                    mode: 'code'
+                }
+                editor = new JSONEditor(container, options);
+                editor.set(state.form.Content);
             });
         }
 
@@ -60,7 +77,7 @@ export default {
                     return false;
                 }
                 state.loading = true;
-                saveSetting(state.form.ClassName, JSON.stringify(editor.value.json)).then(() => {
+                saveSetting(state.form.ClassName, JSON.stringify(editor.get())).then(() => {
                     state.loading = false;
                     state.showAdd = false;
                     ElMessage.success('以保存');
@@ -73,20 +90,19 @@ export default {
         }
 
         return {
-            ...toRefs(state), formDom, handleEdit, handleSubmit
+            ...toRefs(state), formDom, editor, handleEdit, handleSubmit
         }
     }
 }
 </script>
 <style lang="stylus" scoped></style>
 <style lang="stylus">
-.jsoneditor-vue
-    height: 100%;
+.jsoneditor-outer
+    height: 30rem;
+    margin: 0;
+    padding: 0;
+    border: 1px solid #ddd;
 
-div.jsoneditor
-    border-color: var(--main-color);
-
-div.jsoneditor-menu
-    background-color: var(--main-color);
-    border-color: var(--main-color);
+div.jsoneditor-menu, .jsoneditor-statusbar
+    display: none;
 </style>

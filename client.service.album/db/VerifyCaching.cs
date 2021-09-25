@@ -22,7 +22,7 @@ namespace client.service.album.db
         public string Sign(string password)
         {
             string token = string.Empty;
-            if (password == albumSettingModel.Password)
+            if (password == albumSettingModel.AdminPssd)
             {
                 token = $"{Guid.NewGuid()}_{Helper.GetTimeStamp()}".Md5();
 

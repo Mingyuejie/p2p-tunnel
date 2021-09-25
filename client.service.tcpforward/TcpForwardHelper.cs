@@ -80,9 +80,6 @@ namespace client.service.tcpforward
                 case TcpForwardType.RESPONSE:
                     tcpForwardServer.Response(arg.Data);
                     break;
-                case TcpForwardType.RESPONSE_END:
-                    tcpForwardServer.ResponseEnd(arg.Data);
-                    break;
                 //A收到B的错误回复
                 case TcpForwardType.FAIL:
                     tcpForwardServer.Fail(arg.Data);
@@ -108,7 +105,7 @@ namespace client.service.tcpforward
                     {
                         RequestId = arg.Data.RequestId,
                         Type = TcpForwardType.FAIL,
-                        Buffer = Encoding.UTF8.GetBytes("目标端口未在端口白名单中"),
+                        Buffer = Encoding.UTF8.GetBytes("目标端口不在端口白名单中"),
                         AliveType = arg.Data.AliveType
                     },
                     Socket = arg.Packet.TcpSocket
@@ -148,21 +145,15 @@ namespace client.service.tcpforward
 
                     DnsEndPoint dnsEndPoint = new(arg.Data.TargetIp, arg.Data.TargetPort);
                     socket.Connect(dnsEndPoint);
+                    client.Stream = new NetworkStream(socket, false);
 
-
-                    if (arg.Data.AliveType == TcpForwardAliveTypes.ALIVE)
-                    {
-                        ClientModel.Add(client);
-                        BindReceive(client);
-                    }
+                    ClientModel.Add(client);
+                    BindReceive(client);
                 }
                 if (client.TargetSocket.Connected)
                 {
-                    _ = client.TargetSocket.Send(arg.Data.Buffer);
-                    if (arg.Data.AliveType == TcpForwardAliveTypes.UNALIVE)
-                    {
-                        BindUnliveReceive(client);
-                    }
+                    client.Stream.Write(arg.Data.Buffer);
+                    client.Stream.Flush();
                 }
             }
             catch (Exception ex)
@@ -182,69 +173,15 @@ namespace client.service.tcpforward
             }
         }
 
-        private void BindUnliveReceive(ClientModel client)
-        {
-            var bytes = client.TargetSocket.ReceiveAll();
-            //分块传输
-            if (bytes.IsChunked())
-            {
-                //第一次传完
-                if (bytes.IsChunkedEnd())
-                {
-                    ReceiveChunkedEnd(client, bytes, client.SourceSocket);
-                    client.Remove();
-                }
-                else
-                {
-                    Receive(client, bytes);
-                    while (true)
-                    {
-                        try
-                        {
-                            var bytes1 = client.TargetSocket.ReceiveAll();
-                            if (bytes1.Length > 0)
-                            {
-                                Receive(client, bytes1);
-                                if (bytes1.IsChunkedEnd())
-                                {
-                                    ReceiveChunkedEnd(client, bytes1, client.SourceSocket);
-                                    client.Remove();
-                                    break;
-                                }
-                                else
-                                {
-                                    Receive(client, bytes1);
-                                }
-                            }
-                            else
-                            {
-                                client.Remove();
-                            }
-                        }
-                        catch (Exception)
-                        {
-                            client.Remove();
-                            break;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                ReceiveChunkedEnd(client, bytes, client.SourceSocket);
-                client.Remove();
-            }
-        }
-
         private void BindReceive(ClientModel client)
         {
             _ = Task.Factory.StartNew(() =>
             {
-                while (client.TargetSocket.Connected && ClientModel.Contains(client.RequestId))
+                while (client.Stream.CanRead && ClientModel.Contains(client.RequestId))
                 {
                     try
                     {
-                        var bytes = client.TargetSocket.ReceiveAll();
+                        var bytes = client.Stream.ReceiveAll();
                         if (bytes.Length > 0)
                         {
                             Receive(client, bytes);
@@ -260,6 +197,7 @@ namespace client.service.tcpforward
                         break;
                     }
                 }
+                client.Remove();
             }, TaskCreationOptions.LongRunning);
         }
 
@@ -277,23 +215,6 @@ namespace client.service.tcpforward
                     TargetIp = client.TargetIp
                 },
                 Socket = client.SourceSocket
-            });
-        }
-
-        private void ReceiveChunkedEnd(ClientModel client, byte[] data, Socket sourceSocket)
-        {
-            tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
-            {
-                Data = new TcpForwardModel
-                {
-                    RequestId = client.RequestId,
-                    Buffer = data,
-                    Type = TcpForwardType.RESPONSE_END,
-                    TargetPort = client.TargetPort,
-                    AliveType = client.AliveType,
-                    TargetIp = client.TargetIp
-                },
-                Socket = sourceSocket
             });
         }
 
@@ -332,10 +253,10 @@ namespace client.service.tcpforward
                     return "已存在相同源端口的记录";
                 }
 
-                if (Helper.GetUsedPort().Contains(model.SourcePort))
-                {
-                    return "源端口已被其它程序占用";
-                }
+                //if (Helper.GetUsedPort().Contains(model.SourcePort))
+                //{
+                //    return "源端口已被其它程序占用";
+                //}
 
                 int addid = Mappings.Count == 0 ? 1 : Mappings.Max(c => c.ID) + 1;
                 model.ID = addid;
@@ -374,25 +295,28 @@ namespace client.service.tcpforward
         {
             try
             {
-                TcpForwardRecordModel model2 = new()
+                if (model != null)
                 {
-                    AliveType = model.AliveType,
-                    SourceIp = model.SourceIp,
-                    SourcePort = model.SourcePort,
-                    TargetIp = model.TargetIp,
-                    TargetName = model.TargetName,
-                    TargetPort = model.TargetPort,
-                    Desc = model.Desc,
-                    Editable = model.Editable
-                };
+                    TcpForwardRecordModel model2 = new()
+                    {
+                        AliveType = model.AliveType,
+                        SourceIp = model.SourceIp,
+                        SourcePort = model.SourcePort,
+                        TargetIp = model.TargetIp,
+                        TargetName = model.TargetName,
+                        TargetPort = model.TargetPort,
+                        Desc = model.Desc,
+                        Editable = model.Editable
+                    };
 
-                model2.Client = clientInfoCaching.All().FirstOrDefault(c => c.Name == model.TargetName);
-                if (model2.Client == null)
-                {
-                    model2.Client = new ClientInfo { Name = model.TargetName };
+                    model2.Client = clientInfoCaching.All().FirstOrDefault(c => c.Name == model.TargetName);
+                    if (model2.Client == null)
+                    {
+                        model2.Client = new ClientInfo { Name = model.TargetName };
+                    }
+                    tcpForwardServer.Start(model2);
+                    SaveConfig();
                 }
-                tcpForwardServer.Start(model2);
-                SaveConfig();
                 return string.Empty;
             }
             catch (Exception ex)
@@ -478,6 +402,7 @@ namespace client.service.tcpforward
         public string TargetIp { get; set; } = string.Empty;
         public int TargetPort { get; set; } = 0;
         public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.UNALIVE;
+        public NetworkStream Stream { get; set; }
 
         private readonly static ConcurrentDictionary<long, ClientModel> clients = new();
 
@@ -501,6 +426,14 @@ namespace client.service.tcpforward
             if (clients.TryRemove(id, out ClientModel c))
             {
                 c.TargetSocket.SafeClose();
+                try
+                {
+                    c.Stream.Close();
+                    c.Stream.Dispose();
+                }
+                catch (Exception)
+                {
+                }
             }
         }
 

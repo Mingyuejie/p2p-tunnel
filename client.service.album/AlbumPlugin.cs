@@ -37,6 +37,7 @@ namespace client.service.album
 
             albumSettingModel.Clients = setting.Clients;
             albumSettingModel.ServerPort = setting.ServerPort;
+            albumSettingModel.UseServer = setting.UseServer;
             albumSettingModel.SaveConfig();
 
             foreach (var item in albumSettingModel.Clients)
@@ -60,7 +61,11 @@ namespace client.service.album
 
             Program.Stop();
             Logger.Instance.Info($"图片相册服务已关闭...");
-            Program.Run();
+            if (albumSettingModel.UseServer)
+            {
+                Program.Run();
+                Logger.Instance.Info($"图片相册服务已启动...");
+            }
         }
 
         public object Load(ClientServicePluginExcuteWrap arg)
@@ -76,7 +81,8 @@ namespace client.service.album
            new AlbumSettingClientModel{  SourcePort = 5411, TargetPort = 5412,TargetName = string.Empty}
         };
         public int ServerPort { get; set; } = 5412;
-        public string Password { get; set; } = string.Empty;
+        public bool UseServer { get; set; } = false;
+        public string AdminPssd { get; set; } = string.Empty;
 
         public static AlbumSettingModel ReadConfig()
         {
@@ -135,7 +141,11 @@ namespace client.service.album
                 tcpForwardHelper.Start(tcpForwardHelper.GetByPort(item.SourcePort));
             }
 
-            Program.Run();
+            if (config.UseServer)
+            {
+                Program.Run();
+                Logger.Instance.Info($"图片相册服务已启动...");
+            }
             return obj;
         }
     }

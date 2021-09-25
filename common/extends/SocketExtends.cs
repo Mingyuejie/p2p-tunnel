@@ -9,6 +9,31 @@ namespace common.extends
 {
     public static class SocketExtends
     {
+        public static byte[] ReceiveAll(this NetworkStream stream)
+        {
+            List<byte> bytes = new();
+            do
+            {
+                byte[] buffer = new byte[1024];
+                int len = stream.Read(buffer);
+                if (len == 0)
+                {
+                    return Array.Empty<byte>();
+                }
+                if (len < 1024)
+                {
+                    byte[] temp = new byte[len];
+                    Array.Copy(buffer, 0, temp, 0, len);
+                    buffer = temp;
+                }
+                bytes.AddRange(buffer);
+
+            } while (stream.DataAvailable);
+
+            return bytes.ToArray();
+        }
+
+
         public static byte[] ReceiveAll(this Socket socket)
         {
             List<byte> bytes = new();
