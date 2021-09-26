@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-20 09:12:44
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-24 22:14:21
+ * @LastEditTime: 2021-09-26 09:39:41
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\main.js
@@ -23,5 +23,6 @@ import vuepressTheme from '@kangc/v-md-editor/lib/theme/vuepress.js';
 import '@kangc/v-md-editor/lib/theme/style/vuepress.css';
 VMdPreview.use(vuepressTheme);
 
+import auth from './components/auth'
 
-createApp(App).use(VMdPreview).use(ElementPlus).use(router).mount('#app');
+createApp(App).use(auth).use(VMdPreview).use(ElementPlus).use(router).mount('#app');

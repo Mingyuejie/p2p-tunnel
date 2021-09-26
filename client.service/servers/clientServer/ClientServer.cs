@@ -142,8 +142,8 @@ namespace client.service.servers.clientServer
                             Websockets = websockets,
                             Path = model.Path
                         };
-                        object resultAsync = plugin.Item2.Invoke(plugin.Item1, new object[] { param });
 
+                        object resultAsync = plugin.Item2.Invoke(plugin.Item1, new object[] { param });
                         object resultObject = null;
                         if (resultAsync is Task task)
                         {
@@ -225,6 +225,11 @@ namespace client.service.servers.clientServer
                 Desc = c.Value.Desc,
                 ClassName = c.Value.GetType().Name
             });
+        }
+
+        public IEnumerable<string> GetPlugins()
+        {
+            return plugins.Select(c => c.Value.Item1.GetType().Name).Distinct();
         }
     }
 

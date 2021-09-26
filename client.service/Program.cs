@@ -1,4 +1,6 @@
 ﻿using client.service.album;
+using client.service.ftp;
+using client.service.ftp.server;
 using client.service.plugins.punchHolePlugins;
 using client.service.plugins.serverPlugins;
 using client.service.plugins.serverPlugins.register;
@@ -6,6 +8,7 @@ using client.service.servers.clientServer;
 using client.service.servers.clientServer.plugins;
 using client.service.servers.webServer;
 using client.service.tcpforward;
+using client.service.upnp;
 using common;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -28,33 +31,43 @@ namespace client.service
             serviceCollection.AddSingleton((e) => serviceProvider);
 
             //外部程序集的插件
-            var externalAddembly = new[] { 
+            var externalAddembly = new[] {
                 typeof(AlbumSettingPlugin).Assembly,
-                typeof(TcpForwardPlugin).Assembly };
+                typeof(TcpForwardPlugin).Assembly,
+                typeof(UpnpPlugin).Assembly,
+              //  typeof(FtpServerPlugin).Assembly,
+            };
 
-            serviceCollection.AddServerPlugin()
-                    .AddPunchHolePlugin()//打洞
+            serviceCollection
+                //基础的功能
+                .AddServerPlugin()
+                .AddPunchHolePlugin()//打洞
+                .AddClientServer() //客户端管理
+                .AddWebServer()//客户端页面
 
-                    .AddTcpForwardPlugin()  //tcp转发
-                    .AddServerPlugin(externalAddembly).AddClientServer(externalAddembly)
-
-                    .AddAlbumPlugin() //图片相册插件
-                    .AddClientServer() //客户端管理
-                    .AddUpnpPlugin()//upnp映射
-                    .AddWebServer();//客户端页面
+                //外部插件
+                .AddServerPlugin(externalAddembly).AddClientServer(externalAddembly)
+                .AddTcpForwardPlugin()  //tcp转发
+                .AddAlbumPlugin() //图片相册插件
+                .AddUpnpPlugin()//upnp映射
+                                //.AddFtpPlugin(); //文件服务
+                ;
 
             serviceProvider = serviceCollection.BuildServiceProvider();
-            serviceProvider.UseServerPlugin()
+            serviceProvider
+                //基础的功能
+                .UseServerPlugin()
                 .UsePunchHolePlugin()//打洞
-
-                .UseTcpForwardPlugin()//tcp转发
-                .UseServerPlugin(externalAddembly).UseClientServer(externalAddembly)
-
-                .UseAlbumPlugin() //图片相册插件
                 .UseClientServer()//客户端管理
-                .UseUpnpPlugin()//upnp映射
-                .UseWebServer();//客户端页面
+                .UseWebServer()//客户端页面
 
+                //外部插件
+                .UseServerPlugin(externalAddembly).UseClientServer(externalAddembly)
+                .UseTcpForwardPlugin()//tcp转发
+                .UseAlbumPlugin() //图片相册插件
+                .UseUpnpPlugin()//upnp映射
+                                // .UseFtpPlugin() //文件服务
+               ;
             //自动注册
             if (config.Client.AutoReg)
             {

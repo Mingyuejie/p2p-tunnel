@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-25 23:46:02
+ * @LastEditTime: 2021-09-26 09:47:36
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -16,25 +16,29 @@
             <router-link :to="{name:'Home'}">首页</router-link>
             <router-link :to="{name:'Register'}">注册服务 <i class="el-icon-circle-check" :class="{active:LocalInfo.TcpConnected}"></i></router-link>
             <el-dropdown>
-                <!-- <router-link class="el-dropdown-link" :to="{name:'Pugins'}">应用插件 <i class="el-icon-arrow-down el-icon--right"></i></router-link> -->
                 <span class="el-dropdown-link">应用插件 <i class="el-icon-arrow-down el-icon--right"></i></span>
                 <template #dropdown>
                     <el-dropdown-menu>
-                        <!-- <el-dropdown-item>
-                            <router-link class="el-dropdown-link" :to="{name:'Pugins'}">插件设置</router-link>
-                        </el-dropdown-item> -->
-                        <el-dropdown-item>
-                            <router-link :to="{name:'PluginTcpForward'}">TCP转发 <i class="el-icon-circle-check" :class="{active:tcpForwardConnected}"></i></router-link>
-                        </el-dropdown-item>
-                        <el-dropdown-item>
-                            <router-link :to="{name:'PluginAlbum'}">图片相册</router-link>
-                        </el-dropdown-item>
-                        <el-dropdown-item>
-                            <router-link :to="{name:'PluginUPNP'}">UPNP映射</router-link>
-                        </el-dropdown-item>
-                        <el-dropdown-item>
-                            <router-link :to="{name:'PluginWakeUp'}">幻数据包</router-link>
-                        </el-dropdown-item>
+                        <auth-item name="TcpForwardPlugin">
+                            <el-dropdown-item>
+                                <router-link :to="{name:'PluginTcpForward'}">TCP转发 <i class="el-icon-circle-check" :class="{active:tcpForwardConnected}"></i></router-link>
+                            </el-dropdown-item>
+                        </auth-item>
+                        <auth-item name="AlbumSettingPlugin">
+                            <el-dropdown-item>
+                                <router-link :to="{name:'PluginAlbum'}">图片相册</router-link>
+                            </el-dropdown-item>
+                        </auth-item>
+                        <auth-item name="UpnpPlugin">
+                            <el-dropdown-item>
+                                <router-link :to="{name:'PluginUPNP'}">UPNP映射</router-link>
+                            </el-dropdown-item>
+                        </auth-item>
+                        <auth-item name="WakeUpPlugin">
+                            <el-dropdown-item>
+                                <router-link :to="{name:'PluginWakeUp'}">幻数据包</router-link>
+                            </el-dropdown-item>
+                        </auth-item>
                     </el-dropdown-menu>
                 </template>
             </el-dropdown>
@@ -55,8 +59,9 @@ import { injectFileserver } from '../states/fileserver'
 import { subNotifyMsg } from '../apis/request'
 import { ElNotification } from 'element-plus'
 import Theme from './Theme.vue'
+import AuthItem from './auth/AuthItem.vue';
 export default {
-    components: { Theme },
+    components: { Theme, AuthItem },
     setup () {
         const registerState = injectRegister();
         const websocketState = injectWebsocket();

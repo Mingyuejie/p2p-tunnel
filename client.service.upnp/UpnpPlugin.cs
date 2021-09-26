@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace client.service.servers.clientServer.plugins
+namespace client.service.upnp
 {
     public class UpnpHelper
     {

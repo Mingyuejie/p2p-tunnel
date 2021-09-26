@@ -21,6 +21,11 @@ namespace client.service.servers.clientServer.plugins
             return clientServer.GetSettingPlugins();
         }
 
+        public IEnumerable<string> Plugins(ClientServicePluginExcuteWrap arg)
+        {
+            return clientServer.GetPlugins();
+        }
+
         public object Load(ClientServicePluginExcuteWrap arg)
         {
             SaveParam model = arg.Content.DeJson<SaveParam>();
@@ -38,7 +43,11 @@ namespace client.service.servers.clientServer.plugins
             var plugin = clientServer.GetSettingPlugin(model.ClassName);
             if (plugin != null)
             {
-                plugin.SaveSetting(model.Content);
+                string msg = plugin.SaveSetting(model.Content);
+                if (!string.IsNullOrWhiteSpace(msg))
+                {
+                    arg.SetCode(-1, msg);
+                }
             }
         }
     }

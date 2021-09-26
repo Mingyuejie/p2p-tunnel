@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace client.servers.clientServer
 {
@@ -13,6 +9,7 @@ namespace client.servers.clientServer
         public void LoadPlugins(Assembly[] assemblys);
         public IEnumerable<SettingPluginInfo> GetSettingPlugins();
         public IClientServiceSettingPlugin GetSettingPlugin(string className);
+        public IEnumerable<string> GetPlugins();
     }
 
     public class SettingPluginInfo

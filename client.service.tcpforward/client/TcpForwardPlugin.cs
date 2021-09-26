@@ -27,10 +27,11 @@ namespace client.service.tcpforward.client
             return tcpForwardSettingModel;
         }
 
-        public void SaveSetting(string jsonStr)
+        public string SaveSetting(string jsonStr)
         {
             TcpForwardSettingModel model = jsonStr.DeJson<TcpForwardSettingModel>();
             model.SaveConfig();
+            return string.Empty;
         }
 
         public void Add(ClientServicePluginExcuteWrap arg)

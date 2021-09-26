@@ -31,7 +31,7 @@ namespace client.service.album
             return albumSettingModel;
         }
 
-        public void SaveSetting(string jsonStr)
+        public string SaveSetting(string jsonStr)
         {
             AlbumSettingModel setting = jsonStr.DeJson<AlbumSettingModel>();
 
@@ -40,6 +40,7 @@ namespace client.service.album
             albumSettingModel.UseServer = setting.UseServer;
             albumSettingModel.SaveConfig();
 
+            tcpForwardHelper.DelByGroup("album");
             foreach (var item in albumSettingModel.Clients)
             {
                 var model = new TcpForwardRecordBaseModel
@@ -52,11 +53,19 @@ namespace client.service.album
                     TargetIp = IPAddress.Loopback.ToString(),
                     TargetName = item.TargetName,
                     Editable = false,
-                    Desc = "图片相册插件"
+                    Desc = "图片相册插件",
+                    Group = "album"
                 };
-                tcpForwardHelper.DelByPort(item.SourcePort);
-                tcpForwardHelper.Add(model);
-                tcpForwardHelper.Start(tcpForwardHelper.GetByPort(item.SourcePort));
+                string msg = tcpForwardHelper.Add(model);
+                if (!string.IsNullOrWhiteSpace(msg))
+                {
+                    return msg;
+                }
+                msg = tcpForwardHelper.Start(tcpForwardHelper.GetByPort(item.SourcePort));
+                if (!string.IsNullOrWhiteSpace(msg))
+                {
+                    return msg;
+                }
             }
 
             Program.Stop();
@@ -66,6 +75,7 @@ namespace client.service.album
                 Program.Run();
                 Logger.Instance.Info($"图片相册服务已启动...");
             }
+            return string.Empty;
         }
 
         public object Load(ClientServicePluginExcuteWrap arg)
@@ -122,6 +132,8 @@ namespace client.service.album
             TcpForwardHelper tcpForwardHelper = obj.GetService<TcpForwardHelper>();
             AlbumSettingModel config = obj.GetService<AlbumSettingModel>();
 
+
+            tcpForwardHelper.DelByGroup("album");
             foreach (var item in config.Clients)
             {
                 var model = new TcpForwardRecordBaseModel
@@ -134,11 +146,22 @@ namespace client.service.album
                     TargetIp = IPAddress.Loopback.ToString(),
                     TargetName = item.TargetName,
                     Editable = false,
-                    Desc = "图片相册插件"
+                    Desc = "图片相册插件",
+                    Group = "album"
                 };
-                tcpForwardHelper.DelByPort(item.SourcePort);
-                tcpForwardHelper.Add(model);
-                tcpForwardHelper.Start(tcpForwardHelper.GetByPort(item.SourcePort));
+                string msg = tcpForwardHelper.Add(model);
+                if (!string.IsNullOrWhiteSpace(msg))
+                {
+                    Logger.Instance.Error(msg);
+                }
+                else
+                {
+                    msg = tcpForwardHelper.Start(tcpForwardHelper.GetByPort(item.SourcePort));
+                    if (!string.IsNullOrWhiteSpace(msg))
+                    {
+                        Logger.Instance.Error(msg);
+                    }
+                }
             }
 
             if (config.UseServer)
@@ -149,6 +172,4 @@ namespace client.service.album
             return obj;
         }
     }
-
-
 }

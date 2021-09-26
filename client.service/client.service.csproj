@@ -47,12 +47,13 @@
 	  <None Remove="各平台发布命令.txt" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="Mono.Nat" Version="3.0.1" />
 		<PackageReference Include="SharpPcap" Version="6.0.0" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\client.service.album\client.service.album.csproj" />
+		<ProjectReference Include="..\client.service.ftp\client.service.ftp.csproj" />
 		<ProjectReference Include="..\client.service.tcpforward\client.service.tcpforward.csproj" />
+		<ProjectReference Include="..\client.service.upnp\client.service.upnp.csproj" />
 		<ProjectReference Include="..\client\client.csproj" />
 		<ProjectReference Include="..\common\common.csproj" />
 		<ProjectReference Include="..\server\server.csproj" />

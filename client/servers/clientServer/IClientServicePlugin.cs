@@ -19,7 +19,7 @@ namespace client.servers.clientServer
         string Author { get; }
         string Desc { get; }
         object LoadSetting();
-        void SaveSetting(string jsonStr);
+        string SaveSetting(string jsonStr);
     }
 
     [ProtoContract]

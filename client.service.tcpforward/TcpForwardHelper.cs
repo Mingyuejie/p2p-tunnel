@@ -26,6 +26,8 @@ namespace client.service.tcpforward
         private readonly IClientInfoCaching clientInfoCaching;
         private readonly TcpForwardSettingModel tcpForwardSettingModel;
 
+        private int maxId = 0;
+
         public TcpForwardHelper(TcpForwardServer tcpForwardServer, TcpForwardEventHandles tcpForwardEventHandles,
             IClientInfoCaching clientInfoCaching, TcpForwardSettingModel tcpForwardSettingModel)
         {
@@ -281,6 +283,16 @@ namespace client.service.tcpforward
             }
             return SaveConfig();
         }
+        public string DelByGroup(string group)
+        {
+            var olds = Mappings.Where(c => c.Group == group).ToArray();
+            for (int i = 0; i < olds.Length; i++)
+            {
+                Stop(olds[i]);
+                _ = Mappings.Remove(olds[i]);
+            }
+            return SaveConfig();
+        }
         public TcpForwardRecordBaseModel GetByPort(int port)
         {
             return Mappings.FirstOrDefault(c => c.SourcePort == port);
@@ -301,8 +313,8 @@ namespace client.service.tcpforward
                 //    return "源端口已被其它程序占用";
                 //}
 
-                int addid = Mappings.Count == 0 ? 1 : Mappings.Max(c => c.ID) + 1;
-                model.ID = addid;
+                System.Threading.Interlocked.Increment(ref maxId);
+                model.ID = maxId;
                 Mappings.Add(model);
             }
             else
@@ -322,6 +334,7 @@ namespace client.service.tcpforward
                 idmap.TargetIp = model.TargetIp;
                 idmap.Desc = model.Desc;
                 idmap.Editable = model.Editable;
+                idmap.Group = model.Group;
             }
 
             _ = SaveConfig();
@@ -407,6 +420,8 @@ namespace client.service.tcpforward
                         c.Listening = false;
                     });
                     Mappings = config.Mappings;
+
+                    maxId = Mappings.Count == 0 ? 1 : Mappings.Max(c => c.ID);
                 }
             }
         }

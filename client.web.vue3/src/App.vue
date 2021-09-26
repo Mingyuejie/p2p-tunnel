@@ -2,26 +2,28 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-05 20:09:20
+ * @LastEditTime: 2021-09-26 09:41:30
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\App.vue
 -->
 <template>
     <el-config-provider :locale="locale">
-        <div class="body absolute">
-            <div class="wrap flex flex-column flex-nowrap h-100">
-                <div class="menu">
-                    <Menu></Menu>
-                </div>
-                <div class="content flex-1 relative scrollbar-10">
-                    <router-view />
-                </div>
-                <div class="copyright">
-                    @snltty
+        <auth-wrap>
+            <div class="body absolute">
+                <div class="wrap flex flex-column flex-nowrap h-100">
+                    <div class="menu">
+                        <Menu></Menu>
+                    </div>
+                    <div class="content flex-1 relative scrollbar-10">
+                        <router-view />
+                    </div>
+                    <div class="copyright">
+                        @snltty
+                    </div>
                 </div>
             </div>
-        </div>
+        </auth-wrap>
     </el-config-provider>
 </template>
 <script>

@@ -1,24 +1,20 @@
 ﻿using client.plugins.serverPlugins.clients;
 using client.servers.clientServer;
-using client.service.plugins.serverPlugins.clients;
-using common;
 using common.extends;
+using server.plugins.register.caching;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace client.service.servers.clientServer.plugins
+namespace client.service.wakeup
 {
     public class WakeUpPlugin : IClientServicePlugin
     {
-        private readonly ClientsHelper clientsHelper;
-        public WakeUpPlugin(ClientsHelper clientsHelper)
+        private readonly IClientInfoCaching clientInfoCaching;
+        public WakeUpPlugin(IClientInfoCaching clientInfoCaching)
         {
-            this.clientsHelper = clientsHelper;
+            this.clientInfoCaching = clientInfoCaching;
         }
 
 
@@ -28,7 +24,7 @@ namespace client.service.servers.clientServer.plugins
 
             if (model.ID > 0)
             {
-                if (clientsHelper.Get(model.ID, out ClientInfo client))
+                if (clientInfoCaching.Get(model.ID, out ClientInfo client))
                 {
                     if (client != null)
                     {

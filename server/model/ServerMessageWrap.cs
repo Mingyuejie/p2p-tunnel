@@ -33,6 +33,8 @@ namespace server.model
     public enum ServerMessageResponeCodes : int
     {
         OK = 200,
+        ACCESS = 403,
+        NOT_FOUND = 404,
         TIMEOUT = 408,
         BAD_GATEWAY = 502,
     }

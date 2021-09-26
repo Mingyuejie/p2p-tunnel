@@ -64,6 +64,9 @@ namespace client.service.tcpforward
 
         [ProtoMember(10)]
         public bool Editable { get; set; } = true;
+
+        [ProtoMember(11)]
+        public string Group { get; set; } = "";
     }
 
     public class TcpForwardRecordModel : TcpForwardRecordBaseModel
