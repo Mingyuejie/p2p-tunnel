@@ -2,12 +2,13 @@
  * @Author: snltty
  * @Date: 2021-09-24 11:24:42
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-24 17:03:03
+ * @LastEditTime: 2021-09-26 23:18:41
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\apis\axios.js
  */
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 axios.defaults.adapter = require('axios/lib/adapters/http');
 
 export default class Axios {
@@ -23,6 +24,11 @@ export default class Axios {
         this.instance.interceptors.response.use(res => {
             return res;
         }, err => {
+            if (err.response && err.response.data) {
+                ElMessage.error(err.response.data);
+            } else {
+                ElMessage.error(err + '');
+            }
             return Promise.reject(err);
         });
     }

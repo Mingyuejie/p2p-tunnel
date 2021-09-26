@@ -143,20 +143,21 @@ namespace client.service.servers.clientServer
                             Path = model.Path
                         };
 
-                        object resultAsync = plugin.Item2.Invoke(plugin.Item1, new object[] { param });
+                        dynamic resultAsync = plugin.Item2.Invoke(plugin.Item1, new object[] { param });
                         object resultObject = null;
-                        if (resultAsync is Task task)
+                        if (resultAsync != null)
                         {
-                            task.Wait();
-                            if (resultAsync is Task<object> task1)
+                            if (resultAsync is Task task)
                             {
-                                resultObject = task1.Result;
+                                resultAsync.Wait();
+                                resultObject = resultAsync.Result;
+                            }
+                            else
+                            {
+                                resultObject = resultAsync;
                             }
                         }
-                        else
-                        {
-                            resultObject = resultAsync;
-                        }
+
                         param.Socket.Send(new ClientServiceMessageResponseWrap
                         {
                             Content = param.Code == 0 ? resultObject : param.ErrorMessage,

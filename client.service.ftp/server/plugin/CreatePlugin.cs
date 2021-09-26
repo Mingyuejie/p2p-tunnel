@@ -30,7 +30,10 @@ namespace client.service.ftp.server.plugin
             }
             else
             {
-                Directory.CreateDirectory(filePath);
+                if (!Directory.Exists(filePath))
+                {
+                    Directory.CreateDirectory(filePath);
+                }
             }
             return null;
         }

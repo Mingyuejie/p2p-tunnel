@@ -15,23 +15,38 @@ namespace client.service.ftp.client
     {
         private readonly FtpClient ftpClient;
         private readonly IClientInfoCaching clientInfoCaching;
-        public FtpPlugin(FtpClient ftpClient, IClientInfoCaching clientInfoCaching)
+        private readonly Config config;
+        public FtpPlugin(FtpClient ftpClient, IClientInfoCaching clientInfoCaching, Config config)
         {
             this.ftpClient = ftpClient;
             this.clientInfoCaching = clientInfoCaching;
+            this.config = config;
         }
 
         public SpecialFolderInfo LocalSpecialList(ClientServicePluginExcuteWrap arg)
         {
             return ftpClient.GetSpecialFolders();
         }
-        public IEnumerable<FileInfo> LocalList(ClientServicePluginExcuteWrap arg)
+        public object LocalList(ClientServicePluginExcuteWrap arg)
         {
-            return ftpClient.LocalList(arg.Content);
+            var list = ftpClient.LocalList(arg.Content);
+            return new
+            {
+                Current = config.ClientCurrentPath,
+                Data = list
+            };
         }
         public void SetLocalPath(ClientServicePluginExcuteWrap arg)
         {
             ftpClient.SetCurrentPath(arg.Content);
+        }
+        public void LocalCreate(ClientServicePluginExcuteWrap arg)
+        {
+            ftpClient.LocalCreate(arg.Content);
+        }
+        public void LocalDelete(ClientServicePluginExcuteWrap arg)
+        {
+            ftpClient.LocalDelete(arg.Content);
         }
 
         public async Task<FileInfo[]> RemoteList(ClientServicePluginExcuteWrap arg)
@@ -71,7 +86,7 @@ namespace client.service.ftp.client
                 ftpClient.Upload(model.Path, client.Socket);
             }
         }
-        public async Task Delete(ClientServicePluginExcuteWrap arg)
+        public async Task RemoteDelete(ClientServicePluginExcuteWrap arg)
         {
             RemoteDeleteModel model = arg.Content.DeJson<RemoteDeleteModel>();
             if (clientInfoCaching.Get(model.Id, out ClientInfo client) && client != null && client.TcpConnected)
@@ -83,7 +98,7 @@ namespace client.service.ftp.client
                 }
             }
         }
-        public async Task Create(ClientServicePluginExcuteWrap arg)
+        public async Task RemoteCreate(ClientServicePluginExcuteWrap arg)
         {
             RemoteDeleteModel model = arg.Content.DeJson<RemoteDeleteModel>();
             if (clientInfoCaching.Get(model.Id, out ClientInfo client) && client != null && client.TcpConnected)

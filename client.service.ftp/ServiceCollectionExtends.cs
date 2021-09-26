@@ -2,6 +2,7 @@
 using client.service.ftp.plugin;
 using client.service.ftp.server;
 using client.service.ftp.server.plugin;
+using common;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -37,6 +38,8 @@ namespace client.service.ftp
         public static ServiceProvider UseFtpPlugin(this ServiceProvider obj)
         {
             obj.UseFtpPlugin(AppDomain.CurrentDomain.GetAssemblies());
+
+            Logger.Instance.Info("文件服务插件已加载");
             return obj;
         }
 
@@ -52,6 +55,7 @@ namespace client.service.ftp
     {
         public string ServerRoot { get; set; } = string.Empty;
         public string ServerCurrentPath { get; set; } = string.Empty;
+        public string ClientRootPath { get; set; } = string.Empty;
         public string ClientCurrentPath { get; set; } = string.Empty;
 
         public string Password { get; set; } = string.Empty;

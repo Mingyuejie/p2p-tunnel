@@ -131,21 +131,20 @@ namespace client.service.ftp.client
 
         public void SetCurrentPath(string path)
         {
-            config.ServerCurrentPath = path;
+            config.ClientRootPath = config.ClientCurrentPath = path;
         }
         public IEnumerable<server.plugin.FileInfo> LocalList(string path)
         {
-            if (string.IsNullOrWhiteSpace(config.ServerCurrentPath))
+            if (string.IsNullOrWhiteSpace(config.ClientCurrentPath))
             {
-                config.ServerCurrentPath = GetFolderPath(SpecialFolder.Desktop);
+                config.ClientRootPath = config.ClientCurrentPath = GetFolderPath(SpecialFolder.Desktop);
             }
-
-            DirectoryInfo dirInfo = new DirectoryInfo(config.ServerCurrentPath);
-            if (Directory.Exists(Path.Combine(config.ServerCurrentPath, path)))
+            DirectoryInfo dirInfo = new DirectoryInfo(Path.Combine(config.ClientCurrentPath, path));
+            if (dirInfo.FullName.Length < config.ClientRootPath.Length)
             {
-                dirInfo = new DirectoryInfo(Path.Combine(config.ServerCurrentPath, path));
-                config.ServerCurrentPath = dirInfo.FullName;
+                dirInfo = new DirectoryInfo(config.ClientRootPath);
             }
+            config.ClientCurrentPath = dirInfo.FullName;
 
 
             return dirInfo.GetDirectories()
@@ -214,6 +213,40 @@ namespace client.service.ftp.client
                 FullName = desktop,
                 Child = child.ToArray()
             };
+        }
+        public void LocalCreate(string path)
+        {
+            string filePath = Path.Combine(config.ClientCurrentPath, path);
+            if (!Directory.Exists(filePath))
+            {
+                Directory.CreateDirectory(filePath);
+            }
+        }
+        public void LocalDelete(string path)
+        {
+            Clear(Path.Combine(config.ClientCurrentPath, path));
+        }
+        private void Clear(string path)
+        {
+            if (Directory.Exists(path))
+            {
+                var dirs = new DirectoryInfo(path).GetDirectories();
+                foreach (var item in dirs)
+                {
+                    Clear(item.FullName);
+                }
+
+                var files = new DirectoryInfo(path).GetFiles();
+                foreach (var item in files)
+                {
+                    item.Delete();
+                }
+                Directory.Delete(path);
+            }
+            else
+            {
+                File.Delete(path);
+            }
         }
 
         public async Task<CommonTaskResponseModel<bool>> RemoteDelete(string path, Socket socket)
@@ -286,6 +319,7 @@ namespace client.service.ftp.client
 
     public class FileSaveInfo
     {
+        [System.Text.Json.Serialization.JsonIgnore]
         public FileStream Stream { get; set; }
         public long TotalLength { get; set; }
         public long IndexLength { get; set; }

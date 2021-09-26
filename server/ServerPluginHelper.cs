@@ -241,7 +241,7 @@ namespace server
                             Wrap = wrap
                         };
 
-                        object resultAsync = plugin.Item2.Invoke(plugin.Item1, new object[] { excute });
+                        dynamic resultAsync = plugin.Item2.Invoke(plugin.Item1, new object[] { excute });
                         if (excute.Code == ServerMessageResponeCodes.OK)
                         {
                             if (resultAsync != null)
@@ -249,11 +249,8 @@ namespace server
                                 object resultObject = null;
                                 if (resultAsync is Task task)
                                 {
-                                    task.Wait();
-                                    if (resultAsync is Task<object> task1)
-                                    {
-                                        resultObject = task1.Result;
-                                    }
+                                    resultAsync.Wait();
+                                    resultObject = resultAsync.Result;
                                 }
                                 else
                                 {

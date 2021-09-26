@@ -5,6 +5,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="ftp-appsettings.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="ftp-appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\client\client.csproj" />
     <ProjectReference Include="..\common\common.csproj" />
     <ProjectReference Include="..\server\server.csproj" />

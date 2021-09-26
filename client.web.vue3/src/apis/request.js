@@ -2,11 +2,13 @@
  * @Author: snltty
  * @Date: 2021-08-19 23:04:50
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-18 09:24:02
+ * @LastEditTime: 2021-09-26 23:15:58
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\apis\request.js
  */
+import { ElMessage } from 'element-plus'
+
 let requestId = 0;
 let ws = null;
 //请求缓存，等待回调
@@ -73,8 +75,8 @@ const onWebsocketMsg = (msg) => {
             callback.resolve(json.Content);
         } else if (json.Code == -1) {
             callback.reject(json.Content);
+            ElMessage.error(json.Content);
         } else {
-
             pushListener.push(json.Path, json.Content);
         }
         delete requests[json.RequestId];
@@ -106,7 +108,7 @@ export const sendWebsocketMsg = (path, msg = {}) => {
             let str = JSON.stringify({
                 Path: path,
                 RequestId: id,
-                Content: JSON.stringify(msg)
+                Content: typeof msg == 'string' ? msg : JSON.stringify(msg)
             });
             if (connected) {
                 ws.send(str);
@@ -115,6 +117,7 @@ export const sendWebsocketMsg = (path, msg = {}) => {
             }
         } catch (e) {
             reject('网络错误~');
+            ElMessage.error('网络错误~');
             delete requests[id];
         }
     });

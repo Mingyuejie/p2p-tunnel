@@ -9,6 +9,7 @@ using client.service.servers.clientServer.plugins;
 using client.service.servers.webServer;
 using client.service.tcpforward;
 using client.service.upnp;
+using client.service.wakeup;
 using common;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -35,7 +36,8 @@ namespace client.service
                 typeof(AlbumSettingPlugin).Assembly,
                 typeof(TcpForwardPlugin).Assembly,
                 typeof(UpnpPlugin).Assembly,
-              //  typeof(FtpServerPlugin).Assembly,
+                typeof(FtpServerPlugin).Assembly,
+                typeof(WakeUpPlugin).Assembly,
             };
 
             serviceCollection
@@ -50,8 +52,9 @@ namespace client.service
                 .AddTcpForwardPlugin()  //tcp转发
                 .AddAlbumPlugin() //图片相册插件
                 .AddUpnpPlugin()//upnp映射
-                                //.AddFtpPlugin(); //文件服务
+                .AddFtpPlugin() //文件服务
                 ;
+
 
             serviceProvider = serviceCollection.BuildServiceProvider();
             serviceProvider
@@ -66,7 +69,7 @@ namespace client.service
                 .UseTcpForwardPlugin()//tcp转发
                 .UseAlbumPlugin() //图片相册插件
                 .UseUpnpPlugin()//upnp映射
-                                // .UseFtpPlugin() //文件服务
+                .UseFtpPlugin() //文件服务
                ;
             //自动注册
             if (config.Client.AutoReg)

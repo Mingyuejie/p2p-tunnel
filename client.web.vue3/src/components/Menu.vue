@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-26 09:47:36
+ * @LastEditTime: 2021-09-26 19:12:37
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -27,6 +27,11 @@
                         <auth-item name="AlbumSettingPlugin">
                             <el-dropdown-item>
                                 <router-link :to="{name:'PluginAlbum'}">图片相册</router-link>
+                            </el-dropdown-item>
+                        </auth-item>
+                        <auth-item name="FtpPlugin">
+                            <el-dropdown-item>
+                                <router-link :to="{name:'PluginFtp'}">文件服务</router-link>
                             </el-dropdown-item>
                         </auth-item>
                         <auth-item name="UpnpPlugin">

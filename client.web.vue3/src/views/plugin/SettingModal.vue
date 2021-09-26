@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-24 14:36:58
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-25 17:08:47
+ * @LastEditTime: 2021-09-26 23:15:14
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\SettingModal.vue
@@ -80,7 +80,7 @@ export default {
                 saveSetting(state.form.ClassName, JSON.stringify(editor.get())).then(() => {
                     state.loading = false;
                     state.showAdd = false;
-                    ElMessage.success('以保存');
+                    ElMessage.success('已保存');
                     emit('success')
                 }).catch((e) => {
                     ElMessage.error(e);
