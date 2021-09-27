@@ -15,10 +15,10 @@ namespace client.service.ftp.server.plugin
     {
         public FtpCommand Cmd => FtpCommand.CREATE;
 
-        private readonly Config config;
-        public CreatePlugin(Config config)
+        private readonly FtpServer  ftpServer;
+        public CreatePlugin( FtpServer ftpServer)
         {
-            this.config = config;
+            this.ftpServer = ftpServer;
         }
 
         public object Excute(PluginParamWrap arg)
@@ -31,7 +31,7 @@ namespace client.service.ftp.server.plugin
             }
             else
             {
-                List<string> errs = cmd.Path.CreateDir(config.ServerCurrentPath, config.ServerRoot);
+                List<string> errs = ftpServer.Create(cmd.Path, arg);
                 if (errs.Any())
                 {
                     arg.SetCode(ServerMessageResponeCodes.ACCESS, string.Join(",", errs));

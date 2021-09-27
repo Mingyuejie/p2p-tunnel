@@ -14,11 +14,9 @@ namespace client.service.ftp.client.plugin
     {
         public FtpCommand Cmd => FtpCommand.CREATE;
 
-        private readonly Config config;
         private readonly FtpClient ftpClient;
-        public CreatePlugin(Config config, FtpClient ftpClient)
+        public CreatePlugin(FtpClient ftpClient)
         {
-            this.config = config;
             this.ftpClient = ftpClient;
         }
 
@@ -32,7 +30,7 @@ namespace client.service.ftp.client.plugin
             }
             else
             {
-                ftpClient.LocalCreate(cmd.Path);
+                ftpClient.Create(cmd.Path);
             }
 
             return true;

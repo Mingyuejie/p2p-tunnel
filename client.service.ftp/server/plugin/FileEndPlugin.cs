@@ -23,7 +23,7 @@ namespace client.service.ftp.server.plugin
         public object Excute(PluginParamWrap data)
         {
             FtpFileEndCommand cmd = data.Wrap.Content.DeBytes<FtpFileEndCommand>();
-            ftpServer.OnSendFileEnd(cmd);
+            ftpServer.OnFileEnd(cmd, data);
             return true;
         }
     }

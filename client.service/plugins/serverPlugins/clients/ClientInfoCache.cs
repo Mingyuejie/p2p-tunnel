@@ -18,6 +18,9 @@ namespace client.service.plugins.serverPlugins.clients
     {
         private readonly static ConcurrentDictionary<long, ClientInfo> clients = new ConcurrentDictionary<long, ClientInfo>();
 
+        public SimplePushSubHandler<ClientInfo> OnOffline { get; } = new SimplePushSubHandler<ClientInfo>();
+        public SimplePushSubHandler<ClientInfo> OnTcpOffline { get; } = new SimplePushSubHandler<ClientInfo>();
+
         public void UpdateLastTime(long id)
         {
             _ = clients.TryGetValue(id, out ClientInfo client);
@@ -67,6 +70,7 @@ namespace client.service.plugins.serverPlugins.clients
             if (client != null)
             {
                 client.Offline();
+                OnOffline.Push(client);
             }
         }
 
@@ -85,6 +89,7 @@ namespace client.service.plugins.serverPlugins.clients
             if (client != null)
             {
                 client.OfflineTcp();
+                OnTcpOffline.Push(client);
             }
         }
 

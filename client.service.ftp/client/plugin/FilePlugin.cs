@@ -22,10 +22,7 @@ namespace client.service.ftp.client.plugin
         public object Excute(PluginParamWrap data)
         {
             FtpFileCommand cmd = data.Wrap.Content.DeBytes<FtpFileCommand>();
-            if (ftpClient.OnFile(cmd,data.TcpSocket))
-            {
-                ftpClient.SendOnlyTcp(new FtpFileEndCommand { Md5 = cmd.Md5 }, data.TcpSocket);
-            }
+            ftpClient.OnFile(cmd, data);
             return null;
         }
     }

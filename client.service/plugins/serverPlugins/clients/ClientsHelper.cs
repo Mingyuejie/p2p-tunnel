@@ -256,7 +256,7 @@ namespace client.service.plugins.serverPlugins.clients
                         {
                             if (client.Connected && !client.Connecting)
                             {
-                                client.Offline();
+                                clientInfoCaching.Offline(client.Id);
                             }
                         }
                         else if (client.Connected)
@@ -268,7 +268,7 @@ namespace client.service.plugins.serverPlugins.clients
                         {
                             if (client.TcpConnected && !client.TcpConnecting)
                             {
-                                client.OfflineTcp();
+                                clientInfoCaching.OfflineTcp(client.Id);
                             }
                         }
                         else if (client.TcpConnected)

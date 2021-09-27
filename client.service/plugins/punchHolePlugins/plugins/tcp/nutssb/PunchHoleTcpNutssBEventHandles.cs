@@ -166,7 +166,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                         {
                             Logger.Instance.Debug($"{ip.Item1}:{ip.Item2} 连接成功");
                             targetSocket.EndConnect(result);
-                            tcpServer.BindReceive(targetSocket);
+                            tcpServer.BindReceive(targetSocket, connectId: e.Data.Id);
                             SendStep3(new SendStep3EventArg
                             {
                                 Socket = targetSocket,

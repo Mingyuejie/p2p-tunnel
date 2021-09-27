@@ -43,11 +43,11 @@ namespace client.service.ftp.client
         }
         public void LocalCreate(ClientServicePluginExcuteWrap arg)
         {
-            ftpClient.LocalCreate(arg.Content);
+            ftpClient.Create(arg.Content);
         }
         public void LocalDelete(ClientServicePluginExcuteWrap arg)
         {
-            ftpClient.LocalDelete(arg.Content);
+            ftpClient.Delete(arg.Content);
         }
 
         public async Task<FileInfo[]> RemoteList(ClientServicePluginExcuteWrap arg)
@@ -175,8 +175,8 @@ namespace client.service.ftp.client
         {
             return new
             {
-                Uploads = ftpClient.Uploads.Values,
-                Downloads = ftpClient.Downloads.Values,
+                Uploads = ftpClient.Uploads.Values.SelectMany(c => c.Values),
+                Downloads = ftpClient.Downloads.Values.SelectMany(c => c.Values),
             };
         }
     }

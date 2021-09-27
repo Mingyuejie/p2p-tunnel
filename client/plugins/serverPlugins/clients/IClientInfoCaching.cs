@@ -1,5 +1,5 @@
 ﻿using client.plugins.serverPlugins.clients;
-using server.model;
+using common;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -11,6 +11,9 @@ namespace server.plugins.register.caching
     /// </summary>
     public interface IClientInfoCaching
     {
+        public SimplePushSubHandler<ClientInfo> OnOffline { get; }
+        public SimplePushSubHandler<ClientInfo> OnTcpOffline { get; }
+
         public void UpdateLastTime(long id);
         public void UpdateTcpLastTime(long id);
         public bool Add(ClientInfo client);

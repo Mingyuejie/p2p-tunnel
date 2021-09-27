@@ -7,6 +7,7 @@ using common.extends;
 using Microsoft.Extensions.DependencyInjection;
 using server.model;
 using server.plugin;
+using server.plugins.register.caching;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -18,36 +19,26 @@ using System.Threading.Tasks;
 
 namespace client.service.ftp.server
 {
-    public class FtpServer
+    public class FtpServer : FtpBase
     {
         public Dictionary<FtpCommand, IFtpServerPlugin> Plugins { get; } = new Dictionary<FtpCommand, IFtpServerPlugin>();
-        private readonly ConcurrentDictionary<long, FileSaveInfo> files = new();
-        private readonly ConcurrentDictionary<long, string> sends = new();
-        private long fileId = 0;
+
+        protected override string SocketPath => "ftpclient/excute";
+        protected override string RootPath { get { return config.ServerRoot; } }
 
         private readonly ServiceProvider serviceProvider;
-        private readonly IServerRequest serverRequest;
         private readonly Config config;
-        public FtpServer(ServiceProvider serviceProvider, IServerRequest serverRequest, Config config)
+
+        public FtpServer(ServiceProvider serviceProvider, IServerRequest serverRequest, Config config, IClientInfoCaching clientInfoCaching)
+            : base(serverRequest, clientInfoCaching)
         {
             this.serviceProvider = serviceProvider;
-            this.serverRequest = serverRequest;
             this.config = config;
 
-            Task.Factory.StartNew(() =>
+            clientInfoCaching.OnTcpOffline.Sub((client) =>
             {
-                while (true)
-                {
-                    if (!files.IsEmpty)
-                    {
-                        foreach (var item in files.Values)
-                        {
-                            SendProgress(item);
-                        }
-                    }
-                    System.Threading.Thread.Sleep(100);
-                }
-            }, TaskCreationOptions.LongRunning);
+                currentPaths.TryRemove(client.IpAddress,out _);
+            });
         }
 
         public void LoadPlugins(Assembly[] assemblys)
@@ -65,190 +56,82 @@ namespace client.service.ftp.server
             }
         }
 
-        public void Upload(string path, Socket socket)
+        public IEnumerable<FileInfo> GetFiles(string path, PluginParamWrap data)
         {
-            foreach (var item in path.Split(','))
-            {
-                if (!string.IsNullOrWhiteSpace(item))
+            DirectoryInfo dirInfo = JoinPath(path, data);
+            return dirInfo.GetDirectories()
+                .Where(c => (c.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
+                .Select(c => new FileInfo
                 {
-                    var filepath = Path.Combine(config.ServerCurrentPath, item);
-                    if (Directory.Exists(filepath))
-                    {
-                        List<FileUploadInfo> files = new();
-                        GetFiles(files, new DirectoryInfo(filepath));
-
-                        var paths = files.Where(c => c.Type == FileType.Folder)
-                            .Select(c => c.Path.Replace(config.ServerCurrentPath, "").TrimStart(Path.DirectorySeparatorChar));
-                        if (paths.Any())
-                        {
-                            SendOnlyTcp(new FtpCreateCommand { Path = string.Join(",", paths) }, socket);
-                        }
-                        foreach (var file in files.Where(c => c.Type == FileType.File))
-                        {
-                            _Upload(file.Path, config.ServerCurrentPath, socket);
-                        }
-                    }
-                    else if (File.Exists(filepath))
-                    {
-                        _Upload(filepath, config.ServerCurrentPath, socket);
-                    }
-                }
-            }
-        }
-        private void GetFiles(List<FileUploadInfo> files, DirectoryInfo path)
-        {
-            files.Add(new FileUploadInfo { Path = path.FullName, Type = FileType.Folder });
-            foreach (var dir in path.GetDirectories())
+                    CreationTime = c.CreationTime,
+                    Length = 0,
+                    Name = c.Name,
+                    LastWriteTime = c.LastWriteTime,
+                    LastAccessTime = c.LastAccessTime,
+                    Type = FileType.Folder,
+                }).Concat(dirInfo.GetFiles()
+            .Where(c => (c.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
+            .Select(c => new FileInfo
             {
-                GetFiles(files, dir);
-            }
-            files.AddRange(path.GetFiles().Select(c => new FileUploadInfo
-            {
-                Path = c.FullName,
-                Type = FileType.File
+                CreationTime = c.CreationTime,
+                Length = c.Length,
+                Name = c.Name,
+                LastWriteTime = c.LastWriteTime,
+                LastAccessTime = c.LastAccessTime,
+                Type = FileType.File,
             }));
         }
-        private void _Upload(string path, string currentPath, Socket socket)
+
+        public List<string> Create(string path, PluginParamWrap data)
         {
-            var file = new System.IO.FileInfo(path);
-            Task.Run(() =>
-            {
-                try
-                {
-                    System.Threading.Interlocked.Increment(ref fileId);
-                    FtpFileCommand cmd = new FtpFileCommand
-                    {
-                        Md5 = fileId,
-                        Size = file.Length,
-                        Name = file.FullName.Replace(currentPath, "").TrimStart(Path.DirectorySeparatorChar)
-                    };
-                    sends.TryAdd(cmd.Md5, file.FullName);
-
-                    int packSize = 1024; //每个包大小 
-                    int packCount = (int)(file.Length / packSize);
-                    long lastPackSize = file.Length - packCount * packSize;
-
-                    using FileStream fs = file.OpenRead();
-                    int index = 0;
-                    while (index < packCount)
-                    {
-                        if (!sends.ContainsKey(cmd.Md5))
-                        {
-                            return;
-                        }
-
-                        if (socket != null && socket.Connected)
-                        {
-                            byte[] data = new byte[packSize];
-                            fs.Read(data, 0, packSize);
-                            cmd.Data = data;
-                            SendOnlyTcp(cmd, socket);
-                            index++;
-                        }
-                        else
-                        {
-                            System.Threading.Thread.Sleep(10);
-                        }
-                    }
-                    if (lastPackSize > 0)
-                    {
-                        byte[] data = new byte[lastPackSize];
-                        fs.Read(data, 0, (int)lastPackSize);
-                        cmd.Data = data;
-                        SendOnlyTcp(cmd, socket);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Instance.Debug($" Upload {ex.Message}");
-                }
-            });
+            return Create(GetCurrentPath(data), path);
+        }
+        public List<string> Delete(string path, PluginParamWrap data)
+        {
+            return Delete(GetCurrentPath(data), path);
+        }
+        public void OnFile(FtpFileCommand cmd, PluginParamWrap data)
+        {
+            OnFile(GetCurrentPath(data), cmd, data);
+        }
+        public void Upload(string path, PluginParamWrap data)
+        {
+            Upload(GetCurrentPath(data), path, data.TcpSocket);
         }
 
-        public bool OnFile(FtpFileCommand cmd, Socket socket)
+        private ConcurrentDictionary<long, string> currentPaths = new ConcurrentDictionary<long, string>();
+        private string GetCurrentPath(PluginParamWrap data)
         {
-            files.TryGetValue(cmd.Md5, out FileSaveInfo fs);
-            if (fs == null)
+            currentPaths.TryGetValue(data.SourcePoint.ToInt64(), out string path);
+            if (string.IsNullOrWhiteSpace(path))
             {
-                string fullPath = Path.Combine(config.ServerCurrentPath, cmd.Name);
-                string cacheFullPath = Path.Combine(config.ServerCurrentPath, $"{cmd.Name}.downloading");
-
-                if (File.Exists(fullPath))
-                {
-                    File.Delete(fullPath);
-                }
-                if (File.Exists(cacheFullPath))
-                {
-                    File.Delete(cacheFullPath);
-                }
-
-                var stream = new FileStream(cacheFullPath, FileMode.Create & FileMode.Append, FileAccess.Write);
-                stream.Seek(cmd.Size - 1, SeekOrigin.Begin);
-                stream.WriteByte(new byte());
-                stream.Seek(0, SeekOrigin.Begin);
-                fs = new FileSaveInfo
-                {
-                    Stream = stream,
-                    Socket = socket,
-                    IndexLength = 0,
-                    TotalLength = cmd.Size,
-                    FileName = fullPath,
-                    CacheFileName = cacheFullPath,
-                    Md5 = cmd.Md5
-                };
-                files.TryAdd(cmd.Md5, fs);
+                path = config.ClientRootPath;
+                SetCurrentPath(path, data);
             }
-            fs.Stream.Write(cmd.Data);
-            fs.IndexLength += cmd.Data.Length;
+            return path;
+        }
+        private void SetCurrentPath(string path, PluginParamWrap data)
+        {
+            currentPaths.AddOrUpdate(data.SourcePoint.ToInt64(), path, (a, b) => path);
+        }
+        private DirectoryInfo JoinPath(string path, PluginParamWrap data)
+        {
+            string currentPath = GetCurrentPath(data);
 
-            if (fs.IndexLength >= cmd.Size)
+            DirectoryInfo dirInfo = new DirectoryInfo(currentPath);
+            if (!string.IsNullOrWhiteSpace(path))
             {
-                files.TryRemove(cmd.Md5, out _);
-                fs.Stream.Close();
-                new System.IO.FileInfo(fs.CacheFileName).MoveTo(fs.FileName);
-
-                SendProgress(fs);
-                return true;
+                dirInfo = new DirectoryInfo(Path.Combine(currentPath, path));
             }
-            return false;
-        }
-        private void SendProgress(FileSaveInfo save)
-        {
-            SendOnlyTcp(new FtpFileProgressCommand { Index = save.IndexLength, Md5 = save.Md5 }, save.Socket);
-        }
-
-        public void OnSendFileEnd(FtpFileEndCommand cmd)
-        {
-            sends.TryRemove(cmd.Md5, out _);
-        }
-
-        public void SendOnlyTcp<IFtpCommandBase>(IFtpCommandBase data, Socket socket)
-        {
-            serverRequest.SendOnlyTcp(new SendTcpEventArg<IFtpCommandBase>
+            //不能访问根目录的上级目录
+            if (dirInfo.FullName.Length < RootPath.Length)
             {
-                Data = data,
-                Path = "ftpclient/excute",
-                Socket = socket
-            });
+                dirInfo = new DirectoryInfo(RootPath);
+            }
+            SetCurrentPath(dirInfo.FullName, data);
+
+            return dirInfo;
         }
-    }
-
-    public class FileUploadInfo
-    {
-        public string Path { get; set; } = string.Empty;
-        public FileType Type { get; set; } = FileType.File;
-    }
-
-
-    public class FileSaveInfo
-    {
-        public FileStream Stream { get; set; }
-        public Socket Socket { get; set; }
-        public long Md5 { get; set; }
-        public long TotalLength { get; set; }
-        public long IndexLength { get; set; }
-        public string FileName { get; set; } = string.Empty;
-        public string CacheFileName { get; set; } = string.Empty;
     }
 
     public class FtpServerPlugin : IPlugin

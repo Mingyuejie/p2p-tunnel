@@ -14,11 +14,10 @@ namespace client.service.ftp.server.plugin
 {
     public class DelPlugin : IFtpServerPlugin
     {
-        private readonly Config config;
-
-        public DelPlugin(Config config)
+        private readonly FtpServer ftpServer;
+        public DelPlugin(FtpServer ftpServer)
         {
-            this.config = config;
+            this.ftpServer = ftpServer;
         }
         public FtpCommand Cmd => FtpCommand.DELETE;
 
@@ -32,7 +31,7 @@ namespace client.service.ftp.server.plugin
             }
             else
             {
-                List<string> errs = cmd.Path.ClearDir(config.ServerCurrentPath, config.ServerRoot);
+                List<string> errs = ftpServer.Delete(cmd.Path, arg);
                 if (errs.Any())
                 {
                     arg.SetCode(ServerMessageResponeCodes.ACCESS, string.Join(",", errs));

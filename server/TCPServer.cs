@@ -180,11 +180,11 @@ namespace server
                 model.Clear();
             }
         }
-        public void BindReceive(Socket socket, Action<SocketError> errorCallback = null)
+        public void BindReceive(Socket socket, Action<SocketError> errorCallback = null, long connectId = 0)
         {
             IPEndPoint ip = IPEndPoint.Parse(socket.RemoteEndPoint.ToString());
             Interlocked.Increment(ref Id);
-            ReceiveModel model = new ReceiveModel { ErrorCallback = errorCallback, Id = Id, Address = ip, Socket = socket, Buffer = new byte[0] };
+            ReceiveModel model = new ReceiveModel { ConnectId = connectId, ErrorCallback = errorCallback, Id = Id, Address = ip, Socket = socket, Buffer = Array.Empty<byte>() };
             _ = ReceiveModel.Add(model);
 
             model.Buffer = new byte[1024];
@@ -192,14 +192,14 @@ namespace server
         }
         private void Receive(ReceiveModel model, byte[] buffer)
         {
-           //MyStopwatch watch = new MyStopwatch();
+            //MyStopwatch watch = new MyStopwatch();
             //watch.Start();
 
-            IPEndPoint address = IPEndPoint.Parse(model.Socket.RemoteEndPoint.ToString());
             lock (model.CacheBuffer)
             {
                 model.CacheBuffer.AddRange(buffer);
             }
+            var address = model.Socket.RemoteEndPoint as IPEndPoint;
             OnPacket.Push(new ServerDataWrap<List<byte>>
             {
                 Data = model.CacheBuffer,
@@ -208,8 +208,8 @@ namespace server
                 Socket = model.Socket
             });
 
-           // watch.Stop();
-           // watch.Output($"TCP 包处理时间：");
+            // watch.Stop();
+            // watch.Output($"TCP 包处理时间：");
         }
 
         public SimplePushSubHandler<ServerDataWrap<List<byte>>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<List<byte>>>();

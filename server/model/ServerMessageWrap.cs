@@ -19,6 +19,7 @@ namespace server.model
         public ServerMessageTypes Type { get; set; } = ServerMessageTypes.REQUEST;
         [ProtoMember(5, IsRequired = true)]
         public ServerMessageResponeCodes Code { get; set; } = ServerMessageResponeCodes.OK;
+
     }
 
     public class ServerMessageResponeWrap
@@ -69,6 +70,9 @@ namespace server.model
         public Socket TcpSocket { get; set; }
 
         public ServerMessageWrap Wrap { get; set; }
+
+
+
 
         public ServerMessageResponeCodes Code { get; set; } = ServerMessageResponeCodes.OK;
         public string ErrorMessage { get; private set; } = string.Empty;

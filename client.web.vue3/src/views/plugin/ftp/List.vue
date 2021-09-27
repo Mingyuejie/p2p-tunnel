@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:49:58
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-27 11:33:48
+ * @LastEditTime: 2021-09-27 22:33:47
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\List.vue
@@ -27,7 +27,6 @@ export default {
     components: { Local, Remote },
     setup () {
         provideFilesData();
-
         return {}
     }
 }

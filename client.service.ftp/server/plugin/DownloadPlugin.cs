@@ -38,7 +38,7 @@ namespace client.service.ftp.server.plugin
             }
             if (accessPaths.Any())
             {
-                ftpServer.Upload(string.Join(',', accessPaths), arg.TcpSocket);
+                ftpServer.Upload(string.Join(',', accessPaths), arg);
             }
 
             return true;

@@ -75,8 +75,6 @@ namespace client.service.plugins.serverPlugins.register
             Helper.FlushMemory();
         }
 
-        #region 注册
-
         /// <summary>
         /// 发送注册消息
         /// </summary>
@@ -137,8 +135,6 @@ namespace client.service.plugins.serverPlugins.register
         /// 注册Tcp状态发生变化
         /// </summary>
         public SimplePushSubHandler<RegisterEventArg> OnRegisterStateChange { get; } = new SimplePushSubHandler<RegisterEventArg>();
-       
-        #endregion
     }
 
     #region 注册model

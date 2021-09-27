@@ -17,10 +17,7 @@ namespace client.service.ftp.server.plugin
         public object Excute(PluginParamWrap data)
         {
             FtpFileCommand cmd = data.Wrap.Content.DeBytes<FtpFileCommand>();
-            if (ftpServer.OnFile(cmd, data.TcpSocket))
-            {
-                ftpServer.SendOnlyTcp(new FtpFileEndCommand { Md5 = cmd.Md5 }, data.TcpSocket);
-            }
+            ftpServer.OnFile(cmd, data);
 
             return true;
         }

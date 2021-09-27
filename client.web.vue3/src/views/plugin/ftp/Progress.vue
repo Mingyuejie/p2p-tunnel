@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:43:21
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-27 16:48:11
+ * @LastEditTime: 2021-09-27 20:49:26
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\Progress.vue
@@ -18,6 +18,11 @@
                             <span>{{scope.row.TotalLength.sizeFormat()}} </span>
                         </template>
                     </el-table-column>
+                    <el-table-column prop="IndexLength" label="进度" width="100">
+                        <template #default="scope">
+                            <span>{{((scope.row.IndexLength/scope.row.TotalLength)*100).toFixed(2)}} </span>
+                        </template>
+                    </el-table-column>
                 </el-table>
             </div>
         </div>
@@ -29,6 +34,11 @@
                     <el-table-column prop="TotalLength" label="大小" width="100">
                         <template #default="scope">
                             <span>{{scope.row.TotalLength.sizeFormat()}} </span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="IndexLength" label="进度" width="100">
+                        <template #default="scope">
+                            <span>{{((scope.row.IndexLength/scope.row.TotalLength)*100).toFixed(2)}} </span>
                         </template>
                     </el-table-column>
                 </el-table>
@@ -58,7 +68,6 @@ export default {
         onUnmounted(() => {
             unsubNotifyMsg('ftp/info', subFunc);
         });
-
 
         return {
             ...toRefs(state)
