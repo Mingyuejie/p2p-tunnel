@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -163,7 +164,6 @@ namespace client.service.servers.clientServer
                                 resultObject = resultAsync;
                             }
                         }
-
                         param.Socket.Send(new ClientServiceMessageResponseWrap
                         {
                             Content = param.Code == 0 ? resultObject : param.ErrorMessage,
