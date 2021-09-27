@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:49:58
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-26 20:12:33
+ * @LastEditTime: 2021-09-27 11:33:48
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\List.vue
@@ -22,9 +22,11 @@
 <script>
 import Local from './Local.vue'
 import Remote from './Remote.vue'
+import { provideFilesData } from './list-share-data'
 export default {
     components: { Local, Remote },
     setup () {
+        provideFilesData();
 
         return {}
     }

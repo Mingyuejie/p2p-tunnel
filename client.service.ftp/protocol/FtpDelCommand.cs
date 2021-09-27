@@ -11,7 +11,7 @@ namespace client.service.ftp.protocol
     public class FtpDelCommand : IFtpCommandBase
     {
         [ProtoMember(1, IsRequired = true)]
-        public FtpCommand Cmd => FtpCommand.DELETE;
+        public FtpCommand Cmd { get; } = FtpCommand.DELETE;
 
         [ProtoMember(2)]
         public string Path { get; set; }

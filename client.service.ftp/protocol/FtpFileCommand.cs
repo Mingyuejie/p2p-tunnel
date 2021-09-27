@@ -1,9 +1,4 @@
 ﻿using ProtoBuf;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace client.service.ftp.protocol
 {
@@ -11,7 +6,7 @@ namespace client.service.ftp.protocol
     public class FtpFileCommand : IFtpCommandBase
     {
         [ProtoMember(1, IsRequired = true)]
-        public FtpCommand Cmd => FtpCommand.FILE;
+        public FtpCommand Cmd { get; } = FtpCommand.FILE;
 
         [ProtoMember(2)]
         public byte[] Data { get; set; }
@@ -20,7 +15,7 @@ namespace client.service.ftp.protocol
         public long Size { get; set; }
 
         [ProtoMember(4)]
-        public string Md5 { get; set; }
+        public long Md5 { get; set; }
 
         [ProtoMember(5)]
         public string Name { get; set; }
@@ -30,8 +25,19 @@ namespace client.service.ftp.protocol
     public class FtpFileEndCommand : IFtpCommandBase
     {
         [ProtoMember(1, IsRequired = true)]
-        public FtpCommand Cmd => FtpCommand.FILE_END;
+        public FtpCommand Cmd { get; } = FtpCommand.FILE_END;
         [ProtoMember(4)]
-        public string Md5 { get; set; }
+        public long Md5 { get; set; }
+    }
+
+    [ProtoContract]
+    public class FtpFileProgressCommand : IFtpCommandBase
+    {
+        [ProtoMember(1, IsRequired = true)]
+        public FtpCommand Cmd { get; } = FtpCommand.FILE_PROGRESS;
+        [ProtoMember(2)]
+        public long Md5 { get; set; }
+        [ProtoMember(3)]
+        public long Index { get; set; }
     }
 }

@@ -8,7 +8,13 @@ using System.Threading.Tasks;
 
 namespace client.service.ftp.plugin
 {
-    public interface IFtpPlugin
+    public interface IFtpServerPlugin
+    {
+        public FtpCommand Cmd { get; }
+        public object Excute(PluginParamWrap data);
+    }
+
+    public interface IFtpClientPlugin
     {
         public FtpCommand Cmd { get; }
         public object Excute(PluginParamWrap data);

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:09:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-26 23:49:42
+ * @LastEditTime: 2021-09-27 14:19:59
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\apis\plugins\ftp.js
@@ -32,6 +32,12 @@ export const geRemoteList = (id, path = '') => {
 export const sendRemoteCreate = (id, path = '') => {
     return sendWebsocketMsg(`ftp/RemoteCreate`, { Id: id, Path: path });
 }
-export const sendRemoteDelete = (path = '') => {
+export const sendRemoteDelete = (id, path = '') => {
     return sendWebsocketMsg(`ftp/RemoteDelete`, { Id: id, Path: path });
+}
+export const sendRemoteUpload = (id, path = '') => {
+    return sendWebsocketMsg(`ftp/Upload`, { Id: id, Path: path });
+}
+export const sendRemoteDownload = (id, path = '') => {
+    return sendWebsocketMsg(`ftp/Download`, { Id: id, Path: path });
 }

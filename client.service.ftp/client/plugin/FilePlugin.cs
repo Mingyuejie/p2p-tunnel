@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace client.service.ftp.client.plugin
 {
-    public class FilePlugin : IFtpPlugin
+    public class FilePlugin : IFtpClientPlugin
     {
         private readonly FtpClient  ftpClient;
         public FilePlugin(FtpClient ftpClient)
@@ -22,7 +22,10 @@ namespace client.service.ftp.client.plugin
         public object Excute(PluginParamWrap data)
         {
             FtpFileCommand cmd = data.Wrap.Content.DeBytes<FtpFileCommand>();
-            ftpClient.OnFile(cmd);
+            if (ftpClient.OnFile(cmd,data.TcpSocket))
+            {
+                ftpClient.SendOnlyTcp(new FtpFileEndCommand { Md5 = cmd.Md5 }, data.TcpSocket);
+            }
             return null;
         }
     }

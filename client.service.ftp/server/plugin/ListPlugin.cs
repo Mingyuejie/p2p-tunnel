@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace client.service.ftp.server.plugin
 {
-    public class ListPlugin : IFtpPlugin
+    public class ListPlugin : IFtpServerPlugin
     {
         private readonly Config config;
 
@@ -23,7 +23,19 @@ namespace client.service.ftp.server.plugin
         {
             FtpListCommand cmd = data.Wrap.Content.DeBytes<FtpListCommand>();
 
-            DirectoryInfo dirInfo = new DirectoryInfo(Path.Combine(config.ServerCurrentPath, cmd.Path));
+            DirectoryInfo dirInfo;
+            if (string.IsNullOrWhiteSpace(config.ServerCurrentPath))
+            {
+                config.ServerCurrentPath = config.ServerRoot;
+            }
+            if (string.IsNullOrWhiteSpace(cmd.Path))
+            {
+                dirInfo = new DirectoryInfo(config.ServerCurrentPath);
+            }
+            else
+            {
+                dirInfo = new DirectoryInfo(Path.Combine(config.ServerCurrentPath, cmd.Path));
+            }
             //不能访问根目录的上级目录
             if (dirInfo.FullName.Length < config.ServerRoot.Length)
             {

@@ -5,7 +5,7 @@ using server.model;
 
 namespace client.service.ftp.server.plugin
 {
-    public class FilePlugin : IFtpPlugin
+    public class FilePlugin : IFtpServerPlugin
     {
         private readonly FtpServer ftpServer;
         public FilePlugin(FtpServer ftpServer)
@@ -17,8 +17,12 @@ namespace client.service.ftp.server.plugin
         public object Excute(PluginParamWrap data)
         {
             FtpFileCommand cmd = data.Wrap.Content.DeBytes<FtpFileCommand>();
-            ftpServer.OnFile(cmd);
-            return null;
+            if (ftpServer.OnFile(cmd, data.TcpSocket))
+            {
+                ftpServer.SendOnlyTcp(new FtpFileEndCommand { Md5 = cmd.Md5 }, data.TcpSocket);
+            }
+
+            return true;
         }
     }
 

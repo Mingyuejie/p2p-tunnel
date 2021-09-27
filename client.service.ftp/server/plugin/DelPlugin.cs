@@ -1,15 +1,18 @@
-﻿using client.service.ftp.plugin;
+﻿using client.service.ftp.extends;
+using client.service.ftp.plugin;
 using client.service.ftp.protocol;
 using common.extends;
+using Microsoft.VisualBasic.FileIO;
 using ProtoBuf;
 using server.model;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
 namespace client.service.ftp.server.plugin
 {
-    public class DelPlugin : IFtpPlugin
+    public class DelPlugin : IFtpServerPlugin
     {
         private readonly Config config;
 
@@ -23,40 +26,19 @@ namespace client.service.ftp.server.plugin
         {
             FtpDelCommand cmd = arg.Wrap.Content.DeBytes<FtpDelCommand>();
 
-            string filePath = Path.Combine(config.ServerCurrentPath, cmd.Path);
-            if (!filePath.StartsWith(config.ServerRoot))
+            if (string.IsNullOrWhiteSpace(cmd.Path))
             {
-                arg.SetCode(ServerMessageResponeCodes.ACCESS, "无目录权限");
+                arg.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, "目录不可为空");
             }
             else
             {
-                Clear(filePath);
-            }
-
-            return null;
-        }
-
-        private void Clear(string path)
-        {
-            if (Directory.Exists(path))
-            {
-                var dirs = new DirectoryInfo(path).GetDirectories();
-                foreach (var item in dirs)
+                List<string> errs = cmd.Path.ClearDir(config.ServerCurrentPath, config.ServerRoot);
+                if (errs.Any())
                 {
-                    Clear(item.FullName);
+                    arg.SetCode(ServerMessageResponeCodes.ACCESS, string.Join(",", errs));
                 }
-
-                var files = new DirectoryInfo(path).GetFiles();
-                foreach (var item in files)
-                {
-                    item.Delete();
-                }
-                Directory.Delete(path);
             }
-            else
-            {
-                File.Delete(path);
-            }
+            return true;
         }
     }
 }

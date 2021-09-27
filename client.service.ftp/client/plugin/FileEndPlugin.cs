@@ -11,14 +11,14 @@ using System.Threading.Tasks;
 
 namespace client.service.ftp.client.plugin
 {
-    public class FileEndPlugin : IFtpPlugin
+    public class FileEndPlugin : IFtpClientPlugin
     {
         private readonly FtpClient ftpClient;
         public FileEndPlugin(FtpClient ftpClient)
         {
             this.ftpClient = ftpClient;
         }
-        public FtpCommand Cmd => FtpCommand.FILE;
+        public FtpCommand Cmd => FtpCommand.FILE_END;
 
         public object Excute(PluginParamWrap data)
         {

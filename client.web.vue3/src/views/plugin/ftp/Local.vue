@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:51:49
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-26 23:31:31
+ * @LastEditTime: 2021-09-27 17:13:29
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\Local.vue
@@ -21,7 +21,8 @@
         </div>
         <div class="body flex-1 relative">
             <div class="absolute">
-                <el-table :data="data" border size="mini" height="100%" @row-dblclick="handleRowDblClick" @row-contextmenu="handleContextMenu">
+                <el-table :data="data" size="mini" height="100%" @selection-change="handleSelectionChange" @row-dblclick="handleRowDblClick" @row-contextmenu="handleContextMenu">
+                    <el-table-column type="selection" width="45" />
                     <el-table-column prop="Label" label="文件名（本地）"></el-table-column>
                     <el-table-column prop="Length" label="大小" width="100">
                         <template #default="scope">
@@ -37,16 +38,20 @@
 
 <script>
 import { reactive, ref, toRefs } from '@vue/reactivity'
-import { getLocalSpecialList, getLocalList, sendLocalCreate, sendLocalDelete, sendSetLocalPath } from '../../../apis/plugins/ftp'
+import { getLocalSpecialList, getLocalList, sendLocalCreate, sendLocalDelete, sendSetLocalPath, sendRemoteUpload } from '../../../apis/plugins/ftp'
 import { onMounted } from '@vue/runtime-core';
 import FileTree from './FileTree.vue'
 import ContextMenu from './ContextMenu.vue'
 import { ElMessageBox } from 'element-plus'
+import { injectFilesData } from './list-share-data'
 export default {
     components: { FileTree, ContextMenu },
     setup () {
+
+        const listShareData = injectFilesData();
         const state = reactive({
             data: [],
+            multipleSelection: [],
             loading: false,
             specialFolder: [],
             specialFolderModel: '特殊文件夹'
@@ -61,7 +66,7 @@ export default {
             getLocalList(path).then((res) => {
                 state.loading = false;
                 state.specialFolderModel = res.Current;
-                state.data = [{ Name: '..', Label: '.. 上一级', Length: 0, Type: 0 }].concat(res.Data.map(c => {
+                listShareData.locals = state.data = [{ Name: '..', Label: '.. 上一级', Length: 0, Type: 0 }].concat(res.Data.map(c => {
                     c.Label = c.Name;
                     return c;
                 }));
@@ -83,7 +88,50 @@ export default {
         const handleContextMenu = (row, column, event) => {
             if (!state.loading && row.Name != '..') {
                 contextMenu.value.show(event, [
-                    { text: '上传', handle: () => { } },
+                    {
+                        text: '上传', handle: () => {
+                            if (listShareData.remotes.filter(c => c.Name == row.Name).length > 0) {
+                                ElMessageBox.confirm(`同名文件已存在，是否确定上传覆盖，【${row.Name}】`, '上传', {
+                                    confirmButtonText: '确定',
+                                    cancelButtonText: '取消',
+                                    type: 'warning'
+                                }).then(() => {
+                                    state.loading = true;
+                                    sendRemoteUpload(listShareData.clientId || 0, row.Name).then(() => {
+                                        state.loading = false;
+                                    }).catch(() => {
+                                        state.loading = false;
+                                    });
+                                });
+                            } else {
+                                state.loading = true;
+                                sendRemoteUpload(listShareData.clientId || 0, row.Name).then(() => {
+                                    state.loading = false;
+                                }).catch(() => {
+                                    state.loading = false;
+                                });
+                            }
+                        }
+                    },
+                    {
+                        text: '上传选中', handle: () => {
+                            if (state.multipleSelection.length > 0) {
+                                ElMessageBox.confirm(`如果存在同名文件，则直接替换，不再提示`, '上传', {
+                                    confirmButtonText: '确定',
+                                    cancelButtonText: '取消',
+                                    type: 'warning'
+                                }).then(() => {
+                                    state.loading = true;
+                                    sendRemoteUpload(listShareData.clientId || 0, state.multipleSelection.map(c => c.Name).join(','))
+                                        .then(() => {
+                                            state.loading = false;
+                                        }).catch((e) => {
+                                            state.loading = false;
+                                        });;
+                                });
+                            }
+                        }
+                    },
                     {
                         text: '创建文件夹', handle: () => {
                             ElMessageBox.prompt('输入文件夹名称', '创建文件夹', {
@@ -91,29 +139,55 @@ export default {
                                 cancelButtonText: '取消',
                                 inputValue: '新建文件夹'
                             }).then(({ value }) => {
+                                state.loading = true;
                                 sendLocalCreate(value).then(() => {
                                     getFiles();
-                                });
+                                }).catch(() => {
+                                    state.loading = false;
+                                });;
                             });
-
                         }
                     },
                     {
                         text: '删除', handle: () => {
-                            ElMessageBox.confirm('删除不可逆，是否确认', '删除', {
+                            ElMessageBox.confirm(`删除,【${row.Name}】`, '删除', {
                                 confirmButtonText: '确定',
                                 cancelButtonText: '取消',
                                 type: 'warning'
                             }).then(() => {
+                                state.loading = true;
                                 sendLocalDelete(row.Name).then(() => {
                                     getFiles();
-                                });
+                                }).catch(() => {
+                                    state.loading = false;
+                                });;
                             });
+                        }
+                    },
+                    {
+                        text: '删除选中', handle: () => {
+                            if (state.multipleSelection.length > 0) {
+                                ElMessageBox.confirm(`删除多个选中文件，是否确认？`, '删除', {
+                                    confirmButtonText: '确定',
+                                    cancelButtonText: '取消',
+                                    type: 'warning'
+                                }).then(() => {
+                                    state.loading = true;
+                                    sendLocalDelete(state.multipleSelection.map(c => c.Name).join(',')).then(() => {
+                                        getFiles();
+                                    }).catch(() => {
+                                        state.loading = false;
+                                    });
+                                });
+                            }
                         }
                     },
                 ]);
             }
             event.preventDefault();
+        }
+        const handleSelectionChange = (value) => {
+            state.multipleSelection = value.filter(c => c.Name != '..');
         }
         const handleSpecialFolderCommand = (item) => {
             if (!state.loading && item.FullName) {
@@ -124,7 +198,7 @@ export default {
         }
 
         return {
-            ...toRefs(state), getFiles, contextMenu, handleRowDblClick, handleContextMenu, handleSpecialFolderCommand
+            ...toRefs(state), getFiles, contextMenu, handleSelectionChange, handleRowDblClick, handleContextMenu, handleSpecialFolderCommand
         }
     }
 }
@@ -136,4 +210,7 @@ export default {
 
     .split
         width: 0.2rem;
+
+.body
+    border: 1px solid #ddd;
 </style>

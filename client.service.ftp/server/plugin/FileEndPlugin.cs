@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace client.service.ftp.server.plugin
 {
-    public class FileEndPlugin : IFtpPlugin
+    public class FileEndPlugin : IFtpServerPlugin
     {
         private readonly FtpServer ftpServer;
         public FileEndPlugin(FtpServer ftpServer)
@@ -24,7 +24,7 @@ namespace client.service.ftp.server.plugin
         {
             FtpFileEndCommand cmd = data.Wrap.Content.DeBytes<FtpFileEndCommand>();
             ftpServer.OnSendFileEnd(cmd);
-            return null;
+            return true;
         }
     }
 }

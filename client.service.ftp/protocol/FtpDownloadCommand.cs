@@ -11,7 +11,7 @@ namespace client.service.ftp.protocol
     public class FtpDownloadCommand : IFtpCommandBase
     {
         [ProtoMember(1, IsRequired = true)]
-        public FtpCommand Cmd => FtpCommand.DOWNLOAD;
+        public FtpCommand Cmd { get; } = FtpCommand.DOWNLOAD;
 
         [ProtoMember(2)]
         public string Path { get; set; }

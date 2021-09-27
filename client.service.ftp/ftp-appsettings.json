@@ -1,4 +1,5 @@
 ﻿{
   "ServerRoot": "",
-  "Password": "000000"
+  "Password": "000000",
+  "Enable": false
 }

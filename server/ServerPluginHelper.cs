@@ -250,7 +250,13 @@ namespace server
                                 if (resultAsync is Task task)
                                 {
                                     resultAsync.Wait();
-                                    resultObject = resultAsync.Result;
+                                    try
+                                    {
+                                        resultObject = resultAsync.Result;
+                                    }
+                                    catch (Exception)
+                                    {
+                                    }
                                 }
                                 else
                                 {

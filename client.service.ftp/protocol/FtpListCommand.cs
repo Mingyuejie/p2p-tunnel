@@ -11,7 +11,7 @@ namespace client.service.ftp.protocol
     public class FtpListCommand : IFtpCommandBase
     {
         [ProtoMember(1, IsRequired = true)]
-        public FtpCommand Cmd => FtpCommand.LIST;
+        public FtpCommand Cmd { get; } = FtpCommand.LIST;
 
         [ProtoMember(2)]
         public string Path { get; set; }
