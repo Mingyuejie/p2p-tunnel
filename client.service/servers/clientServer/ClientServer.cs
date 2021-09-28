@@ -19,7 +19,7 @@ namespace client.service.servers.clientServer
     {
         private readonly ConcurrentDictionary<Guid, IWebSocketConnection> websockets = new();
 
-        private readonly Dictionary<string, Tuple<object, MethodInfo>> plugins = new();
+        private readonly Dictionary<string, PluginPathCacheInfo> plugins = new();
         private readonly Dictionary<string, Tuple<object, MethodInfo>> pushPlugins = new();
         private readonly Dictionary<string, IClientServiceSettingPlugin> settingPlugins = new();
 
@@ -36,7 +36,10 @@ namespace client.service.servers.clientServer
 
         public void LoadPlugins(Assembly[] assemblys)
         {
-            var types = assemblys
+            Type voidType = typeof(void);
+            Type taskType = typeof(Task);
+
+            IEnumerable<Type> types = assemblys
                 .SelectMany(c => c.GetTypes())
                 .Where(c => c.GetInterfaces().Contains(typeof(IClientServicePlugin)));
             foreach (var item in types)
@@ -48,12 +51,24 @@ namespace client.service.servers.clientServer
                     string key = $"{path}/{method.Name}".ToLower();
                     if (!plugins.ContainsKey(key))
                     {
-                        plugins.TryAdd(key, new Tuple<object, MethodInfo>(obj, method));
+                        PluginPathCacheInfo cache = new PluginPathCacheInfo
+                        {
+                            IsVoid = method.ReturnType == voidType,
+                            Method = method,
+                            Target = obj,
+                            IsTask = method.ReturnType == taskType
+                        };
+                        if (cache.IsTask)
+                        {
+                            cache.IsTaskResult = cache.Method.ReturnType.Name.EndsWith("`1");
+                        }
+
+                        plugins.TryAdd(key, cache);
                     }
                 }
             }
 
-            var types2 = assemblys
+            IEnumerable<Type> types2 = assemblys
                 .SelectMany(c => c.GetTypes())
                 .Where(c => c.GetInterfaces().Contains(typeof(IClientServerPushMsgPlugin)));
             foreach (var item in types2)
@@ -70,7 +85,7 @@ namespace client.service.servers.clientServer
                 }
             }
 
-            var types3 = assemblys
+            IEnumerable<Type> types3 = assemblys
                 .SelectMany(c => c.GetTypes())
                 .Where(c => c.GetInterfaces().Contains(typeof(IClientServiceSettingPlugin)));
             foreach (var item in types3)
@@ -143,20 +158,16 @@ namespace client.service.servers.clientServer
                             Websockets = websockets,
                             Path = model.Path
                         };
-
-                        dynamic resultAsync = plugin.Item2.Invoke(plugin.Item1, new object[] { param });
+                        dynamic resultAsync = plugin.Method.Invoke(plugin.Target, new object[] { param });
                         object resultObject = null;
-                        if (resultAsync != null)
+                        if (!plugin.IsVoid && resultAsync != null)
                         {
-                            if (resultAsync is Task task)
+                            if (plugin.IsTask)
                             {
                                 resultAsync.Wait();
-                                try
+                                if (plugin.IsTaskResult)
                                 {
                                     resultObject = resultAsync.Result;
-                                }
-                                catch (Exception)
-                                {
                                 }
                             }
                             else
@@ -236,8 +247,17 @@ namespace client.service.servers.clientServer
 
         public IEnumerable<string> GetPlugins()
         {
-            return plugins.Select(c => c.Value.Item1.GetType().Name).Distinct();
+            return plugins.Select(c => c.Value.Target.GetType().Name).Distinct();
         }
+    }
+
+    public struct PluginPathCacheInfo
+    {
+        public object Target { get; set; }
+        public MethodInfo Method { get; set; }
+        public bool IsVoid { get; set; }
+        public bool IsTask { get; set; }
+        public bool IsTaskResult { get; set; }
     }
 
     public static class ServiceCollectionExtends

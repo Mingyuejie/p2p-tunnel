@@ -16,7 +16,7 @@ namespace server
 {
     public class ServerPluginHelper
     {
-        private readonly Dictionary<string, Tuple<object, MethodInfo>> plugins = new();
+        private readonly Dictionary<string, PluginPathCacheInfo> plugins = new();
         private long requestId = 0;
         private ConcurrentDictionary<long, SendCacheModel> sends = new ConcurrentDictionary<long, SendCacheModel>();
 
@@ -191,13 +191,26 @@ namespace server
 
         public void LoadPlugin(Type type, object obj)
         {
+            Type voidType = typeof(void);
+            Type taskType = typeof(Task);
             string path = type.Name.Replace("Plugin", "");
             foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
             {
                 string key = $"{path}/{method.Name}".ToLower();
                 if (!plugins.ContainsKey(key))
                 {
-                    plugins.TryAdd(key, new Tuple<object, MethodInfo>(obj, method));
+                    PluginPathCacheInfo cache = new PluginPathCacheInfo
+                    {
+                        IsVoid = method.ReturnType == voidType,
+                        Method = method,
+                        Target = obj,
+                        IsTask = method.ReturnType == taskType
+                    };
+                    if (cache.IsTask)
+                    {
+                        cache.IsTaskResult = cache.Method.ReturnType.Name.EndsWith("`1");
+                    }
+                    plugins.TryAdd(key, cache);
                 }
             }
         }
@@ -241,21 +254,18 @@ namespace server
                             Wrap = wrap
                         };
 
-                        dynamic resultAsync = plugin.Item2.Invoke(plugin.Item1, new object[] { excute });
+                        dynamic resultAsync = plugin.Method.Invoke(plugin.Target, new object[] { excute });
                         if (excute.Code == ServerMessageResponeCodes.OK)
                         {
-                            if (resultAsync != null)
+                            if (!plugin.IsVoid && resultAsync != null)
                             {
                                 object resultObject = null;
-                                if (resultAsync is Task task)
+                                if (plugin.IsTask)
                                 {
                                     resultAsync.Wait();
-                                    try
+                                    if (plugin.IsTaskResult)
                                     {
                                         resultObject = resultAsync.Result;
-                                    }
-                                    catch (Exception)
-                                    {
                                     }
                                 }
                                 else
@@ -328,4 +338,14 @@ public class SendCacheModel
     public TaskCompletionSource<ServerMessageResponeWrap> Tcs { get; set; }
     public long Time { get; set; } = Helper.GetTimeStamp();
     public long RequestId { get; set; } = 0;
+}
+
+
+public struct PluginPathCacheInfo
+{
+    public object Target { get; set; }
+    public MethodInfo Method { get; set; }
+    public bool IsVoid { get; set; }
+    public bool IsTask { get; set; }
+    public bool IsTaskResult { get; set; }
 }
