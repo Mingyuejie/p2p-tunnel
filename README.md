@@ -2,10 +2,10 @@
  * @Author: snltty
  * @Date: 2021-08-22 14:09:03
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-22 17:43:00
+ * @LastEditTime: 2021-09-28 22:10:59
  * @version: v1.0.0
  * @Descripttion: 功能说明
- * @FilePath: \client.web.vue3c:\Users\ASUS\Desktop\p2p-tunnel\README.md
+ * @FilePath: \client.web.vue3d:\Desktop\p2p-tunnel\README.md
 -->
 # 详细说明
 
@@ -23,7 +23,7 @@
     1. client 客户端公共内容
     2. client.service 客户端服务
     3. client.service.album 客户端服务的 图片相册插件
-    4. client.service.fileserver 客户端服务的  文件服务插件
+    4. client.service.ftp 客户端服务的  文件服务插件
     5. client.service.tcpforward 客户端服务的 tcp转发插件
     6. common 一些公共的功能
     7. server 服务器
