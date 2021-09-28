@@ -127,7 +127,8 @@ namespace client.service.plugins.serverPlugins.clients
                         Id = item.Id,
                         Name = item.Name,
                         Port = item.Port,
-                        TcpPort = item.TcpPort
+                        TcpPort = item.TcpPort,
+                        SelfId = registerState.RemoteInfo.ConnectId
                     };
                     clientInfoCaching.Add(client);
                     if (readClientsTimes == 1)

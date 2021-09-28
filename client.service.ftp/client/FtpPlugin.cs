@@ -55,7 +55,7 @@ namespace client.service.ftp.client
             RemoteListModel model = arg.Content.DeJson<RemoteListModel>();
             if (clientInfoCaching.Get(model.Id, out ClientInfo client) && client != null && client.TcpConnected)
             {
-                var res = await ftpClient.RemoteList(model.Path, client.Socket);
+                var res = await ftpClient.RemoteList(model.Path, client);
                 if (string.IsNullOrWhiteSpace(res.ErrorMsg))
                 {
                     return res.Data;
@@ -72,7 +72,7 @@ namespace client.service.ftp.client
             RemoteDownloadModel model = arg.Content.DeJson<RemoteDownloadModel>();
             if (clientInfoCaching.Get(model.Id, out ClientInfo client) && client != null && client.TcpConnected)
             {
-                var res = await ftpClient.Download(model.Path, client.Socket);
+                var res = await ftpClient.Download(model.Path, client);
                 if (!res.Data)
                 {
                     arg.SetCode(-1, res.ErrorMsg);
@@ -84,7 +84,7 @@ namespace client.service.ftp.client
             RemoteUploadModel model = arg.Content.DeJson<RemoteUploadModel>();
             if (clientInfoCaching.Get(model.Id, out ClientInfo client) && client != null && client.TcpConnected)
             {
-                ftpClient.Upload(model.Path, client.Socket);
+                ftpClient.Upload(model.Path, client);
             }
         }
         public async Task RemoteDelete(ClientServicePluginExcuteWrap arg)
@@ -92,7 +92,7 @@ namespace client.service.ftp.client
             RemoteDeleteModel model = arg.Content.DeJson<RemoteDeleteModel>();
             if (clientInfoCaching.Get(model.Id, out ClientInfo client) && client != null && client.TcpConnected)
             {
-                var res = await ftpClient.RemoteDelete(model.Path, client.Socket);
+                var res = await ftpClient.RemoteDelete(model.Path, client);
                 if (!res.Data)
                 {
                     arg.SetCode(-1, res.ErrorMsg);
@@ -104,7 +104,7 @@ namespace client.service.ftp.client
             RemoteDeleteModel model = arg.Content.DeJson<RemoteDeleteModel>();
             if (clientInfoCaching.Get(model.Id, out ClientInfo client) && client != null && client.TcpConnected)
             {
-                var res = await ftpClient.RemoteCreate(model.Path, client.Socket);
+                var res = await ftpClient.RemoteCreate(model.Path, client);
                 if (!res.Data)
                 {
                     arg.SetCode(-1, res.ErrorMsg);
@@ -129,6 +129,10 @@ namespace client.service.ftp.client
     {
         public long Id { get; set; }
         public string Path { get; set; }
+    }
+    public class RemoteSessionModel
+    {
+        public long Id { get; set; }
     }
 
     public class FtpSettingPlugin : IClientServiceSettingPlugin

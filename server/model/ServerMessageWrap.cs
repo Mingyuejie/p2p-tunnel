@@ -71,9 +71,6 @@ namespace server.model
 
         public ServerMessageWrap Wrap { get; set; }
 
-
-
-
         public ServerMessageResponeCodes Code { get; set; } = ServerMessageResponeCodes.OK;
         public string ErrorMessage { get; private set; } = string.Empty;
         public void SetCode(ServerMessageResponeCodes code, string errormsg = "")

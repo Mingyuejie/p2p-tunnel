@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:51:49
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-27 17:13:29
+ * @LastEditTime: 2021-09-28 16:33:24
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\Local.vue
@@ -39,11 +39,12 @@
 <script>
 import { reactive, ref, toRefs } from '@vue/reactivity'
 import { getLocalSpecialList, getLocalList, sendLocalCreate, sendLocalDelete, sendSetLocalPath, sendRemoteUpload } from '../../../apis/plugins/ftp'
-import { onMounted } from '@vue/runtime-core';
+import { onMounted, onUnmounted } from '@vue/runtime-core';
 import FileTree from './FileTree.vue'
 import ContextMenu from './ContextMenu.vue'
 import { ElMessageBox } from 'element-plus'
 import { injectFilesData } from './list-share-data'
+import { pushListener } from '../../../apis/request'
 export default {
     components: { FileTree, ContextMenu },
     setup () {
@@ -74,9 +75,17 @@ export default {
                 state.loading = false;
             });
         }
+
+        const onDownloadChange = () => {
+            getFiles();
+        }
         onMounted(() => {
             getSpecial();
             getFiles();
+            pushListener.add('ftp.progress.download', onDownloadChange);
+        });
+        onUnmounted(() => {
+            pushListener.remove('ftp.progress.download', onDownloadChange);
         });
 
         const handleRowDblClick = (row) => {

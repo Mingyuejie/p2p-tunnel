@@ -9,6 +9,9 @@ namespace client.service.ftp.protocol
         public FtpCommand Cmd { get; } = FtpCommand.CREATE;
 
         [ProtoMember(2)]
+        public long SessionId { get; set; }
+
+        [ProtoMember(3)]
         public string Path { get; set; }
     }
 }

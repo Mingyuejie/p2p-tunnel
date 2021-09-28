@@ -21,7 +21,7 @@ namespace client.service.ftp.server.plugin
         }
         public FtpCommand Cmd => FtpCommand.DELETE;
 
-        public object Excute(PluginParamWrap arg)
+        public object Excute(FtpPluginParamWrap arg)
         {
             FtpDelCommand cmd = arg.Wrap.Content.DeBytes<FtpDelCommand>();
 
@@ -31,7 +31,7 @@ namespace client.service.ftp.server.plugin
             }
             else
             {
-                List<string> errs = ftpServer.Delete(cmd.Path, arg);
+                List<string> errs = ftpServer.Delete(cmd);
                 if (errs.Any())
                 {
                     arg.SetCode(ServerMessageResponeCodes.ACCESS, string.Join(",", errs));

@@ -21,7 +21,7 @@ namespace client.service.ftp.server.plugin
             this.ftpServer = ftpServer;
         }
 
-        public object Excute(PluginParamWrap arg)
+        public object Excute(FtpPluginParamWrap arg)
         {
             FtpCreateCommand cmd = arg.Wrap.Content.DeBytes<FtpCreateCommand>();
 
@@ -31,7 +31,7 @@ namespace client.service.ftp.server.plugin
             }
             else
             {
-                List<string> errs = ftpServer.Create(cmd.Path, arg);
+                List<string> errs = ftpServer.Create(cmd);
                 if (errs.Any())
                 {
                     arg.SetCode(ServerMessageResponeCodes.ACCESS, string.Join(",", errs));

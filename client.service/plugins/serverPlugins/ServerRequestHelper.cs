@@ -27,9 +27,9 @@ namespace client.service.plugins.serverPlugins
             });
         }
 
-        public void SendOnly<T>(SendEventArg<T> arg)
+        public bool SendOnly<T>(SendEventArg<T> arg)
         {
-            serverPluginHelper.SendOnly(new SendMessageWrap<T>
+            return serverPluginHelper.SendOnly(new SendMessageWrap<T>
             {
                 Address = arg.Address,
                 Data = arg.Data,
@@ -49,9 +49,9 @@ namespace client.service.plugins.serverPlugins
             });
         }
 
-        public void SendOnlyTcp<T>(SendTcpEventArg<T> arg)
+        public bool SendOnlyTcp<T>(SendTcpEventArg<T> arg)
         {
-            serverPluginHelper.SendOnlyTcp(new SendMessageWrap<T>
+            return serverPluginHelper.SendOnlyTcp(new SendMessageWrap<T>
             {
                 TcpCoket = arg.Socket,
                 Data = arg.Data,

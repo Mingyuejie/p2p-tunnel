@@ -11,7 +11,7 @@ namespace client.service.ftp.server.plugin
 {
     public class ListPlugin : IFtpServerPlugin
     {
-        private readonly FtpServer  ftpServer;
+        private readonly FtpServer ftpServer;
 
         public ListPlugin(FtpServer ftpServer)
         {
@@ -19,10 +19,10 @@ namespace client.service.ftp.server.plugin
         }
         public FtpCommand Cmd => FtpCommand.LIST;
 
-        public object Excute(PluginParamWrap data)
+        public object Excute(FtpPluginParamWrap data)
         {
             FtpListCommand cmd = data.Wrap.Content.DeBytes<FtpListCommand>();
-            return ftpServer.GetFiles(cmd.Path, data);
+            return ftpServer.GetFiles(cmd);
         }
     }
 }

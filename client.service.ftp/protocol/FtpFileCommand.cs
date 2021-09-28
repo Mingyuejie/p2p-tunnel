@@ -7,18 +7,17 @@ namespace client.service.ftp.protocol
     {
         [ProtoMember(1, IsRequired = true)]
         public FtpCommand Cmd { get; } = FtpCommand.FILE;
-
         [ProtoMember(2)]
-        public byte[] Data { get; set; }
-
+        public long SessionId { get; set; }
         [ProtoMember(3)]
-        public long Size { get; set; }
-
+        public byte[] Data { get; set; }
         [ProtoMember(4)]
-        public long Md5 { get; set; }
-
+        public long Size { get; set; }
         [ProtoMember(5)]
+        public long Md5 { get; set; }
+        [ProtoMember(6)]
         public string Name { get; set; }
+       
     }
 
     [ProtoContract]
@@ -26,7 +25,9 @@ namespace client.service.ftp.protocol
     {
         [ProtoMember(1, IsRequired = true)]
         public FtpCommand Cmd { get; } = FtpCommand.FILE_END;
-        [ProtoMember(4)]
+        [ProtoMember(2)]
+        public long SessionId { get; set; }
+        [ProtoMember(3)]
         public long Md5 { get; set; }
     }
 
@@ -36,7 +37,18 @@ namespace client.service.ftp.protocol
         [ProtoMember(1, IsRequired = true)]
         public FtpCommand Cmd { get; } = FtpCommand.FILE_PROGRESS;
         [ProtoMember(2)]
+        public long SessionId { get; set; }
+        [ProtoMember(3)]
+        public FtpFileProgressValue[] Values { get; set; }
+    }
+
+    [ProtoContract]
+    public class FtpFileProgressValue
+    {
+        [ProtoMember(1)]
         public long Md5 { get; set; }
+        [ProtoMember(2)]
+        public long SessionId { get; set; }
         [ProtoMember(3)]
         public long Index { get; set; }
     }

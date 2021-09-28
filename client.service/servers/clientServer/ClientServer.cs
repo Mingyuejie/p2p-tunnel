@@ -37,6 +37,7 @@ namespace client.service.servers.clientServer
         public void LoadPlugins(Assembly[] assemblys)
         {
             Type voidType = typeof(void);
+            Type asyncType = typeof(IAsyncResult);
             Type taskType = typeof(Task);
 
             IEnumerable<Type> types = assemblys
@@ -56,13 +57,9 @@ namespace client.service.servers.clientServer
                             IsVoid = method.ReturnType == voidType,
                             Method = method,
                             Target = obj,
-                            IsTask = method.ReturnType == taskType
+                            IsTask = method.ReturnType.GetInterfaces().Contains(asyncType),
+                            IsTaskResult = method.ReturnType.IsSubclassOf(taskType)
                         };
-                        if (cache.IsTask)
-                        {
-                            cache.IsTaskResult = cache.Method.ReturnType.Name.EndsWith("`1");
-                        }
-
                         plugins.TryAdd(key, cache);
                     }
                 }

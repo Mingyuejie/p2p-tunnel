@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 23:04:50
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-26 23:15:58
+ * @LastEditTime: 2021-09-28 13:04:33
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\apis\request.js
@@ -25,7 +25,7 @@ const sendQueueMsg = () => {
 sendQueueMsg();
 
 //发布订阅
-const pushListener = {
+export const pushListener = {
     subs: {
     },
     add: function (type, callback) {

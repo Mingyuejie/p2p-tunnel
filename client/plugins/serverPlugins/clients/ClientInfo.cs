@@ -47,7 +47,7 @@ namespace client.plugins.serverPlugins.clients
         public long TcpLastTime { get; set; } = 0;
 
         [ProtoMember(13)]
-        public long IpAddress { get; set; } = 0;
+        public long SelfId { get; set; } = 0;
 
         public bool IsTimeout()
         {
@@ -99,7 +99,6 @@ namespace client.plugins.serverPlugins.clients
             TcpLastTime = Helper.GetTimeStamp();
             Socket = socket;
             Ip = IPEndPoint.Parse(socket.RemoteEndPoint.ToString()).Address.ToString();
-            IpAddress = ((IPEndPoint)socket.RemoteEndPoint).ToInt64();
         }
     }
 }

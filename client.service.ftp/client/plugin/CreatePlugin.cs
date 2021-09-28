@@ -20,7 +20,7 @@ namespace client.service.ftp.client.plugin
             this.ftpClient = ftpClient;
         }
 
-        public object Excute(PluginParamWrap arg)
+        public object Excute(FtpPluginParamWrap arg)
         {
             FtpCreateCommand cmd = arg.Wrap.Content.DeBytes<FtpCreateCommand>();
 

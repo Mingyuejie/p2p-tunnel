@@ -34,6 +34,9 @@ namespace client.service.ftp.protocol
     {
         [ProtoMember(1, IsRequired = true)]
         public FtpCommand Cmd { get; }
+
+        [ProtoMember(2)]
+        public long SessionId { get; set; }
     }
 
 }

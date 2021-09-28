@@ -11,11 +11,11 @@ namespace client.plugins.serverPlugins
 
         Task<ServerMessageResponeWrap> SendReply<T>(SendEventArg<T> arg);
 
-        void SendOnly<T>(SendEventArg<T> arg);
+        bool SendOnly<T>(SendEventArg<T> arg);
 
         Task<ServerMessageResponeWrap> SendReplyTcp<T>(SendTcpEventArg<T> arg);
 
-        void SendOnlyTcp<T>(SendTcpEventArg<T> arg);
+        bool SendOnlyTcp<T>(SendTcpEventArg<T> arg);
     }
 
 

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:51:49
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-27 17:13:49
+ * @LastEditTime: 2021-09-28 16:33:08
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\Remote.vue
@@ -43,13 +43,14 @@
 <script>
 import { reactive, ref, toRefs } from '@vue/reactivity'
 import { geRemoteList, sendRemoteCreate, sendRemoteDelete, sendRemoteDownload } from '../../../apis/plugins/ftp'
-import { onMounted } from '@vue/runtime-core';
+import { onMounted, onUnmounted } from '@vue/runtime-core';
 import FileTree from './FileTree.vue'
 import ContextMenu from './ContextMenu.vue'
 import { ElMessageBox } from 'element-plus'
 import { injectClients } from '../../../states/clients'
 import SettingModal from '../SettingModal.vue'
 import { injectFilesData } from './list-share-data'
+import { pushListener } from '../../../apis/request'
 export default {
     components: { FileTree, ContextMenu, SettingModal },
     setup () {
@@ -73,8 +74,16 @@ export default {
                 state.loading = false;
             });
         }
+
+        const onUploadChange = () => {
+            getFiles();
+        }
         onMounted(() => {
             getFiles();
+            pushListener.add('ftp.progress.upload', onUploadChange);
+        });
+        onUnmounted(() => {
+            pushListener.remove('ftp.progress.upload', onUploadChange);
         });
 
         const handleClientChange = () => {
@@ -192,7 +201,7 @@ export default {
         }
 
         return {
-            ...toRefs(state), ...toRefs(clientState), getFiles, contextMenu, handleSelectionChange, handleRowDblClick, handleContextMenu, handleClientChange
+            ...toRefs(state), ...toRefs(clientState), listShareData, getFiles, contextMenu, handleSelectionChange, handleRowDblClick, handleContextMenu, handleClientChange
         }
     }
 }

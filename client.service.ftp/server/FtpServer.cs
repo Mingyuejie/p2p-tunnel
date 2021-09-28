@@ -1,7 +1,7 @@
 ﻿using client.plugins.serverPlugins;
+using client.plugins.serverPlugins.clients;
 using client.service.ftp.plugin;
 using client.service.ftp.protocol;
-using client.service.ftp.server.plugin;
 using common;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +15,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace client.service.ftp.server
 {
@@ -25,6 +24,7 @@ namespace client.service.ftp.server
 
         protected override string SocketPath => "ftpclient/excute";
         protected override string RootPath { get { return config.ServerRoot; } }
+
 
         private readonly ServiceProvider serviceProvider;
         private readonly Config config;
@@ -37,7 +37,7 @@ namespace client.service.ftp.server
 
             clientInfoCaching.OnTcpOffline.Sub((client) =>
             {
-                currentPaths.TryRemove(client.IpAddress,out _);
+                currentPaths.TryRemove(client.Id, out _);
             });
         }
 
@@ -56,9 +56,9 @@ namespace client.service.ftp.server
             }
         }
 
-        public IEnumerable<FileInfo> GetFiles(string path, PluginParamWrap data)
+        public IEnumerable<FileInfo> GetFiles(FtpListCommand cmd)
         {
-            DirectoryInfo dirInfo = JoinPath(path, data);
+            DirectoryInfo dirInfo = JoinPath(cmd);
             return dirInfo.GetDirectories()
                 .Where(c => (c.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
                 .Select(c => new FileInfo
@@ -82,53 +82,66 @@ namespace client.service.ftp.server
             }));
         }
 
-        public List<string> Create(string path, PluginParamWrap data)
+        public List<string> Create(FtpCreateCommand cmd)
         {
-            return Create(GetCurrentPath(data), path);
+            return Create(GetCurrentPath(cmd.SessionId), cmd.Path);
         }
-        public List<string> Delete(string path, PluginParamWrap data)
+        public List<string> Delete(FtpDelCommand cmd)
         {
-            return Delete(GetCurrentPath(data), path);
+            return Delete(GetCurrentPath(cmd.SessionId), cmd.Path);
         }
-        public void OnFile(FtpFileCommand cmd, PluginParamWrap data)
+        public void OnFile(FtpFileCommand cmd, FtpPluginParamWrap wrap)
         {
-            OnFile(GetCurrentPath(data), cmd, data);
+            OnFile(GetCurrentPath(cmd.SessionId), cmd, wrap.Client);
         }
-        public void Upload(string path, PluginParamWrap data)
+        public IEnumerable<string> Upload(FtpDownloadCommand cmd, FtpPluginParamWrap wrap)
         {
-            Upload(GetCurrentPath(data), path, data.TcpSocket);
+            string[] paths = cmd.Path.Split(',');
+            string currentPath = GetCurrentPath(cmd.SessionId);
+            IEnumerable<string> accessPaths = paths.Where(c => Path.Combine(currentPath, c).StartsWith(config.ServerRoot));
+            IEnumerable<string> notAccessPaths = paths.Except(accessPaths);
+            if (accessPaths.Any())
+            {
+                Upload(currentPath, string.Join(',', accessPaths), wrap.Client);
+            }
+            if (notAccessPaths.Any())
+            {
+                return notAccessPaths.Select(c => c + " 无目录权限");
+            }
+
+            return Array.Empty<string>();
         }
 
         private ConcurrentDictionary<long, string> currentPaths = new ConcurrentDictionary<long, string>();
-        private string GetCurrentPath(PluginParamWrap data)
+        private string GetCurrentPath(long sessionId)
         {
-            currentPaths.TryGetValue(data.SourcePoint.ToInt64(), out string path);
+            currentPaths.TryGetValue(sessionId, out string path);
             if (string.IsNullOrWhiteSpace(path))
             {
-                path = config.ClientRootPath;
-                SetCurrentPath(path, data);
+                path = config.ServerRoot;
+                SetCurrentPath(path, sessionId);
             }
             return path;
         }
-        private void SetCurrentPath(string path, PluginParamWrap data)
+        private void SetCurrentPath(string path, long sessionId)
         {
-            currentPaths.AddOrUpdate(data.SourcePoint.ToInt64(), path, (a, b) => path);
+            currentPaths.AddOrUpdate(sessionId, path, (a, b) => path);
         }
-        private DirectoryInfo JoinPath(string path, PluginParamWrap data)
+        private DirectoryInfo JoinPath(FtpListCommand cmd)
         {
-            string currentPath = GetCurrentPath(data);
+            string currentPath = GetCurrentPath(cmd.SessionId);
 
             DirectoryInfo dirInfo = new DirectoryInfo(currentPath);
-            if (!string.IsNullOrWhiteSpace(path))
+            if (!string.IsNullOrWhiteSpace(cmd.Path))
             {
-                dirInfo = new DirectoryInfo(Path.Combine(currentPath, path));
+                dirInfo = new DirectoryInfo(Path.Combine(currentPath, cmd.Path));
             }
             //不能访问根目录的上级目录
             if (dirInfo.FullName.Length < RootPath.Length)
             {
                 dirInfo = new DirectoryInfo(RootPath);
             }
-            SetCurrentPath(dirInfo.FullName, data);
+            SetCurrentPath(dirInfo.FullName, cmd.SessionId);
 
             return dirInfo;
         }
@@ -138,10 +151,12 @@ namespace client.service.ftp.server
     {
         private readonly FtpServer ftpServer;
         private readonly Config config;
-        public FtpServerPlugin(FtpServer ftpServer, Config config)
+        private readonly IClientInfoCaching clientInfoCaching;
+        public FtpServerPlugin(FtpServer ftpServer, Config config, IClientInfoCaching clientInfoCaching)
         {
             this.ftpServer = ftpServer;
             this.config = config;
+            this.clientInfoCaching = clientInfoCaching;
         }
 
         public object Excute(PluginParamWrap data)
@@ -153,15 +168,38 @@ namespace client.service.ftp.server
             else
             {
                 FtpCommandBase cmd = data.Wrap.Content.DeBytes<FtpCommandBase>();
-                if (ftpServer.Plugins.ContainsKey(cmd.Cmd))
+
+                FtpPluginParamWrap wrap = new FtpPluginParamWrap
                 {
-                    try
+                    Code = data.Code,
+                    Packet = data.Packet,
+                    ServerType = data.ServerType,
+                    SourcePoint = data.SourcePoint,
+                    TcpSocket = data.TcpSocket,
+                    Wrap = data.Wrap
+                };
+                wrap.SetErrorMessage(data.ErrorMessage);
+                if (clientInfoCaching.Get(cmd.SessionId, out ClientInfo client))
+                {
+                    wrap.Client = client;
+                }
+                if (wrap.Client == null)
+                {
+                    data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, $"未找到来源客户端信息");
+                }
+                else
+                {
+                    if (ftpServer.Plugins.ContainsKey(cmd.Cmd))
                     {
-                        return ftpServer.Plugins[cmd.Cmd].Excute(data);
-                    }
-                    catch (Exception ex)
-                    {
-                        data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, ex.Message);
+                        try
+                        {
+                            return ftpServer.Plugins[cmd.Cmd].Excute(wrap);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Instance.Error(ex + "");
+                            data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, ex.Message);
+                        }
                     }
                 }
             }

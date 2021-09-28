@@ -20,10 +20,10 @@ namespace client.service.ftp.server.plugin
         }
         public FtpCommand Cmd => FtpCommand.FILE_END;
 
-        public object Excute(PluginParamWrap data)
+        public object Excute(FtpPluginParamWrap data)
         {
             FtpFileEndCommand cmd = data.Wrap.Content.DeBytes<FtpFileEndCommand>();
-            ftpServer.OnFileEnd(cmd, data);
+            ftpServer.OnFileEnd(cmd);
             return true;
         }
     }

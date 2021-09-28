@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:43:21
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-27 20:49:26
+ * @LastEditTime: 2021-09-28 13:05:58
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\Progress.vue
@@ -20,7 +20,7 @@
                     </el-table-column>
                     <el-table-column prop="IndexLength" label="进度" width="100">
                         <template #default="scope">
-                            <span>{{((scope.row.IndexLength/scope.row.TotalLength)*100).toFixed(2)}} </span>
+                            <span>{{((scope.row.IndexLength/scope.row.TotalLength)*100).toFixed(2)}}%</span>
                         </template>
                     </el-table-column>
                 </el-table>
@@ -38,7 +38,7 @@
                     </el-table-column>
                     <el-table-column prop="IndexLength" label="进度" width="100">
                         <template #default="scope">
-                            <span>{{((scope.row.IndexLength/scope.row.TotalLength)*100).toFixed(2)}} </span>
+                            <span>{{((scope.row.IndexLength/scope.row.TotalLength)*100).toFixed(2)}}%</span>
                         </template>
                     </el-table-column>
                 </el-table>
@@ -49,7 +49,7 @@
 
 <script>
 import { reactive, toRefs } from '@vue/reactivity'
-import { subNotifyMsg, unsubNotifyMsg } from '../../../apis/request'
+import { subNotifyMsg, unsubNotifyMsg, pushListener } from '../../../apis/request'
 import { onMounted, onUnmounted } from '@vue/runtime-core';
 export default {
     setup () {
@@ -59,6 +59,13 @@ export default {
         });
 
         const subFunc = (info) => {
+            if (info.Uploads.length < state.upload.length) {
+                pushListener.push('ftp.progress.upload');
+            }
+            if (info.Downloads.length < state.download.length) {
+                pushListener.push('ftp.progress.download');
+            }
+
             state.upload = info.Uploads;
             state.download = info.Downloads;
         }

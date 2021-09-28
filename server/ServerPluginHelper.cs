@@ -7,6 +7,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -192,7 +193,9 @@ namespace server
         public void LoadPlugin(Type type, object obj)
         {
             Type voidType = typeof(void);
+            Type asyncType = typeof(IAsyncResult);
             Type taskType = typeof(Task);
+
             string path = type.Name.Replace("Plugin", "");
             foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
             {
@@ -204,12 +207,9 @@ namespace server
                         IsVoid = method.ReturnType == voidType,
                         Method = method,
                         Target = obj,
-                        IsTask = method.ReturnType == taskType
+                        IsTask = method.ReturnType.GetInterfaces().Contains(asyncType),
+                        IsTaskResult = method.ReturnType.IsSubclassOf(taskType)
                     };
-                    if (cache.IsTask)
-                    {
-                        cache.IsTaskResult = cache.Method.ReturnType.Name.EndsWith("`1");
-                    }
                     plugins.TryAdd(key, cache);
                 }
             }
@@ -317,6 +317,7 @@ namespace server
                 }
                 catch (Exception ex)
                 {
+                    Logger.Instance.Error(ex+"");
                     ReplayData(new SendMessageWrap<object>
                     {
                         TcpCoket = param.Socket,

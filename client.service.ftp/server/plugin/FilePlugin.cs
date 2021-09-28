@@ -14,7 +14,7 @@ namespace client.service.ftp.server.plugin
         }
         public FtpCommand Cmd => FtpCommand.FILE;
 
-        public object Excute(PluginParamWrap data)
+        public object Excute(FtpPluginParamWrap data)
         {
             FtpFileCommand cmd = data.Wrap.Content.DeBytes<FtpFileCommand>();
             ftpServer.OnFile(cmd, data);
