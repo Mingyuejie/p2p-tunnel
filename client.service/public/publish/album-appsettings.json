@@ -1,1 +1,12 @@
-﻿{"Clients":[{"SourcePort":5411,"TargetName":"56客户端","TargetPort":5412}],"ServerPort":5412,"UseServer":false,"AdminPssd":""}
+{
+  "Clients": [
+    {
+      "SourcePort": 5411,
+      "TargetName": "",
+      "TargetPort": 5412
+    }
+  ],
+  "ServerPort": 5412,
+  "UseServer": false,
+  "Password": "000000"
+}

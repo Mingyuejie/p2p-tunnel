@@ -83,7 +83,7 @@ namespace client.service.ftp
                     File.Delete(cacheFullPath);
                 }
 
-                var stream = new FileStream(cacheFullPath, FileMode.Create & FileMode.Append, FileAccess.Write);
+                var stream = new FileStream(cacheFullPath, FileMode.Create & FileMode.Append, FileAccess.Write,FileShare.ReadWrite);
                 stream.Seek(cmd.Size - 1, SeekOrigin.Begin);
                 stream.WriteByte(new byte());
                 stream.Seek(0, SeekOrigin.Begin);
