@@ -103,13 +103,15 @@ namespace client.service.ftp
             fs.Stream.Write(cmd.Data);
             fs.IndexLength += cmd.Data.Length;
             fs.Time = Helper.GetTimeStamp();
-
             if (fs.IndexLength >= cmd.Size)
             {
                 ipDic.TryRemove(cmd.Md5, out _);
                 fs.Stream.Close();
+                fs.Stream.Dispose();
                 new System.IO.FileInfo(fs.CacheFileName).MoveTo(fs.FileName);
                 SendOnlyTcp(new FtpFileEndCommand { SessionId = client.SelfId, Md5 = cmd.Md5 }, client);
+
+                GC.SuppressFinalize(fs.Stream);
             }
         }
         public void OnUploadFileProgress(FtpFileProgressCommand cmd)
@@ -138,33 +140,36 @@ namespace client.service.ftp
         }
         protected void Upload(string currentPath, string path, ClientInfo client)
         {
-            foreach (var item in path.Split(','))
+            Task.Run(() =>
             {
-                if (!string.IsNullOrWhiteSpace(item))
+                foreach (var item in path.Split(','))
                 {
-                    var filepath = Path.Combine(currentPath, item);
-                    if (Directory.Exists(filepath))
+                    if (!string.IsNullOrWhiteSpace(item))
                     {
-                        List<FileUploadInfo> files = new();
-                        GetFiles(files, new DirectoryInfo(filepath));
+                        var filepath = Path.Combine(currentPath, item);
+                        if (Directory.Exists(filepath))
+                        {
+                            List<FileUploadInfo> files = new();
+                            GetFiles(files, new DirectoryInfo(filepath));
 
-                        var paths = files.Where(c => c.Type == FileType.Folder)
-                            .Select(c => c.Path.Replace(currentPath, "").TrimStart(Path.DirectorySeparatorChar));
-                        if (paths.Any())
-                        {
-                            RemoteCreate(string.Join(",", paths), client).Wait();
+                            var paths = files.Where(c => c.Type == FileType.Folder)
+                                .Select(c => c.Path.Replace(currentPath, "").TrimStart(Path.DirectorySeparatorChar));
+                            if (paths.Any())
+                            {
+                                RemoteCreate(string.Join(",", paths), client).Wait();
+                            }
+                            foreach (var file in files.Where(c => c.Type == FileType.File))
+                            {
+                                _Upload(file.Path, currentPath, client);
+                            }
                         }
-                        foreach (var file in files.Where(c => c.Type == FileType.File))
+                        else if (File.Exists(filepath))
                         {
-                            _Upload(file.Path, currentPath, client);
+                            _Upload(filepath, currentPath, client);
                         }
-                    }
-                    else if (File.Exists(filepath))
-                    {
-                        _Upload(filepath, currentPath, client);
                     }
                 }
-            }
+            });
         }
 
         private void _Upload(string path, string currentPath, ClientInfo client)
@@ -174,11 +179,11 @@ namespace client.service.ftp
             {
                 try
                 {
-                    Uploads.TryGetValue(client.SelfId, out ConcurrentDictionary<long, FileSaveInfo> ipDic);
+                    Uploads.TryGetValue(client.Id, out ConcurrentDictionary<long, FileSaveInfo> ipDic);
                     if (ipDic == null)
                     {
                         ipDic = new ConcurrentDictionary<long, FileSaveInfo>();
-                        Uploads.TryAdd(client.SelfId, ipDic);
+                        Uploads.TryAdd(client.Id, ipDic);
                     }
 
                     System.Threading.Interlocked.Increment(ref fileId);
@@ -231,7 +236,6 @@ namespace client.service.ftp
                         cmd.Data = data;
                         save.Time = Helper.GetTimeStamp();
                         SendOnlyTcp(cmd, client);
-                        ipDic.TryRemove(cmd.Md5, out _);
                     }
                 }
                 catch (Exception ex)
@@ -311,7 +315,7 @@ namespace client.service.ftp
                                 var client = item.Value.Values.FirstOrDefault().Client;
                                 SendOnlyTcp(new FtpFileProgressCommand
                                 {
-                                    SessionId = client.Id,
+                                    SessionId = client.SelfId,
                                     Values = item.Value.Values.Select(c => new FtpFileProgressValue
                                     {
                                         Index = c.IndexLength,

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:51:49
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-28 16:33:24
+ * @LastEditTime: 2021-09-28 19:45:47
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\Local.vue
@@ -214,6 +214,9 @@ export default {
 </script>
 
 <style lang="stylus" scoped>
+.el-table::before
+    height: 0;
+
 .head
     padding-bottom: 0.4rem;
 

@@ -161,6 +161,7 @@ namespace client.service.ftp.client
             config.Password = _config.Password;
             config.ServerRoot = _config.ServerRoot;
             config.ServerCurrentPath = config.ServerRoot;
+            config.Enable = _config.Enable;
             config.SaveConfig();
 
             return string.Empty;

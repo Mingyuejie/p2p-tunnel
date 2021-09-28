@@ -161,7 +161,6 @@ namespace client.service.ftp.client
 
         public async Task<CommonTaskResponseModel<FileInfo[]>> RemoteList(string path, ClientInfo client)
         {
-            Logger.Instance.Info($" {client.Id}");
             CommonTaskResponseModel<FileInfo[]> res = new CommonTaskResponseModel<FileInfo[]>();
             var response = await SendReplyTcp(new FtpListCommand { SessionId = client.SelfId, Path = path }, client);
             if (response.Code == ServerMessageResponeCodes.OK)
