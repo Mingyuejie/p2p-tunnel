@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-26 19:12:37
+ * @LastEditTime: 2021-09-29 22:19:53
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -19,31 +19,50 @@
                 <span class="el-dropdown-link">应用插件 <i class="el-icon-arrow-down el-icon--right"></i></span>
                 <template #dropdown>
                     <el-dropdown-menu>
-                        <auth-item name="TcpForwardPlugin">
+                        <template v-if="websocketState.connected">
+                            <auth-item name="TcpForwardPlugin">
+                                <el-dropdown-item>
+                                    <router-link :to="{name:'PluginTcpForward'}">TCP转发 <i class="el-icon-circle-check" :class="{active:tcpForwardConnected}"></i></router-link>
+                                </el-dropdown-item>
+                            </auth-item>
+                            <auth-item name="AlbumSettingPlugin">
+                                <el-dropdown-item>
+                                    <router-link :to="{name:'PluginAlbum'}">图片相册</router-link>
+                                </el-dropdown-item>
+                            </auth-item>
+                            <auth-item name="FtpPlugin">
+                                <el-dropdown-item>
+                                    <router-link :to="{name:'PluginFtp'}">文件服务</router-link>
+                                </el-dropdown-item>
+                            </auth-item>
+                            <auth-item name="UpnpPlugin">
+                                <el-dropdown-item>
+                                    <router-link :to="{name:'PluginUPNP'}">UPNP映射</router-link>
+                                </el-dropdown-item>
+                            </auth-item>
+                            <auth-item name="WakeUpPlugin">
+                                <el-dropdown-item>
+                                    <router-link :to="{name:'PluginWakeUp'}">幻数据包</router-link>
+                                </el-dropdown-item>
+                            </auth-item>
+                        </template>
+                        <template v-else>
                             <el-dropdown-item>
-                                <router-link :to="{name:'PluginTcpForward'}">TCP转发 <i class="el-icon-circle-check" :class="{active:tcpForwardConnected}"></i></router-link>
+                                <router-link :to="{name:'PluginTcpForward'}" class="disabled">TCP转发</router-link>
                             </el-dropdown-item>
-                        </auth-item>
-                        <auth-item name="AlbumSettingPlugin">
                             <el-dropdown-item>
-                                <router-link :to="{name:'PluginAlbum'}">图片相册</router-link>
+                                <router-link :to="{name:'PluginAlbum'}" class="disabled">图片相册</router-link>
                             </el-dropdown-item>
-                        </auth-item>
-                        <auth-item name="FtpPlugin">
                             <el-dropdown-item>
-                                <router-link :to="{name:'PluginFtp'}">文件服务</router-link>
+                                <router-link :to="{name:'PluginFtp'}" class="disabled">文件服务</router-link>
                             </el-dropdown-item>
-                        </auth-item>
-                        <auth-item name="UpnpPlugin">
                             <el-dropdown-item>
-                                <router-link :to="{name:'PluginUPNP'}">UPNP映射</router-link>
+                                <router-link :to="{name:'PluginUPNP'}" class="disabled">UPNP映射</router-link>
                             </el-dropdown-item>
-                        </auth-item>
-                        <auth-item name="WakeUpPlugin">
                             <el-dropdown-item>
-                                <router-link :to="{name:'PluginWakeUp'}">幻数据包</router-link>
+                                <router-link :to="{name:'PluginWakeUp'}" class="disabled">幻数据包</router-link>
                             </el-dropdown-item>
-                        </auth-item>
+                        </template>
                     </el-dropdown-menu>
                 </template>
             </el-dropdown>
@@ -102,6 +121,19 @@ export default {
 .menu-wrap
     line-height: 8rem;
     height: 8rem;
+
+.el-dropdown-menu__item
+    padding: 0;
+
+    &:hover
+        background-color: rgba(0, 0, 0, 0.1) !important;
+
+    a
+        padding: 0 2rem;
+        line-height: 3.6rem;
+
+        &.disabled
+            color: #bbb;
 
 .logo
     img
