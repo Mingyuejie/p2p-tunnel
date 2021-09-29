@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:43:21
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-29 15:43:14
+ * @LastEditTime: 2021-09-29 21:46:55
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\Progress.vue
@@ -122,13 +122,13 @@ export default {
                 contextMenu.value.show(event, [
                     {
                         text: '取消下载', handle: () => {
-                            ElMessageBox.confirm(`取消下载,【${row.Name}】`, '取消下载', {
+                            ElMessageBox.confirm(`取消下载,【${row.FileName}】`, '取消下载', {
                                 confirmButtonText: '确定',
                                 cancelButtonText: '取消',
                                 type: 'warning'
                             }).then(() => {
                                 state.loading = true;
-                                sendRemoteCancel(listShareData.clientId || 0, row.Md5).then(() => {
+                                sendRemoteCancel(listShareData.clientId || 0, row.Md5).then((res) => {
                                     state.loading = false;
                                 }).catch(() => {
                                     state.loading = false;

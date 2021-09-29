@@ -12,6 +12,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace client.service.ftp
@@ -41,6 +42,9 @@ namespace client.service.ftp
 
             LoopProgress();
             LoopUpload();
+
+            AppDomain.CurrentDomain.ProcessExit += (s, e) => Exit();
+            Console.CancelKeyPress += (s, e) => Exit();
         }
 
         protected List<string> Create(string currentPath, string path)
@@ -56,6 +60,10 @@ namespace client.service.ftp
             try
             {
                 var fs = Downloads.Get(cmd.SessionId, cmd.Md5);
+                if (fs != null && fs.Token.IsCancellationRequested)
+                {
+                    return;
+                }
                 if (fs == null)
                 {
                     fs = new FileSaveInfo
@@ -128,7 +136,7 @@ namespace client.service.ftp
         }
         public void OnFileUploadCanceled(FtpCanceledCommand cmd)
         {
-            Downloads.Remove(cmd.SessionId, cmd.Md5);
+            Downloads.Remove(cmd.SessionId, cmd.Md5, true);
         }
         protected void Upload(string currentPath, string path, ClientInfo client)
         {
@@ -175,7 +183,7 @@ namespace client.service.ftp
                     return;
                 }
 
-                System.Threading.Interlocked.Increment(ref fileId);
+                Interlocked.Increment(ref fileId);
                 var save = new FileSaveInfo
                 {
                     FileName = file.FullName,
@@ -227,6 +235,10 @@ namespace client.service.ftp
                     int index = 0;
                     while (index < packCount)
                     {
+                        if (save.Token.IsCancellationRequested)
+                        {
+                            return;
+                        }
                         if (save.State != UploadState.Uploading)
                         {
                             return;
@@ -243,15 +255,19 @@ namespace client.service.ftp
                         index++;
                         if (index % 10 == 0)
                         {
-                            System.Threading.Thread.Sleep(1);
+                            Thread.Sleep(1);
                         }
+                    }
+                    if (save.Token.IsCancellationRequested)
+                    {
+                        return;
+                    }
+                    if (save.State != UploadState.Uploading)
+                    {
+                        return;
                     }
                     if (lastPackSize > 0)
                     {
-                        if (save.State != UploadState.Uploading)
-                        {
-                            return;
-                        }
                         byte[] data = new byte[lastPackSize];
                         fs.Read(data, 0, (int)lastPackSize);
                         cmd.Data = data;
@@ -264,7 +280,7 @@ namespace client.service.ftp
                     save.State = UploadState.Error;
                     Logger.Instance.Error($" Upload {ex}");
                 }
-            });
+            }, save.Token.Token);
         }
         private void LoopUpload()
         {
@@ -280,7 +296,7 @@ namespace client.service.ftp
                             Upload(saves.FirstOrDefault(c => c.State == UploadState.Wait));
                         }
                     }
-                    System.Threading.Thread.Sleep(100);
+                    Thread.Sleep(100);
                 }
             }, TaskCreationOptions.LongRunning);
         }
@@ -386,9 +402,15 @@ namespace client.service.ftp
                             }
                         }
                     }
-                    System.Threading.Thread.Sleep(1000);
+                    Thread.Sleep(1000);
                 }
             }, TaskCreationOptions.LongRunning);
+        }
+
+        private void Exit()
+        {
+            // Downloads.Clear(client.Id);
+            // Uploads.Clear(client.Id);
         }
     }
 
@@ -443,11 +465,19 @@ namespace client.service.ftp
         public string CacheFileName { get; set; } = string.Empty;
         [System.Text.Json.Serialization.JsonIgnore]
         public long LastLength { get; set; } = 0;
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public CancellationTokenSource Token { get; set; }
+
         public long Speed { get; set; } = 0;
         public UploadState State { get; set; } = UploadState.Wait;
 
         public void Disponse(bool deleteFile = false)
         {
+            if (Token != null)
+            {
+                Token.Cancel();
+            }
             if (Stream != null)
             {
                 Stream.Close();
@@ -497,6 +527,7 @@ namespace client.service.ftp
                 ipDic = new ConcurrentDictionary<long, FileSaveInfo>();
                 Caches.TryAdd(info.ClientId, ipDic);
             }
+            info.Token = new CancellationTokenSource();
             ipDic.AddOrUpdate(info.Md5, info, (a, b) => info);
         }
 

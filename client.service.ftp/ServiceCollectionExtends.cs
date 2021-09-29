@@ -54,6 +54,7 @@ namespace client.service.ftp
         {
             obj.GetService<FtpServer>().LoadPlugins(assemblys);
             obj.GetService<FtpClient>().LoadPlugins(assemblys);
+
             return obj;
         }
     }

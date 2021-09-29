@@ -23,7 +23,7 @@ namespace client.service.ftp.protocol
     public class FtpCanceledCommand : IFtpCommandBase
     {
         [ProtoMember(1, IsRequired = true)]
-        public FtpCommand Cmd { get; } = FtpCommand.FILE_CANCEL;
+        public FtpCommand Cmd { get; } = FtpCommand.FILE_CANCELED;
         [ProtoMember(2)]
         public long SessionId { get; set; }
 
