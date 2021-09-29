@@ -1,5 +1,6 @@
 ﻿{
   "ServerRoot": "",
   "Password": "000000",
-  "Enable": false
+  "Enable": false,
+  "UploadNum": 10
 }
