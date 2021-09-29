@@ -49,7 +49,22 @@ namespace client.service.ftp.client
         {
             ftpClient.Delete(arg.Content);
         }
+        public void LocalCancel(ClientServicePluginExcuteWrap arg)
+        {
+            RemoteCancelModel model = arg.Content.DeJson<RemoteCancelModel>();
+            ftpClient.OnFileUploadCancel(new protocol.FtpCancelCommand { Md5 = model.Md5, SessionId = model.Id });
+        }
 
+        public bool RemoteCancel(ClientServicePluginExcuteWrap arg)
+        {
+            RemoteCancelModel model = arg.Content.DeJson<RemoteCancelModel>();
+            if (clientInfoCaching.Get(model.Id, out ClientInfo client) && client != null && client.TcpConnected)
+            {
+                return ftpClient.RemoteCancel(model.Md5, client).Result.Data;
+            }
+            return false;
+
+        }
         public async Task<FileInfo[]> RemoteList(ClientServicePluginExcuteWrap arg)
         {
             RemoteListModel model = arg.Content.DeJson<RemoteListModel>();
@@ -124,7 +139,11 @@ namespace client.service.ftp.client
     public class RemoteDownloadModel : RemoteListModel
     {
     }
-
+    public class RemoteCancelModel
+    {
+        public long Id { get; set; }
+        public long Md5 { get; set; }
+    }
     public class RemoteListModel
     {
         public long Id { get; set; }
@@ -162,6 +181,7 @@ namespace client.service.ftp.client
             config.ServerRoot = _config.ServerRoot;
             config.ServerCurrentPath = config.ServerRoot;
             config.Enable = _config.Enable;
+            config.UploadNum = _config.UploadNum;
             config.SaveConfig();
 
             return string.Empty;
@@ -180,8 +200,8 @@ namespace client.service.ftp.client
         {
             return new
             {
-                Uploads = ftpClient.Uploads.Values.SelectMany(c => c.Values),
-                Downloads = ftpClient.Downloads.Values.SelectMany(c => c.Values),
+                Uploads = ftpClient.Uploads.Caches.Values.SelectMany(c => c.Values),
+                Downloads = ftpClient.Downloads.Caches.Values.SelectMany(c => c.Values),
             };
         }
     }

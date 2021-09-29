@@ -27,23 +27,6 @@ namespace client.service.ftp.client.plugin
         }
     }
 
-    public class FileProgressPlugin : IFtpClientPlugin
-    {
-        private readonly FtpClient ftpClient;
-        public FileProgressPlugin(FtpClient ftpClient)
-        {
-            this.ftpClient = ftpClient;
-        }
-        public FtpCommand Cmd => FtpCommand.FILE_PROGRESS;
-
-        public object Excute(FtpPluginParamWrap data)
-        {
-            FtpFileProgressCommand cmd = data.Wrap.Content.DeBytes<FtpFileProgressCommand>();
-            ftpClient.OnUploadFileProgress(cmd);
-            return null;
-        }
-    }
-
     public class FileEndPlugin : IFtpClientPlugin
     {
         private readonly FtpClient ftpClient;

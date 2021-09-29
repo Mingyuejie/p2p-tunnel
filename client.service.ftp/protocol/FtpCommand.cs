@@ -20,7 +20,8 @@ namespace client.service.ftp.protocol
         DOWNLOAD = 3,
         FILE = 4,
         FILE_END = 5,
-        FILE_PROGRESS = 6
+        FILE_CANCEL = 6,
+        FILE_CANCELED = 7,
     }
 
     [ProtoContract]

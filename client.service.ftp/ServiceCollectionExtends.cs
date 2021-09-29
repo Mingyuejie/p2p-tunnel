@@ -90,7 +90,9 @@ namespace client.service.ftp
         public string Password { get; set; } = string.Empty;
 
         public bool Enable { get; set; } = false;
+        public int UploadNum { get; set; } = 10;
 
+        
 
         public static Config ReadConfig()
         {
@@ -105,6 +107,7 @@ namespace client.service.ftp
             config.ServerRoot = ServerRoot;
             config.Password = Password;
             config.Enable = Enable;
+            config.UploadNum = UploadNum;
 
             File.WriteAllText("ftp-appsettings.json", config.ToJson(), System.Text.Encoding.UTF8);
         }

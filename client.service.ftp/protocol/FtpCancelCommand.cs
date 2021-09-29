@@ -1,32 +1,32 @@
 ﻿using ProtoBuf;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace client.service.ftp.protocol
 {
     [ProtoContract]
-    public class FtpFileCommand : IFtpCommandBase
+    public class FtpCancelCommand : IFtpCommandBase
     {
         [ProtoMember(1, IsRequired = true)]
-        public FtpCommand Cmd { get; } = FtpCommand.FILE;
+        public FtpCommand Cmd { get; } = FtpCommand.FILE_CANCEL;
         [ProtoMember(2)]
         public long SessionId { get; set; }
+
         [ProtoMember(3)]
-        public byte[] Data { get; set; }
-        [ProtoMember(4)]
-        public long Size { get; set; }
-        [ProtoMember(5)]
         public long Md5 { get; set; }
-        [ProtoMember(6)]
-        public string Name { get; set; }
-       
     }
 
     [ProtoContract]
-    public class FtpFileEndCommand : IFtpCommandBase
+    public class FtpCanceledCommand : IFtpCommandBase
     {
         [ProtoMember(1, IsRequired = true)]
-        public FtpCommand Cmd { get; } = FtpCommand.FILE_END;
+        public FtpCommand Cmd { get; } = FtpCommand.FILE_CANCEL;
         [ProtoMember(2)]
         public long SessionId { get; set; }
+
         [ProtoMember(3)]
         public long Md5 { get; set; }
     }

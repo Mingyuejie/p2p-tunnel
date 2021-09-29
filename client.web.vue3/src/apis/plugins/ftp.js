@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:09:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-27 14:19:59
+ * @LastEditTime: 2021-09-29 10:34:21
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\apis\plugins\ftp.js
@@ -24,6 +24,9 @@ export const sendLocalDelete = (path = '') => {
 export const sendSetLocalPath = (path = '') => {
     return sendWebsocketMsg(`ftp/SetLocalPath`, path);
 }
+export const sendLocalCancel = (id, md5 = 0) => {
+    return sendWebsocketMsg(`ftp/localCancel`, { Id: id, Md5: md5 });
+}
 
 
 export const geRemoteList = (id, path = '') => {
@@ -40,4 +43,7 @@ export const sendRemoteUpload = (id, path = '') => {
 }
 export const sendRemoteDownload = (id, path = '') => {
     return sendWebsocketMsg(`ftp/Download`, { Id: id, Path: path });
+}
+export const sendRemoteCancel = (id, md5 = 0) => {
+    return sendWebsocketMsg(`ftp/remoteCancel`, { Id: id, Md5: md5 });
 }

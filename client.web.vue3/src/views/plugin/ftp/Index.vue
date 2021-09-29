@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:10:48
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-28 19:45:29
+ * @LastEditTime: 2021-09-29 15:32:00
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\Index.vue
@@ -22,9 +22,11 @@
 <script>
 import Progress from './Progress.vue'
 import List from './List.vue'
+import { provideFilesData } from './list-share-data'
 export default {
     components: { List, Progress },
     setup () {
+        provideFilesData();
         return {}
     }
 }
@@ -40,4 +42,9 @@ export default {
 
     .split
         height: 0.6rem;
+</style>
+<style lang="stylus">
+.el-input.file-name
+    .el-input__inner
+        border: 0;
 </style>

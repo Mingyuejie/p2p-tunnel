@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:43:21
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-28 19:46:05
+ * @LastEditTime: 2021-09-29 15:43:14
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\Progress.vue
@@ -11,16 +11,22 @@
     <div class="progress flex">
         <div class="upload flex-1 relative">
             <div class="absolute">
-                <el-table :data="upload" size="mini" height="100%">
+                <el-table :data="upload" size="mini" height="100%" @row-contextmenu="handleLocalContextMenu">
                     <el-table-column prop="FileName" label="文件名（上传）"></el-table-column>
                     <el-table-column prop="TotalLength" label="大小" width="100">
                         <template #default="scope">
-                            <span>{{scope.row.TotalLength.sizeFormat()}} </span>
+                            <p>{{scope.row.TotalLength.sizeFormat()}} </p>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="State" label="状态" width="100">
+                        <template #default="scope">
+                            <span>{{states[scope.row.State]}} </span>
                         </template>
                     </el-table-column>
                     <el-table-column prop="IndexLength" label="进度" width="100">
                         <template #default="scope">
-                            <span>{{((scope.row.IndexLength/scope.row.TotalLength)*100).toFixed(2)}}%</span>
+                            <p>{{((scope.row.IndexLength/scope.row.TotalLength)*100).toFixed(2)}}%</p>
+                            <p>{{scope.row.Speed.sizeFormat()}}/s</p>
                         </template>
                     </el-table-column>
                 </el-table>
@@ -29,7 +35,7 @@
         <div class="split"></div>
         <div class="download flex-1 relative">
             <div class="absolute">
-                <el-table :data="download" size="mini" height="100%">
+                <el-table :data="download" size="mini" height="100%" @row-contextmenu="handleRemoteContextMenu">
                     <el-table-column prop="FileName" label="文件名（下载）"></el-table-column>
                     <el-table-column prop="TotalLength" label="大小" width="100">
                         <template #default="scope">
@@ -38,24 +44,34 @@
                     </el-table-column>
                     <el-table-column prop="IndexLength" label="进度" width="100">
                         <template #default="scope">
-                            <span>{{((scope.row.IndexLength/scope.row.TotalLength)*100).toFixed(2)}}%</span>
+                            <p>{{((scope.row.IndexLength/scope.row.TotalLength)*100).toFixed(2)}}%</p>
+                            <p>{{scope.row.Speed.sizeFormat()}}/s</p>
                         </template>
                     </el-table-column>
                 </el-table>
             </div>
         </div>
+        <ContextMenu ref="contextMenu"></ContextMenu>
     </div>
 </template>
 
 <script>
-import { reactive, toRefs } from '@vue/reactivity'
+import { reactive, toRefs, ref } from '@vue/reactivity'
 import { subNotifyMsg, unsubNotifyMsg, pushListener } from '../../../apis/request'
+import { sendLocalCancel, sendRemoteCancel } from '../../../apis/plugins/ftp'
 import { onMounted, onUnmounted } from '@vue/runtime-core';
+import ContextMenu from './ContextMenu.vue'
+import { injectFilesData } from './list-share-data'
+import { ElMessageBox } from 'element-plus'
 export default {
+    components: { ContextMenu },
     setup () {
+
+        const listShareData = injectFilesData();
         const state = reactive({
             upload: [],
-            download: []
+            download: [],
+            states: ['等待中', '上传中', '正在取消', '错误的']
         });
 
         const subFunc = (info) => {
@@ -76,8 +92,57 @@ export default {
             unsubNotifyMsg('ftp/info', subFunc);
         });
 
+
+        const contextMenu = ref(null);
+        const handleLocalContextMenu = (row, column, event) => {
+            if (!state.loading && row.Name != '..') {
+                contextMenu.value.show(event, [
+                    {
+                        text: '取消上传', handle: () => {
+                            ElMessageBox.confirm(`取消上传,【${row.FileName}】`, '取消上传', {
+                                confirmButtonText: '确定',
+                                cancelButtonText: '取消',
+                                type: 'warning'
+                            }).then(() => {
+                                state.loading = true;
+                                sendLocalCancel(listShareData.clientId || 0, row.Md5).then(() => {
+                                    state.loading = false;
+                                }).catch(() => {
+                                    state.loading = false;
+                                });;
+                            });
+                        }
+                    }
+                ]);
+            }
+            event.preventDefault();
+        }
+        const handleRemoteContextMenu = (row, column, event) => {
+            if (!state.loading && row.Name != '..') {
+                contextMenu.value.show(event, [
+                    {
+                        text: '取消下载', handle: () => {
+                            ElMessageBox.confirm(`取消下载,【${row.Name}】`, '取消下载', {
+                                confirmButtonText: '确定',
+                                cancelButtonText: '取消',
+                                type: 'warning'
+                            }).then(() => {
+                                state.loading = true;
+                                sendRemoteCancel(listShareData.clientId || 0, row.Md5).then(() => {
+                                    state.loading = false;
+                                }).catch(() => {
+                                    state.loading = false;
+                                });;
+                            });
+                        }
+                    }
+                ]);
+            }
+            event.preventDefault();
+        }
+
         return {
-            ...toRefs(state)
+            ...toRefs(state), contextMenu, handleLocalContextMenu, handleRemoteContextMenu
         }
     }
 }

@@ -32,13 +32,11 @@ namespace client.service.ftp.client
         protected override string RootPath { get { return config.ClientRootPath; } }
 
         private readonly ServiceProvider serviceProvider;
-        private readonly Config config;
 
         public FtpClient(ServiceProvider serviceProvider, IServerRequest serverRequest, Config config, IClientInfoCaching clientInfoCaching)
-            : base(serverRequest, clientInfoCaching)
+            : base(serverRequest, config, clientInfoCaching)
         {
             this.serviceProvider = serviceProvider;
-            this.config = config;
         }
 
         public void LoadPlugins(Assembly[] assemblys)
@@ -162,7 +160,7 @@ namespace client.service.ftp.client
         public async Task<CommonTaskResponseModel<FileInfo[]>> RemoteList(string path, ClientInfo client)
         {
             CommonTaskResponseModel<FileInfo[]> res = new CommonTaskResponseModel<FileInfo[]>();
-            var response = await SendReplyTcp(new FtpListCommand { SessionId = client.SelfId, Path = path }, client);
+            var response = await SendReplyTcp(new FtpListCommand { SessionId = client.SelfId, Path = path }, client.Id);
             if (response.Code == ServerMessageResponeCodes.OK)
             {
                 res.Data = response.Data.DeBytes<FileInfo[]>();
@@ -176,7 +174,7 @@ namespace client.service.ftp.client
         public async Task<CommonTaskResponseModel<bool>> Download(string path, ClientInfo client)
         {
             CommonTaskResponseModel<bool> res = new CommonTaskResponseModel<bool> { Data = true };
-            var response = await SendReplyTcp(new FtpDownloadCommand { SessionId = client.SelfId, Path = path }, client);
+            var response = await SendReplyTcp(new FtpDownloadCommand { SessionId = client.SelfId, Path = path }, client.Id);
             if (response.Code != ServerMessageResponeCodes.OK)
             {
                 res.ErrorMsg = response.ErrorMsg;

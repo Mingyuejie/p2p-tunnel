@@ -27,13 +27,11 @@ namespace client.service.ftp.server
 
 
         private readonly ServiceProvider serviceProvider;
-        private readonly Config config;
 
         public FtpServer(ServiceProvider serviceProvider, IServerRequest serverRequest, Config config, IClientInfoCaching clientInfoCaching)
-            : base(serverRequest, clientInfoCaching)
+            : base(serverRequest, config, clientInfoCaching)
         {
             this.serviceProvider = serviceProvider;
-            this.config = config;
 
             clientInfoCaching.OnTcpOffline.Sub((client) =>
             {

@@ -274,6 +274,7 @@ namespace client.service.plugins.serverPlugins.clients
                         }
                         else if (client.TcpConnected)
                         {
+                            //Logger.Instance.Debug($"给 {client.Id} 发送心跳");
                             heartEventHandles.SendTcpHeartMessage(registerState.RemoteInfo.ConnectId, client.Socket);
                         }
 
@@ -294,6 +295,7 @@ namespace client.service.plugins.serverPlugins.clients
                     }
                     else if (e.Packet.ServerType == ServerType.TCP)
                     {
+                        //Logger.Instance.Debug($"收到 {e.Data.SourceId} 的心跳");
                         clientInfoCaching.UpdateTcpLastTime(e.Data.SourceId);
                     }
                 }
