@@ -2,10 +2,10 @@
  * @Author: snltty
  * @Date: 2021-08-22 14:09:03
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-28 22:10:59
+ * @LastEditTime: 2021-09-29 16:48:14
  * @version: v1.0.0
  * @Descripttion: 功能说明
- * @FilePath: \client.web.vue3d:\Desktop\p2p-tunnel\README.md
+ * @FilePath: \client.web.vue3c:\Users\ASUS\Desktop\p2p-tunnel\README.md
 -->
 # 详细说明
 
@@ -45,18 +45,26 @@
 
 ### 截图
 #### 1. 注册
-![注册](./screenshot/reg.jpg)
+![注册](./screenshot/zc.jpg)
 
 
 #### 2. 客户端列表
-![客户端列表](./screenshot/clients.jpg)
-
-
+![客户端列表](./screenshot/khd.jpg)
 #### 3. 转发配置
-![转发配置](./screenshot/tcpforward.jpg)
+![tcp转发](./screenshot/tcpzf.jpg)
 
-#### 4. 访问对方网页
-![访问网页](./screenshot/bweb.jpg)
+1. TCP转发 - 访问对方网页
 
-#### 5. 访问对方桌面
-![访问网页](./screenshot/bdesktop.jpg)
+    <img src="./screenshot/bweb.jpg" width="300">
+
+2. TCP转发 - 访问对方桌面
+
+    <img src="./screenshot/bdesktop.jpg" width="300">
+
+#### 4. 图片相册
+![图片相册](./screenshot/tpxc.jpg)
+
+#### 5. 文件服务
+![文件服务](./screenshot/wj.jpg)
+
+#### 6. 持续丰富中...

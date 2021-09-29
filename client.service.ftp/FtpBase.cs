@@ -3,6 +3,7 @@ using client.plugins.serverPlugins.clients;
 using client.service.ftp.extends;
 using client.service.ftp.protocol;
 using common;
+using common.extends;
 using ProtoBuf;
 using server.model;
 using server.plugins.register.caching;
@@ -81,7 +82,17 @@ namespace client.service.ftp
 
                 if (fs.Stream == null)
                 {
-                    fs.Stream = new FileStream(fs.CacheFileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                    if (File.Exists(fs.CacheFileName))
+                    {
+                        try
+                        {
+                            File.Delete(fs.CacheFileName);
+                        }
+                        catch (Exception)
+                        {
+                        }
+                    }
+                    fs.Stream = new FileStream(fs.CacheFileName, FileMode.Create & FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
                     fs.Stream.Seek(cmd.Size - 1, SeekOrigin.Begin);
                     fs.Stream.WriteByte(new byte());
                     fs.Stream.Seek(0, SeekOrigin.Begin);
@@ -486,7 +497,7 @@ namespace client.service.ftp
                 ipDic = new ConcurrentDictionary<long, FileSaveInfo>();
                 Caches.TryAdd(info.ClientId, ipDic);
             }
-            ipDic.AddOrUpdate(info.ClientId, info, (a, b) => info);
+            ipDic.AddOrUpdate(info.Md5, info, (a, b) => info);
         }
 
         public bool Contains(long clientId, string fileFullName)

@@ -92,17 +92,21 @@ namespace client.service.ftp
         public bool Enable { get; set; } = false;
         public int UploadNum { get; set; } = 10;
 
-        
+
 
         public static Config ReadConfig()
         {
-            Config config = File.ReadAllText("ftp-appsettings.json").DeJson<Config>();
-            return config;
+            if (File.Exists("ftp-appsettings.json"))
+            {
+                Config config = File.ReadAllText("ftp-appsettings.json").DeJson<Config>();
+                return config;
+            }
+            return new Config();
         }
 
         public void SaveConfig()
         {
-            Config config = File.ReadAllText("ftp-appsettings.json").DeJson<Config>();
+            Config config = ReadConfig();
 
             config.ServerRoot = ServerRoot;
             config.Password = Password;
