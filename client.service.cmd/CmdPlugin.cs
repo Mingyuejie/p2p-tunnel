@@ -7,10 +7,13 @@ using server.model;
 using server.plugin;
 using server.plugins.register.caching;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace client.service.cmd
 {
@@ -18,7 +21,7 @@ namespace client.service.cmd
     {
         private readonly IServerRequest serverRequest;
         private readonly IClientInfoCaching clientInfoCaching;
-        public CmdsPlugin(IServerRequest serverRequest, IClientInfoCaching clientInfoCaching)
+        public CmdsPlugin(IServerRequest serverRequest, IClientInfoCaching clientInfoCaching) : base(clientInfoCaching)
         {
             this.serverRequest = serverRequest;
             this.clientInfoCaching = clientInfoCaching;
@@ -33,7 +36,7 @@ namespace client.service.cmd
                     Path = "cmd/excute",
                     Socket = client.Socket,
                     Timeout = 0,
-                    Data = new CmdModel { Cmd = model.Cmd }
+                    Data = new CmdModel { SessionId = model.Id, Cmd = model.Cmd }
                 }).Result;
                 if (res.Code == ServerMessageResponeCodes.OK)
                 {
@@ -41,7 +44,7 @@ namespace client.service.cmd
                 }
                 return new CmdResultModel { Err = res.ErrorMsg };
             }
-            return ExcuteCmd(model.Cmd);
+            return ExcuteCmd(model.Id, model.Cmd);
         }
     }
 
@@ -77,7 +80,7 @@ namespace client.service.cmd
     public class CmdPlugin : CmdBase, IPlugin
     {
         private readonly Config config;
-        public CmdPlugin(Config config)
+        public CmdPlugin(Config config, IClientInfoCaching clientInfoCaching) : base(clientInfoCaching)
         {
             this.config = config;
         }
@@ -88,17 +91,47 @@ namespace client.service.cmd
             {
                 return new CmdResultModel { Err = "远程命令服务未开启" };
             }
-            return ExcuteCmd(cmd.Cmd);
+            return ExcuteCmd(cmd.SessionId, cmd.Cmd);
         }
 
 
     }
     public class CmdBase
     {
-        protected CmdResultModel ExcuteCmd(string cmd)
-        {
-            Process proc = new();
+        public ConcurrentDictionary<long, string> dirs { get; } = new();
 
+        public CmdBase(IClientInfoCaching clientInfoCaching)
+        {
+            //掉线的，删掉目录缓存
+            clientInfoCaching.OnTcpOffline.Sub((client) =>
+            {
+                dirs.TryRemove(client.Id, out _);
+            });
+        }
+
+        protected CmdResultModel ExcuteCmd(long id, string cmd)
+        {
+            if (string.IsNullOrWhiteSpace(cmd))
+            {
+                return new CmdResultModel();
+            }
+
+            //获取当前目录，每个人的都存一份
+            dirs.TryGetValue(id, out string workDir);
+            if (string.IsNullOrWhiteSpace(workDir))
+            {
+                workDir = Directory.GetCurrentDirectory();
+                dirs.TryAdd(id, workDir);
+            }
+
+            Tuple<string, string> cmdParsed = ParseCmd(cmd);
+            if (cmdParsed.Item1 == "cd")
+            {
+                //处理cd 命令
+                return new CmdResultModel { Res = $"当前目录 {cd(id, cmdParsed.Item2)}" };
+            }
+
+            Process proc = new();
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 proc.StartInfo.FileName = "cmd.exe";
@@ -107,6 +140,7 @@ namespace client.service.cmd
             {
                 proc.StartInfo.FileName = "/bin/bash";
             }
+            proc.StartInfo.WorkingDirectory = workDir;
             proc.StartInfo.CreateNoWindow = true;
             proc.StartInfo.UseShellExecute = false;
             proc.StartInfo.RedirectStandardError = true;
@@ -140,9 +174,44 @@ namespace client.service.cmd
                 Res = res
             };
         }
+
+        private string cd(long id, string path)
+        {
+            dirs.TryGetValue(id, out string workDir);
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                if (Directory.Exists(Path.Combine(workDir, path)))
+                {
+                    workDir = new DirectoryInfo(Path.Combine(workDir, path)).FullName;
+                    dirs.AddOrUpdate(id, workDir, (a, b) => workDir);
+                }
+            }
+            return workDir;
+        }
+
+        /// <summary>
+        /// 处理行返回 命令 和 参数
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <returns></returns>
+        private Tuple<string, string> ParseCmd(string cmd)
+        {
+            ReadOnlySpan<char> span = cmd.Trim().AsSpan();
+            int index = span.IndexOf(Encoding.ASCII.GetString(new byte[] { 32 })[0]);
+            if (index > 0)
+            {
+                string cmdStr = span.Slice(0, index).ToString().Trim();
+                string paramStr = span.Slice(index, span.Length - index).ToString().Trim();
+                return new Tuple<string, string>(cmdStr, paramStr);
+            }
+            else
+            {
+                return new Tuple<string, string>(span.ToString(), string.Empty);
+            }
+        }
     }
 
- 
+
     public class RemoteCmdModel
     {
         public long Id { get; set; }
@@ -153,6 +222,9 @@ namespace client.service.cmd
     {
         [ProtoMember(1)]
         public string Cmd { get; set; }
+
+        [ProtoMember(2)]
+        public long SessionId { get; set; }
     }
     [ProtoContract]
     public class CmdResultModel
