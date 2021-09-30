@@ -37,31 +37,8 @@ namespace client.service.cmd
 
     public class Config
     {
-        private string root = string.Empty;
-        public string Root
-        {
-            get
-            {
-                return root;
-            }
-            set
-            {
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    root = Directory.GetCurrentDirectory();
-                }
-                else
-                {
-                    root = new DirectoryInfo(value).FullName;
-                }
-            }
-        }
-
         public string Password { get; set; } = string.Empty;
-
         public bool Enable { get; set; } = false;
-
-
 
         public static Config ReadConfig()
         {
@@ -76,7 +53,6 @@ namespace client.service.cmd
         public void SaveConfig()
         {
             Config config = ReadConfig();
-            config.Root = Root;
             config.Password = Password;
             config.Enable = Enable;
             File.WriteAllText("cmd-appsettings.json", config.ToJson(), System.Text.Encoding.UTF8);

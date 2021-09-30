@@ -2,17 +2,18 @@
  * @Author: snltty
  * @Date: 2021-09-30 14:25:13
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-30 16:03:36
+ * @LastEditTime: 2021-09-30 19:43:03
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\cmd\Index.vue
 -->
 <template>
     <div class="cmd-setting-wrap flex flex-column h-100">
-        <div class="head">
+        <div class="head flex">
             <SettingModal className="CmdSettingPlugin">
                 <el-button size="mini">配置插件</el-button>
             </SettingModal>
+            <span class="split"></span>
             <el-select v-model="clientId" placeholder="请选择已连接的目标客户端" size="mini">
                 <template v-for="client in clients" :key="client.Id">
                     <el-option :label="client.Name" :value="client.Id">
@@ -20,14 +21,8 @@
                 </template>
             </el-select>
         </div>
-        <div class="body flex-1">
-            <el-tabs type="border-card" class="h-100 flex flex-column">
-                <el-tab-pane label="命令行" class="absolute">
-                    <Cmd></Cmd>
-                </el-tab-pane>
-                <el-tab-pane label="服务" class="absolute">服务</el-tab-pane>
-                <el-tab-pane label="进程" class="absolute">进程</el-tab-pane>
-            </el-tabs>
+        <div class="body flex-1 relative">
+            <Cmd></Cmd>
         </div>
     </div>
 </template>

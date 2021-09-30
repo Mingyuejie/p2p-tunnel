@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-30 14:47:08
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-30 16:17:10
+ * @LastEditTime: 2021-09-30 19:44:24
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\cmd\Cmd.vue
@@ -18,7 +18,10 @@
             <div class="input flex">
                 <span>></span>
                 <span class="flex-1">
-                    <input ref="inputDom" type="text" v-model="input" @keyup="handleKeypress" />
+                    <el-icon color="#ffffff" v-show="loading">
+                        <loading />
+                    </el-icon>
+                    <input v-show="!loading" ref="inputDom" type="text" v-model="input" @keyup="handleKeypress" />
                 </span>
             </div>
         </div>
@@ -33,7 +36,8 @@ export default {
     setup () {
         const state = reactive({
             outputs: [],
-            input: ''
+            input: '',
+            loading: false
         });
         const output = (str) => {
             state.outputs.push(str.replace(/\n/g, '<br/>'));
@@ -78,19 +82,23 @@ export default {
             if (state.input == 'cls') {
                 state.outputs = [];
             } else {
+                state.loading = true;
                 sendCmd(0, state.input).then((res) => {
+                    state.loading = false;
                     if (res.Res) {
                         output(res.Res);
                     }
                     if (res.Err) {
                         output(res.Err);
                     }
+                    nextTick(() => { handleWrapClick(); })
+                }).catch(() => {
+                    state.loading = false;
                 })
             }
             state.input = '';
         }
         const handleKeyup = () => {
-            console.log('up');
             cmdIndex--;
             if (cmdIndex <= 0) {
                 cmdIndex = 0;
@@ -98,7 +106,6 @@ export default {
             state.input = cmdHostory[cmdIndex];
         }
         const handleKeydown = () => {
-            console.log('down');
             cmdIndex++;
             if (cmdIndex >= cmdHostory.length - 1) {
                 cmdIndex = cmdHostory.length - 1;
@@ -121,9 +128,14 @@ export default {
     color: #fff;
     overflow: auto;
     font-size: 1.4rem;
+    border-radius: 0.4rem;
+    padding: 1rem;
 
 .input
     line-height: 2.8rem;
+
+    .el-icon
+        vertical-align: middle;
 
     input
         width: 100%;

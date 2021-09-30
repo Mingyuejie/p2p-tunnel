@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:43:21
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-29 21:46:55
+ * @LastEditTime: 2021-09-30 18:47:19
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\Progress.vue
@@ -32,7 +32,7 @@
                 </el-table>
             </div>
         </div>
-        <div class="split"></div>
+        <span class="split"></span>
         <div class="download flex-1 relative">
             <div class="absolute">
                 <el-table :data="download" size="mini" height="100%" @row-contextmenu="handleRemoteContextMenu">
@@ -155,9 +155,6 @@ export default {
 .progress
     height: 30rem;
     width: 100%;
-
-    .split
-        width: 0.6rem;
 
     .upload, .download
         height: 100%;

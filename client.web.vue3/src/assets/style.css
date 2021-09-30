@@ -27,6 +27,7 @@ body{
     overflow: hidden;background-color: #f5f5f5;
 }
 
+span.split{width: 0.6rem;}
 
 :root{
     --main-color:#409EFF;

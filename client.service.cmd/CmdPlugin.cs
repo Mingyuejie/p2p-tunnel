@@ -8,10 +8,9 @@ using server.plugin;
 using server.plugins.register.caching;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace client.service.cmd
 {
@@ -43,7 +42,6 @@ namespace client.service.cmd
                 return new CmdResultModel { Err = res.ErrorMsg };
             }
             return ExcuteCmd(model.Cmd);
-            // return new CmdResultModel { Err = "未连接" };
         }
     }
 
@@ -76,7 +74,6 @@ namespace client.service.cmd
             return string.Empty;
         }
     }
-
     public class CmdPlugin : CmdBase, IPlugin
     {
         private readonly Config config;
@@ -89,19 +86,18 @@ namespace client.service.cmd
             CmdModel cmd = arg.Wrap.Content.DeBytes<CmdModel>();
             if (!config.Enable)
             {
-                return new CmdResultModel { Err = "服务未开启" };
+                return new CmdResultModel { Err = "远程命令服务未开启" };
             }
             return ExcuteCmd(cmd.Cmd);
         }
 
 
     }
-
     public class CmdBase
     {
         protected CmdResultModel ExcuteCmd(string cmd)
         {
-            System.Diagnostics.Process proc = new();
+            Process proc = new();
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -146,19 +142,18 @@ namespace client.service.cmd
         }
     }
 
+ 
     public class RemoteCmdModel
     {
         public long Id { get; set; }
         public string Cmd { get; set; }
     }
-
     [ProtoContract]
     public class CmdModel
     {
         [ProtoMember(1)]
         public string Cmd { get; set; }
     }
-
     [ProtoContract]
     public class CmdResultModel
     {

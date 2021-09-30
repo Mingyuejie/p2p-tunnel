@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-24 10:29:45
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-25 00:57:57
+ * @LastEditTime: 2021-09-30 18:45:46
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\album\Index.vue
@@ -14,9 +14,11 @@
                 <el-option v-for="(item,index) in clients" :key="index" :label="`${item.SourcePort} -> 【${item.TargetName}】${item.TargetPort}`" :value="index">
                 </el-option>
             </el-select>
+            <span class="split"></span>
             <SettingModal className="AlbumSettingPlugin" @success="loadClients">
                 <el-button size="mini">配置插件</el-button>
             </SettingModal>
+            <span class="split"></span>
             <el-button size="mini" @click="loadClients" :loading="loading">刷新目标</el-button>
             <div class="flex-1"></div>
             <el-button type="warning" size="mini" @click="handleVerify" :loading="loading">管理验证</el-button>
@@ -120,7 +122,4 @@ export default {
 <style lang="stylus" scoped>
 .head
     padding: 2rem;
-
-    .el-button
-        margin-left: 0.4rem;
 </style>

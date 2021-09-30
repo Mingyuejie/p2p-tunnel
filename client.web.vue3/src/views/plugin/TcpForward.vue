@@ -2,18 +2,19 @@
  * @Author: snltty
  * @Date: 2021-08-20 00:47:21
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-24 15:19:15
+ * @LastEditTime: 2021-09-30 18:45:15
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\TcpForward.vue
 -->
 <template>
     <div class="forward-wrap">
-        <div class="head">
+        <div class="head flex">
             <SettingModal className="TcpForwardPlugin">
                 <el-button size="mini">配置插件</el-button>
             </SettingModal>
-            <el-button type="primary" size="mini" style="margin-right:.6rem" @click="handleAdd">增加转发</el-button>
+            <span class="split"></span>
+            <el-button type="primary" size="mini" @click="handleAdd">增加转发</el-button>
             <el-button size="mini" @click="getData">刷新列表</el-button>
         </div>
         <el-table v-loading="loading" :data="list" border size="mini">
