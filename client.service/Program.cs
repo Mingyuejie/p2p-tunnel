@@ -1,4 +1,5 @@
 ﻿using client.service.album;
+using client.service.cmd;
 using client.service.ftp;
 using client.service.ftp.server;
 using client.service.plugins.punchHolePlugins;
@@ -38,6 +39,7 @@ namespace client.service
                 typeof(UpnpPlugin).Assembly,
                 typeof(FtpServerPlugin).Assembly,
                 typeof(WakeUpPlugin).Assembly,
+                typeof(CmdPlugin).Assembly,
             };
 
             serviceCollection
@@ -53,6 +55,7 @@ namespace client.service
                 .AddAlbumPlugin() //图片相册插件
                 .AddUpnpPlugin()//upnp映射
                 .AddFtpPlugin() //文件服务
+                .AddCmdPlugin()
                 ;
 
 
@@ -70,6 +73,7 @@ namespace client.service
                 .UseAlbumPlugin() //图片相册插件
                 .UseUpnpPlugin()//upnp映射
                 .UseFtpPlugin() //文件服务
+                .UseCmdPlugin()
                ;
             //自动注册
             if (config.Client.AutoReg)

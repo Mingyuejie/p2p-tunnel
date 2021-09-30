@@ -58,7 +58,6 @@ namespace client.service.ftp.client
         public bool RemoteCancel(ClientServicePluginExcuteWrap arg)
         {
             RemoteCancelModel model = arg.Content.DeJson<RemoteCancelModel>();
-            Console.WriteLine(model.ToJson());
             if (clientInfoCaching.Get(model.Id, out ClientInfo client) && client != null && client.TcpConnected)
             {
                 return ftpClient.RemoteCancel(model.Md5, client).Result.Data;

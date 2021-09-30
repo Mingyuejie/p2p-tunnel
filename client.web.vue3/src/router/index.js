@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-26 19:11:35
+ * @LastEditTime: 2021-09-30 14:23:35
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\router\index.js
@@ -27,6 +27,12 @@ const routes = [
         component: () => import('../views/plugin/Index.vue'),
         redirect: { name: 'PluginSetting' },
         children: [
+            {
+                path: '/plugin-cmd.html',
+                name: 'PluginCmd',
+                component: () => import('../views/plugin/cmd/Index.vue'),
+                meta: { name: '远程命令' }
+            },
             {
                 path: '/plugin-setting.html',
                 name: 'PluginSetting',

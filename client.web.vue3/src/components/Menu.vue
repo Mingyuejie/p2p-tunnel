@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-29 22:19:53
+ * @LastEditTime: 2021-09-30 14:23:54
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -35,6 +35,11 @@
                                     <router-link :to="{name:'PluginFtp'}">文件服务</router-link>
                                 </el-dropdown-item>
                             </auth-item>
+                            <auth-item name="CmdsPlugin">
+                                <el-dropdown-item>
+                                    <router-link :to="{name:'PluginCmd'}">远程命令</router-link>
+                                </el-dropdown-item>
+                            </auth-item>
                             <auth-item name="UpnpPlugin">
                                 <el-dropdown-item>
                                     <router-link :to="{name:'PluginUPNP'}">UPNP映射</router-link>
@@ -55,6 +60,9 @@
                             </el-dropdown-item>
                             <el-dropdown-item>
                                 <router-link :to="{name:'PluginFtp'}" class="disabled">文件服务</router-link>
+                            </el-dropdown-item>
+                            <el-dropdown-item>
+                                <router-link :to="{name:'PluginCmd'}" class="disabled">远程命令</router-link>
                             </el-dropdown-item>
                             <el-dropdown-item>
                                 <router-link :to="{name:'PluginUPNP'}" class="disabled">UPNP映射</router-link>
