@@ -1,4 +1,5 @@
 ﻿using common;
+using MessagePack;
 using ProtoBuf;
 using server.model;
 using System;
@@ -115,148 +116,148 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp
     }
 
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class Step1Model : IPunchHoleMessageBase
     {
         /// <summary>
         /// 我的id
         /// </summary>
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public long FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(3, IsRequired = true), Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.NOTIFY;
 
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public short PunchStep { get; } = (short)PunchHoleTcpNutssBSteps.STEP_1;
     }
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class Step2Model : IPunchHoleMessageBase
     {
         /// <summary>
         /// 我的id
         /// </summary>
-        [ProtoMember(1)]
+        [ProtoMember(1), Key(1)]
         public long FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(3, IsRequired = true), Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.NOTIFY;
 
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public short PunchStep { get; } = (short)PunchHoleTcpNutssBSteps.STEP_2;
     }
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class Step2FailModel : IPunchHoleMessageBase
     {
-        [ProtoMember(1)]
+        [ProtoMember(1), Key(1)]
         public long FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(3, IsRequired = true), Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public short PunchStep { get; } = (short)PunchHoleTcpNutssBSteps.STEP_2_FAIL;
     }
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class Step2TryModel : IPunchHoleMessageBase
     {
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public long FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(3, IsRequired = true), Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.NOTIFY;
 
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public short PunchStep { get; } = (short)PunchHoleTcpNutssBSteps.STEP_2_TRY;
     }
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class Step2StopModel : IPunchHoleMessageBase
     {
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public long FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(3, IsRequired = true), Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public short PunchStep { get; } = (short)PunchHoleTcpNutssBSteps.STEP_2_STOP;
     }
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class Step3Model : IPunchHoleMessageBase
     {
         /// <summary>
         /// 我的id
         /// </summary>
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public long FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(3, IsRequired = true), Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public short PunchStep { get; } = (short)PunchHoleTcpNutssBSteps.STEP_3;
     }
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class Step4Model : IPunchHoleMessageBase
     {
         /// <summary>
         /// 我的id
         /// </summary>
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public long FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(3, IsRequired = true), Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public short PunchStep { get; } = (short)PunchHoleTcpNutssBSteps.STEP_4;
     }
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class StepPacketModel : IPunchHoleMessageBase
     {
         /// <summary>
         /// 我的id
         /// </summary>
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public long FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(3, IsRequired = true), Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public short PunchStep { get; } = (short)PunchHoleTcpNutssBSteps.STEP_PACKET;
 
-        [ProtoMember(5)]
+        [ProtoMember(5), Key(5)]
         public byte Live { get; } = 1;
     }
 

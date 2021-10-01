@@ -1,5 +1,6 @@
 ﻿using common;
 using common.extends;
+using MessagePack;
 using ProtoBuf;
 using System;
 using System.Net;
@@ -12,41 +13,41 @@ namespace client.plugins.serverPlugins.clients
     /// <summary>
     /// 客户端信息
     /// </summary>
-    [ProtoContract, Serializable]
+    [ProtoContract, Serializable, MessagePackObject]
     public class ClientInfo
     {
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public bool Connecting { get; set; } = false;
-        [ProtoMember(2)]
+        [ProtoMember(2), Key(2)]
         public bool TcpConnecting { get; set; } = false;
-        [ProtoMember(3)]
+        [ProtoMember(3), Key(3)]
         public bool Connected { get; set; } = false;
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public bool TcpConnected { get; set; } = false;
 
-        [ProtoIgnore, JsonIgnore]
+        [ProtoIgnore, JsonIgnore,IgnoreMember]
         public Socket Socket { get; set; } = null;
 
-        [ProtoIgnore, JsonIgnore]
+        [ProtoIgnore, JsonIgnore,IgnoreMember]
         public IPEndPoint Address { get; set; } = null;
-        [ProtoMember(5)]
+        [ProtoMember(5), Key(5)]
         public int Port { get; set; } = 0;
-        [ProtoMember(6)]
+        [ProtoMember(6), Key(6)]
         public int TcpPort { get; set; } = 0;
-        [ProtoMember(7)]
+        [ProtoMember(7), Key(7)]
         public string Name { get; set; } = string.Empty;
-        [ProtoMember(8)]
+        [ProtoMember(8), Key(8)]
         public string Mac { get; set; } = string.Empty;
-        [ProtoMember(9)]
+        [ProtoMember(9), Key(9)]
         public string Ip { get; set; } = string.Empty;
-        [ProtoMember(10)]
+        [ProtoMember(10), Key(10)]
         public long Id { get; set; } = 0;
-        [ProtoMember(11)]
+        [ProtoMember(11), Key(11)]
         public long LastTime { get; set; } = 0;
-        [ProtoMember(12)]
+        [ProtoMember(12), Key(12)]
         public long TcpLastTime { get; set; } = 0;
 
-        [ProtoMember(13)]
+        [ProtoMember(13), Key(13)]
         public long SelfId { get; set; } = 0;
 
         public bool IsTimeout()

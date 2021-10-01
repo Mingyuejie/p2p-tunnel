@@ -2,6 +2,7 @@
 using client.plugins.serverPlugins.register;
 using common;
 using common.extends;
+using MessagePack;
 using Microsoft.Extensions.DependencyInjection;
 using ProtoBuf;
 using server.model;
@@ -76,8 +77,9 @@ namespace client.service.plugins.punchHolePlugins
             }
         }
 
-        public void SendTcp(SendPunchHoleTcpArg arg)
+        public void SendTcp<T>(SendPunchHoleTcpArg<T> arg)
         {
+            var msg = ((IPunchHoleMessageBase)arg.Data);
             serverRequest.SendOnlyTcp(new SendTcpEventArg<PunchHoleModel>
             {
                 Socket = arg.Socket,
@@ -85,17 +87,18 @@ namespace client.service.plugins.punchHolePlugins
                 Data = new PunchHoleModel
                 {
                     Data = arg.Data.ToBytes(),
-                    PunchForwardType = arg.Data.PunchForwardType,
+                    PunchForwardType = msg.PunchForwardType,
                     Id = registerState.RemoteInfo.ConnectId,
-                    PunchStep = arg.Data.PunchStep,
-                    PunchType = (short)arg.Data.PunchType,
+                    PunchStep = msg.PunchStep,
+                    PunchType = (short)msg.PunchType,
                     ToId = arg.ToId
                 }
             });
         }
 
-        public void Send(SendPunchHoleArg arg)
+        public void Send<T>(SendPunchHoleArg<T> arg)
         {
+            var msg = ((IPunchHoleMessageBase)arg.Data);
             serverRequest.SendOnly(new SendEventArg<PunchHoleModel>
             {
                 Address = arg.Address,
@@ -103,10 +106,10 @@ namespace client.service.plugins.punchHolePlugins
                 Data = new PunchHoleModel
                 {
                     Data = arg.Data.ToBytes(),
-                    PunchForwardType = arg.Data.PunchForwardType,
+                    PunchForwardType = msg.PunchForwardType,
                     Id = registerState.RemoteInfo.ConnectId,
-                    PunchStep = arg.Data.PunchStep,
-                    PunchType = (short)arg.Data.PunchType,
+                    PunchStep = msg.PunchStep,
+                    PunchType = (short)msg.PunchType,
                     ToId = arg.ToId
                 }
             });
@@ -115,7 +118,7 @@ namespace client.service.plugins.punchHolePlugins
         public SimplePushSubHandler<OnPunchHoleTcpArg> OnReverse { get; } = new SimplePushSubHandler<OnPunchHoleTcpArg>();
         public void SendReverse(long toid)
         {
-            SendTcp(new SendPunchHoleTcpArg
+            SendTcp(new SendPunchHoleTcpArg<ReverseModel>
             {
                 Socket = TcpServer,
                 ToId = toid,
@@ -125,22 +128,22 @@ namespace client.service.plugins.punchHolePlugins
 
     }
 
-    public class SendPunchHoleArg
+    public class SendPunchHoleArg<T>
     {
         public IPEndPoint Address { get; set; }
 
         public long ToId { get; set; }
 
-        public IPunchHoleMessageBase Data { get; set; }
+        public T Data { get; set; }
     }
 
-    public class SendPunchHoleTcpArg
+    public class SendPunchHoleTcpArg<T>
     {
         public Socket Socket { get; set; }
 
         public long ToId { get; set; }
 
-        public IPunchHoleMessageBase Data { get; set; } = default;
+        public T Data { get; set; } = default;
     }
 
 
@@ -151,22 +154,22 @@ namespace client.service.plugins.punchHolePlugins
     }
 
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class ReverseModel : IPunchHoleMessageBase
     {
         /// <summary>
         /// 我的id
         /// </summary>
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public long FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchHoleTypes PunchType { get; } = PunchHoleTypes.REVERSE;
 
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(3, IsRequired = true), Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public short PunchStep { get; } = 0;
     }
 }

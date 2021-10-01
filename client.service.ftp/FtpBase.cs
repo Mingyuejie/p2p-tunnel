@@ -4,6 +4,7 @@ using client.service.ftp.extends;
 using client.service.ftp.protocol;
 using common;
 using common.extends;
+using MessagePack;
 using ProtoBuf;
 using server.model;
 using server.plugins.register.caching;
@@ -433,17 +434,6 @@ namespace client.service.ftp
             // Downloads.Clear(client.Id);
             // Uploads.Clear(client.Id);
         }
-
-
-        public byte[] CompressBytes(byte[] bytes)
-        {
-            using (MemoryStream compressStream = new MemoryStream())
-            {
-                using (var zipStream = new GZipStream(compressStream, CompressionLevel.Optimal))
-                    zipStream.Write(bytes, 0, bytes.Length);
-                return compressStream.ToArray();
-            }
-        }
     }
 
     [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
@@ -453,20 +443,20 @@ namespace client.service.ftp
         Folder = 0, File = 1
     }
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class FileInfo
     {
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public DateTime LastAccessTime { get; set; } = DateTime.Now;
-        [ProtoMember(2)]
+        [ProtoMember(2), Key(2)]
         public DateTime CreationTime { get; set; } = DateTime.Now;
-        [ProtoMember(3)]
+        [ProtoMember(3), Key(3)]
         public DateTime LastWriteTime { get; set; } = DateTime.Now;
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public string Name { get; set; } = string.Empty;
-        [ProtoMember(5)]
+        [ProtoMember(5), Key(5)]
         public long Length { get; set; } = 0;
-        [ProtoMember(6, IsRequired = true)]
+        [ProtoMember(6, IsRequired = true), Key(6)]
         public FileType Type { get; set; } = FileType.File;
     }
 

@@ -2,6 +2,7 @@
 using client.plugins.serverPlugins.clients;
 using client.servers.clientServer;
 using common.extends;
+using MessagePack;
 using ProtoBuf;
 using server.model;
 using server.plugin;
@@ -217,22 +218,22 @@ namespace client.service.cmd
         public long Id { get; set; }
         public string Cmd { get; set; }
     }
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class CmdModel
     {
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public string Cmd { get; set; }
 
-        [ProtoMember(2)]
+        [ProtoMember(2),Key(2)]
         public long SessionId { get; set; }
     }
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class CmdResultModel
     {
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public string Res { get; set; }
 
-        [ProtoMember(2)]
+        [ProtoMember(2),Key(2)]
         public string Err { get; set; }
     }
 }

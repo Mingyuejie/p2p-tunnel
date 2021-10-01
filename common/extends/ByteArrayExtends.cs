@@ -12,12 +12,14 @@ namespace common.extends
     {
         public static Byte[] ToBytes<T>(this T obj)
         {
+            // return MessagePack.MessagePackSerializer.Serialize(obj);
             using var memory = new MemoryStream();
             Serializer.Serialize(memory, obj);
             return memory.ToArray();
         }
         public static T DeBytes<T>(this byte[] data)
         {
+            //return MessagePack.MessagePackSerializer.Deserialize<T>(data);
             using var memory = new MemoryStream(data);
             return Serializer.Deserialize<T>(memory);
         }

@@ -1,4 +1,5 @@
 ﻿using common;
+using MessagePack;
 using ProtoBuf;
 using server.model;
 using System;
@@ -141,98 +142,98 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         STEP_4 = 5,
     }
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class Step1Model : IPunchHoleMessageBase
     {
         /// <summary>
         /// 我的id
         /// </summary>
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public long FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchHoleTypes PunchType { get; } = PunchHoleTypes.UDP;
 
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(3, IsRequired = true), Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.NOTIFY;
 
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public short PunchStep { get; } = (short)PunchHoleUdpSteps.STEP_1;
     }
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class Step2Model : IPunchHoleMessageBase
     {
         /// <summary>
         /// 我的id
         /// </summary>
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public long FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchHoleTypes PunchType { get; } = PunchHoleTypes.UDP;
 
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(3, IsRequired = true), Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.NOTIFY;
 
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public short PunchStep { get; } = (short)PunchHoleUdpSteps.STEP_2;
     }
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class Step21Model : IPunchHoleMessageBase
     {
         /// <summary>
         /// 我的id
         /// </summary>
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public long FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchHoleTypes PunchType { get; } = PunchHoleTypes.UDP;
 
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(3, IsRequired = true), Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.NOTIFY;
 
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public short PunchStep { get; } = (short)PunchHoleUdpSteps.STEP_2_1;
     }
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class Step3Model : IPunchHoleMessageBase
     {
         /// <summary>
         /// 我的id
         /// </summary>
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public long FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchHoleTypes PunchType { get; } = PunchHoleTypes.UDP;
 
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(3, IsRequired = true), Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public short PunchStep { get; } = (short)PunchHoleUdpSteps.STEP_3;
     }
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class Step4Model : IPunchHoleMessageBase
     {
         /// <summary>
         /// 我的id
         /// </summary>
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public long FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchHoleTypes PunchType { get; } = PunchHoleTypes.UDP;
 
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(3, IsRequired = true), Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public short PunchStep { get; } = (short)PunchHoleUdpSteps.STEP_4;
     }
 }

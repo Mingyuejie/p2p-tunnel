@@ -1,4 +1,5 @@
-﻿using ProtoBuf;
+﻿using MessagePack;
+using ProtoBuf;
 using server.packet;
 using System;
 using System.Linq;
@@ -8,18 +9,18 @@ using System.Text;
 
 namespace server.model
 {
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class ServerMessageWrap
     {
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public string Path { get; set; } = string.Empty;
-        [ProtoMember(2)]
+        [ProtoMember(2), Key(2)]
         public long RequestId { get; set; } = 0;
-        [ProtoMember(3)]
+        [ProtoMember(3), Key(3)]
         public byte[] Content { get; set; } = Array.Empty<byte>();
-        [ProtoMember(4, IsRequired = true)]
+        [ProtoMember(4, IsRequired = true), Key(4)]
         public ServerMessageTypes Type { get; set; } = ServerMessageTypes.REQUEST;
-        [ProtoMember(5, IsRequired = true)]
+        [ProtoMember(5, IsRequired = true), Key(5)]
         public ServerMessageResponeCodes Code { get; set; } = ServerMessageResponeCodes.OK;
 
         public byte[] ToArray()

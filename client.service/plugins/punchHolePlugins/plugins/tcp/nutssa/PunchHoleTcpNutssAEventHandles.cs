@@ -70,7 +70,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
                 Time = Helper.GetTimeStamp(),
                 Timeout = param.Timeout
             });
-            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
+            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg<Step1Model>
             {
                 Socket = TcpServer,
                 ToId = param.Id,
@@ -102,7 +102,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
             Logger.Instance.Debug($"OnStep1 {e.Data.Id}");
             OnStep1Handler.Push(e);
 
-            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
+            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg<Step2Model>
             {
                 Socket = TcpServer,
                 ToId = e.Data.Id,
@@ -296,7 +296,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
                     Type = ConnectFailType.ERROR
                 });
             }
-            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
+            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg<Step2FailModel>
             {
                 Socket = TcpServer,
                 ToId = arg.ToId,
@@ -324,7 +324,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
 
         public void SendStep2Stop(long toid)
         {
-            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
+            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg<Step2StopModel>
             {
                 Socket = TcpServer,
                 ToId = toid,
@@ -349,7 +349,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
         /// <param name="toid"></param>
         public void SendStep3(SendStep3EventArg arg)
         {
-            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
+            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg<Step3Model>
             {
                 Socket = arg.Socket,
                 ToId = arg.ToId,
@@ -387,7 +387,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
         /// <param name="toid"></param>
         public void SendStep4(SendStep4EventArg arg)
         {
-            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
+            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg<Step4Model>
             {
                 Socket = arg.Socket,
                 ToId = arg.ToId,
@@ -420,7 +420,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
 
         public void SendStepPacket(SendStepPacketEventArg arg)
         {
-            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg
+            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg<StepPacketModel>
             {
                 Socket = TcpServer,
                 ToId = arg.ToId,

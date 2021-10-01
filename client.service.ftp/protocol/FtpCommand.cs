@@ -1,4 +1,5 @@
-﻿using ProtoBuf;
+﻿using MessagePack;
+using ProtoBuf;
 using System;
 
 namespace client.service.ftp.protocol
@@ -30,13 +31,13 @@ namespace client.service.ftp.protocol
         public FtpCommand Cmd { get; }
     }
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class FtpCommandBase : IFtpCommandBase
     {
-        [ProtoMember(1, IsRequired = true)]
+        [ProtoMember(1, IsRequired = true),Key(1)]
         public FtpCommand Cmd { get; }
 
-        [ProtoMember(2)]
+        [ProtoMember(2),Key(2)]
         public long SessionId { get; set; }
     }
 

@@ -51,7 +51,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
             if (connectCache.TryGetValue(id, out ConnectCache cache))
             {
                 cache.TryTimes--;
-                punchHoldEventHandles.Send(new SendPunchHoleArg
+                punchHoldEventHandles.Send(new SendPunchHoleArg<Step1Model>
                 {
                     Address = UdpServer,
                     ToId = id,
@@ -91,12 +91,12 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         {
             OnStep1Handler.Push(arg);
             //随便给来源客户端发个消息
-            punchHoldEventHandles.Send(new SendPunchHoleArg
+            punchHoldEventHandles.Send(new SendPunchHoleArg<Step21Model>
             {
                 Address = new IPEndPoint(IPAddress.Parse(arg.Data.LocalIps), arg.Data.LocalUdpPort),
                 Data = new Step21Model { FromId = ConnectId }
             });
-            punchHoldEventHandles.Send(new SendPunchHoleArg
+            punchHoldEventHandles.Send(new SendPunchHoleArg<Step21Model>
             {
                 Address = new IPEndPoint(IPAddress.Parse(arg.Data.Ip), arg.Data.Port),
                 Data = new Step21Model { FromId = ConnectId }
@@ -111,7 +111,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
 
         public void SendStep2(SendStep2EventArg arg)
         {
-            punchHoldEventHandles.Send(new SendPunchHoleArg
+            punchHoldEventHandles.Send(new SendPunchHoleArg<Step2Model>
             {
                 Address = UdpServer,
                 ToId = arg.ToId,
@@ -154,7 +154,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         /// <param name="toid"></param>
         public void SendStep3(SendStep3EventArg arg)
         {
-            punchHoldEventHandles.Send(new SendPunchHoleArg
+            punchHoldEventHandles.Send(new SendPunchHoleArg<Step3Model>
             {
                 Address = arg.Address,
                 Data = new Step3Model
@@ -188,7 +188,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         /// <param name="toid"></param>
         public void SendStep4(SendStep4EventArg arg)
         {
-            punchHoldEventHandles.Send(new SendPunchHoleArg
+            punchHoldEventHandles.Send(new SendPunchHoleArg<Step4Model>
             {
                 Address = arg.Address,
                 Data = new Step4Model

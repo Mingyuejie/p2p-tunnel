@@ -1,33 +1,34 @@
 ﻿using client.plugins.serverPlugins.clients;
+using MessagePack;
 using ProtoBuf;
 using System;
 
 namespace client.service.tcpforward
 {
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class TcpForwardModel
     {
         public TcpForwardModel() { }
 
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public long RequestId { get; set; } = 0;
 
-        [ProtoMember(2)]
+        [ProtoMember(2), Key(2)]
         public byte[] Buffer { get; set; } = new byte[0];
 
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(3, IsRequired = true), Key(3)]
         public TcpForwardType Type { get; set; } = TcpForwardType.REQUEST;
 
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public string TargetIp { get; set; } = string.Empty;
 
-        [ProtoMember(5)]
+        [ProtoMember(5), Key(5)]
         public int TargetPort { get; set; } = 0;
 
-        [ProtoMember(6, IsRequired = true)]
+        [ProtoMember(6, IsRequired = true), Key(6)]
         public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.UNALIVE;
 
-        [ProtoMember(7)]
+        [ProtoMember(7), Key(7)]
         public byte Compress { get; set; } = 0;
     }
 
@@ -39,24 +40,24 @@ namespace client.service.tcpforward
         REQUEST, RESPONSE, FAIL, RESPONSE_END
     }
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class TcpForwardRecordBaseModel
     {
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public int ID { get; set; } = 0;
-        [ProtoMember(2)]
+        [ProtoMember(2), Key(2)]
         public string SourceIp { get; set; } = "0.0.0.0";
-        [ProtoMember(3)]
+        [ProtoMember(3), Key(3)]
         public int SourcePort { get; set; } = 8080;
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public string TargetName { get; set; } = string.Empty;
-        [ProtoMember(5)]
+        [ProtoMember(5), Key(5)]
         public string TargetIp { get; set; } = "127.0.0.1";
-        [ProtoMember(6)]
+        [ProtoMember(6), Key(6)]
         public int TargetPort { get; set; } = 8080;
-        [ProtoMember(7)]
+        [ProtoMember(7), Key(7)]
         public bool Listening { get; set; } = false;
-        [ProtoMember(8)]
+        [ProtoMember(8), Key(8)]
         public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.UNALIVE;
 
         [ProtoMember(9)]

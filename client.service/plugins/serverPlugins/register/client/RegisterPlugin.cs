@@ -1,6 +1,7 @@
 ﻿using client.plugins.serverPlugins.register;
 using client.servers.clientServer;
 using client.service.servers.clientServer;
+using MessagePack;
 using ProtoBuf;
 using System.Threading.Tasks;
 
@@ -68,16 +69,16 @@ namespace client.service.plugins.serverPlugins.register.client
         }
     }
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class RegisterInfo
     {
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public ClientConfig ClientConfig { get; set; } = new ClientConfig();
-        [ProtoMember(2)]
+        [ProtoMember(2), Key(2)]
         public ServerConfig ServerConfig { get; set; } = new ServerConfig();
-        [ProtoMember(3)]
+        [ProtoMember(3), Key(3)]
         public LocalInfo LocalInfo { get; set; } = new LocalInfo();
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public RemoteInfo RemoteInfo { get; set; } = new RemoteInfo();
     }
 }

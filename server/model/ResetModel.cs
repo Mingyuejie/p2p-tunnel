@@ -1,4 +1,5 @@
-﻿using ProtoBuf;
+﻿using MessagePack;
+using ProtoBuf;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,7 @@ namespace server.model
     /// <summary>
     /// 重启
     /// </summary>
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class ResetModel
     {
         public ResetModel() { }
@@ -18,13 +19,13 @@ namespace server.model
         /// <summary>
         /// 来源客户端id
         /// </summary>
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public long Id { get; set; } = 0;
 
         /// <summary>
         /// 目标客户端id
         /// </summary>
-        [ProtoMember(2)]
+        [ProtoMember(2),Key(2)]
         public long ToId { get; set; } = 0;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Fleck;
+using MessagePack;
 using ProtoBuf;
 using System;
 using System.Collections.Concurrent;
@@ -22,16 +23,16 @@ namespace client.servers.clientServer
         string SaveSetting(string jsonStr);
     }
 
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class ClientServiceMessageResponseWrap
     {
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public string Path { get; set; } = string.Empty;
-        [ProtoMember(2)]
+        [ProtoMember(2), Key(2)]
         public long RequestId { get; set; } = 0;
-        [ProtoMember(3)]
+        [ProtoMember(3), Key(3)]
         public int Code { get; set; } = 0;
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public object Content { get; set; } = string.Empty;
     }
 

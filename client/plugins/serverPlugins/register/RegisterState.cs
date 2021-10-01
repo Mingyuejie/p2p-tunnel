@@ -1,4 +1,5 @@
-﻿using ProtoBuf;
+﻿using MessagePack;
+using ProtoBuf;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,70 +36,70 @@ namespace client.plugins.serverPlugins.register
     /// <summary>
     /// 远程信息
     /// </summary>
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class RemoteInfo
     {
         /// <summary>
         /// 客户端在远程的ip
         /// </summary>
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public string Ip { get; set; } = string.Empty;
         /// <summary>
         /// 客户端在远程的TCP端口
         /// </summary>
-        [ProtoMember(2)]
+        [ProtoMember(2),Key(2)]
         public int TcpPort { get; set; } = 0;
         /// <summary>
         /// 客户端连接ID
         /// </summary>
-        [ProtoMember(3)]
+        [ProtoMember(3),Key(3)]
         public long ConnectId { get; set; } = 0;
     }
 
     /// <summary>
     /// 本地信息
     /// </summary>
-    [ProtoContract]
+    [ProtoContract, MessagePackObject]
     public class LocalInfo
     {
         /// <summary>
         /// 外网距离
         /// </summary>
-        [ProtoMember(1)]
+        [ProtoMember(1),Key(1)]
         public int RouteLevel { get; set; } = 0;
         /// <summary>
         /// 本地mac地址
         /// </summary>
-        [ProtoMember(2)]
+        [ProtoMember(2), Key(2)]
         public string Mac { get; set; } = string.Empty;
         /// <summary>
         /// 本地UDP端口
         /// </summary>
-        [ProtoMember(3)]
+        [ProtoMember(3), Key(3)]
         public int Port { get; set; } = 0;
         /// <summary>
         /// 本地TCP端口
         /// </summary>
-        [ProtoMember(4)]
+        [ProtoMember(4), Key(4)]
         public int TcpPort { get; set; } = 0;
 
-        [ProtoMember(5)]
+        [ProtoMember(5), Key(5)]
         public string LocalIp { get; set; } = string.Empty;
 
         /// <summary>
         /// 是否正在连接服务器
         /// </summary>
-        [ProtoMember(6)]
+        [ProtoMember(6), Key(6)]
         public bool IsConnecting { get; set; } = false;
         /// <summary>
         /// UDP是否已连接服务器
         /// </summary>
-        [ProtoMember(7)]
+        [ProtoMember(7), Key(7)]
         public bool Connected { get; set; } = false;
         /// <summary>
         /// TCP是否已连接服务器
         /// </summary>
-        [ProtoMember(8)]
+        [ProtoMember(8), Key(8)]
         public bool TcpConnected { get; set; } = false;
     }
 }
