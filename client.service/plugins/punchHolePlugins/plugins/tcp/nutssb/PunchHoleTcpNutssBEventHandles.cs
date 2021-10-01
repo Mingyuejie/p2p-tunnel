@@ -157,6 +157,9 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                     try
                     {
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                        //targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.NoDelay, true);
+                        // targetSocket.NoDelay = true;
+                        //targetSocket.SendBufferSize = 8 * 1024 * 1024;
                         targetSocket.Bind(new IPEndPoint(config.Client.BindIp, ClientTcpPort));
                         Tuple<string, int> ip = index >= ips.Count ? ips[ips.Count - 1] : ips[index];
 

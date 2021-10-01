@@ -127,9 +127,9 @@ namespace server
                         Type = msg.Type,
                         Code = msg.Code
                     };
-
                     TcpPacket tcpPackets = wrap.ToTcpPacket();
-                    return tcpserver.Send(tcpPackets.ToArray(), msg.TcpCoket);
+                    var bytes = tcpPackets.ToArray();
+                    return tcpserver.Send(bytes, msg.TcpCoket);
                 }
                 catch (Exception ex)
                 {

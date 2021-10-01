@@ -74,13 +74,37 @@ namespace client.service.ftp.extends
                 var files = new DirectoryInfo(path).GetFiles();
                 foreach (var item in files)
                 {
-                    FileSystem.DeleteFile(item.FullName, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                    try
+                    {
+                        FileSystem.DeleteFile(item.FullName, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                    }
+                    catch (Exception)
+                    {
+
+                        File.Delete(item.FullName);
+                    }
                 }
-                FileSystem.DeleteDirectory(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                try
+                {
+                    FileSystem.DeleteDirectory(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                }
+                catch (Exception)
+                {
+
+                    Directory.Delete(path);
+                }
             }
             else if (File.Exists(path))
             {
-                FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                try
+                {
+                    FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                }
+                catch (Exception)
+                {
+
+                    File.Delete(path);
+                }
             }
         }
     }

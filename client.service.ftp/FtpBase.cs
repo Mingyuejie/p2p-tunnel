@@ -12,6 +12,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -228,9 +229,10 @@ namespace client.service.ftp
                         Size = save.TotalLength,
                         Name = save.CacheFileName
                     };
-                    int packSize = 8000; //每个包大小
+                    int packSize = 64 * 1024; //每个包大小
                     int packCount = (int)(save.TotalLength / packSize);
-                    long lastPackSize = save.TotalLength - packCount * packSize;
+                    int lastPackSize = (int)(save.TotalLength - (packCount * packSize));
+
                     using FileStream fs = new FileStream(save.FileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     int index = 0;
                     while (index < packCount)
@@ -247,16 +249,17 @@ namespace client.service.ftp
                         byte[] data = new byte[packSize];
                         fs.Read(data, 0, packSize);
                         cmd.Data = data;
-                        if (client != null && !SendOnlyTcp(cmd, client.Id))
+
+                        if (client != null && !SendOnlyTcp(cmd, client.Socket))
                         {
                             save.State = UploadState.Error;
                         }
                         save.IndexLength += packSize;
                         index++;
-                        //if (index % 10 == 0)
-                        //{
-                        //    Thread.Sleep(1);
-                        //}
+                        if (index % 10 == 0)
+                        {
+                            Thread.Sleep(1);
+                        }
                     }
                     if (save.Token.IsCancellationRequested)
                     {
@@ -269,7 +272,7 @@ namespace client.service.ftp
                     if (lastPackSize > 0)
                     {
                         byte[] data = new byte[lastPackSize];
-                        fs.Read(data, 0, (int)lastPackSize);
+                        fs.Read(data, 0, lastPackSize);
                         cmd.Data = data;
                         SendOnlyTcp(cmd, client.Id);
                         save.IndexLength += lastPackSize;
@@ -341,12 +344,29 @@ namespace client.service.ftp
             clientInfoCaching.Get(clientId, out ClientInfo client);
             if (client != null)
             {
-                return serverRequest.SendOnlyTcp(new SendTcpEventArg<IFtpCommandBase>
+
+                var res = serverRequest.SendOnlyTcp(new SendTcpEventArg<IFtpCommandBase>
                 {
                     Data = data,
                     Path = SocketPath,
                     Socket = client.Socket
                 });
+
+                return res;
+            }
+            return false;
+        }
+        protected bool SendOnlyTcp<IFtpCommandBase>(IFtpCommandBase data, Socket socket)
+        {
+            if (socket != null)
+            {
+                var res = serverRequest.SendOnlyTcp(new SendTcpEventArg<IFtpCommandBase>
+                {
+                    Data = data,
+                    Path = SocketPath,
+                    Socket = socket
+                });
+                return res;
             }
             return false;
         }
