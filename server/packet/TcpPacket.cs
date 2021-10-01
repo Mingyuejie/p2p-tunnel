@@ -23,16 +23,21 @@ namespace server.packet
         /// <returns></returns>
         public byte[] ToArray()
         {
-            byte[] lengthArray = BitConverter.GetBytes(Chunk.Length);
+            return ToArray(Chunk);
+        }
 
-            byte[] result = new byte[lengthArray.Length + Chunk.Length];
+        public static byte[] ToArray(byte[] chunk)
+        {
+            byte[] lengthArray = BitConverter.GetBytes(chunk.Length);
+
+            byte[] result = new byte[lengthArray.Length + chunk.Length];
 
             int distIndex = 0;
             Array.Copy(lengthArray, 0, result, distIndex, lengthArray.Length);
             distIndex += lengthArray.Length;
 
 
-            Array.Copy(Chunk, 0, result, distIndex, Chunk.Length);
+            Array.Copy(chunk, 0, result, distIndex, chunk.Length);
 
             return result;
         }

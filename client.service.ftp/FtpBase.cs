@@ -11,6 +11,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
@@ -431,6 +432,17 @@ namespace client.service.ftp
         {
             // Downloads.Clear(client.Id);
             // Uploads.Clear(client.Id);
+        }
+
+
+        public byte[] CompressBytes(byte[] bytes)
+        {
+            using (MemoryStream compressStream = new MemoryStream())
+            {
+                using (var zipStream = new GZipStream(compressStream, CompressionLevel.Optimal))
+                    zipStream.Write(bytes, 0, bytes.Length);
+                return compressStream.ToArray();
+            }
         }
     }
 

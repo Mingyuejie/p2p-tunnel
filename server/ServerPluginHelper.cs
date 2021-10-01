@@ -119,6 +119,7 @@ namespace server
                     {
                         msg.RequestId = NewRequestId();
                     }
+
                     ServerMessageWrap wrap = new ServerMessageWrap
                     {
                         RequestId = msg.RequestId,
@@ -127,8 +128,7 @@ namespace server
                         Type = msg.Type,
                         Code = msg.Code
                     };
-                    TcpPacket tcpPackets = wrap.ToTcpPacket();
-                    var bytes = tcpPackets.ToArray();
+                    var bytes = TcpPacket.ToArray(wrap.ToBytes());
                     return tcpserver.Send(bytes, msg.TcpCoket);
                 }
                 catch (Exception ex)
@@ -317,7 +317,7 @@ namespace server
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.Error(ex+"");
+                    Logger.Instance.Error(ex + "");
                     ReplayData(new SendMessageWrap<object>
                     {
                         TcpCoket = param.Socket,

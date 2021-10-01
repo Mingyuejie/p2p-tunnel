@@ -1,8 +1,10 @@
 ﻿using ProtoBuf;
 using server.packet;
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 namespace server.model
 {
@@ -20,6 +22,89 @@ namespace server.model
         [ProtoMember(5, IsRequired = true)]
         public ServerMessageResponeCodes Code { get; set; } = ServerMessageResponeCodes.OK;
 
+        public byte[] ToArray()
+        {
+
+            byte[] byteRequestId = BitConverter.GetBytes(RequestId);
+            byte[] bytePath = Encoding.UTF8.GetBytes(Path);
+            byte byteType = (byte)Type;
+            byte[] byteCode = BitConverter.GetBytes((int)Code);
+
+            byte[] result = new byte[byteRequestId.Length + bytePath.Length + 1 + byteCode.Length + Content.Length + (5 * 4)];
+
+            int distIndex = 0;
+
+            byte[] byteLength = BitConverter.GetBytes(byteRequestId.Length);
+            Array.Copy(byteLength, 0, result, distIndex, byteLength.Length);
+            distIndex += 4;
+            Array.Copy(byteRequestId, 0, result, distIndex, byteRequestId.Length);
+            distIndex += byteRequestId.Length;
+
+            byteLength = BitConverter.GetBytes(bytePath.Length);
+            Array.Copy(byteLength, 0, result, distIndex, byteLength.Length);
+            distIndex += 4;
+            Array.Copy(bytePath, 0, result, distIndex, bytePath.Length);
+            distIndex += bytePath.Length;
+
+            byteLength = BitConverter.GetBytes(1);
+            Array.Copy(byteLength, 0, result, distIndex, byteLength.Length);
+            distIndex += 4;
+            result[distIndex] = byteType;
+            distIndex += 1;
+
+            byteLength = BitConverter.GetBytes(byteCode.Length);
+            Array.Copy(byteLength, 0, result, distIndex, byteLength.Length);
+            distIndex += 4;
+            Array.Copy(byteCode, 0, result, distIndex, byteCode.Length);
+            distIndex += byteCode.Length;
+
+            byteLength = BitConverter.GetBytes(Content.Length);
+            Array.Copy(byteLength, 0, result, distIndex, byteLength.Length);
+            distIndex += 4;
+            Array.Copy(Content, 0, result, distIndex, Content.Length);
+            distIndex += Content.Length;
+
+            return result;
+        }
+
+        public static ServerMessageWrap FromArray(byte[] bytes)
+        {
+            int distIndex = 0;
+
+            int requestIdLength = BitConverter.ToInt32(bytes.Take(4).ToArray());
+            distIndex += 4;
+            long requestId = BitConverter.ToInt64(bytes.Skip(distIndex).Take(requestIdLength).ToArray());
+            distIndex += requestIdLength;
+
+            int pathLength = BitConverter.ToInt32(bytes.Skip(distIndex).Take(4).ToArray());
+            distIndex += 4;
+            string path = Encoding.ASCII.GetString(bytes.Skip(distIndex).Take(pathLength).ToArray());
+            distIndex += pathLength;
+
+
+            int typeLength = BitConverter.ToInt32(bytes.Skip(distIndex).Take(4).ToArray());
+            distIndex += 4;
+            ServerMessageTypes type = (ServerMessageTypes)bytes.Skip(distIndex).Take(typeLength).ToArray()[0];
+            distIndex += typeLength;
+
+            int codeLength = BitConverter.ToInt32(bytes.Skip(distIndex).Take(4).ToArray());
+            distIndex += 4;
+            ServerMessageResponeCodes code = (ServerMessageResponeCodes)BitConverter.ToInt32(bytes.Skip(distIndex).Take(codeLength).ToArray());
+            distIndex += codeLength;
+
+            int contentLength = BitConverter.ToInt32(bytes.Skip(distIndex).Take(4).ToArray());
+            distIndex += 4;
+            byte[] content = bytes.Skip(distIndex).Take(contentLength).ToArray();
+
+            return new ServerMessageWrap
+            {
+                Code = code,
+                Content = content,
+                Path = path,
+                RequestId = requestId,
+                Type = type
+            };
+        }
     }
 
     public class ServerMessageResponeWrap
