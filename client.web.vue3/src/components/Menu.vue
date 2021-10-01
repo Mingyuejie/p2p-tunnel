@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-30 14:23:54
+ * @LastEditTime: 2021-10-01 20:00:25
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -132,6 +132,7 @@ export default {
 
 .el-dropdown-menu__item
     padding: 0;
+    line-height: normal;
 
     &:hover
         background-color: rgba(0, 0, 0, 0.1) !important;
@@ -139,6 +140,7 @@ export default {
     a
         padding: 0 2rem;
         line-height: 3.6rem;
+        display: block;
 
         &.disabled
             color: #bbb;

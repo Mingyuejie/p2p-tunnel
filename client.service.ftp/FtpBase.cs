@@ -229,7 +229,7 @@ namespace client.service.ftp
                         Size = save.TotalLength,
                         Name = save.CacheFileName
                     };
-                    int packSize = 64 * 1024; //每个包大小
+                    int packSize = 32 * 1024; //每个包大小
                     int packCount = (int)(save.TotalLength / packSize);
                     int lastPackSize = (int)(save.TotalLength - (packCount * packSize));
 
