@@ -144,8 +144,7 @@ namespace client.service.tcpforward
                         TargetIp = arg.Data.TargetIp,
                         SourceSocket = arg.Packet.TcpSocket
                     };
-
-                    DnsEndPoint dnsEndPoint = new(arg.Data.TargetIp, arg.Data.TargetPort);
+                    IPEndPoint dnsEndPoint = new(Dns.GetHostEntry(arg.Data.TargetIp).AddressList[0], arg.Data.TargetPort);
                     socket.Connect(dnsEndPoint);
                     client.Stream = new NetworkStream(socket, false);
 

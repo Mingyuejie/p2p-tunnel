@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -95,7 +96,9 @@ namespace client.service.plugins.serverPlugins.register
                     registerState.TcpSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     registerState.TcpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                     registerState.TcpSocket.Bind(new IPEndPoint(config.Client.BindIp, registerState.LocalInfo.TcpPort));
-                    registerState.TcpSocket.Connect(new DnsEndPoint(config.Server.Ip, config.Server.TcpPort));
+
+                    registerState.TcpSocket.Connect(new IPEndPoint(Dns.GetHostEntry(config.Server.Ip).AddressList[0], config.Server.TcpPort));
+                    
                     registerState.LocalInfo.LocalIp = IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString();
                     tcpServer.BindReceive(registerState.TcpSocket, (code) =>
                     {
