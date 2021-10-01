@@ -253,10 +253,10 @@ namespace client.service.ftp
                         }
                         save.IndexLength += packSize;
                         index++;
-                        if (index % 10 == 0)
-                        {
-                            Thread.Sleep(1);
-                        }
+                        //if (index % 10 == 0)
+                        //{
+                        //    Thread.Sleep(1);
+                        //}
                     }
                     if (save.Token.IsCancellationRequested)
                     {
