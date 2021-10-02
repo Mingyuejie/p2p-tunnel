@@ -11,6 +11,7 @@ using server.plugins.register.caching;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -174,7 +175,6 @@ namespace client.service.ftp
                 }
             });
         }
-
         private void AppendUpload(string path, string currentPath, ClientInfo client)
         {
             var file = new System.IO.FileInfo(path);
@@ -256,6 +256,7 @@ namespace client.service.ftp
                         {
                             save.State = UploadState.Error;
                         }
+
                         save.IndexLength += packSize;
                         index++;
                         if (index % 10 == 0)
@@ -328,7 +329,6 @@ namespace client.service.ftp
             }
             return res;
         }
-
         public async Task<CommonTaskResponseModel<bool>> RemoteDelete(string path, ClientInfo client)
         {
             CommonTaskResponseModel<bool> res = new CommonTaskResponseModel<bool> { Data = true };
@@ -363,6 +363,20 @@ namespace client.service.ftp
             if (socket != null)
             {
                 var res = serverRequest.SendOnlyTcp(new SendTcpEventArg<IFtpCommandBase>
+                {
+                    Data = data,
+                    Path = SocketPath,
+                    Socket = socket
+                });
+                return res;
+            }
+            return false;
+        }
+        protected bool SendOnlyTcp(byte[] data, Socket socket)
+        {
+            if (socket != null)
+            {
+                var res = serverRequest.SendOnlyTcp(new SendTcpEventArg<byte[]>
                 {
                     Data = data,
                     Path = SocketPath,
@@ -446,7 +460,7 @@ namespace client.service.ftp
     [ProtoContract, MessagePackObject]
     public class FileInfo
     {
-        [ProtoMember(1),Key(1)]
+        [ProtoMember(1), Key(1)]
         public DateTime LastAccessTime { get; set; } = DateTime.Now;
         [ProtoMember(2), Key(2)]
         public DateTime CreationTime { get; set; } = DateTime.Now;

@@ -33,22 +33,14 @@ namespace server
 
             this.tcpserver.OnPacket.Sub((wrap) =>
             {
-                List<TcpPacket> bytesArray = TcpPacket.FromArray(wrap.Data);
-                if (bytesArray.Count > 0)
+                for (int i = 0,len = wrap.Data.Length; i < len; i++)
                 {
-                    foreach (TcpPacket packet in bytesArray)
-                    {
-                        InputData(packet, wrap);
-                    }
+                    InputData(wrap.Data[i], wrap);
                 }
             });
             this.udpserver.OnPacket.Sub((wrap) =>
             {
-                UdpPacket packet = UdpPacket.FromArray(wrap.Address, wrap.Data);
-                if (packet != null)
-                {
-                    InputData(packet, wrap);
-                }
+                InputData(wrap.Data, wrap);
             });
 
             _ = Task.Factory.StartNew(() =>
@@ -128,8 +120,36 @@ namespace server
                         Type = msg.Type,
                         Code = msg.Code
                     };
-                    var bytes = TcpPacket.ToArray(wrap.ToBytes());
-                    return tcpserver.Send(bytes, msg.TcpCoket);
+                    return tcpserver.Send(TcpPacket.ToArray(wrap.ToBytes()), msg.TcpCoket);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance.Debug(ex + "");
+                }
+            }
+            return false;
+        }
+
+        public bool SendOnlyTcp(SendMessageWrap<byte[]> msg)
+        {
+            if (msg.TcpCoket != null)
+            {
+                try
+                {
+                    if (msg.RequestId == 0)
+                    {
+                        msg.RequestId = NewRequestId();
+                    }
+
+                    ServerMessageWrap wrap = new ServerMessageWrap
+                    {
+                        RequestId = msg.RequestId,
+                        Content = msg.Data,
+                        Path = msg.Path,
+                        Type = msg.Type,
+                        Code = msg.Code
+                    };
+                    return tcpserver.Send(TcpPacket.ToArray(wrap.ToBytes()), msg.TcpCoket);
                 }
                 catch (Exception ex)
                 {

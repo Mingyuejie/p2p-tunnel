@@ -2,6 +2,7 @@
 using client.service.cmd;
 using client.service.ftp;
 using client.service.ftp.server;
+using client.service.logger;
 using client.service.plugins.punchHolePlugins;
 using client.service.plugins.serverPlugins;
 using client.service.plugins.serverPlugins.register;
@@ -40,6 +41,7 @@ namespace client.service
                 typeof(FtpServerPlugin).Assembly,
                 typeof(WakeUpPlugin).Assembly,
                 typeof(CmdPlugin).Assembly,
+                typeof(LoggerPlugin).Assembly,
             };
 
             serviceCollection
@@ -56,12 +58,14 @@ namespace client.service
                 .AddUpnpPlugin()//upnp映射
                 .AddFtpPlugin() //文件服务
                 .AddCmdPlugin()
+                .AddLoggerPlugin()
                 ;
 
 
             serviceProvider = serviceCollection.BuildServiceProvider();
             serviceProvider
                 //基础的功能
+                .UseLoggerPlugin()
                 .UseServerPlugin()
                 .UsePunchHolePlugin()//打洞
                 .UseClientServer()//客户端管理

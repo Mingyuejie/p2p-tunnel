@@ -14,10 +14,10 @@ namespace common
         private readonly ConcurrentQueue<LoggerModel> queue = new ConcurrentQueue<LoggerModel>();
         public int Count => queue.Count;
 
-        public Action<LoggerModel> OnLogger;
+        public SimplePushSubHandler<LoggerModel> OnLogger { get; } = new SimplePushSubHandler<LoggerModel>();
         private Logger()
         {
-            OnLogger = (model) =>
+            OnLogger.Sub((model) =>
             {
                 ConsoleColor currentForeColor = Console.ForegroundColor;
                 switch (model.Type)
@@ -39,7 +39,7 @@ namespace common
                 }
                 Console.WriteLine($"[{model.Type}][{model.Time:yyyy-MM-dd HH:mm:ss}]:{model.Content}");
                 Console.ForegroundColor = currentForeColor;
-            };
+            });
 
             _ = Task.Factory.StartNew(() =>
             {
@@ -50,13 +50,10 @@ namespace common
                         LoggerModel model = Dequeue();
                         if (model != null)
                         {
-                            OnLogger?.Invoke(model);
+                            OnLogger.Push(model);
                         }
                     }
-                    else
-                    {
-                        System.Threading.Thread.Sleep(1);
-                    }
+                    System.Threading.Thread.Sleep(1);
                 }
             }, TaskCreationOptions.LongRunning);
         }
@@ -64,13 +61,12 @@ namespace common
         [Conditional("DEBUG")]
         public void Debug(string content, params object[] args)
         {
-            if(args != null && args.Length > 0)
+            if (args != null && args.Length > 0)
             {
                 content = string.Format(content, args);
             }
             queue.Enqueue(new LoggerModel { Type = LoggerTypes.DEBUG, Content = content });
         }
-
         public void Info(string content, params object[] args)
         {
             if (args != null && args.Length > 0)
@@ -114,8 +110,8 @@ namespace common
         public string Content { get; set; } = string.Empty;
     }
 
-    public enum LoggerTypes
+    public enum LoggerTypes : byte
     {
-       DEBUG, INFO, WARNING, ERROR
+        DEBUG = 0, INFO = 1, WARNING = 2, ERROR = 3
     }
 }

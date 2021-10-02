@@ -96,14 +96,16 @@ namespace client.service.album
 
         public static AlbumSettingModel ReadConfig()
         {
-            AlbumSettingModel config = File.ReadAllText("album-appsettings.json").DeJson<AlbumSettingModel>();
-            return config;
+            if (File.Exists("album-appsettings.json"))
+            {
+                return File.ReadAllText("album-appsettings.json").DeJson<AlbumSettingModel>();
+            }
+            return new AlbumSettingModel();
         }
 
         public void SaveConfig()
         {
-            AlbumSettingModel config = File.ReadAllText("album-appsettings.json").DeJson<AlbumSettingModel>();
-
+            AlbumSettingModel config = ReadConfig();
             config.Clients = Clients;
             config.ServerPort = ServerPort;
 

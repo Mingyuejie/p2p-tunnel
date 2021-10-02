@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-01 20:00:25
+ * @LastEditTime: 2021-10-02 14:18:08
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -50,6 +50,11 @@
                                     <router-link :to="{name:'PluginWakeUp'}">幻数据包</router-link>
                                 </el-dropdown-item>
                             </auth-item>
+                            <auth-item name="LoggerPlugin">
+                                <el-dropdown-item>
+                                    <router-link :to="{name:'PluginLogger'}">日志信息</router-link>
+                                </el-dropdown-item>
+                            </auth-item>
                         </template>
                         <template v-else>
                             <el-dropdown-item>
@@ -69,6 +74,9 @@
                             </el-dropdown-item>
                             <el-dropdown-item>
                                 <router-link :to="{name:'PluginWakeUp'}" class="disabled">幻数据包</router-link>
+                            </el-dropdown-item>
+                            <el-dropdown-item>
+                                <router-link :to="{name:'PluginLogger'}" class="disabled">日志信息</router-link>
                             </el-dropdown-item>
                         </template>
                     </el-dropdown-menu>

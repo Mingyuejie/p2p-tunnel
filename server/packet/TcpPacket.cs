@@ -36,7 +36,6 @@ namespace server.packet
             Array.Copy(lengthArray, 0, result, distIndex, lengthArray.Length);
             distIndex += lengthArray.Length;
 
-
             Array.Copy(chunk, 0, result, distIndex, chunk.Length);
 
             return result;

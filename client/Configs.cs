@@ -36,13 +36,16 @@ namespace client
 
         public static Config ReadConfig()
         {
-            Config config = File.ReadAllText("appsettings.json").DeJson<Config>();
-            return config;
+            if (File.Exists("appsettings.json"))
+            {
+                return File.ReadAllText("appsettings.json").DeJson<Config>();
+            }
+            return new Config();
         }
 
         public void SaveConfig()
         {
-            Config config = File.ReadAllText("appsettings.json").DeJson<Config>();
+            Config config = ReadConfig();
 
             config.Web = Web;
             config.Client = Client;
@@ -60,14 +63,14 @@ namespace client
     [ProtoContract, MessagePackObject]
     public class WebConfig
     {
-        [ProtoMember(1),Key(1)]
+        [ProtoMember(1), Key(1)]
         public int Port { get; set; } = 8098;
         [ProtoMember(2), Key(2)]
         public string Root { get; set; } = "./web";
         [ProtoMember(3), Key(3)]
         public bool UseIpv6 { get; set; } = false;
 
-        [JsonIgnore,ProtoIgnore,IgnoreMember]
+        [JsonIgnore, ProtoIgnore, IgnoreMember]
         public IPAddress BindIp
         {
             get
@@ -80,12 +83,12 @@ namespace client
     [ProtoContract, MessagePackObject]
     public class WebsocketConfig
     {
-        [ProtoMember(1),Key(1)]
+        [ProtoMember(1), Key(1)]
         public int Port { get; set; } = 8098;
         [ProtoMember(2), Key(2)]
         public bool UseIpv6 { get; set; } = false;
 
-        [JsonIgnore, ProtoIgnore,IgnoreMember]
+        [JsonIgnore, ProtoIgnore, IgnoreMember]
         public IPAddress BindIp
         {
             get
@@ -104,7 +107,7 @@ namespace client
         /// <summary>
         /// 分组编号
         /// </summary>
-        [ProtoMember(1),Key(1)]
+        [ProtoMember(1), Key(1)]
         public string GroupId { get; set; } = string.Empty;
         /// <summary>
         /// 客户端名
@@ -127,7 +130,7 @@ namespace client
         [ProtoMember(5), Key(5)]
         public bool UseIpv6 { get; set; } = false;
 
-        [JsonIgnore, ProtoIgnore,IgnoreMember]
+        [JsonIgnore, ProtoIgnore, IgnoreMember]
         public IPAddress BindIp
         {
             get
@@ -143,20 +146,20 @@ namespace client
     [ProtoContract, MessagePackObject]
     public class ServerConfig
     {
-        [ProtoMember(1),Key(1)]
+        [ProtoMember(1), Key(1)]
         public string Ip { get; set; } = string.Empty;
-        [ProtoMember(2),Key(2)]
+        [ProtoMember(2), Key(2)]
         public int Port { get; set; } = 8099;
-        [ProtoMember(3),Key(3)]
+        [ProtoMember(3), Key(3)]
         public int TcpPort { get; set; } = 8000;
     }
 
     [ProtoContract, MessagePackObject]
     public class FileServerConfig
     {
-        [ProtoMember(1),Key(1)]
+        [ProtoMember(1), Key(1)]
         public bool IsStart { get; set; } = true;
-        [ProtoMember(2),Key(2)]
+        [ProtoMember(2), Key(2)]
         public string Root { get; set; } = "./ftp";
     }
 }

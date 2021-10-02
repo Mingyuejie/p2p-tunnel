@@ -106,7 +106,7 @@ namespace server
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.Debug(ex + "");
+                    Logger.Instance.Error(ex + "");
                 }
             }
             return false;
@@ -187,32 +187,28 @@ namespace server
             ReceiveModel model = new ReceiveModel { ConnectId = connectId, ErrorCallback = errorCallback, Id = Id, Address = ip, Socket = socket, Buffer = Array.Empty<byte>() };
             _ = ReceiveModel.Add(model);
 
-            model.Buffer = new byte[1024];
+            model.Buffer = new byte[4096];
             _ = socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
         }
         private void Receive(ReceiveModel model, byte[] buffer)
         {
-            //MyStopwatch watch = new MyStopwatch();
-            //watch.Start();
+            model.CacheBuffer.AddRange(buffer);
 
-            lock (model.CacheBuffer)
+            TcpPacket[] bytesArray = TcpPacket.FromArray(model.CacheBuffer).ToArray();
+            if (bytesArray.Length > 0)
             {
-                model.CacheBuffer.AddRange(buffer);
+                var address = model.Socket.RemoteEndPoint as IPEndPoint;
+                OnPacket.Push(new ServerDataWrap<TcpPacket[]>
+                {
+                    Data = bytesArray,
+                    Address = address,
+                    ServerType = ServerType.TCP,
+                    Socket = model.Socket
+                });
             }
-            var address = model.Socket.RemoteEndPoint as IPEndPoint;
-            OnPacket.Push(new ServerDataWrap<List<byte>>
-            {
-                Data = model.CacheBuffer,
-                Address = address,
-                ServerType = ServerType.TCP,
-                Socket = model.Socket
-            });
-
-            // watch.Stop();
-            // watch.Output($"TCP 包处理时间：");
         }
 
-        public SimplePushSubHandler<ServerDataWrap<List<byte>>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<List<byte>>>();
+        public SimplePushSubHandler<ServerDataWrap<TcpPacket[]>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<TcpPacket[]>>();
 
     }
 

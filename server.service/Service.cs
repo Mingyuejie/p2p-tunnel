@@ -40,7 +40,6 @@ namespace server.service
             return obj;
         }
 
-
         public static ServiceCollection AddPlugin(this ServiceCollection obj)
         {
             obj.AddSingleton<IClientRegisterCaching, ClientRegisterCaching>();

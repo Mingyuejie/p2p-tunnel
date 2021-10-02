@@ -61,5 +61,16 @@ namespace client.service.plugins.serverPlugins
                 Path = arg.Path
             });
         }
+
+        public bool SendOnlyTcp(SendTcpEventArg<byte[]> arg)
+        {
+            return serverPluginHelper.SendOnlyTcp(new SendMessageWrap<byte[]>
+            {
+                TcpCoket = arg.Socket,
+                Data = arg.Data,
+                Timeout = arg.Timeout,
+                Path = arg.Path
+            });
+        }
     }
 }

@@ -16,6 +16,7 @@ namespace client.plugins.serverPlugins
         Task<ServerMessageResponeWrap> SendReplyTcp<T>(SendTcpEventArg<T> arg);
 
         bool SendOnlyTcp<T>(SendTcpEventArg<T> arg);
+        bool SendOnlyTcp(SendTcpEventArg<byte[]> arg);
     }
 
 

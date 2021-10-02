@@ -115,13 +115,16 @@ namespace client.service.tcpforward.client
 
         public static TcpForwardSettingModel ReadConfig()
         {
-            TcpForwardSettingModel config = File.ReadAllText("tcpforward-appsettings.json").DeJson<TcpForwardSettingModel>();
-            return config;
+            if (File.Exists("tcpforward-appsettings.json"))
+            {
+                return File.ReadAllText("tcpforward-appsettings.json").DeJson<TcpForwardSettingModel>();
+            }
+            return new TcpForwardSettingModel();
         }
 
         public void SaveConfig()
         {
-            TcpForwardSettingModel config = File.ReadAllText("tcpforward-appsettings.json").DeJson<TcpForwardSettingModel>();
+            TcpForwardSettingModel config = ReadConfig();
 
             config.PortBlackList = PortBlackList;
             config.PortWhiteList = PortWhiteList;

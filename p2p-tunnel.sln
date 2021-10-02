@@ -47,6 +47,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "client.service.ftp", "clien
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "client.service.cmd", "client.service.cmd\client.service.cmd.csproj", "{059799DE-D844-4055-9D41-A44CE2413996}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "client.service.logger", "client.service.logger\client.service.logger.csproj", "{4483E386-298F-4F75-8CA0-2CD31849E072}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -121,6 +123,10 @@ Global
 		{059799DE-D844-4055-9D41-A44CE2413996}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{059799DE-D844-4055-9D41-A44CE2413996}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{059799DE-D844-4055-9D41-A44CE2413996}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4483E386-298F-4F75-8CA0-2CD31849E072}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4483E386-298F-4F75-8CA0-2CD31849E072}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4483E386-298F-4F75-8CA0-2CD31849E072}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4483E386-298F-4F75-8CA0-2CD31849E072}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -145,6 +151,7 @@ Global
 		{B35EC4F3-D958-4524-A0C6-9B008E6CF402} = {D425C224-EA5F-4F17-A9F5-06AD501854C4}
 		{3D833A84-AE49-4D1E-940E-C95FBF8318E8} = {D425C224-EA5F-4F17-A9F5-06AD501854C4}
 		{059799DE-D844-4055-9D41-A44CE2413996} = {D425C224-EA5F-4F17-A9F5-06AD501854C4}
+		{4483E386-298F-4F75-8CA0-2CD31849E072} = {D425C224-EA5F-4F17-A9F5-06AD501854C4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DE8935B2-54F1-4FBD-98BB-8119E42B52A6}

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-30 14:23:35
+ * @LastEditTime: 2021-10-02 14:17:22
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\router\index.js
@@ -34,10 +34,10 @@ const routes = [
                 meta: { name: '远程命令' }
             },
             {
-                path: '/plugin-setting.html',
-                name: 'PluginSetting',
-                component: () => import('../views/plugin/Setting.vue'),
-                meta: { name: '插件设置' }
+                path: '/plugin-logger.html',
+                name: 'PluginLogger',
+                component: () => import('../views/plugin/Logger.vue'),
+                meta: { name: '日志信息' }
             },
             {
                 path: '/plugin-ftp.html',

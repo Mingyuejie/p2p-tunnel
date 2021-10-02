@@ -90,13 +90,18 @@ namespace server
             {
                 IPEndPoint ipepClient = null;
                 byte[] bytRecv = UdpcRecv.Receive(ref ipepClient);
-                OnPacket.Push(new ServerDataWrap<byte[]>
+
+                UdpPacket packet = UdpPacket.FromArray(ipepClient, bytRecv);
+                if (packet != null)
                 {
-                    Data = bytRecv,
-                    Address = ipepClient,
-                    ServerType = ServerType.UDP,
-                    Socket = null
-                });
+                    OnPacket.Push(new ServerDataWrap<UdpPacket>
+                    {
+                        Data = packet,
+                        Address = ipepClient,
+                        ServerType = ServerType.UDP,
+                        Socket = null
+                    });
+                }
             }
             catch (Exception ex)
             {
@@ -104,6 +109,6 @@ namespace server
             }
         }
 
-        public SimplePushSubHandler<ServerDataWrap<byte[]>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<byte[]>>();
+        public SimplePushSubHandler<ServerDataWrap<UdpPacket>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<UdpPacket>>();
     }
 }
