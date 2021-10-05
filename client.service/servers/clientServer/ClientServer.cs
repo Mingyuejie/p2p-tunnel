@@ -182,7 +182,7 @@ namespace client.service.servers.clientServer
                     }
                     catch (Exception ex)
                     {
-                        Logger.Instance.Debug(ex + "");
+                        Logger.Instance.Error(ex + "");
                         socket.Send(new ClientServiceMessageResponseWrap
                         {
                             Content = ex.Message,

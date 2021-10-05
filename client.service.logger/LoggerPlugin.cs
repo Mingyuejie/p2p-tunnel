@@ -20,7 +20,7 @@ namespace client.service.logger
         {
             PageParamModel model = arg.Content.DeJson<PageParamModel>();
 
-            IEnumerable<LoggerModel> res = Data;
+            IEnumerable<LoggerModel> res = Data.OrderByDescending(c=>c.Time);
             if (model.Type >= 0)
             {
                 res = res.Where(c => c.Type == (LoggerTypes)model.Type);

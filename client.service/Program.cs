@@ -7,7 +7,6 @@ using client.service.plugins.punchHolePlugins;
 using client.service.plugins.serverPlugins;
 using client.service.plugins.serverPlugins.register;
 using client.service.servers.clientServer;
-using client.service.servers.clientServer.plugins;
 using client.service.servers.webServer;
 using client.service.tcpforward;
 using client.service.upnp;
@@ -21,6 +20,15 @@ namespace client.service
     class Program
     {
         static void Main(string[] args)
+        {
+            Startup.Start();
+            Console.ReadLine();
+        }
+    }
+
+    class Startup
+    {
+        public static void Start()
         {
             Logger.Instance.Info("正在启动...");
 
@@ -90,8 +98,6 @@ namespace client.service
             Logger.Instance.Warning("=======================================");
             Logger.Instance.Warning($"前端管理地址:http://{config.Web.BindIp}:{config.Web.Port}");
             Logger.Instance.Warning($"管理通信地址:ws://{config.Websocket.BindIp}:{config.Websocket.Port}");
-
-            Console.ReadLine();
         }
     }
 }

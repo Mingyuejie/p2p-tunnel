@@ -63,6 +63,10 @@ namespace client.service.ftp.client
             if (string.IsNullOrWhiteSpace(config.ClientCurrentPath))
             {
                 config.ClientRootPath = config.ClientCurrentPath = GetFolderPath(SpecialFolder.Desktop);
+                if (string.IsNullOrWhiteSpace(config.ClientCurrentPath))
+                {
+                    config.ClientRootPath = config.ClientCurrentPath = GetFolderPath(SpecialFolder.CommonDesktopDirectory);
+                }
             }
             DirectoryInfo dirInfo = new DirectoryInfo(Path.Combine(config.ClientCurrentPath, path));
             if (dirInfo.FullName.Length < config.ClientRootPath.Length)
@@ -96,7 +100,6 @@ namespace client.service.ftp.client
         }
         public SpecialFolderInfo GetSpecialFolders()
         {
-            string desktop = GetFolderPath(SpecialFolder.Desktop);
             List<SpecialFolder> specialFolders = new()
             {
                 SpecialFolder.MyPictures,
@@ -105,7 +108,12 @@ namespace client.service.ftp.client
                 SpecialFolder.MyDocuments,
                 SpecialFolder.Desktop
             };
-
+            string desktop = GetFolderPath(SpecialFolder.Desktop);
+            if (string.IsNullOrWhiteSpace(desktop))
+            {
+                desktop = GetFolderPath(SpecialFolder.CommonDesktopDirectory);
+            }
+           
             List<SpecialFolderInfo> child = new()
             {
                 new SpecialFolderInfo
