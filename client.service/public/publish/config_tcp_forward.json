@@ -1,1 +1,1 @@
-{"Mappings":[{"ID":17,"SourceIp":"0.0.0.0","SourcePort":5411,"TargetName":"","TargetIp":"127.0.0.1","TargetPort":5412,"Listening":true,"AliveType":1,"Desc":"图片相册插件","Editable":false,"Group":"album"}]}
+{"Mappings":[{"ID":20,"SourceIp":"0.0.0.0","SourcePort":5411,"TargetName":"","TargetIp":"127.0.0.1","TargetPort":5412,"Listening":true,"AliveType":1,"Desc":"图片相册插件","Editable":false,"Group":"album"}]}
