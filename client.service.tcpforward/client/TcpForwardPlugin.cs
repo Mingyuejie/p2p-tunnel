@@ -22,6 +22,8 @@ namespace client.service.tcpforward.client
 
         public string Desc => "白名单不为空时只允许白名单内端口";
 
+        public bool Enable => true;
+
         public object LoadSetting()
         {
             return tcpForwardSettingModel;
@@ -85,6 +87,11 @@ namespace client.service.tcpforward.client
         {
             ForwardSettingModel model = arg.Content.DeJson<ForwardSettingModel>();
             tcpForwardHelper.Stop(model.ID);
+        }
+
+        public bool SwitchEnable(bool enable)
+        {
+            return true;
         }
     }
 

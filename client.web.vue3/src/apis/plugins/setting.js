@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-21 14:58:34
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-26 09:37:22
+ * @LastEditTime: 2021-10-08 09:32:53
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\apis\plugins\setting.js
@@ -23,4 +23,8 @@ export const loadPlugins = () => {
 
 export const saveSetting = (className, content) => {
     return sendWebsocketMsg(`setting/save`, { ClassName: className, Content: content });
+}
+
+export const sendEnable = (className, enable) => {
+    return sendWebsocketMsg(`setting/enable`, { ClassName: className, Enable: enable });
 }

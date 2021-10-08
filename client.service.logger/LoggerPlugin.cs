@@ -20,7 +20,7 @@ namespace client.service.logger
         {
             PageParamModel model = arg.Content.DeJson<PageParamModel>();
 
-            IEnumerable<LoggerModel> res = Data.OrderByDescending(c=>c.Time);
+            IEnumerable<LoggerModel> res = Data.OrderByDescending(c => c.Time);
             if (model.Type >= 0)
             {
                 res = res.Where(c => c.Type == (LoggerTypes)model.Type);
@@ -100,6 +100,8 @@ namespace client.service.logger
 
         public string Desc => "收集日志输出到前端";
 
+        public bool Enable => config.Enable;
+
         public object LoadSetting()
         {
             return config;
@@ -114,6 +116,13 @@ namespace client.service.logger
             config.SaveConfig();
 
             return string.Empty;
+        }
+
+        public bool SwitchEnable(bool enable)
+        {
+            config.Enable = enable;
+            config.SaveConfig();
+            return true;
         }
     }
 

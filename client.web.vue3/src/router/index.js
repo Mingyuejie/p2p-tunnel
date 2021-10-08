@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-02 14:17:22
+ * @LastEditTime: 2021-10-08 09:12:34
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\router\index.js
@@ -27,6 +27,12 @@ const routes = [
         component: () => import('../views/plugin/Index.vue'),
         redirect: { name: 'PluginSetting' },
         children: [
+            {
+                path: '/plugin-setting.html',
+                name: 'PluginSetting',
+                component: () => import('../views/plugin/Setting.vue'),
+                meta: { name: '插件配置' }
+            },
             {
                 path: '/plugin-cmd.html',
                 name: 'PluginCmd',

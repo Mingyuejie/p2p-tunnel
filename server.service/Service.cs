@@ -90,7 +90,8 @@ namespace server.service
                             Id = c.Id,
                             Name = c.Name,
                             Port = c.Address.Port,
-                            TcpPort = c.TcpPort
+                            TcpPort = c.TcpPort,
+                            Mac = c.Mac
                         }).ToList()));
 
                         //每个分组

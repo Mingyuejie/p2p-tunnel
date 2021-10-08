@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-24 14:36:58
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-26 23:15:14
+ * @LastEditTime: 2021-10-08 09:42:36
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\SettingModal.vue
@@ -16,7 +16,7 @@
     <el-dialog title="配置" v-model="showAdd" center :close-on-click-modal="false" width="80rem">
         <el-form ref="formDom" :model="form" :rules="rules" label-width="0">
             <el-form-item label="" prop="Content" label-width="0">
-                <div id="editor"></div>
+                <div id="editor" v-if="showAdd"></div>
             </el-form-item>
         </el-form>
         <template #footer>
@@ -48,11 +48,10 @@ export default {
             }
         });
         const handleEdit = () => {
-            state.showAdd = false;
+            state.showAdd = true;
             state.showEditor = false;
             loadSetting(state.form.ClassName).then((res) => {
                 state.form.Content = res;
-                state.showAdd = true;
                 initEditor();
             });
         }
@@ -61,7 +60,7 @@ export default {
         const initEditor = () => {
             nextTick(() => {
                 const container = document.getElementById("editor");
-                container.innerHTML = '';
+                // container.innerHTML = '';
                 const options = {
                     mode: 'code'
                 }

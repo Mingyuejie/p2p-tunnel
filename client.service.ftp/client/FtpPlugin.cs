@@ -168,6 +168,8 @@ namespace client.service.ftp.client
 
         public string Desc => "文件上传下载服务";
 
+        public bool Enable => config.Enable;
+
         public object LoadSetting()
         {
             return config;
@@ -185,6 +187,13 @@ namespace client.service.ftp.client
             config.SaveConfig();
 
             return string.Empty;
+        }
+
+        public bool SwitchEnable(bool enable)
+        {
+            config.Enable = enable;
+            config.SaveConfig();
+            return true;
         }
     }
 

@@ -64,6 +64,8 @@ namespace client.service.cmd
 
         public string Desc => "执行远程客户端的命令行";
 
+        public bool Enable => config.Enable;
+
         public object LoadSetting()
         {
             return config;
@@ -76,6 +78,13 @@ namespace client.service.cmd
             config.Enable = _config.Enable;
             config.SaveConfig();
             return string.Empty;
+        }
+
+        public bool SwitchEnable(bool enable)
+        {
+            config.Enable = enable;
+            config.SaveConfig();
+            return true;
         }
     }
     public class CmdPlugin : CmdBase, IPlugin

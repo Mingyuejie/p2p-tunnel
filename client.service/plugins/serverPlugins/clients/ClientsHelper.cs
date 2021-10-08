@@ -128,6 +128,7 @@ namespace client.service.plugins.serverPlugins.clients
                         Name = item.Name,
                         Port = item.Port,
                         TcpPort = item.TcpPort,
+                        Mac = item.Mac,
                         SelfId = registerState.RemoteInfo.ConnectId
                     };
                     clientInfoCaching.Add(client);

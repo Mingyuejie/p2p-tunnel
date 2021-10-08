@@ -26,6 +26,17 @@ namespace client.service.servers.clientServer.plugins
             return clientServer.GetPlugins();
         }
 
+        public bool Enable(ClientServicePluginExcuteWrap arg)
+        {
+            EnableParam model = arg.Content.DeJson<EnableParam>();
+            var plugin = clientServer.GetSettingPlugin(model.ClassName);
+            if (plugin != null)
+            {
+                return plugin.SwitchEnable(model.Enable);
+            }
+            return false;
+        }
+
         public object Load(ClientServicePluginExcuteWrap arg)
         {
             SaveParam model = arg.Content.DeJson<SaveParam>();
@@ -56,5 +67,11 @@ namespace client.service.servers.clientServer.plugins
     {
         public string ClassName { get; set; }
         public string Content { get; set; }
+    }
+
+    public class EnableParam
+    {
+        public string ClassName { get; set; }
+        public bool Enable { get; set; }
     }
 }

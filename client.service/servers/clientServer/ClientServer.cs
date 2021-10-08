@@ -238,7 +238,8 @@ namespace client.service.servers.clientServer
                 Name = c.Value.Name,
                 Author = c.Value.Author,
                 Desc = c.Value.Desc,
-                ClassName = c.Value.GetType().Name
+                ClassName = c.Value.GetType().Name,
+                Enable = c.Value.Enable
             });
         }
 

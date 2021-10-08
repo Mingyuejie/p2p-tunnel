@@ -18,5 +18,6 @@ namespace client.servers.clientServer
         public string ClassName { get; set; } = string.Empty;
         public string Author { get; set; } = string.Empty;
         public string Desc { get; set; } = string.Empty;
+        public bool Enable { get; set; } = false;
     }
 }

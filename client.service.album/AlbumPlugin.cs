@@ -26,6 +26,8 @@ namespace client.service.album
 
         public string Desc => $"服务端口:{albumSettingModel.ServerPort}";
 
+        public bool Enable => albumSettingModel.UseServer;
+
         public object LoadSetting()
         {
             return albumSettingModel;
@@ -81,6 +83,14 @@ namespace client.service.album
         public object Load(ClientServicePluginExcuteWrap arg)
         {
             return albumSettingModel;
+        }
+
+        public bool SwitchEnable(bool enable)
+        {
+            albumSettingModel.UseServer = enable;
+            albumSettingModel.SaveConfig();
+
+            return true;
         }
     }
 

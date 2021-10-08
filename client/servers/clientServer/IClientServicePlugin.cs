@@ -8,10 +8,6 @@ namespace client.servers.clientServer
 {
     public interface IClientServicePlugin
     {
-        //string Name { get; }
-        //bool Enabled { get; set; }
-
-        //void Enable(ClientServicePluginExcuteWrap arg);
     }
 
     public interface IClientServiceSettingPlugin
@@ -19,6 +15,8 @@ namespace client.servers.clientServer
         string Name { get; }
         string Author { get; }
         string Desc { get; }
+        bool Enable { get; }
+        bool SwitchEnable(bool enable);
         object LoadSetting();
         string SaveSetting(string jsonStr);
     }
@@ -26,7 +24,7 @@ namespace client.servers.clientServer
     [ProtoContract, MessagePackObject]
     public class ClientServiceMessageResponseWrap
     {
-        [ProtoMember(1),Key(1)]
+        [ProtoMember(1), Key(1)]
         public string Path { get; set; } = string.Empty;
         [ProtoMember(2), Key(2)]
         public long RequestId { get; set; } = 0;

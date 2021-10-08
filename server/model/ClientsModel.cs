@@ -6,12 +6,12 @@ using System.Net.Sockets;
 namespace server.model
 {
 
-    [ProtoContract,MessagePackObject]
+    [ProtoContract, MessagePackObject]
     public class ClientsModel
     {
         public ClientsModel() { }
 
-        [ProtoMember(1),Key(0)]
+        [ProtoMember(1), Key(0)]
         public IEnumerable<ClientsClientModel> Clients { get; set; }
 
     }
@@ -19,7 +19,7 @@ namespace server.model
     [ProtoContract, MessagePackObject]
     public class ClientsClientModel
     {
-        [ProtoMember(1),Key(1)]
+        [ProtoMember(1), Key(1)]
         public string Address { get; set; } = string.Empty;
 
         [ProtoMember(2), Key(2)]
@@ -33,6 +33,9 @@ namespace server.model
 
         [ProtoMember(5), Key(5)]
         public int TcpPort { get; set; } = 0;
+
+        [ProtoMember(6), Key(6)]
+        public string Mac { get; set; } = string.Empty;
 
         [ProtoIgnore, IgnoreMember]
         public Socket TcpSocket { get; set; }
