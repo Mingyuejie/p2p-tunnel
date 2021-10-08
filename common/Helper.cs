@@ -222,9 +222,14 @@ namespace common
 
         public static IPAddress GetDomainIp(string domain)
         {
-            IPHostEntry hostinfo = Dns.GetHostEntry(domain);
-            IPAddress[] aryIP = hostinfo.AddressList;
-            return aryIP[0];
+            if (domain[0] >= 49 && domain[0] <= 50)
+            {
+                return IPAddress.Parse(domain);
+            }
+            else
+            {
+               return Dns.GetHostEntry(domain).AddressList[0];
+            }
         }
 
 

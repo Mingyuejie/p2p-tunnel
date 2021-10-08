@@ -84,19 +84,19 @@ namespace client.service.plugins.serverPlugins.register
                 try
                 {
                     registerState.LocalInfo.IsConnecting = true;
-
                     registerState.LocalInfo.Port = Helper.GetRandomPort();
+                    IPAddress serverAddress = Helper.GetDomainIp(config.Server.Ip);
 
                     //TCP 本地开始监听
                     registerState.LocalInfo.TcpPort = Helper.GetRandomPort(new List<int> { registerState.LocalInfo.Port });
                     tcpServer.Start(registerState.LocalInfo.TcpPort, config.Client.BindIp);
-
+                    
                     //TCP 连接服务器
                     registerState.TcpSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     registerState.TcpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                     registerState.TcpSocket.Bind(new IPEndPoint(config.Client.BindIp, registerState.LocalInfo.TcpPort));
 
-                    registerState.TcpSocket.Connect(new IPEndPoint(Dns.GetHostEntry(config.Server.Ip).AddressList[0], config.Server.TcpPort));
+                    registerState.TcpSocket.Connect(new IPEndPoint(serverAddress, config.Server.TcpPort));
 
                     registerState.LocalInfo.LocalIp = IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString();
                     tcpServer.BindReceive(registerState.TcpSocket, (code) =>
@@ -115,7 +115,7 @@ namespace client.service.plugins.serverPlugins.register
                     }
                     //UDP 开始监听
                     udpServer.Start(registerState.LocalInfo.Port, config.Client.BindIp);
-                    registerState.UdpAddress = new IPEndPoint(Dns.GetHostAddresses(config.Server.Ip)[0], config.Server.Port);
+                    registerState.UdpAddress = new IPEndPoint(serverAddress, config.Server.Port);
 
 
                     //注册
