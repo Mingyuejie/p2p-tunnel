@@ -22,7 +22,6 @@ namespace client.service.plugins.serverPlugins.register
         private readonly RegisterState registerState;
         private readonly HeartEventHandles heartEventHandles;
 
-
         private long lastTime = 0;
         private long lastTcpTime = 0;
         private readonly int heartInterval = 5000;
@@ -98,7 +97,7 @@ namespace client.service.plugins.serverPlugins.register
                     registerState.TcpSocket.Bind(new IPEndPoint(config.Client.BindIp, registerState.LocalInfo.TcpPort));
 
                     registerState.TcpSocket.Connect(new IPEndPoint(Dns.GetHostEntry(config.Server.Ip).AddressList[0], config.Server.TcpPort));
-                    
+
                     registerState.LocalInfo.LocalIp = IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString();
                     tcpServer.BindReceive(registerState.TcpSocket, (code) =>
                     {
@@ -180,6 +179,11 @@ namespace client.service.plugins.serverPlugins.register
                     if (IsTimeout())
                     {
                         registerEventHandles.SendExitMessage().Wait();
+
+                        if (config.Client.AutoReg)
+                        {
+                            AutoReg();
+                        }
                     }
                     if (registerState.LocalInfo.Connected && registerState.LocalInfo.TcpConnected)
                     {
