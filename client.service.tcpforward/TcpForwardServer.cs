@@ -299,6 +299,10 @@ namespace client.service.tcpforward
                     }
                     client.Stream.Flush();
                 }
+                else
+                {
+                    Logger.Instance.Error(Encoding.UTF8.GetString(failModel.Buffer));
+                }
                 client.Remove();
             }
         }

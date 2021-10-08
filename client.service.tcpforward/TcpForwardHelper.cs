@@ -144,7 +144,17 @@ namespace client.service.tcpforward
                         TargetIp = arg.Data.TargetIp,
                         SourceSocket = arg.Packet.TcpSocket
                     };
-                    IPEndPoint dnsEndPoint = new(Dns.GetHostEntry(arg.Data.TargetIp).AddressList[0], arg.Data.TargetPort);
+
+                    IPAddress address;
+                    if (arg.Data.TargetIp[0] >= 49 && arg.Data.TargetIp[0] <= 50)
+                    {
+                        address = IPAddress.Parse(arg.Data.TargetIp);
+                    }
+                    else
+                    {
+                        address = Dns.GetHostEntry(arg.Data.TargetIp).AddressList[0];
+                    }
+                    IPEndPoint dnsEndPoint = new(address, arg.Data.TargetPort);
                     socket.Connect(dnsEndPoint);
                     client.Stream = new NetworkStream(socket, false);
 
