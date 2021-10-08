@@ -27,7 +27,7 @@ namespace client.service.plugins.serverPlugins
             {
                 return await serverPluginHelper.SendReply(new SendMessageWrap<T>
                 {
-                    Address = arg.Address ?? registerState.UdpAddress,
+                    Address = arg.Address,
                     Data = arg.Data,
                     Path = arg.Path,
                     Timeout = arg.Timeout,
@@ -35,7 +35,7 @@ namespace client.service.plugins.serverPlugins
             }
             return await serverPluginHelper.SendReply(new SendMessageWrap<ForwardModel>
             {
-                Address = arg.Address,
+                Address = registerState.UdpAddress,
                 Data = new ForwardModel { Data = arg.Data.ToBytes(), Id = arg.Id, ToId = arg.ToId },
                 Timeout = arg.Timeout,
                 Path = "forward/excute"
@@ -48,7 +48,7 @@ namespace client.service.plugins.serverPlugins
             {
                 return serverPluginHelper.SendOnly(new SendMessageWrap<T>
                 {
-                    Address = arg.Address ?? registerState.UdpAddress,
+                    Address = arg.Address,
                     Data = arg.Data,
                     Path = arg.Path,
                     Timeout = arg.Timeout,
@@ -57,7 +57,7 @@ namespace client.service.plugins.serverPlugins
 
             return serverPluginHelper.SendOnly(new SendMessageWrap<ForwardModel>
             {
-                Address = arg.Address,
+                Address = registerState.UdpAddress,
                 Data = new ForwardModel { Data = arg.Data.ToBytes(), Id = arg.Id, ToId = arg.ToId },
                 Timeout = arg.Timeout,
                 Path = "forward/excute"
@@ -70,7 +70,7 @@ namespace client.service.plugins.serverPlugins
             {
                 return serverPluginHelper.SendReplyTcp(new SendMessageWrap<T>
                 {
-                    TcpCoket = arg.Socket ?? registerState.TcpSocket,
+                    TcpCoket = arg.Socket,
                     Data = arg.Data,
                     Timeout = arg.Timeout,
                     Path = arg.Path
@@ -115,7 +115,7 @@ namespace client.service.plugins.serverPlugins
             {
                 return serverPluginHelper.SendOnlyTcp(new SendMessageWrap<byte[]>
                 {
-                    TcpCoket = arg.Socket ?? registerState.TcpSocket,
+                    TcpCoket = arg.Socket,
                     Data = arg.Data,
                     Timeout = arg.Timeout,
                     Path = arg.Path
