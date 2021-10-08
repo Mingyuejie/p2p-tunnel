@@ -64,7 +64,7 @@ namespace server.service.plugins
             ethernetPacket.PayloadPacket = ipPacket;
             ethernetPacket.UpdateCalculatedValues();
 
-            Console.WriteLine($" {model.FormId} -> {ethernetPacket.ToString()}");
+            Console.WriteLine($" {model.FormId} -> {ethernetPacket}");
 
             foreach (var item in LibPcapLiveDeviceList.Instance)
             {

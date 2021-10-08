@@ -247,7 +247,7 @@ namespace server
             }
         }
 
-        private void InputData<T>(IPacket packet, ServerDataWrap<T> param)
+        public void InputData<T>(IPacket packet, ServerDataWrap<T> param)
         {
             ServerMessageWrap wrap = packet.Chunk.DeBytes<ServerMessageWrap>();
             if (wrap.Type == ServerMessageTypes.RESPONSE)

@@ -27,6 +27,8 @@ namespace client.plugins.serverPlugins
         public T Data { get; set; }
         public string Path { get; set; } = string.Empty;
         public int Timeout { get; set; } = 0;
+        public long Id { get; set; } = 0;
+        public long ToId { get; set; } = 0;
     }
     public class SendTcpEventArg<T>
     {
@@ -34,5 +36,7 @@ namespace client.plugins.serverPlugins
         public T Data { get; set; }
         public string Path { get; set; } = string.Empty;
         public int Timeout { get; set; } = 0;
+        public long Id { get; set; } = 0;
+        public long ToId { get; set; } = 0;
     }
 }

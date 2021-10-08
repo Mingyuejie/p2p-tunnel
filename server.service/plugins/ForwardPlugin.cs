@@ -2,14 +2,19 @@
 using server.model;
 using server.plugin;
 using server.service.plugins.register.caching;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace server.service.plugins
 {
-    public class ResetPlugin : IPlugin
+    public class ForwardPlugin : IPlugin
     {
         private readonly IClientRegisterCaching clientRegisterCache;
         private readonly ServerPluginHelper serverPluginHelper;
-        public ResetPlugin(IClientRegisterCaching clientRegisterCache, ServerPluginHelper serverPluginHelper)
+        public ForwardPlugin(IClientRegisterCaching clientRegisterCache, ServerPluginHelper serverPluginHelper)
         {
             this.clientRegisterCache = clientRegisterCache;
             this.serverPluginHelper = serverPluginHelper;
@@ -17,7 +22,7 @@ namespace server.service.plugins
 
         public bool Excute(PluginParamWrap data)
         {
-            ResetModel model = data.Wrap.Content.DeBytes<ResetModel>();
+            ForwardModel model = data.Wrap.Content.DeBytes<ForwardModel>();
 
             if (!clientRegisterCache.Verify(model.Id, data)) return false;
 
@@ -37,26 +42,28 @@ namespace server.service.plugins
 
                     if (data.ServerType == ServerType.UDP)
                     {
-                        serverPluginHelper.SendOnly(new SendMessageWrap<object>
+                        serverPluginHelper.SendOnly(new SendMessageWrap<byte[]>
                         {
                             Address = target.Address,
                             TcpCoket = null,
-                            Data = model,
+                            Data = model.Data,
                             Path = data.Wrap.Path,
                             RequestId = data.Wrap.RequestId,
-                            Code = ServerMessageResponeCodes.OK
+                            Code = data.Wrap.Code,
+                            Type = data.Wrap.Type
                         });
                     }
                     else if (data.ServerType == ServerType.TCP)
                     {
-                        serverPluginHelper.SendOnlyTcp(new SendMessageWrap<object>
+                        serverPluginHelper.SendOnlyTcp(new SendMessageWrap<byte[]>
                         {
                             Address = target.Address,
                             TcpCoket = target.TcpSocket,
-                            Data = model,
+                            Data = model.Data,
                             Path = data.Wrap.Path,
                             RequestId = data.Wrap.RequestId,
-                            Code = ServerMessageResponeCodes.OK
+                            Code = data.Wrap.Code,
+                            Type = data.Wrap.Type
                         });
                     }
                 }
