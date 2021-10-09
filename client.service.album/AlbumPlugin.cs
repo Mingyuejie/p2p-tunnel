@@ -94,7 +94,7 @@ namespace client.service.album
         }
     }
 
-    public class AlbumSettingModel
+    public class AlbumSettingModel: SettingModelBase
     {
         public AlbumSettingClientModel[] Clients { get; set; } = new AlbumSettingClientModel[]
         {
@@ -106,11 +106,7 @@ namespace client.service.album
 
         public static AlbumSettingModel ReadConfig()
         {
-            if (File.Exists("album-appsettings.json"))
-            {
-                return File.ReadAllText("album-appsettings.json").DeJson<AlbumSettingModel>();
-            }
-            return new AlbumSettingModel();
+            return FromFile<AlbumSettingModel>("album-appsettings.json") ?? new AlbumSettingModel();
         }
 
         public void SaveConfig()
@@ -119,7 +115,7 @@ namespace client.service.album
             config.Clients = Clients;
             config.ServerPort = ServerPort;
 
-            File.WriteAllText("album-appsettings.json", config.ToJson(), System.Text.Encoding.UTF8);
+            ToFile(config, "album-appsettings.json");
         }
     }
     public class AlbumSettingClientModel

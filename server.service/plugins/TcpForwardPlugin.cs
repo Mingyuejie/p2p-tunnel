@@ -1,7 +1,11 @@
-﻿using client.plugins.serverPlugins.clients;
-using common;
+﻿using common;
 using common.extends;
-using server.plugins.register.caching;
+using MessagePack;
+using Microsoft.Extensions.DependencyInjection;
+using ProtoBuf;
+using server.model;
+using server.plugin;
+using server.service.plugins.register.caching;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -12,25 +16,101 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace client.service.tcpforward
+namespace server.service.plugins
 {
+    /// <summary>
+    /// TCP代理转发
+    /// </summary>
+    public class TcpForwardPlugin : IPlugin
+    {
+        private readonly TcpForwardServer tcpForwardServer;
+        private readonly Config config;
+        private readonly IClientRegisterCaching clientRegisterCache;
+
+        public TcpForwardPlugin(TcpForwardServer tcpForwardServer, Config config, IClientRegisterCaching clientRegisterCache)
+        {
+            this.tcpForwardServer = tcpForwardServer;
+            this.config = config;
+            this.clientRegisterCache = clientRegisterCache;
+        }
+
+        public bool Register(PluginParamWrap data)
+        {
+            if (!config.tcpForward)
+            {
+                data.SetCode(ServerMessageResponeCodes.ACCESS, "服务端未开启TCP转发");
+                return false;
+            }
+            TcpForwardRegisterModel foreards = data.Wrap.Content.DeBytes<TcpForwardRegisterModel>();
+            if (!clientRegisterCache.Verify(foreards.Id, data))
+            {
+                data.SetCode(ServerMessageResponeCodes.ACCESS, "认证失败");
+                return false;
+            }
+            RegisterCacheModel source = clientRegisterCache.Get(foreards.Id);
+            if (source == null)
+            {
+                data.SetCode(ServerMessageResponeCodes.ACCESS, "未注册");
+                return false;
+            }
+
+            foreach (var item in ServerModel.All())
+            {
+                tcpForwardServer.Stop(item);
+            }
+
+            /*
+            foreach (var webs in foreards.Web)
+            {
+                tcpForwardServer.Start(new TcpForwardRecordModel
+                {
+                    AliveType = TcpForwardAliveTypes.UNALIVE,
+                    Client = source,
+                      ServerPort =webs.Port,
+                });
+            }
+            */
+
+            return true;
+
+        }
+        public bool Response(PluginParamWrap data)
+        {
+            return true;
+        }
+    }
+
+
+    public static class ServiceCollectionExtends
+    {
+        public static ServiceCollection AddTcpForwardPlugin(this ServiceCollection obj)
+        {
+            obj.AddSingleton<TcpForwardServer>();
+
+            return obj;
+        }
+        public static ServiceProvider UseTcpForwardPlugin(this ServiceProvider obj)
+        {
+            return obj;
+        }
+    }
+
+
     public class TcpForwardServer
     {
-        private readonly IClientInfoCaching clientInfoCaching;
-
-        public TcpForwardServer(IClientInfoCaching clientInfoCaching)
+        private readonly IClientRegisterCaching clientRegisterCache;
+        private readonly ServerPluginHelper serverPluginHelper;
+        public TcpForwardServer(IClientRegisterCaching clientRegisterCache, ServerPluginHelper serverPluginHelper)
         {
-            this.clientInfoCaching = clientInfoCaching;
+            this.clientRegisterCache = clientRegisterCache;
+            this.serverPluginHelper = serverPluginHelper;
         }
 
         private long requestId = 0;
 
-        public SimplePushSubHandler<TcpForwardRequestModel> OnRequest { get; } = new SimplePushSubHandler<TcpForwardRequestModel>();
-        public SimplePushSubHandler<ListeningChangeModel> OnListeningChange { get; } = new SimplePushSubHandler<ListeningChangeModel>();
-
         public void Start(TcpForwardRecordModel mapping)
         {
-            if (ServerModel.Contains(mapping.SourcePort))
+            if (ServerModel.Contains(mapping.ServerPort))
             {
                 return;
             }
@@ -38,7 +118,7 @@ namespace client.service.tcpforward
             Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-            socket.Bind(new IPEndPoint(IPAddress.Any, mapping.SourcePort));
+            socket.Bind(new IPEndPoint(IPAddress.Any, mapping.ServerPort));
             socket.Listen(int.MaxValue);
 
 
@@ -47,19 +127,14 @@ namespace client.service.tcpforward
                 CancelToken = new CancellationTokenSource(),
                 AcceptDone = new ManualResetEvent(false),
                 Socket = socket,
-                SourcePort = mapping.SourcePort
+                Port = mapping.ServerPort
             };
             ServerModel.Add(server);
-            OnListeningChange.Push(new ListeningChangeModel
-            {
-                SourcePort = mapping.SourcePort,
-                Listening = true
-            });
 
-            int sourcePort = mapping.SourcePort;
+            int sourcePort = mapping.ServerPort;
             int targetPort = mapping.TargetPort;
             string targetIp = mapping.TargetIp;
-            ClientInfo targetClient = mapping.Client;
+            RegisterCacheModel targetClient = mapping.Client;
             TcpForwardAliveTypes aliveType = mapping.AliveType;
 
             _ = Task.Factory.StartNew((e) =>
@@ -90,6 +165,7 @@ namespace client.service.tcpforward
                 }
                 Stop(sourcePort);
                 server.Remove();
+
             }, TaskCreationOptions.LongRunning, server.CancelToken.Token);
 
         }
@@ -157,11 +233,7 @@ namespace client.service.tcpforward
                 ClientCacheModel.Remove(client.RequestId);
             }, TaskCreationOptions.LongRunning);
         }
-        public void BindUnlveReceive(ClientModel2 client)
-        {
-            client.BufferSize = new byte[1024];
-            client.Stream.BeginRead(client.BufferSize, 0, client.BufferSize.Length, Read, client);
-        }
+
         private void Read(IAsyncResult result)
         {
             result.AsyncWaitHandle.Close();
@@ -203,23 +275,15 @@ namespace client.service.tcpforward
 
         private void Receive(ClientModel2 client, byte[] data)
         {
-            Socket socket = null;
-            if (client.TargetClient != null)
-            {
-                socket = client.TargetClient.Socket;
-                if (socket == null || !socket.Connected || client.TargetClient.Name != client.TargetClient.Name)
-                {
-                    client.TargetClient = clientInfoCaching.All().FirstOrDefault(c => c.Name == client.TargetClient.Name);
-                    if (client.TargetClient != null)
-                    {
-                        socket = client.TargetClient.Socket;
-                    }
-                }
-            }
 
-            OnRequest.Push(new TcpForwardRequestModel
+            serverPluginHelper.SendOnlyTcp(new SendMessageWrap<TcpForwardModel>
             {
-                Msg = new TcpForwardModel
+                Code = ServerMessageResponeCodes.OK,
+                Path = "servertcpforward/excute",
+                RequestId = client.RequestId,
+                TcpCoket = client.SourceSocket,
+                Type = ServerMessageTypes.REQUEST,
+                Data = new TcpForwardModel
                 {
                     RequestId = client.RequestId,
                     Buffer = data,
@@ -228,25 +292,7 @@ namespace client.service.tcpforward
                     AliveType = client.AliveType,
                     TargetIp = client.TargetIp
                 },
-                Socket = socket
             });
-        }
-
-        public void StartAll(List<TcpForwardRecordBaseModel> mappings)
-        {
-            foreach (TcpForwardRecordBaseModel item in mappings)
-            {
-                Start(new TcpForwardRecordModel
-                {
-                    AliveType = item.AliveType,
-                    SourceIp = item.SourceIp,
-                    SourcePort = item.SourcePort,
-                    TargetIp = item.TargetIp,
-                    TargetName = item.TargetName,
-                    TargetPort = item.TargetPort,
-                    Listening = false,
-                });
-            }
         }
 
         public void Response(TcpForwardModel model)
@@ -310,14 +356,7 @@ namespace client.service.tcpforward
 
         public void Stop(ServerModel model)
         {
-            OnListeningChange.Push(new ListeningChangeModel
-            {
-                SourcePort = model.SourcePort,
-                Listening = false
-            });
-
-            ClientCacheModel.Clear(model.SourcePort);
-
+            ClientCacheModel.Clear(model.Port);
             model.Remove();
         }
 
@@ -338,25 +377,59 @@ namespace client.service.tcpforward
         }
     }
 
-    public class ListeningChangeModel
+    [ProtoContract, MessagePackObject]
+    public class TcpForwardRegisterModel
     {
-        public int SourcePort { get; set; } = 0;
-        public bool Listening { get; set; } = false;
-    }
+        [ProtoMember(1), Key(1)]
+        public ForwardWebModel[] Web { get; set; } = Array.Empty<ForwardWebModel>();
+        [ProtoMember(2), Key(2)]
+        public ForwardTunnelModel[] Tunnel { get; set; } = Array.Empty<ForwardTunnelModel>();
 
-    public class TcpForwardRequestModel
+        [ProtoMember(3), Key(3)]
+        public long Id { get; set; } = 0;
+    }
+    [ProtoContract, MessagePackObject]
+    public class ForwardWebModel
     {
-        public Socket Socket { get; set; }
-        public TcpForwardModel Msg { get; set; }
+        [ProtoMember(1), Key(1)]
+        public int Port { get; set; } = 0;
+        [ProtoMember(2), Key(2)]
+        public ForwardWebItem[] Forwards { get; set; } = Array.Empty<ForwardWebItem>();
+
+
+    }
+    [ProtoContract, MessagePackObject]
+    public class ForwardWebItem
+    {
+        [ProtoMember(1), Key(1)]
+        public string SourceDoamin { get; set; } = string.Empty;
+        [ProtoMember(2), Key(2)]
+        public int TargetPort { get; set; } = 0;
+        [ProtoMember(3), Key(3)]
+        public string TargetIp { get; set; } = string.Empty;
+    }
+    [ProtoContract, MessagePackObject]
+    public class ForwardTunnelModel
+    {
+        [ProtoMember(1), Key(1)]
+        public int Port { get; set; } = 0;
+        [ProtoMember(2), Key(2)]
+        public ForwardTunnelItem[] Forwards { get; set; } = Array.Empty<ForwardTunnelItem>();
+    }
+    [ProtoContract, MessagePackObject]
+    public class ForwardTunnelItem
+    {
+        [ProtoMember(1), Key(1)]
+        public int TargetPort { get; set; } = 0;
+        [ProtoMember(2), Key(2)]
+        public string TargetIp { get; set; } = string.Empty;
     }
 
     public class ClientModel2 : ClientModel
     {
-        public ClientInfo TargetClient { get; set; }
+        public RegisterCacheModel TargetClient { get; set; }
         public ManualResetEvent AcceptDone { get; set; }
     }
-
-
     public class ClientCacheModel
     {
         private static ConcurrentDictionary<long, ClientCacheModel> clients = new();
@@ -413,7 +486,7 @@ namespace client.service.tcpforward
     }
     public class ServerModel
     {
-        public int SourcePort { get; set; } = 0;
+        public int Port { get; set; } = 0;
         public Socket Socket { get; set; }
         public ManualResetEvent AcceptDone { get; set; }
         public CancellationTokenSource CancelToken { get; set; }
@@ -422,7 +495,7 @@ namespace client.service.tcpforward
 
         public static bool Add(ServerModel model)
         {
-            return services.TryAdd(model.SourcePort, model);
+            return services.TryAdd(model.Port, model);
         }
 
         public static bool Contains(int id)
@@ -451,7 +524,139 @@ namespace client.service.tcpforward
 
         public void Remove()
         {
-            Remove(SourcePort);
+            Remove(Port);
+        }
+
+        public static void Clear()
+        {
+            foreach (var item in services)
+            {
+                Remove(item.Key);
+            }
+        }
+    }
+
+
+    [ProtoContract, MessagePackObject]
+    public class TcpForwardModel
+    {
+        public TcpForwardModel() { }
+
+        [ProtoMember(1), Key(1)]
+        public long RequestId { get; set; } = 0;
+
+        [ProtoMember(2), Key(2)]
+        public byte[] Buffer { get; set; } = new byte[0];
+
+        [ProtoMember(3, IsRequired = true), Key(3)]
+        public TcpForwardType Type { get; set; } = TcpForwardType.REQUEST;
+
+        [ProtoMember(4), Key(4)]
+        public string TargetIp { get; set; } = string.Empty;
+
+        [ProtoMember(5), Key(5)]
+        public int TargetPort { get; set; } = 0;
+
+        [ProtoMember(6, IsRequired = true), Key(6)]
+        public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.UNALIVE;
+
+        [ProtoMember(7), Key(7)]
+        public byte Compress { get; set; } = 0;
+    }
+
+    [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
+    [Flags]
+    public enum TcpForwardType
+    {
+        REQUEST, RESPONSE, FAIL, RESPONSE_END
+    }
+
+    [ProtoContract, MessagePackObject]
+    public class TcpForwardRecordBaseModel
+    {
+        [ProtoMember(2), Key(2)]
+        public int ServerPort { get; set; } = 8080;
+        [ProtoMember(3), Key(3)]
+        public string TargetIp { get; set; } = "127.0.0.1";
+        [ProtoMember(4), Key(4)]
+        public int TargetPort { get; set; } = 8080;
+        [ProtoMember(5), Key(5)]
+        public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.UNALIVE;
+    }
+
+    public class TcpForwardRecordModel : TcpForwardRecordBaseModel
+    {
+        public RegisterCacheModel Client { get; set; }
+    }
+
+
+    [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
+    [Flags]
+    public enum TcpForwardAliveTypes : int
+    {
+        //长连接
+        ALIVE,
+        //短连接
+        UNALIVE
+    }
+
+    public class ClientModel
+    {
+        public long RequestId { get; set; }
+        public int SourcePort { get; set; } = 0;
+        public Socket SourceSocket { get; set; }
+        public Socket TargetSocket { get; set; }
+        public byte[] BufferSize { get; set; }
+        public string TargetIp { get; set; } = string.Empty;
+        public int TargetPort { get; set; } = 0;
+        public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.UNALIVE;
+        public NetworkStream Stream { get; set; }
+
+        private readonly static ConcurrentDictionary<long, ClientModel> clients = new();
+
+        public static bool Add(ClientModel model)
+        {
+            return clients.TryAdd(model.RequestId, model);
+        }
+
+        public static bool Contains(long id)
+        {
+            return clients.ContainsKey(id);
+        }
+
+        public static bool Get(long id, out ClientModel c)
+        {
+            return clients.TryGetValue(id, out c);
+        }
+
+        public static void Remove(long id)
+        {
+            if (clients.TryRemove(id, out ClientModel c))
+            {
+                c.TargetSocket.SafeClose();
+                try
+                {
+                    c.Stream.Close();
+                    c.Stream.Dispose();
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+
+        public static void Clear(int sourcePort)
+        {
+            IEnumerable<long> requestIds = clients.Where(c => c.Value.SourcePort == sourcePort).Select(c => c.Key);
+            foreach (var requestId in requestIds)
+            {
+                Remove(requestId);
+            }
+        }
+
+        public void Remove()
+        {
+            Remove(RequestId);
         }
     }
 }

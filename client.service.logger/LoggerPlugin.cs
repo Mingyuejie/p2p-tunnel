@@ -126,26 +126,22 @@ namespace client.service.logger
         }
     }
 
-    public class Config
+    public class Config : SettingModelBase
     {
         public bool Enable { get; set; } = false;
         public int MaxLength { get; set; } = 100;
 
         public static Config ReadConfig()
         {
-            if (File.Exists("logger-appsettings.json"))
-            {
-                Config config = File.ReadAllText("logger-appsettings.json").DeJson<Config>();
-                return config;
-            }
-            return new Config();
+            return FromFile<Config>("logger-appsettings.json") ?? new Config();
         }
 
         public void SaveConfig()
         {
             Config config = ReadConfig();
             config.Enable = Enable;
-            File.WriteAllText("logger-appsettings.json", config.ToJson(), Encoding.UTF8);
+
+            ToFile(config, "logger-appsettings.json");
         }
     }
 

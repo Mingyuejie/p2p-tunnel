@@ -1,4 +1,5 @@
-﻿using common.extends;
+﻿using client.servers.clientServer;
+using common.extends;
 using MessagePack;
 using ProtoBuf;
 using System.IO;
@@ -10,7 +11,7 @@ namespace client
     /// <summary>
     /// 配置信息
     /// </summary>
-    public class Config
+    public class Config : SettingModelBase
     {
         /// <summary>
         /// 本地websocket
@@ -36,11 +37,7 @@ namespace client
 
         public static Config ReadConfig()
         {
-            if (File.Exists("appsettings.json"))
-            {
-                return File.ReadAllText("appsettings.json").DeJson<Config>();
-            }
-            return new Config();
+            return FromFile<Config>("appsettings.json") ?? new Config();
         }
 
         public void SaveConfig()
@@ -53,7 +50,7 @@ namespace client
             config.FileServer = FileServer;
             config.Websocket = Websocket;
 
-            File.WriteAllText("appsettings.json", config.ToJson(), System.Text.Encoding.UTF8);
+            ToFile(config, "appsettings.json");
         }
     }
 

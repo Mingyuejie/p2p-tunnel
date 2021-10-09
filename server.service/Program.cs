@@ -1,6 +1,7 @@
 ﻿using common;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
+using server.service.plugins;
 using System;
 using System.IO;
 
@@ -15,10 +16,10 @@ namespace server.service
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddSingleton((e) => config);
 
-            serviceCollection.AddPlugin().AddTcpServer().AddUdpServer();
+            serviceCollection.AddPlugin().AddTcpServer().AddUdpServer().AddTcpForwardPlugin();
 
             var serviceProvider = serviceCollection.BuildServiceProvider();
-            serviceProvider.UsePlugin().UseTcpServer().UseUdpServer();
+            serviceProvider.UsePlugin().UseTcpServer().UseUdpServer().UseTcpForwardPlugin();
 
 
             Logger.Instance.Warning("=======================================");

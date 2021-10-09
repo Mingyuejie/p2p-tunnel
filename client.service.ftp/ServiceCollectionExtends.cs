@@ -1,4 +1,5 @@
-﻿using client.service.ftp.client;
+﻿using client.servers.clientServer;
+using client.service.ftp.client;
 using client.service.ftp.plugin;
 using client.service.ftp.server;
 using client.service.ftp.server.plugin;
@@ -59,7 +60,7 @@ namespace client.service.ftp
         }
     }
 
-    public class Config
+    public class Config: SettingModelBase
     {
         private string serverRoot = string.Empty;
         public string ServerRoot
@@ -97,12 +98,7 @@ namespace client.service.ftp
 
         public static Config ReadConfig()
         {
-            if (File.Exists("ftp-appsettings.json"))
-            {
-                Config config = File.ReadAllText("ftp-appsettings.json").DeJson<Config>();
-                return config;
-            }
-            return new Config();
+            return FromFile<Config>("ftp-appsettings.json") ?? new Config();
         }
 
         public void SaveConfig()
@@ -114,7 +110,7 @@ namespace client.service.ftp
             config.Enable = Enable;
             config.UploadNum = UploadNum;
 
-            File.WriteAllText("ftp-appsettings.json", config.ToJson(), System.Text.Encoding.UTF8);
+            ToFile(config, "ftp-appsettings.json");
         }
     }
 }

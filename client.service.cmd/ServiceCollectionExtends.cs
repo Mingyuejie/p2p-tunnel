@@ -1,4 +1,5 @@
-﻿using common;
+﻿using client.servers.clientServer;
+using common;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -35,19 +36,14 @@ namespace client.service.cmd
         }
     }
 
-    public class Config
+    public class Config: SettingModelBase
     {
         public string Password { get; set; } = string.Empty;
         public bool Enable { get; set; } = false;
 
         public static Config ReadConfig()
         {
-            if (File.Exists("cmd-appsettings.json"))
-            {
-                Config config = File.ReadAllText("cmd-appsettings.json").DeJson<Config>();
-                return config;
-            }
-            return new Config();
+            return FromFile<Config>("cmd-appsettings.json") ?? new Config();
         }
 
         public void SaveConfig()
@@ -55,7 +51,8 @@ namespace client.service.cmd
             Config config = ReadConfig();
             config.Password = Password;
             config.Enable = Enable;
-            File.WriteAllText("cmd-appsettings.json", config.ToJson(), System.Text.Encoding.UTF8);
+
+            ToFile(config, "cmd-appsettings.json");
         }
     }
 }

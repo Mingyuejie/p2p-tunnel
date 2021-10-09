@@ -115,18 +115,14 @@ namespace client.service.tcpforward.client
         public string Content { get; set; } = string.Empty;
     }
 
-    public class TcpForwardSettingModel
+    public class TcpForwardSettingModel : SettingModelBase
     {
         public int[] PortWhiteList { get; set; } = Array.Empty<int>();
         public int[] PortBlackList { get; set; } = Array.Empty<int>();
 
         public static TcpForwardSettingModel ReadConfig()
         {
-            if (File.Exists("tcpforward-appsettings.json"))
-            {
-                return File.ReadAllText("tcpforward-appsettings.json").DeJson<TcpForwardSettingModel>();
-            }
-            return new TcpForwardSettingModel();
+            return FromFile<TcpForwardSettingModel>("tcpforward-appsettings.json") ?? new TcpForwardSettingModel();
         }
 
         public void SaveConfig()
@@ -136,7 +132,7 @@ namespace client.service.tcpforward.client
             config.PortBlackList = PortBlackList;
             config.PortWhiteList = PortWhiteList;
 
-            File.WriteAllText("tcpforward-appsettings.json", config.ToJson(), System.Text.Encoding.UTF8);
+            ToFile(config,"tcpforward-appsettings.json");
         }
     }
 }

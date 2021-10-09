@@ -1,8 +1,10 @@
-﻿using Fleck;
+﻿using common.extends;
+using Fleck;
 using MessagePack;
 using ProtoBuf;
 using System;
 using System.Collections.Concurrent;
+using System.IO;
 
 namespace client.servers.clientServer
 {
@@ -19,6 +21,23 @@ namespace client.servers.clientServer
         bool SwitchEnable(bool enable);
         object LoadSetting();
         string SaveSetting(string jsonStr);
+    }
+
+    public class SettingModelBase
+    {
+        protected static T FromFile<T>(string fileName)
+        {
+            if (File.Exists(fileName))
+            {
+                return File.ReadAllText(fileName).DeJson<T>();
+            }
+            return default;
+        }
+
+        protected void ToFile<T>(T obj, string fileName)
+        {
+            File.WriteAllText(fileName, obj.ToJson(), System.Text.Encoding.UTF8);
+        }
     }
 
     [ProtoContract, MessagePackObject]

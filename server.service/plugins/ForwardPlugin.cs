@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 
 namespace server.service.plugins
 {
+    /// <summary>
+    /// P2P转发
+    /// </summary>
     public class ForwardPlugin : IPlugin
     {
         private readonly IClientRegisterCaching clientRegisterCache;

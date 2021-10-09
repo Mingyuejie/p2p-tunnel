@@ -10,5 +10,6 @@ namespace server.service
     {
         public int Udp { get; set; } = 0;
         public int Tcp { get; set; } = 0;
+        public bool tcpForward { get; set; } = false;
     }
 }
