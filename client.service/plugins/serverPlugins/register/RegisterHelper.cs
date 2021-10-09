@@ -55,7 +55,7 @@ namespace client.service.plugins.serverPlugins.register
         {
             Task.Run(() =>
             {
-                while (true)
+                while (!registerState.LocalInfo.Connected)
                 {
                     var result = Start().Result;
                     if (result.Data)
