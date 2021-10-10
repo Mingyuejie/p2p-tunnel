@@ -47,7 +47,7 @@ namespace client.service.album
             {
                 var model = new TcpForwardRecordBaseModel
                 {
-                    AliveType = TcpForwardAliveTypes.UNALIVE,
+                    AliveType = TcpForwardAliveTypes.WEB,
                     ID = 0,
                     SourcePort = item.SourcePort,
                     SourceIp = IPAddress.Any.ToString(),
@@ -146,7 +146,7 @@ namespace client.service.album
             {
                 var model = new TcpForwardRecordBaseModel
                 {
-                    AliveType = TcpForwardAliveTypes.UNALIVE,
+                    AliveType = TcpForwardAliveTypes.WEB,
                     ID = 0,
                     SourcePort = item.SourcePort,
                     SourceIp = IPAddress.Any.ToString(),

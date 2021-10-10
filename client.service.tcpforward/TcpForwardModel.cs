@@ -26,7 +26,7 @@ namespace client.service.tcpforward
         public int TargetPort { get; set; } = 0;
 
         [ProtoMember(6, IsRequired = true), Key(6)]
-        public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.UNALIVE;
+        public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.WEB;
 
         [ProtoMember(7), Key(7)]
         public byte Compress { get; set; } = 0;
@@ -58,7 +58,7 @@ namespace client.service.tcpforward
         [ProtoMember(7), Key(7)]
         public bool Listening { get; set; } = false;
         [ProtoMember(8), Key(8)]
-        public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.UNALIVE;
+        public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.WEB;
 
         [ProtoMember(9)]
         public string Desc { get; set; } = "";
@@ -81,8 +81,8 @@ namespace client.service.tcpforward
     public enum TcpForwardAliveTypes : int
     {
         //长连接
-        ALIVE,
+        TUNNEL,
         //短连接
-        UNALIVE
+        WEB
     }
 }

@@ -177,7 +177,7 @@ namespace client.service.tcpforward
 
         private void BindReceive(ClientModel client)
         {
-            _ = Task.Factory.StartNew(() =>
+            _ = Task.Run(() =>
             {
                 while (client.Stream.CanRead && ClientModel.Contains(client.RequestId))
                 {
@@ -200,50 +200,7 @@ namespace client.service.tcpforward
                     }
                 }
                 client.Remove();
-            }, TaskCreationOptions.LongRunning);
-        }
-
-        public void BindUnlveReceive(ClientModel client)
-        {
-            client.BufferSize = new byte[1024];
-            client.Stream.BeginRead(client.BufferSize, 0, client.BufferSize.Length, Read, client);
-        }
-        private void Read(IAsyncResult result)
-        {
-            result.AsyncWaitHandle.Close();
-            ClientModel client = (ClientModel)result.AsyncState;
-            try
-            {
-                int count = client.Stream.EndRead(result);
-                if (count == 0)
-                {
-                    ClientCacheModel.Remove(client.RequestId);
-                }
-                else
-                {
-                    if (count < 1024)
-                    {
-                        byte[] temp = new byte[count];
-                        Array.Copy(client.BufferSize, 0, temp, 0, count);
-                        client.BufferSize = temp;
-                    }
-                    Receive(client, client.BufferSize);
-
-                    if (client.Stream.CanRead && ClientCacheModel.Contains(client.RequestId))
-                    {
-                        client.BufferSize = new byte[1024];
-                        client.Stream.BeginRead(client.BufferSize, 0, client.BufferSize.Length, Read, client);
-                    }
-                    else
-                    {
-                        ClientCacheModel.Remove(client.RequestId);
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                ClientCacheModel.Remove(client.RequestId);
-            }
+            });
         }
 
         private void Receive(ClientModel client, byte[] data)
@@ -459,7 +416,7 @@ namespace client.service.tcpforward
         public byte[] BufferSize { get; set; }
         public string TargetIp { get; set; } = string.Empty;
         public int TargetPort { get; set; } = 0;
-        public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.UNALIVE;
+        public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.WEB;
         public NetworkStream Stream { get; set; }
 
         private readonly static ConcurrentDictionary<long, ClientModel> clients = new();
@@ -483,7 +440,10 @@ namespace client.service.tcpforward
         {
             if (clients.TryRemove(id, out ClientModel c))
             {
-                c.TargetSocket.SafeClose();
+                if (c.TargetSocket != null)
+                {
+                    c.TargetSocket.SafeClose();
+                }
                 try
                 {
                     c.Stream.Close();
