@@ -1,0 +1,22 @@
+{
+  "Web": [
+    {
+      "Port": "8099",
+      "Forwards": {
+        "test1.snltty.com": {
+          "TargetPort": "8099",
+          "TargetIp": "127.0.0.1"
+        }
+      }
+    }
+  ],
+  "Tunnel": [
+    {
+      "Port": "3388",
+      "TargetPort": "3389",
+      "TargetIp": "127.0.0.1"
+    }
+  ],
+  "Enable": true,
+  "AutoReg": true
+}

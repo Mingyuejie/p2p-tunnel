@@ -8,6 +8,7 @@ using client.service.plugins.serverPlugins;
 using client.service.plugins.serverPlugins.register;
 using client.service.servers.clientServer;
 using client.service.servers.webServer;
+using client.service.serverTcpforward;
 using client.service.tcpforward;
 using client.service.upnp;
 using client.service.wakeup;
@@ -50,6 +51,7 @@ namespace client.service
                 typeof(WakeUpPlugin).Assembly,
                 typeof(CmdPlugin).Assembly,
                 typeof(LoggerPlugin).Assembly,
+                typeof(ServerTcpForwardPlugin).Assembly,
             };
 
             serviceCollection
@@ -61,19 +63,20 @@ namespace client.service
 
                 //外部插件
                 .AddServerPlugin(externalAddembly).AddClientServer(externalAddembly)
-                .AddTcpForwardPlugin()  //tcp转发
+                .AddTcpForwardPlugin()  //客户端tcp转发
                 .AddAlbumPlugin() //图片相册插件
                 .AddUpnpPlugin()//upnp映射
                 .AddFtpPlugin() //文件服务
-                .AddCmdPlugin()
-                .AddLoggerPlugin()
+                .AddCmdPlugin() //远程命令
+                .AddLoggerPlugin() //日志
+                .AddServerTcpForwardPlugin()//服务器TCP转发
                 ;
 
 
             serviceProvider = serviceCollection.BuildServiceProvider();
             serviceProvider
                 //基础的功能
-                .UseLoggerPlugin()
+                .UseLoggerPlugin() //日志
                 .UseServerPlugin()
                 .UsePunchHolePlugin()//打洞
                 .UseClientServer()//客户端管理
@@ -81,11 +84,12 @@ namespace client.service
 
                 //外部插件
                 .UseServerPlugin(externalAddembly).UseClientServer(externalAddembly)
-                .UseTcpForwardPlugin()//tcp转发
+                .UseTcpForwardPlugin()//客户端tcp转发
                 .UseAlbumPlugin() //图片相册插件
                 .UseUpnpPlugin()//upnp映射
                 .UseFtpPlugin() //文件服务
-                .UseCmdPlugin()
+                .UseCmdPlugin() //远程命令
+                .UseServerTcpForwardPlugin();//服务器TCP转发
                ;
             //自动注册
             if (config.Client.AutoReg)
