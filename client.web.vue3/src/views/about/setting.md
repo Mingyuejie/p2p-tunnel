@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-03 14:39:29
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-25 23:27:44
+ * @LastEditTime: 2021-10-12 16:24:18
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\setting.md
@@ -19,6 +19,7 @@
 {
   "udp": 5410, //udp监听端口
   "tcp": 59410//tcp监听端口
+  "tcpForward":false //是否启用服务端TCP转发 （共用服务器不开启,顶不住）
 }
 ```
 3. 运行 

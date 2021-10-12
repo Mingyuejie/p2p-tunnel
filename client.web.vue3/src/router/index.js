@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-08 09:12:34
+ * @LastEditTime: 2021-10-12 16:30:59
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\router\index.js
@@ -92,6 +92,11 @@ const routes = [
                 path: '/about-setting.html',
                 name: 'AboutSetting',
                 component: () => import('../views/about/Setting.vue')
+            },
+            {
+                path: '/about-server-tcp-forward.html',
+                name: 'ServerTcpforward',
+                component: () => import('../views/about/ServerTcpforward.vue')
             },
             {
                 path: '/about-use.html',

@@ -1,4 +1,5 @@
-﻿using MessagePack;
+﻿using common;
+using MessagePack;
 using ProtoBuf;
 using System;
 using System.Collections.Generic;
@@ -42,17 +43,17 @@ namespace client.plugins.serverPlugins.register
         /// <summary>
         /// 客户端在远程的ip
         /// </summary>
-        [ProtoMember(1),Key(1)]
+        [ProtoMember(1), Key(1)]
         public string Ip { get; set; } = string.Empty;
         /// <summary>
         /// 客户端在远程的TCP端口
         /// </summary>
-        [ProtoMember(2),Key(2)]
+        [ProtoMember(2), Key(2)]
         public int TcpPort { get; set; } = 0;
         /// <summary>
         /// 客户端连接ID
         /// </summary>
-        [ProtoMember(3),Key(3)]
+        [ProtoMember(3), Key(3)]
         public long ConnectId { get; set; } = 0;
     }
 
@@ -65,7 +66,7 @@ namespace client.plugins.serverPlugins.register
         /// <summary>
         /// 外网距离
         /// </summary>
-        [ProtoMember(1),Key(1)]
+        [ProtoMember(1), Key(1)]
         public int RouteLevel { get; set; } = 0;
         /// <summary>
         /// 本地mac地址
@@ -96,10 +97,26 @@ namespace client.plugins.serverPlugins.register
         /// </summary>
         [ProtoMember(7), Key(7)]
         public bool Connected { get; set; } = false;
+
+
+        public SimplePushSubHandler<bool> TcpConnectedSub { get; } = new SimplePushSubHandler<bool>();
+
+        private bool tcpConnected = false;
         /// <summary>
         /// TCP是否已连接服务器
         /// </summary>
         [ProtoMember(8), Key(8)]
-        public bool TcpConnected { get; set; } = false;
+        public bool TcpConnected
+        {
+            get
+            {
+                return tcpConnected;
+            }
+            set
+            {
+                tcpConnected = value;
+                TcpConnectedSub.Push(value);
+            }
+        }
     }
 }

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-24 14:36:58
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-08 09:42:36
+ * @LastEditTime: 2021-10-12 15:46:32
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\SettingModal.vue
@@ -82,6 +82,7 @@ export default {
                     ElMessage.success('已保存');
                     emit('success')
                 }).catch((e) => {
+                    console.log(e);
                     ElMessage.error(e);
                     state.loading = false;
                 });

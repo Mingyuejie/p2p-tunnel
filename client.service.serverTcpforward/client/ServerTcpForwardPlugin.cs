@@ -17,11 +17,11 @@ namespace client.service.tcpforward.client
 
         public void Register(ClientServicePluginExcuteWrap arg)
         {
-            string msg = serverTcpForwardHelper.Register();
+            var res = serverTcpForwardHelper.Register();
 
-            if (!string.IsNullOrWhiteSpace(msg))
+            if (res.Code != server.model.ServerMessageResponeCodes.OK)
             {
-                arg.SetCode(-1, msg);
+                arg.SetCode(-1, res.ErrorMsg);
             }
         }
     }

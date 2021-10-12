@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-22 14:09:03
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-29 16:48:14
+ * @LastEditTime: 2021-10-12 16:27:40
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3c:\Users\ASUS\Desktop\p2p-tunnel\README.md
@@ -17,6 +17,7 @@
 2. UDP,TCP打洞实现点对点直连
 3. 访问内网web，内网桌面，及其它TCP上层协议服务
 4. 服务端只承受 客户端注册，客户端信息的交换。不承受数据转发，几乎无压力
+5. 也带有 服务端转发 插件（需要自己部署服务器）
 
 ### 项目结构
 1. p2p  打洞项目
@@ -25,6 +26,10 @@
     3. client.service.album 客户端服务的 图片相册插件
     4. client.service.ftp 客户端服务的  文件服务插件
     5. client.service.tcpforward 客户端服务的 tcp转发插件
+    5. client.service.upnp 网关端口映射管理
+    5. client.service.wakeup 幻数据包唤醒
+    5. client.service.cmd p2p远程客户端命令
+    5. client.service.serverTcpforward 服务端TCP转发(需要自己部署服务器)
     6. common 一些公共的功能
     7. server 服务器
     8. server.service 打洞服务器的服务端

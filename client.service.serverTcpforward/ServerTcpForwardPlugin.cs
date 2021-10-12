@@ -1,4 +1,6 @@
-﻿using client.servers.clientServer;
+﻿using client.plugins.serverPlugins.register;
+using client.servers.clientServer;
+using common;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
 using server.model;
@@ -37,6 +39,22 @@ namespace client.service.serverTcpforward
         }
         public static ServiceProvider UseServerTcpForwardPlugin(this ServiceProvider obj)
         {
+
+            var registerState = obj.GetService<RegisterState>();
+            var serverTcpForwardHelper = obj.GetService<ServerTcpForwardHelper>();
+            var config = obj.GetService<ServerTcpForwardRegisterConfig>();
+            registerState.LocalInfo.TcpConnectedSub.Sub((connected) =>
+            {
+                if (connected && config.AutoReg)
+                {
+                    Helper.SetTimeout(() =>
+                    {
+                        serverTcpForwardHelper.Register();
+                    }, 1000);
+                }
+            });
+
+            Logger.Instance.Info("服务器TCP转发插件已加载");
             return obj;
         }
     }
@@ -45,9 +63,11 @@ namespace client.service.serverTcpforward
     public class ServerTcpForwardSettingPlugin : IClientServiceSettingPlugin
     {
         private readonly ServerTcpForwardRegisterConfig serverTcpForwardRegisterConfig;
-        public ServerTcpForwardSettingPlugin(ServerTcpForwardRegisterConfig serverTcpForwardRegisterConfig)
+        private readonly ServerTcpForwardHelper serverTcpForwardHelper;
+        public ServerTcpForwardSettingPlugin(ServerTcpForwardRegisterConfig serverTcpForwardRegisterConfig, ServerTcpForwardHelper serverTcpForwardHelper)
         {
             this.serverTcpForwardRegisterConfig = serverTcpForwardRegisterConfig;
+            this.serverTcpForwardHelper = serverTcpForwardHelper;
         }
 
         public string Name => "服务器TCP代理";
@@ -71,6 +91,12 @@ namespace client.service.serverTcpforward
             serverTcpForwardRegisterConfig.Web = _config.Web;
             serverTcpForwardRegisterConfig.Tunnel = _config.Tunnel;
             serverTcpForwardRegisterConfig.SaveConfig();
+
+            var res = serverTcpForwardHelper.Register();
+            if (res.Code != ServerMessageResponeCodes.OK)
+            {
+                return res.ErrorMsg;
+            }
 
             return string.Empty;
         }

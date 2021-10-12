@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-03 11:06:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-11 22:51:44
+ * @LastEditTime: 2021-10-12 16:30:20
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\Index.vue
@@ -21,8 +21,11 @@
                     <router-link :to="{name:'AboutUse'}">使用及基本原理</router-link>
                 </li>
                 <li>
-                    <router-link :to="{name:'AboutEnv'}">环境测试记录</router-link>
+                    <router-link :to="{name:'ServerTcpforward'}">服务器转发穿透</router-link>
                 </li>
+                <!-- <li>
+                    <router-link :to="{name:'AboutEnv'}">环境测试记录</router-link>
+                </li> -->
                 <li>
                     <router-link :to="{name:'AboutPublish'}">自己发布代码</router-link>
                 </li>

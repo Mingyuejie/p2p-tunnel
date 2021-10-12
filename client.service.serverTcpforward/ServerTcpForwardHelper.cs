@@ -27,9 +27,9 @@ namespace client.service.serverTcpforward
             this.serverTcpForwardRegisterConfig = serverTcpForwardRegisterConfig;
         }
 
-        public string Register()
+        public ServerMessageResponeWrap Register()
         {
-            return serverRequest.SendReplyTcp(new SendTcpEventArg<ServerTcpForwardRegisterModel>
+            var res = serverRequest.SendReplyTcp(new SendTcpEventArg<ServerTcpForwardRegisterModel>
             {
                 Data = new ServerTcpForwardRegisterModel
                 {
@@ -39,12 +39,37 @@ namespace client.service.serverTcpforward
                 },
                 Socket = registerstate.TcpSocket,
                 Path = "ServerTcpForward/register"
-            }).Result.ErrorMsg;
-
+            }).Result;
+            if (res.Code == ServerMessageResponeCodes.OK)
+            {
+                Logger.Instance.Info("已注册服务器TCP转发");
+            }
+            else
+            {
+                Logger.Instance.Error($"服务器TCP转发注册失败:{res.ErrorMsg}");
+            }
+            return res;
         }
 
         public void Request(ServerTcpForwardModel data)
         {
+            if (!serverTcpForwardRegisterConfig.Enable)
+            {
+                serverRequest.SendOnlyTcp(new SendTcpEventArg<ServerTcpForwardModel>
+                {
+                    Data = new ServerTcpForwardModel
+                    {
+                        RequestId = data.RequestId,
+                        Type = ServerTcpForwardType.FAIL,
+                        Buffer = Encoding.UTF8.GetBytes("客户端未开启插件"),
+                        AliveType = data.AliveType
+                    },
+                    Socket = registerstate.TcpSocket,
+                    Path = "ServerTcpForward/response"
+                });
+                return;
+            }
+
             ClientModel.Get(data.RequestId, out ClientModel client);
             try
             {

@@ -34,24 +34,24 @@ namespace server.service.plugins
             this.clientRegisterCache = clientRegisterCache;
         }
 
-        public void Register(PluginParamWrap data)
+        public bool Register(PluginParamWrap data)
         {
             if (!config.tcpForward)
             {
                 data.SetCode(ServerMessageResponeCodes.ACCESS, "服务端未开启TCP转发");
-                return;
+                return false;
             }
             ServerTcpForwardRegisterModel foreards = data.Wrap.Content.DeBytes<ServerTcpForwardRegisterModel>();
             if (!clientRegisterCache.Verify(foreards.Id, data))
             {
                 data.SetCode(ServerMessageResponeCodes.ACCESS, "认证失败");
-                return;
+                return false;
             }
             RegisterCacheModel source = clientRegisterCache.Get(foreards.Id);
             if (source == null)
             {
                 data.SetCode(ServerMessageResponeCodes.ACCESS, "未注册");
-                return;
+                return false;
             }
 
             try
@@ -87,6 +87,7 @@ namespace server.service.plugins
                 Logger.Instance.Error(ex + "");
                 data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, ex.Message);
             }
+            return true;
         }
         public void Response(PluginParamWrap data)
         {
@@ -105,6 +106,7 @@ namespace server.service.plugins
         }
         public static ServiceProvider UseTcpForwardPlugin(this ServiceProvider obj)
         {
+            Logger.Instance.Info("TCP转发服务已开启");
             return obj;
         }
     }
@@ -112,9 +114,11 @@ namespace server.service.plugins
     public class TcpForwardServer
     {
         private readonly ServerPluginHelper serverPluginHelper;
-        public TcpForwardServer(ServerPluginHelper serverPluginHelper)
+        private readonly IClientRegisterCaching clientRegisterCache;
+        public TcpForwardServer(ServerPluginHelper serverPluginHelper, IClientRegisterCaching clientRegisterCache)
         {
             this.serverPluginHelper = serverPluginHelper;
+            this.clientRegisterCache = clientRegisterCache;
         }
 
         private long requestId = 0;
@@ -131,8 +135,6 @@ namespace server.service.plugins
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
             socket.Bind(new IPEndPoint(IPAddress.Any, mapping.ServerPort));
             socket.Listen(int.MaxValue);
-
-
             ServerModel server = new ServerModel
             {
                 CancelToken = new CancellationTokenSource(),
@@ -157,7 +159,7 @@ namespace server.service.plugins
                     {
                         _ = socket.BeginAccept(new AsyncCallback(Accept), new ClientModel2
                         {
-                            TargetClient = targetClient,
+                            TargetClientId = targetClient.Id,
                             TargetPort = targetPort,
                             AliveType = aliveType,
                             TargetIp = targetIp,
@@ -202,7 +204,7 @@ namespace server.service.plugins
                     AliveType = server.AliveType,
                     TargetIp = server.TargetIp,
                     SourceSocket = socket,
-                    TargetClient = server.TargetClient,
+                    TargetClientId = server.TargetClientId,
                     Stream = client.Stream,
                     WebForwards = server.WebForwards
                 };
@@ -249,11 +251,7 @@ namespace server.service.plugins
             //web的时候，根据请求的域名 指向不同的目标ip和端口，所以需要解析一下 request headers 拿到host
             if (client.AliveType == ServerTcpForwardAliveTypes.WEB)
             {
-                var watch = new MyStopwatch();
-                watch.Start();
                 string host = GetHost(data);
-                watch.Stop();
-                watch.Output("解析host耗时:");
                 if (client.WebForwards.ContainsKey(host))
                 {
                     var item = client.WebForwards[host];
@@ -262,12 +260,13 @@ namespace server.service.plugins
                 }
             }
 
+            var registerInfo = clientRegisterCache.Get(client.TargetClientId);
             SendMessageWrap<ServerTcpForwardModel> model = new SendMessageWrap<ServerTcpForwardModel>
             {
                 Code = ServerMessageResponeCodes.OK,
                 Path = "ServerTcpForward/excute",
                 RequestId = client.RequestId,
-                TcpCoket = client.SourceSocket,
+                TcpCoket = registerInfo?.TcpSocket,
                 Type = ServerMessageTypes.REQUEST,
                 Data = new ServerTcpForwardModel
                 {
@@ -278,7 +277,12 @@ namespace server.service.plugins
                     AliveType = client.AliveType,
                     TargetIp = targetIp
                 },
-            }; ;
+            };
+            if (targetPort == 0)
+            {
+                Fail(model.Data, "未选择转发对象，或者未与转发对象建立连接");
+                return;
+            }
             if (client.SourceSocket == null || !client.SourceSocket.Connected)
             {
                 Fail(model.Data, "未选择转发对象，或者未与转发对象建立连接");
@@ -364,7 +368,6 @@ namespace server.service.plugins
             }
         }
 
-
         private byte[] hostBytes = Encoding.ASCII.GetBytes("Host:");
         private string GetHost(byte[] bytes)
         {
@@ -394,7 +397,7 @@ namespace server.service.plugins
 
     public class ClientModel2 : ClientModel
     {
-        public RegisterCacheModel TargetClient { get; set; }
+        public long TargetClientId { get; set; }
         public ManualResetEvent AcceptDone { get; set; }
 
         public Dictionary<string, ServerTcpForwardWebItem> WebForwards { get; set; } = new Dictionary<string, ServerTcpForwardWebItem>();
