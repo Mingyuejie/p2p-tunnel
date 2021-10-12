@@ -50,6 +50,21 @@ namespace client.service.serverTcpforward
             }
             return res;
         }
+        public ServerMessageResponeWrap UnRegister()
+        {
+            var res = serverRequest.SendReplyTcp(new SendTcpEventArg<ServerTcpForwardRegisterModel>
+            {
+                Data = new ServerTcpForwardRegisterModel
+                {
+                    Id = registerstate.RemoteInfo.ConnectId,
+                    Web = serverTcpForwardRegisterConfig.Web,
+                    Tunnel = serverTcpForwardRegisterConfig.Tunnel
+                },
+                Socket = registerstate.TcpSocket,
+                Path = "ServerTcpForward/unregister"
+            }).Result;
+            return res;
+        }
 
         public void Request(ServerTcpForwardModel data)
         {
@@ -147,7 +162,6 @@ namespace client.service.serverTcpforward
 
         private void Receive(ClientModel client, byte[] data)
         {
-
             serverRequest.SendOnlyTcp(new SendTcpEventArg<ServerTcpForwardModel>
             {
                 Data = new ServerTcpForwardModel

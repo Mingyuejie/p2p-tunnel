@@ -49,9 +49,14 @@ namespace client.service.serverTcpforward
                 {
                     Helper.SetTimeout(() =>
                     {
-                        serverTcpForwardHelper.Register();
+                        serverTcpForwardHelper.UnRegister();
+                        Helper.SetTimeout(() =>
+                        {
+                            serverTcpForwardHelper.Register();
+                        }, 1000);
                     }, 1000);
                 }
+
             });
 
             Logger.Instance.Info("服务器TCP转发插件已加载");

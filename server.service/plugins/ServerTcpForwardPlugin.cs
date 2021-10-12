@@ -89,9 +89,22 @@ namespace server.service.plugins
             }
             return true;
         }
+        public bool UnRegister(PluginParamWrap data)
+        {
+            tcpForwardServer.StopAll();
+            return true;
+        }
         public void Response(PluginParamWrap data)
         {
-            tcpForwardServer.Response(data.Wrap.Content.DeBytes<ServerTcpForwardModel>());
+            var model = data.Wrap.Content.DeBytes<ServerTcpForwardModel>();
+            if (model.Type == ServerTcpForwardType.RESPONSE)
+            {
+                tcpForwardServer.Response(model);
+            }
+            else
+            {
+                tcpForwardServer.Fail(model);
+            }
         }
     }
 
