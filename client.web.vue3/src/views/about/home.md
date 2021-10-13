@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-07 00:37:53
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-13 09:39:30
+ * @LastEditTime: 2021-10-13 17:54:57
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\home.md
@@ -14,6 +14,13 @@
 3. 访问内网web，内网桌面，及其它TCP上层协议服务
 4. 服务端只承受 客户端注册，客户端信息的交换。不承受数据转发，几乎无压力
 5. 也带有 服务端转发 插件（需要自己部署服务器）
+
+# <font color="red">注意事项</font>
+1. <font color="red">服务器 或 内网电脑，暴露服务在公网时，请做好安全防范</font>
+2. <font color="red">如 3389 桌面服务 不使用 administrator作为登录账号</font>
+3. <font color="red">如 1433 数据库服务 不使用 sa 账号</font>
+4. <font color="red">请使用复杂密码， 数字+字母+字符 交替</font>
+
 
 # 方案
 <table>
