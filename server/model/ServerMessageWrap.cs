@@ -12,7 +12,7 @@ namespace server.model
     [ProtoContract, MessagePackObject]
     public class ServerMessageWrap
     {
-        [ProtoMember(1),Key(1)]
+        [ProtoMember(1), Key(1)]
         public string Path { get; set; } = string.Empty;
         [ProtoMember(2), Key(2)]
         public long RequestId { get; set; } = 0;
@@ -190,7 +190,7 @@ namespace server.model
         /// <summary>
         /// 超时时间，毫秒 0无限 -1一直超时 最小500
         /// </summary>
-        public int Timeout { get; set; } = 0;
+        public int Timeout { get; set; } = 15000;
 
         public string Path { get; set; } = string.Empty;
 

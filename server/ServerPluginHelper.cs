@@ -33,7 +33,7 @@ namespace server
 
             this.tcpserver.OnPacket.Sub((wrap) =>
             {
-                for (int i = 0,len = wrap.Data.Length; i < len; i++)
+                for (int i = 0, len = wrap.Data.Length; i < len; i++)
                 {
                     InputData(wrap.Data[i], wrap);
                 }
@@ -52,7 +52,7 @@ namespace server
                         long time = Helper.GetTimeStamp();
                         foreach (SendCacheModel item in sends.Values)
                         {
-                            if (time - item.Time > 15000)
+                            if (time - item.Time > item.Timeout)
                             {
                                 if (sends.TryRemove(item.RequestId, out SendCacheModel cache) && cache != null)
                                 {
@@ -76,10 +76,10 @@ namespace server
             Interlocked.Increment(ref requestId);
             return requestId;
         }
-        public TaskCompletionSource<ServerMessageResponeWrap> NewReply(long requestId)
+        public TaskCompletionSource<ServerMessageResponeWrap> NewReply(long requestId, int timeout = 15000)
         {
             var tcs = new TaskCompletionSource<ServerMessageResponeWrap>();
-            sends.TryAdd(requestId, new SendCacheModel { Tcs = tcs, RequestId = requestId });
+            sends.TryAdd(requestId, new SendCacheModel { Tcs = tcs, RequestId = requestId, Timeout = timeout });
             return tcs;
         }
         public void RemoveReply(long requestId)
@@ -93,7 +93,7 @@ namespace server
             {
                 msg.RequestId = NewRequestId();
             }
-            TaskCompletionSource<ServerMessageResponeWrap> tcs = NewReply(msg.RequestId);
+            TaskCompletionSource<ServerMessageResponeWrap> tcs = NewReply(msg.RequestId, msg.Timeout);
             if (!SendOnlyTcp(msg))
             {
                 RemoveReply(msg.RequestId);
@@ -359,6 +359,7 @@ public class SendCacheModel
     public TaskCompletionSource<ServerMessageResponeWrap> Tcs { get; set; }
     public long Time { get; set; } = Helper.GetTimeStamp();
     public long RequestId { get; set; } = 0;
+    public int Timeout { get; set; } = 15000;
 }
 
 
