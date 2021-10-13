@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-22 14:09:03
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-12 16:27:40
+ * @LastEditTime: 2021-10-13 09:40:37
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3c:\Users\ASUS\Desktop\p2p-tunnel\README.md
@@ -18,6 +18,38 @@
 3. 访问内网web，内网桌面，及其它TCP上层协议服务
 4. 服务端只承受 客户端注册，客户端信息的交换。不承受数据转发，几乎无压力
 5. 也带有 服务端转发 插件（需要自己部署服务器）
+
+# 方案
+<table>
+    <thead>
+        <tr>
+            <td>方案</td>
+            <td>优点</td>
+            <td>缺点</td>
+            <td>说明</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>TCP打洞直连</td>
+            <td>延迟低，速度可达110M/s，无服务器压力</td>
+            <td>需网关支持</td>
+            <td>默认方案</td>
+        </tr>
+        <tr>
+            <td>服务器中转</td>
+            <td>无需打洞，不需要额外条件</td>
+            <td>延迟高，服务器压力较大，只在客户端可用</td>
+            <td>当打洞失败时，消息将通过服务器中转</td>
+        </tr>
+        <tr>
+            <td>服务器转发代理</td>
+            <td>无需打洞，不需要额外条件，随处可用</td>
+            <td>延迟高，服务器压力较大</td>
+            <td>当需要随时随地访问内网时，可使用服务器转发代理</td>
+        </tr>
+    </tbody>
+</table>
 
 ### 项目结构
 1. p2p  打洞项目

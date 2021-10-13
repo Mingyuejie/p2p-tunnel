@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-07 00:37:53
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-12 16:28:33
+ * @LastEditTime: 2021-10-13 09:39:30
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\home.md
@@ -15,11 +15,37 @@
 4. 服务端只承受 客户端注册，客户端信息的交换。不承受数据转发，几乎无压力
 5. 也带有 服务端转发 插件（需要自己部署服务器）
 
-# QQ群 
-一起打造一个满意的打洞直连内网穿透工具
-<img src="./imgs/qrcode.png" width="200" style="border:1px solid #ddd;">
-
-
+# 方案
+<table>
+    <thead>
+        <tr>
+            <td>方案</td>
+            <td>优点</td>
+            <td>缺点</td>
+            <td>说明</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>TCP打洞直连</td>
+            <td>延迟低，速度可达110M/s，无服务器压力</td>
+            <td>需网关支持</td>
+            <td>默认方案</td>
+        </tr>
+        <tr>
+            <td>服务器中转</td>
+            <td>无需打洞，不需要额外条件</td>
+            <td>延迟高，服务器压力较大，只在客户端可用</td>
+            <td>当打洞失败时，消息将通过服务器中转</td>
+        </tr>
+        <tr>
+            <td>服务器转发代理</td>
+            <td>无需打洞，不需要额外条件，随处可用</td>
+            <td>延迟高，服务器压力较大</td>
+            <td>当需要随时随地访问内网时，可使用服务器转发代理</td>
+        </tr>
+    </tbody>
+</table>
 
 # 项目结构
 1. p2p  打洞项目
@@ -49,6 +75,10 @@
     5. rdp.desktop rdp 桌面共享 
     6. rdp.viewer  rdp 桌面共享查看器
 4. client.web.vue3 客户端管理界面
+
+# QQ群 
+一起打造一个满意的打洞直连内网穿透工具
+<img src="./imgs/qrcode.png" width="200" style="border:1px solid #ddd;">
 
 
 # 一些特殊的地方
