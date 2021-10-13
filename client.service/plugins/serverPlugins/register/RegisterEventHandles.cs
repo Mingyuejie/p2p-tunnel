@@ -56,12 +56,15 @@ namespace client.service.plugins.serverPlugins.register
 
             if (UdpServer != null)
             {
-                await serverRequest.SendReply(new SendEventArg<ExitModel>
+                if(TcpServer!=null && TcpServer.Connected)
                 {
-                    Address = arg.Address,
-                    Data = arg.Data,
-                    Path = "exit/excute"
-                });
+                    await serverRequest.SendReply(new SendEventArg<ExitModel>
+                    {
+                        Address = arg.Address,
+                        Data = arg.Data,
+                        Path = "exit/excute"
+                    });
+                }
                 udpServer.Stop();
                 tcpServer.Stop();
 

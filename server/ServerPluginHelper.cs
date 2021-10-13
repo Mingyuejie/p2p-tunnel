@@ -52,7 +52,7 @@ namespace server
                         long time = Helper.GetTimeStamp();
                         foreach (SendCacheModel item in sends.Values)
                         {
-                            if (time - item.Time > item.Timeout)
+                            if (item.Timeout > 0 && time - item.Time > item.Timeout)
                             {
                                 if (sends.TryRemove(item.RequestId, out SendCacheModel cache) && cache != null)
                                 {

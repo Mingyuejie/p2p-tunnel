@@ -101,7 +101,9 @@ namespace client.service.plugins.serverPlugins.register
                     registerState.LocalInfo.LocalIp = IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString();
                     tcpServer.BindReceive(registerState.TcpSocket, (code) =>
                     {
-                        if (code == SocketError.ConnectionAborted)
+                        registerEventHandles.SendExitMessage().Wait();
+                        Logger.Instance.Debug(code.ToString());
+                        if (code == SocketError.ConnectionAborted || code == SocketError.ConnectionReset)
                         {
                             AutoReg();
                         }
