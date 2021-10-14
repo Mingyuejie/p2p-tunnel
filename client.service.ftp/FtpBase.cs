@@ -280,7 +280,6 @@ namespace client.service.ftp
                         SendOnlyTcp(cmd, client.Id);
                         save.IndexLength += lastPackSize;
                     }
-                    save.Token.Cancel();
                 }
                 catch (Exception ex)
                 {
