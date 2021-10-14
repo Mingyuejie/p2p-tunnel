@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 23:04:50
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-12 15:49:12
+ * @LastEditTime: 2021-10-14 10:21:05
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\apis\request.js
@@ -70,7 +70,6 @@ const onWebsocketClose = () => {
 const onWebsocketMsg = (msg) => {
     let json = JSON.parse(msg.data);
     let callback = requests[json.RequestId];
-    console.log(json);
     if (callback) {
         if (json.Code == 0) {
             callback.resolve(json.Content);

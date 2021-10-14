@@ -144,13 +144,12 @@ namespace client.service.tcpforward
                         TargetIp = arg.Data.TargetIp,
                         SourceSocket = arg.Packet.TcpSocket
                     };
-
                     IPEndPoint dnsEndPoint = new(Helper.GetDomainIp(arg.Data.TargetIp), arg.Data.TargetPort);
-                    socket.Connect(dnsEndPoint);
-                    client.Stream = new NetworkStream(socket, false);
-
-                    ClientModel.Add(client);
-                    BindReceive(client);
+                    socket.BeginConnect(dnsEndPoint, new AsyncCallback(Connect), new ConnectState
+                    {
+                        Client = client,
+                        Data = arg.Data.Buffer
+                    });
                 }
                 if (client.TargetSocket.Connected)
                 {
@@ -172,6 +171,25 @@ namespace client.service.tcpforward
                     },
                     Socket = arg.Packet.TcpSocket
                 });
+            }
+        }
+
+        private void Connect(IAsyncResult result)
+        {
+            var state = (ConnectState)result.AsyncState;
+            state.Client.TargetSocket.EndConnect(result);
+            result.AsyncWaitHandle.Close();
+            state.Client.Stream = new NetworkStream(state.Client.TargetSocket, false);
+
+            ClientModel.Add(state.Client);
+            BindReceive(state.Client);
+
+            if (state.Client.TargetSocket.Connected)
+            {
+                state.Client.Stream.Write(state.Data);
+                state.Client.Stream.Flush();
+
+                state.Data = Array.Empty<byte>();
             }
         }
 
@@ -406,6 +424,13 @@ namespace client.service.tcpforward
 
         public List<TcpForwardRecordBaseModel> Mappings { get; set; } = new List<TcpForwardRecordBaseModel>();
     }
+
+    public class ConnectState
+    {
+        public ClientModel Client { get; set; }
+        public byte[] Data { get; set; }
+    }
+
 
     public class ClientModel
     {

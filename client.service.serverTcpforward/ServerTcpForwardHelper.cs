@@ -102,17 +102,22 @@ namespace client.service.serverTcpforward
                     };
 
                     IPEndPoint dnsEndPoint = new(Helper.GetDomainIp(data.TargetIp), data.TargetPort);
-                    socket.Connect(dnsEndPoint);
-                    client.Stream = new NetworkStream(socket, false);
+                    socket.BeginConnect(dnsEndPoint, new AsyncCallback(Connect), new ConnectState
+                    {
+                        Client = client,
+                        Data = data.Buffer
+                    });
 
-                    ClientModel.Add(client);
-                    BindReceive(client);
                 }
-                if (client.TargetSocket.Connected)
+                else
                 {
-                    client.Stream.Write(data.Buffer);
-                    client.Stream.Flush();
+                    if (client.TargetSocket.Connected)
+                    {
+                        client.Stream.Write(data.Buffer);
+                        client.Stream.Flush();
+                    }
                 }
+
             }
             catch (Exception ex)
             {
@@ -129,6 +134,25 @@ namespace client.service.serverTcpforward
                     Socket = registerstate.TcpSocket,
                     Path = "ServerTcpForward/response"
                 });
+            }
+        }
+
+        private void Connect(IAsyncResult result)
+        {
+            var state = (ConnectState)result.AsyncState;
+            state.Client.TargetSocket.EndConnect(result);
+            result.AsyncWaitHandle.Close();
+            state.Client.Stream = new NetworkStream(state.Client.TargetSocket, false);
+
+            ClientModel.Add(state.Client);
+            BindReceive(state.Client);
+
+            if (state.Client.TargetSocket.Connected)
+            {
+                state.Client.Stream.Write(state.Data);
+                state.Client.Stream.Flush();
+
+                state.Data = Array.Empty<byte>();
             }
         }
 
@@ -177,6 +201,12 @@ namespace client.service.serverTcpforward
                 Path = "ServerTcpForward/response"
             });
         }
+    }
+
+    public class ConnectState
+    {
+        public ClientModel Client { get; set; }
+        public byte[] Data { get; set; }
     }
 
     public class ClientModel

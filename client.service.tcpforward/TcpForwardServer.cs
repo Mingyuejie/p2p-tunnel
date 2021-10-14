@@ -129,6 +129,7 @@ namespace client.service.tcpforward
 
         public void BindReceive(ClientModel2 client)
         {
+            
             Task.Run(() =>
             {
                 while (client.Stream.CanRead && ClientCacheModel.Contains(client.RequestId))
