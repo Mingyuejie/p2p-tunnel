@@ -1,4 +1,5 @@
 {
   "PortWhiteList": [],
-  "PortBlackList": []
+  "PortBlackList": [],
+  "Enable": true
 }

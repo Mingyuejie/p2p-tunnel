@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-03 11:06:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-12 16:30:20
+ * @LastEditTime: 2021-10-16 01:15:38
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\Index.vue
@@ -12,25 +12,28 @@
         <div class="menus absolute">
             <ul>
                 <li>
-                    <router-link :to="{name:'AboutHome'}">首页</router-link>
+                    <router-link :to="{name:'AboutHome'}">概览</router-link>
                 </li>
                 <li>
-                    <router-link :to="{name:'AboutSetting'}">配置和运行</router-link>
+                    <router-link :to="{name:'AboutRuntime'}">1、运行环境</router-link>
                 </li>
                 <li>
-                    <router-link :to="{name:'AboutUse'}">使用及基本原理</router-link>
+                    <router-link :to="{name:'AboutServer'}">2、服务端</router-link>
+                </li>
+                <li>
+                    <router-link :to="{name:'AboutClient'}">3、客户端</router-link>
                 </li>
                 <li>
                     <router-link :to="{name:'ServerTcpforward'}">服务器转发穿透</router-link>
                 </li>
-                <!-- <li>
-                    <router-link :to="{name:'AboutEnv'}">环境测试记录</router-link>
-                </li> -->
                 <li>
                     <router-link :to="{name:'AboutPublish'}">自己发布代码</router-link>
                 </li>
                 <li>
                     <router-link :to="{name:'AboutWinService'}">注册windows服务</router-link>
+                </li>
+                <li>
+                    <router-link :to="{name:'AboutUse'}">打洞大概原理流程</router-link>
                 </li>
             </ul>
         </div>

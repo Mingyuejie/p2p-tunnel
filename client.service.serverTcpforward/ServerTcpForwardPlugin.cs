@@ -97,6 +97,7 @@ namespace client.service.serverTcpforward
             serverTcpForwardRegisterConfig.Tunnel = _config.Tunnel;
             serverTcpForwardRegisterConfig.SaveConfig();
 
+            serverTcpForwardHelper.UnRegister();
             var res = serverTcpForwardHelper.Register();
             if (res.Code != ServerMessageResponeCodes.OK)
             {
@@ -110,6 +111,10 @@ namespace client.service.serverTcpforward
         {
             serverTcpForwardRegisterConfig.Enable = enable;
             serverTcpForwardRegisterConfig.SaveConfig();
+
+            serverTcpForwardHelper.UnRegister();
+            serverTcpForwardHelper.Register();
+
             return true;
         }
     }

@@ -100,6 +100,22 @@ namespace client.service.tcpforward
 
         private void Request(OnTcpForwardEventArg arg)
         {
+            if (!tcpForwardSettingModel.Enable)
+            {
+                tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
+                {
+                    Data = new TcpForwardModel
+                    {
+                        RequestId = arg.Data.RequestId,
+                        Type = TcpForwardType.FAIL,
+                        Buffer = Encoding.UTF8.GetBytes("插件未开启"),
+                        AliveType = arg.Data.AliveType
+                    },
+                    Socket = arg.Packet.TcpSocket
+                });
+                return;
+            }
+
             if (tcpForwardSettingModel.PortWhiteList.Length > 0 && !tcpForwardSettingModel.PortWhiteList.Contains(arg.Data.TargetPort))
             {
                 tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg

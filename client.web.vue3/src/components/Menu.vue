@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-08 09:44:21
+ * @LastEditTime: 2021-10-16 00:49:18
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -83,7 +83,7 @@
                     </el-dropdown-menu>
                 </template>
             </el-dropdown>
-            <router-link :to="{name:'About'}">关于</router-link>
+            <router-link :to="{name:'About'}">说明文档</router-link>
         </div>
         <div class="meta">
             <a href="javascript:;" :class="{active:websocketState.connected}">{{connectStr}}<i class="el-icon-refresh"></i></a>

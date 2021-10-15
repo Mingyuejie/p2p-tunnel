@@ -2,63 +2,34 @@
  * @Author: snltty
  * @Date: 2021-08-22 14:09:03
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-13 09:40:37
+ * @LastEditTime: 2021-10-16 01:08:15
  * @version: v1.0.0
  * @Descripttion: 功能说明
- * @FilePath: \client.web.vue3c:\Users\ASUS\Desktop\p2p-tunnel\README.md
+ * @FilePath: \client.web.vue3d:\Desktop\p2p-tunnel\README.md
 -->
 # 详细说明
 
 <a href="http://snltty.gitee.io/p2p-tunnel/#/about-home.html" target="_blank">详细说明</a>
 
 # p2p-tunnel
-
 1. .NET5 Socket编程实现内网穿透
 2. UDP,TCP打洞实现点对点直连
 3. 访问内网web，内网桌面，及其它TCP上层协议服务
 4. 服务端只承受 客户端注册，客户端信息的交换。不承受数据转发，几乎无压力
 5. 也带有 服务端转发 插件（需要自己部署服务器）
+### 消息方式
+1. 默认打洞直连  **A->B**
+2. 打洞失败时，消息将由服务端转发  **A->服务端->B**
+3. 也可以在服务端开启TCP转发  **服务端->B**
+
 
 # <font color="red">注意事项</font>
-1. <font color="red">服务器 或 内网电脑，暴露服务在公网时，请做好安全防范</font>
-2. <font color="red">如 3389 桌面服务 不使用 administrator作为登录账号</font>
-3. <font color="red">如 1433 数据库服务 不使用 sa 账号</font>
-4. <font color="red">请使用复杂密码， 数字+字母+字符 交替</font>
+1. 服务器 或 内网电脑，暴露服务在公网时，请做好安全防范
+2. 如 3389 桌面服务 不使用 administrator作为登录账号
+3. 如 1433 数据库服务 不使用 sa 账号
+4. 请使用复杂密码， 数字+字母+字符 交替
 
-
-# 方案
-<table>
-    <thead>
-        <tr>
-            <td>方案</td>
-            <td>优点</td>
-            <td>缺点</td>
-            <td>说明</td>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>TCP打洞直连</td>
-            <td>延迟低，速度可达110M/s，无服务器压力</td>
-            <td>需网关支持</td>
-            <td>默认方案</td>
-        </tr>
-        <tr>
-            <td>服务器中转</td>
-            <td>无需打洞，不需要额外条件</td>
-            <td>延迟高，服务器压力较大，只在客户端可用</td>
-            <td>当打洞失败时，消息将通过服务器中转</td>
-        </tr>
-        <tr>
-            <td>服务器转发代理</td>
-            <td>无需打洞，不需要额外条件，随处可用</td>
-            <td>延迟高，服务器压力较大</td>
-            <td>当需要随时随地访问内网时，可使用服务器转发代理</td>
-        </tr>
-    </tbody>
-</table>
-
-### 项目结构
+# 项目结构
 1. p2p  打洞项目
     1. client 客户端公共内容
     2. client.service 客户端服务
@@ -86,6 +57,7 @@
     5. rdp.desktop rdp 桌面共享 
     6. rdp.viewer  rdp 桌面共享查看器
 4. client.web.vue3 客户端管理界面
+
 
 ### 截图
 #### 1. 注册

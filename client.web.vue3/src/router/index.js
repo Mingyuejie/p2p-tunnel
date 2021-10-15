@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-12 16:30:59
+ * @LastEditTime: 2021-10-16 00:56:07
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\router\index.js
@@ -89,9 +89,19 @@ const routes = [
                 component: () => import('../views/about/Home.vue')
             },
             {
-                path: '/about-setting.html',
-                name: 'AboutSetting',
-                component: () => import('../views/about/Setting.vue')
+                path: '/about-runtime.html',
+                name: 'AboutRuntime',
+                component: () => import('../views/about/Runtime.vue')
+            },
+            {
+                path: '/about-server.html',
+                name: 'AboutServer',
+                component: () => import('../views/about/Server.vue')
+            },
+            {
+                path: '/about-client.html',
+                name: 'AboutClient',
+                component: () => import('../views/about/Client.vue')
             },
             {
                 path: '/about-server-tcp-forward.html',
@@ -103,11 +113,7 @@ const routes = [
                 name: 'AboutUse',
                 component: () => import('../views/about/Use.vue')
             },
-            {
-                path: '/about-env.html',
-                name: 'AboutEnv',
-                component: () => import('../views/about/Env.vue')
-            },
+
             {
                 path: '/about-publish.html',
                 name: 'AboutPublish',

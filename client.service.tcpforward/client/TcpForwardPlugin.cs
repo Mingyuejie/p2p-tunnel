@@ -22,7 +22,7 @@ namespace client.service.tcpforward.client
 
         public string Desc => "白名单不为空时只允许白名单内端口";
 
-        public bool Enable => true;
+        public bool Enable => tcpForwardSettingModel.Enable;
 
         public object LoadSetting()
         {
@@ -91,6 +91,8 @@ namespace client.service.tcpforward.client
 
         public bool SwitchEnable(bool enable)
         {
+            tcpForwardSettingModel.Enable = enable;
+            tcpForwardSettingModel.SaveConfig();
             return true;
         }
     }
@@ -119,6 +121,8 @@ namespace client.service.tcpforward.client
     {
         public int[] PortWhiteList { get; set; } = Array.Empty<int>();
         public int[] PortBlackList { get; set; } = Array.Empty<int>();
+
+        public bool Enable { get; set; } = true;
 
         public static TcpForwardSettingModel ReadConfig()
         {

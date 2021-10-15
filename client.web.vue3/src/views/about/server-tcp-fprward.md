@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-10-12 16:31:35
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-12 16:40:18
+ * @LastEditTime: 2021-10-16 01:14:50
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\server-tcp-fprward.md
@@ -23,6 +23,7 @@
 
 ## 客户端  client.service.serverTcpforward 
 配置文件  servertcpforward-appsettings.json
+<font color="red">如果未开启自动注册(AutoReg)，则需要在**插件配置**页面，**启用插件(已启用需重新启用) 或者 保存配置**，才会注册转发</font>
 ```
 {
     //web转发
