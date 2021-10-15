@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:51:49
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-29 15:43:49
+ * @LastEditTime: 2021-10-15 14:56:14
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\Remote.vue
@@ -22,6 +22,7 @@
             </el-select>
             <span class="split"></span>
             <el-button size="mini" :loading="loading" @click="getFiles('')">刷新列表</el-button>
+            <el-button size="mini" :loading="loading" @click="showCmd = true">执行命令</el-button>
         </div>
         <div class="body flex-1 relative">
             <div class="absolute">
@@ -38,6 +39,11 @@
         </div>
     </div>
     <ContextMenu ref="contextMenu"></ContextMenu>
+    <el-dialog v-model="showCmd" title="命令" width="50%" top="1rem" :close-on-click-modal="false">
+        <div style="height:50rem;" class="relative">
+            <Cmd></Cmd>
+        </div>
+    </el-dialog>
 </template>
 
 <script>
@@ -51,8 +57,10 @@ import { injectClients } from '../../../states/clients'
 import SettingModal from '../SettingModal.vue'
 import { injectFilesData } from './list-share-data'
 import { pushListener } from '../../../apis/request'
+import { provideCmd } from '../../../states/cmd'
+import Cmd from '../cmd/Cmd.vue'
 export default {
-    components: { FileTree, ContextMenu, SettingModal },
+    components: { FileTree, ContextMenu, SettingModal, Cmd },
     setup () {
         const listShareData = injectFilesData();
         const clientState = injectClients();
@@ -60,8 +68,12 @@ export default {
             data: [],
             multipleSelection: [],
             loading: false,
+            showCmd: false
+        });
+        const stateCmd = reactive({
             clientId: null
         });
+        provideCmd(stateCmd);
         const getFiles = (path = '') => {
             state.loading = true;
             geRemoteList(state.clientId || 0, path).then((res) => {
@@ -201,7 +213,7 @@ export default {
         }
 
         return {
-            ...toRefs(state), ...toRefs(clientState), listShareData, getFiles, contextMenu, handleSelectionChange, handleRowDblClick, handleContextMenu, handleClientChange
+            ...toRefs(state), ...toRefs(stateCmd), ...toRefs(clientState), listShareData, getFiles, contextMenu, handleSelectionChange, handleRowDblClick, handleContextMenu, handleClientChange
         }
     }
 }

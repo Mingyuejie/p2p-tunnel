@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-30 14:47:08
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-30 19:44:24
+ * @LastEditTime: 2021-10-15 14:47:38
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\cmd\Cmd.vue
@@ -32,8 +32,11 @@
 import { reactive, ref, toRefs } from '@vue/reactivity'
 import { nextTick } from '@vue/runtime-core';
 import { sendCmd } from '../../../apis/plugins/cmd'
+import { injectCmd } from '../../../states/cmd'
 export default {
     setup () {
+
+        const stateCmd = injectCmd();
         const state = reactive({
             outputs: [],
             input: '',
@@ -83,7 +86,8 @@ export default {
                 state.outputs = [];
             } else {
                 state.loading = true;
-                sendCmd(0, state.input).then((res) => {
+                // console.log(stateCmd.clientId, state.input);
+                sendCmd(stateCmd.clientId || 0, state.input).then((res) => {
                     state.loading = false;
                     if (res.Res) {
                         output(res.Res);

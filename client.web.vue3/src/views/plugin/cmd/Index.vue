@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-30 14:25:13
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-30 19:43:03
+ * @LastEditTime: 2021-10-15 14:24:02
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\cmd\Index.vue
@@ -33,7 +33,6 @@ import Cmd from './Cmd.vue'
 import { injectClients } from '../../../states/clients'
 import { provideCmd } from '../../../states/cmd'
 import { reactive, toRefs } from '@vue/reactivity'
-provideCmd
 export default {
     components: { SettingModal, Cmd },
     setup () {

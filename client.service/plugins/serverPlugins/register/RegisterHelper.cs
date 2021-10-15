@@ -42,9 +42,7 @@ namespace client.service.plugins.serverPlugins.register
             //退出消息
             registerEventHandles.OnExitMessage.Sub((e) =>
             {
-                registerState.LocalInfo.IsConnecting = false;
-                registerState.LocalInfo.Connected = false;
-                registerState.LocalInfo.TcpConnected = false;
+                registerState.Offline();
                 ResetLastTime();
             });
 
@@ -90,23 +88,17 @@ namespace client.service.plugins.serverPlugins.register
                     //TCP 本地开始监听
                     registerState.LocalInfo.TcpPort = Helper.GetRandomPort(new List<int> { registerState.LocalInfo.Port });
                     tcpServer.Start(registerState.LocalInfo.TcpPort, config.Client.BindIp);
-                    
+
                     //TCP 连接服务器
                     registerState.TcpSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     registerState.TcpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                     registerState.TcpSocket.Bind(new IPEndPoint(config.Client.BindIp, registerState.LocalInfo.TcpPort));
-
                     registerState.TcpSocket.Connect(new IPEndPoint(serverAddress, config.Server.TcpPort));
-
                     registerState.LocalInfo.LocalIp = IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString();
                     tcpServer.BindReceive(registerState.TcpSocket, (code) =>
                     {
                         registerEventHandles.SendExitMessage().Wait();
-                        Logger.Instance.Debug(code.ToString());
-                        if (code == SocketError.ConnectionAborted || code == SocketError.ConnectionReset)
-                        {
-                            AutoReg();
-                        }
+                        AutoReg();
                     });
 
                     //上报mac
@@ -133,13 +125,8 @@ namespace client.service.plugins.serverPlugins.register
                     });
                     if (result.Code == 0)
                     {
-                        registerState.LocalInfo.IsConnecting = false;
                         config.Client.GroupId = result.GroupId;
-                        registerState.RemoteInfo.Ip = result.Ip;
-                        registerState.RemoteInfo.ConnectId = result.Id;
-                        registerState.LocalInfo.Connected = true;
-                        registerState.LocalInfo.TcpConnected = true;
-                        registerState.RemoteInfo.TcpPort = result.TcpPort;
+                        registerState.Online(result.Id, result.Ip, result.TcpPort);
                         tcs.SetResult(new CommonTaskResponseModel<bool> { Data = true, ErrorMsg = string.Empty });
                     }
                     else

@@ -32,6 +32,25 @@ namespace client.plugins.serverPlugins.register
         /// 本地信息
         /// </summary>
         public LocalInfo LocalInfo { get; set; } = new LocalInfo();
+
+        public void Offline()
+        {
+            LocalInfo.IsConnecting = false;
+            LocalInfo.Connected = false;
+            LocalInfo.TcpConnected = false;
+            RemoteInfo.Ip = string.Empty;
+            RemoteInfo.ConnectId = 0;
+            RemoteInfo.TcpPort = 0;
+        }
+        public void Online(long id,string ip,int tcpPort)
+        {
+            LocalInfo.IsConnecting = false;
+            RemoteInfo.Ip = ip;
+            RemoteInfo.ConnectId = id;
+            LocalInfo.Connected = true;
+            LocalInfo.TcpConnected = true;
+            RemoteInfo.TcpPort = tcpPort;
+        }
     }
 
     /// <summary>
