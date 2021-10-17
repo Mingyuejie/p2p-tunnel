@@ -179,7 +179,7 @@ namespace client.service.plugins.serverPlugins.register
                 {
                     lastTime = Helper.GetTimeStamp();
                 }
-                else if (registerState.TcpAddressId != ipid)
+                else if (registerState.TcpAddressId == ipid)
                 {
                     lastTcpTime = Helper.GetTimeStamp();
                 }
