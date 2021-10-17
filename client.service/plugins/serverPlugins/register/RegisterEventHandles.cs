@@ -14,7 +14,7 @@ namespace client.service.plugins.serverPlugins.register
 {
     public class RegisterEventHandles
     {
-        private readonly IServerRequest  serverRequest;
+        private readonly IServerRequest serverRequest;
         private readonly RegisterState registerState;
         private readonly IUdpServer udpServer;
         private readonly ITcpServer tcpServer;
@@ -56,7 +56,7 @@ namespace client.service.plugins.serverPlugins.register
 
             if (UdpServer != null)
             {
-                if(TcpServer!=null && TcpServer.Connected)
+                if (TcpServer != null && TcpServer.Connected)
                 {
                     await serverRequest.SendReply(new SendEventArg<ExitModel>
                     {
@@ -73,7 +73,7 @@ namespace client.service.plugins.serverPlugins.register
                     State = false
                 });
             }
-            OnExitMessage.Push( arg);
+            OnExitMessage.Push(arg);
 
             Helper.FlushMemory();
         }
@@ -84,6 +84,9 @@ namespace client.service.plugins.serverPlugins.register
         /// <param name="arg"></param>
         public async Task<RegisterResultModel> SendRegisterMessage(RegisterParams param)
         {
+
+            var watch = new MyStopwatch();
+            watch.Start();
             ServerMessageResponeWrap result = await serverRequest.SendReply(new SendEventArg<RegisterModel>
             {
                 Address = UdpServer,
@@ -99,12 +102,17 @@ namespace client.service.plugins.serverPlugins.register
 
                 }
             });
+            watch.Stop();
+            watch.Output("UDP注册耗时:");
             if (result.Code != ServerMessageResponeCodes.OK)
             {
                 return new RegisterResultModel { Code = -1, Msg = result.ErrorMsg };
             }
 
             var res = result.Data.DeBytes<RegisterResultModel>();
+
+            var watch1 = new MyStopwatch();
+            watch1.Start();
             var tcpResult = await serverRequest.SendReplyTcp(new SendTcpEventArg<RegisterModel>
             {
                 Socket = TcpServer,
@@ -119,6 +127,8 @@ namespace client.service.plugins.serverPlugins.register
                     LocalUdpPort = param.LocalUdpPort
                 }
             });
+            watch1.Stop();
+            watch1.Output("TCP注册耗时:");
             if (tcpResult.Code != ServerMessageResponeCodes.OK)
             {
                 return new RegisterResultModel { Code = -1, Msg = tcpResult.ErrorMsg };
