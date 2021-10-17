@@ -51,7 +51,7 @@ namespace client.service.plugins.serverPlugins.clients
 
         public ClientInfo GetByName(string name)
         {
-            return clients.Values.FirstOrDefault(c=>c.Name == name);
+            return clients.Values.FirstOrDefault(c => c.Name == name);
         }
 
         public IEnumerable<ClientInfo> All()
@@ -115,6 +115,44 @@ namespace client.service.plugins.serverPlugins.clients
         public void Remove(long id)
         {
             clients.TryRemove(id, out _);
+        }
+
+
+        private readonly static ConcurrentDictionary<long, ClientInfo> msgTimeUdp = new ConcurrentDictionary<long, ClientInfo>();
+        private readonly static ConcurrentDictionary<long, ClientInfo> msgTimeTcp = new ConcurrentDictionary<long, ClientInfo>();
+
+        public void MsgTime(long address, long time)
+        {
+            if (msgTimeUdp.TryGetValue(address, out ClientInfo client))
+            {
+                client.LastTime = time;
+            }
+            else
+            {
+                client = All().FirstOrDefault(c => c.UdpAddressId == address);
+                if (client != null)
+                {
+                    client.LastTime = time;
+                    msgTimeUdp.TryAdd(address, client);
+                }
+            }
+        }
+
+        public void MsgTcpTime(long address, long time)
+        {
+            if (msgTimeTcp.TryGetValue(address, out ClientInfo client))
+            {
+                client.TcpLastTime = time;
+            }
+            else
+            {
+                client = All().FirstOrDefault(c => c.TcpAddressId == address);
+                if (client != null)
+                {
+                    client.TcpLastTime = time;
+                    msgTimeTcp.TryAdd(address, client);
+                }
+            }
         }
     }
 }

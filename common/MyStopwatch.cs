@@ -35,7 +35,7 @@ namespace common
         {
             ConsoleColor currentForeColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Gray;
-            Console.WriteLine($"=============\n{remark}:{base.ElapsedMilliseconds}ms {base.ElapsedTicks}ticks\n============");
+            Console.WriteLine($"=============\n{remark}:{base.ElapsedMilliseconds} ms、{base.ElapsedTicks} ticks、{ base.ElapsedTicks * 1000000F / Frequency:n3} us\n============");
             Console.ForegroundColor = currentForeColor;
         }
     }

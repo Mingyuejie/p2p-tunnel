@@ -253,9 +253,23 @@ namespace client.service.plugins.serverPlugins.clients
             punchHoleTcp.OnStep2FailHandler.Sub((e) => clientInfoCaching.OfflineTcp(e.Data.FromId));
         }
 
+        private void OnData(OnDataParam param)
+        {
+            if (param.ServerType == ServerType.TCP)
+            {
+                clientInfoCaching.MsgTcpTime(param.Address, param.Time);
+            }
+            else
+            {
+                clientInfoCaching.MsgTime(param.Address, param.Time);
+            }
+        }
 
         private void Heart()
         {
+            serverPluginHelper.OnInputData.Sub(OnData);
+            serverPluginHelper.OnSendData.Sub(OnData);
+
             //给各个客户端发送心跳包
             _ = Task.Factory.StartNew(() =>
             {
@@ -270,20 +284,22 @@ namespace client.service.plugins.serverPlugins.clients
                                 clientInfoCaching.Offline(client.Id);
                             }
                         }
-                        else if (client.Connected)
+                        else if (client.Connected && client.IsNeedHeart())
                         {
                             heartEventHandles.SendHeartMessage(registerState.RemoteInfo.ConnectId, client.Address);
                         }
 
                         if (client.IsTcpTimeout())
                         {
+                            //Logger.Instance.Error($"TCP超时");
                             if (client.TcpConnected && !client.TcpConnecting)
                             {
                                 clientInfoCaching.OfflineTcp(client.Id);
                             }
                         }
-                        else if (client.TcpConnected)
+                        else if (client.TcpConnected && client.IsNeedTcpHeart())
                         {
+                            //Logger.Instance.Debug($"发送TCP心跳");
                             heartEventHandles.SendTcpHeartMessage(registerState.RemoteInfo.ConnectId, client.Socket);
                         }
 
@@ -304,6 +320,7 @@ namespace client.service.plugins.serverPlugins.clients
                     }
                     else if (e.Packet.ServerType == ServerType.TCP)
                     {
+                        //Logger.Instance.Debug($"收到TCP心跳");
                         clientInfoCaching.UpdateTcpLastTime(e.Data.SourceId);
                     }
                 }

@@ -27,5 +27,7 @@ namespace server.plugins.register.caching
         public void OnlineTcp(long id, Socket socket);
         public void OfflineBoth(long id);
         public void Remove(long id);
+        public void MsgTime(long address,long time);
+        public void MsgTcpTime(long address, long time);
     }
 }

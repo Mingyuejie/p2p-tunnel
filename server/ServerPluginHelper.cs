@@ -26,6 +26,7 @@ namespace server
         private readonly IUdpServer udpserver;
 
         private long sequence = 0;
+        private long lastTime = Helper.GetTimeStamp();
 
         public ServerPluginHelper(IUdpServer udpserver, ITcpServer tcpserver)
         {
@@ -37,21 +38,15 @@ namespace server
                 for (int i = 0, len = wrap.Data.Length; i < len; i++)
                 {
                     //var watch = new MyStopwatch();
-                    // watch.Start();
+                    //watch.Start();
                     InputData(wrap.Data[i], wrap);
                     //watch.Stop();
-                    //watch.Output("TCP消息处理耗时:");
+                    //watch.Output("TCP包耗时:");
                 }
             });
             this.udpserver.OnPacket.Sub((wrap) =>
             {
-                //var watch = new MyStopwatch();
-                //watch.Start();
-
                 InputData(wrap.Data, wrap);
-
-                // watch.Stop();
-                //watch.Output("UDP消息处理耗时:");
             });
 
             _ = Task.Factory.StartNew(() =>
@@ -76,6 +71,7 @@ namespace server
                             }
                         }
                     }
+                    lastTime = Helper.GetTimeStamp();
                     Thread.Sleep(1);
                 }
 
@@ -132,7 +128,7 @@ namespace server
                         Code = msg.Code
                     };
                     bool res = tcpserver.Send(TcpPacket.ToArray(wrap.ToBytes()), msg.TcpCoket);
-                    //OnSendData.Push(new OnDataParam { Address = msg.TcpCoket.RemoteEndPoint as IPEndPoint, ServerType = ServerType.TCP });
+                    OnSendData.Push(new OnDataParam { Address = (msg.TcpCoket.RemoteEndPoint as IPEndPoint).ToInt64(), ServerType = ServerType.TCP, Time = lastTime });
                     return res;
                 }
                 catch (Exception ex)
@@ -163,7 +159,7 @@ namespace server
                         Code = msg.Code
                     };
                     bool res = tcpserver.Send(TcpPacket.ToArray(wrap.ToBytes()), msg.TcpCoket);
-                   // OnSendData.Push(new OnDataParam { Address = msg.TcpCoket.RemoteEndPoint as IPEndPoint, ServerType = ServerType.TCP });
+                    OnSendData.Push(new OnDataParam { Address = (msg.TcpCoket.RemoteEndPoint as IPEndPoint).ToInt64(), ServerType = ServerType.TCP, Time = lastTime });
                     return res;
                 }
                 catch (Exception ex)
@@ -215,7 +211,7 @@ namespace server
                         byte[] udpPacketDatagram = udpPacket.ToArray();
                         udpserver.Send(udpPacketDatagram, msg.Address);
                     }
-                    //OnSendData.Push(new OnDataParam { Address = msg.Address, ServerType = ServerType.UDP });
+                    OnSendData.Push(new OnDataParam { Address = msg.Address.ToInt64(), ServerType = ServerType.UDP, Time = lastTime });
                     return true;
                 }
                 catch (Exception ex)
@@ -268,11 +264,12 @@ namespace server
         public SimplePushSubHandler<OnDataParam> OnSendData { get; } = new SimplePushSubHandler<OnDataParam>();
         public void InputData<T>(IPacket packet, ServerDataWrap<T> param)
         {
-            //OnInputData.Push(new OnDataParam
-            //{
-            //    Address = param.Address,
-            //    ServerType = param.ServerType
-            //});
+            OnInputData.Push(new OnDataParam
+            {
+                Address = param.Address.ToInt64(),
+                ServerType = param.ServerType,
+                Time = lastTime
+            });
 
             ServerMessageWrap wrap = packet.Chunk.DeBytes<ServerMessageWrap>();
             if (wrap.Type == ServerMessageTypes.RESPONSE)
@@ -381,7 +378,8 @@ namespace server
 
 public class OnDataParam
 {
-    public IPEndPoint Address { get; set; }
+    public long Address { get; set; }
+    public long Time { get; set; }
     public ServerType ServerType { get; set; }
 }
 public class SendCacheModel

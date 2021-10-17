@@ -52,11 +52,11 @@ namespace client.plugins.serverPlugins.clients
 
         public bool IsNeedHeart()
         {
-            return (LastTime > 0 && Helper.GetTimeStamp() - LastTime > 5000);
+            return (LastTime == 0 || Helper.GetTimeStamp() - LastTime > 5000);
         }
         public bool IsNeedTcpHeart()
         {
-            return (TcpLastTime > 0 && Helper.GetTimeStamp() - TcpLastTime > 5000);
+            return (TcpLastTime == 0 || Helper.GetTimeStamp() - TcpLastTime > 5000);
         }
 
         public bool IsTimeout()

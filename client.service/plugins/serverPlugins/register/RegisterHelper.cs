@@ -162,8 +162,30 @@ namespace client.service.plugins.serverPlugins.register
             return (lastTime > 0 && time - lastTime > 20000) || (lastTcpTime > 0 && time - lastTcpTime > 20000);
         }
 
+        private bool IsNeedHeart()
+        {
+            long time = Helper.GetTimeStamp();
+            return (lastTime == 0 || time - lastTime > 5000) || (lastTcpTime == 0 || time - lastTcpTime > 5000);
+        }
+
+
+        private void OnData(OnDataParam param)
+        {
+            if (param.Address == registerState.TcpAddressId)
+            {
+                lastTcpTime = param.Time;
+            }
+            else if (param.Address == registerState.UdpAddressId)
+            {
+                lastTime = param.Time;
+            }
+        }
         private void Heart()
         {
+
+            serverPluginHelper.OnInputData.Sub(OnData);
+            serverPluginHelper.OnSendData.Sub(OnData);
+
             //给服务器发送心跳包
             _ = Task.Factory.StartNew(() =>
             {
@@ -178,7 +200,7 @@ namespace client.service.plugins.serverPlugins.register
                             AutoReg();
                         }
                     }
-                    if (registerState.LocalInfo.Connected && registerState.LocalInfo.TcpConnected)
+                    if (registerState.LocalInfo.Connected && registerState.LocalInfo.TcpConnected && IsNeedHeart())
                     {
                         heartEventHandles.SendHeartMessage(registerState.RemoteInfo.ConnectId, registerState.UdpAddress);
                         heartEventHandles.SendTcpHeartMessage(registerState.RemoteInfo.ConnectId, registerState.TcpSocket);
