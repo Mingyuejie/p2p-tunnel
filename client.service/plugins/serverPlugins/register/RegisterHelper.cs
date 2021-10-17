@@ -161,33 +161,9 @@ namespace client.service.plugins.serverPlugins.register
             long time = Helper.GetTimeStamp();
             return (lastTime > 0 && time - lastTime > 20000) || (lastTcpTime > 0 && time - lastTcpTime > 20000);
         }
-        private bool IsNeedTimeout()
-        {
-            long time = Helper.GetTimeStamp();
-            return (lastTime > 0 && time - lastTime > 5000) || (lastTcpTime > 0 && time - lastTcpTime > 5000);
-        }
 
         private void Heart()
         {
-            serverPluginHelper.OnInputData.Sub((param) =>
-            {
-               //var watch = new MyStopwatch();
-                //watch.Start();
-
-                long ipid = param.Address.ToInt64();
-                if (registerState.UdpAddressId == ipid)
-                {
-                    lastTime = Helper.GetTimeStamp();
-                }
-                else if (registerState.TcpAddressId == ipid)
-                {
-                    lastTcpTime = Helper.GetTimeStamp();
-                }
-                //watch.Stop();
-                //watch.Output("服务端心跳更新时间耗时:");
-            });
-
-
             //给服务器发送心跳包
             _ = Task.Factory.StartNew(() =>
             {
@@ -202,7 +178,7 @@ namespace client.service.plugins.serverPlugins.register
                             AutoReg();
                         }
                     }
-                    if (registerState.LocalInfo.Connected && registerState.LocalInfo.TcpConnected && IsNeedTimeout())
+                    if (registerState.LocalInfo.Connected && registerState.LocalInfo.TcpConnected)
                     {
                         heartEventHandles.SendHeartMessage(registerState.RemoteInfo.ConnectId, registerState.UdpAddress);
                         heartEventHandles.SendTcpHeartMessage(registerState.RemoteInfo.ConnectId, registerState.TcpSocket);

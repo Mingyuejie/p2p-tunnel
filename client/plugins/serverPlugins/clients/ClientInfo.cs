@@ -71,12 +71,19 @@ namespace client.plugins.serverPlugins.clients
 
         public void UpdateLastTime()
         {
-            LastTime = Helper.GetTimeStamp();
+            if (Connected)
+            {
+                LastTime = Helper.GetTimeStamp();
+            }
+            
         }
 
         public void UpdateTcpLastTime()
         {
-            TcpLastTime = Helper.GetTimeStamp();
+            if (TcpConnected)
+            {
+                TcpLastTime = Helper.GetTimeStamp();
+            }
         }
 
         public void Offline()
@@ -105,7 +112,7 @@ namespace client.plugins.serverPlugins.clients
         }
         public void OnlineTcp(Socket socket)
         {
-            var ip = IPEndPoint.Parse(socket.RemoteEndPoint.ToString());
+            var ip = socket.RemoteEndPoint as IPEndPoint;
             TcpConnected = true;
             TcpConnecting = false;
             TcpLastTime = Helper.GetTimeStamp();

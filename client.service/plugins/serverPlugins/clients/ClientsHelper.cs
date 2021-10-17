@@ -103,6 +103,9 @@ namespace client.service.plugins.serverPlugins.clients
                 }
 
                 System.Threading.Interlocked.Increment(ref readClientsTimes);
+
+                //Logger.Instance.Info(e.Data.Clients.ToJson());
+
                 //下线了的
                 IEnumerable<long> offlines = clientInfoCaching.AllIds().Except(e.Data.Clients.Select(c => c.Id));
                 foreach (long offid in offlines)
@@ -250,38 +253,9 @@ namespace client.service.plugins.serverPlugins.clients
             punchHoleTcp.OnStep2FailHandler.Sub((e) => clientInfoCaching.OfflineTcp(e.Data.FromId));
         }
 
+
         private void Heart()
         {
-
-            serverPluginHelper.OnInputData.Sub((param) =>
-            {
-                //var watch = new MyStopwatch();
-                //watch.Start();
-
-                long ipid = param.Address.ToInt64();
-                if(registerState.UdpAddressId  != ipid && registerState.TcpAddressId != ipid)
-                {
-                    if (param.ServerType == ServerType.TCP)
-                    {
-                        ClientInfo client = clientInfoCaching.All().FirstOrDefault(c => c.TcpAddressId == ipid);
-                        if (client != null)
-                        {
-                            client.UpdateLastTime();
-                        }
-                    }
-                    else if (param.ServerType == ServerType.UDP)
-                    {
-                        ClientInfo client = clientInfoCaching.All().FirstOrDefault(c => c.UdpAddressId == ipid);
-                        if (client != null)
-                        {
-                            client.UpdateTcpLastTime();
-                        }
-                    }
-                }
-                //watch.Stop();
-               // watch.Output("客户端心跳更新时间耗时:");
-            });
-
             //给各个客户端发送心跳包
             _ = Task.Factory.StartNew(() =>
             {
@@ -296,7 +270,7 @@ namespace client.service.plugins.serverPlugins.clients
                                 clientInfoCaching.Offline(client.Id);
                             }
                         }
-                        else if (client.Connected && client.IsNeedHeart())
+                        else if (client.Connected)
                         {
                             heartEventHandles.SendHeartMessage(registerState.RemoteInfo.ConnectId, client.Address);
                         }
@@ -308,7 +282,7 @@ namespace client.service.plugins.serverPlugins.clients
                                 clientInfoCaching.OfflineTcp(client.Id);
                             }
                         }
-                        else if (client.TcpConnected && client.IsNeedTcpHeart())
+                        else if (client.TcpConnected)
                         {
                             heartEventHandles.SendTcpHeartMessage(registerState.RemoteInfo.ConnectId, client.Socket);
                         }

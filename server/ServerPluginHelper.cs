@@ -131,7 +131,9 @@ namespace server
                         Type = msg.Type,
                         Code = msg.Code
                     };
-                    return tcpserver.Send(TcpPacket.ToArray(wrap.ToBytes()), msg.TcpCoket);
+                    bool res = tcpserver.Send(TcpPacket.ToArray(wrap.ToBytes()), msg.TcpCoket);
+                    //OnSendData.Push(new OnDataParam { Address = msg.TcpCoket.RemoteEndPoint as IPEndPoint, ServerType = ServerType.TCP });
+                    return res;
                 }
                 catch (Exception ex)
                 {
@@ -160,7 +162,9 @@ namespace server
                         Type = msg.Type,
                         Code = msg.Code
                     };
-                    return tcpserver.Send(TcpPacket.ToArray(wrap.ToBytes()), msg.TcpCoket);
+                    bool res = tcpserver.Send(TcpPacket.ToArray(wrap.ToBytes()), msg.TcpCoket);
+                   // OnSendData.Push(new OnDataParam { Address = msg.TcpCoket.RemoteEndPoint as IPEndPoint, ServerType = ServerType.TCP });
+                    return res;
                 }
                 catch (Exception ex)
                 {
@@ -211,6 +215,7 @@ namespace server
                         byte[] udpPacketDatagram = udpPacket.ToArray();
                         udpserver.Send(udpPacketDatagram, msg.Address);
                     }
+                    //OnSendData.Push(new OnDataParam { Address = msg.Address, ServerType = ServerType.UDP });
                     return true;
                 }
                 catch (Exception ex)
@@ -259,14 +264,15 @@ namespace server
         }
 
 
-        public SimplePushSubHandler<OnInputDataParam> OnInputData { get; } = new SimplePushSubHandler<OnInputDataParam>();
+        public SimplePushSubHandler<OnDataParam> OnInputData { get; } = new SimplePushSubHandler<OnDataParam>();
+        public SimplePushSubHandler<OnDataParam> OnSendData { get; } = new SimplePushSubHandler<OnDataParam>();
         public void InputData<T>(IPacket packet, ServerDataWrap<T> param)
         {
-            OnInputData.Push(new OnInputDataParam
-            {
-                Address = param.Address,
-                ServerType = param.ServerType
-            });
+            //OnInputData.Push(new OnDataParam
+            //{
+            //    Address = param.Address,
+            //    ServerType = param.ServerType
+            //});
 
             ServerMessageWrap wrap = packet.Chunk.DeBytes<ServerMessageWrap>();
             if (wrap.Type == ServerMessageTypes.RESPONSE)
@@ -373,7 +379,7 @@ namespace server
     }
 }
 
-public class OnInputDataParam
+public class OnDataParam
 {
     public IPEndPoint Address { get; set; }
     public ServerType ServerType { get; set; }
