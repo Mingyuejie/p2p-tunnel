@@ -13,6 +13,8 @@ using client.service.plugins.punchHolePlugins;
 using client.plugins.serverPlugins.register;
 using client.plugins.serverPlugins.clients;
 using server.plugins.register.caching;
+using server;
+using common.extends;
 
 namespace client.service.plugins.serverPlugins.clients
 {
@@ -25,12 +27,14 @@ namespace client.service.plugins.serverPlugins.clients
         private readonly RegisterState registerState;
         private readonly IClientInfoCaching clientInfoCaching;
         private readonly HeartEventHandles heartEventHandles;
+        private readonly ServerPluginHelper serverPluginHelper;
 
         public ClientsHelper(
             RegisterEventHandles registerEventHandles, ClientsEventHandles clientsEventHandles,
             IPunchHoleUdp punchHoleUdp, IPunchHoleTcp punchHoleTcp,
             HeartEventHandles heartEventHandles, IClientInfoCaching clientInfoCaching,
-            RegisterState registerState, PunchHoleEventHandles punchHoldEventHandles
+            RegisterState registerState, PunchHoleEventHandles punchHoldEventHandles,
+            ServerPluginHelper serverPluginHelper
         )
         {
             this.punchHoleUdp = punchHoleUdp;
@@ -38,6 +42,7 @@ namespace client.service.plugins.serverPlugins.clients
             this.registerState = registerState;
             this.clientInfoCaching = clientInfoCaching;
             this.heartEventHandles = heartEventHandles;
+            this.serverPluginHelper = serverPluginHelper;
 
             UdpSubs();
             TcpSubs();
@@ -247,6 +252,36 @@ namespace client.service.plugins.serverPlugins.clients
 
         private void Heart()
         {
+
+            serverPluginHelper.OnInputData.Sub((param) =>
+            {
+                //var watch = new MyStopwatch();
+                //watch.Start();
+
+                long ipid = param.Address.ToInt64();
+                if(registerState.UdpAddressId  != ipid && registerState.TcpAddressId != ipid)
+                {
+                    if (param.ServerType == ServerType.TCP)
+                    {
+                        ClientInfo client = clientInfoCaching.All().FirstOrDefault(c => c.TcpAddressId == ipid);
+                        if (client != null)
+                        {
+                            client.UpdateLastTime();
+                        }
+                    }
+                    else if (param.ServerType == ServerType.UDP)
+                    {
+                        ClientInfo client = clientInfoCaching.All().FirstOrDefault(c => c.UdpAddressId == ipid);
+                        if (client != null)
+                        {
+                            client.UpdateTcpLastTime();
+                        }
+                    }
+                }
+                //watch.Stop();
+               // watch.Output("客户端心跳更新时间耗时:");
+            });
+
             //给各个客户端发送心跳包
             _ = Task.Factory.StartNew(() =>
             {
@@ -261,7 +296,7 @@ namespace client.service.plugins.serverPlugins.clients
                                 clientInfoCaching.Offline(client.Id);
                             }
                         }
-                        else if (client.Connected)
+                        else if (client.Connected && client.IsNeedHeart())
                         {
                             heartEventHandles.SendHeartMessage(registerState.RemoteInfo.ConnectId, client.Address);
                         }
@@ -273,9 +308,8 @@ namespace client.service.plugins.serverPlugins.clients
                                 clientInfoCaching.OfflineTcp(client.Id);
                             }
                         }
-                        else if (client.TcpConnected)
+                        else if (client.TcpConnected && client.IsNeedTcpHeart())
                         {
-                            //Logger.Instance.Debug($"给 {client.Id} 发送心跳");
                             heartEventHandles.SendTcpHeartMessage(registerState.RemoteInfo.ConnectId, client.Socket);
                         }
 
@@ -296,7 +330,6 @@ namespace client.service.plugins.serverPlugins.clients
                     }
                     else if (e.Packet.ServerType == ServerType.TCP)
                     {
-                        //Logger.Instance.Debug($"收到 {e.Data.SourceId} 的心跳");
                         clientInfoCaching.UpdateTcpLastTime(e.Data.SourceId);
                     }
                 }

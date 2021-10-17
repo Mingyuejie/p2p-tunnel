@@ -1,4 +1,5 @@
 ﻿using common;
+using common.extends;
 using MessagePack;
 using ProtoBuf;
 using System;
@@ -33,6 +34,9 @@ namespace client.plugins.serverPlugins.register
         /// </summary>
         public LocalInfo LocalInfo { get; set; } = new LocalInfo();
 
+        public long UdpAddressId { get; set; } = 0;
+        public long TcpAddressId { get; set; } = 0;
+
         public void Offline()
         {
             LocalInfo.IsConnecting = false;
@@ -50,7 +54,12 @@ namespace client.plugins.serverPlugins.register
             LocalInfo.Connected = true;
             LocalInfo.TcpConnected = true;
             RemoteInfo.TcpPort = tcpPort;
+
+            UdpAddressId = UdpAddress.ToInt64();
+            TcpAddressId = (TcpSocket.RemoteEndPoint as IPEndPoint).ToInt64();
         }
+
+
     }
 
     /// <summary>

@@ -1,6 +1,7 @@
 ﻿using client.plugins.serverPlugins.register;
 using client.service.plugins.serverPlugins.heart;
 using common;
+using common.extends;
 using server;
 using server.model;
 using System;
@@ -21,6 +22,7 @@ namespace client.service.plugins.serverPlugins.register
         private readonly Config config;
         private readonly RegisterState registerState;
         private readonly HeartEventHandles heartEventHandles;
+        private readonly ServerPluginHelper serverPluginHelper;
 
         private long lastTime = 0;
         private long lastTcpTime = 0;
@@ -29,7 +31,8 @@ namespace client.service.plugins.serverPlugins.register
         public RegisterHelper(
             RegisterEventHandles registerEventHandles, HeartEventHandles heartEventHandles,
             ITcpServer tcpServer, IUdpServer udpServer,
-            Config config, RegisterState registerState
+            Config config, RegisterState registerState,
+            ServerPluginHelper serverPluginHelper
         )
         {
             this.registerEventHandles = registerEventHandles;
@@ -38,6 +41,7 @@ namespace client.service.plugins.serverPlugins.register
             this.config = config;
             this.registerState = registerState;
             this.heartEventHandles = heartEventHandles;
+            this.serverPluginHelper = serverPluginHelper;
 
             //退出消息
             registerEventHandles.OnExitMessage.Sub((e) =>
@@ -157,9 +161,33 @@ namespace client.service.plugins.serverPlugins.register
             long time = Helper.GetTimeStamp();
             return (lastTime > 0 && time - lastTime > 20000) || (lastTcpTime > 0 && time - lastTcpTime > 20000);
         }
+        private bool IsNeedTimeout()
+        {
+            long time = Helper.GetTimeStamp();
+            return (lastTime > 0 && time - lastTime > 5000) || (lastTcpTime > 0 && time - lastTcpTime > 5000);
+        }
 
         private void Heart()
         {
+            serverPluginHelper.OnInputData.Sub((param) =>
+            {
+               //var watch = new MyStopwatch();
+                //watch.Start();
+
+                long ipid = param.Address.ToInt64();
+                if (registerState.UdpAddressId == ipid)
+                {
+                    lastTime = Helper.GetTimeStamp();
+                }
+                else if (registerState.TcpAddressId != ipid)
+                {
+                    lastTcpTime = Helper.GetTimeStamp();
+                }
+                //watch.Stop();
+                //watch.Output("服务端心跳更新时间耗时:");
+            });
+
+
             //给服务器发送心跳包
             _ = Task.Factory.StartNew(() =>
             {
@@ -174,7 +202,7 @@ namespace client.service.plugins.serverPlugins.register
                             AutoReg();
                         }
                     }
-                    if (registerState.LocalInfo.Connected && registerState.LocalInfo.TcpConnected)
+                    if (registerState.LocalInfo.Connected && registerState.LocalInfo.TcpConnected && IsNeedTimeout())
                     {
                         heartEventHandles.SendHeartMessage(registerState.RemoteInfo.ConnectId, registerState.UdpAddress);
                         heartEventHandles.SendTcpHeartMessage(registerState.RemoteInfo.ConnectId, registerState.TcpSocket);

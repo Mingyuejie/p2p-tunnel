@@ -16,7 +16,7 @@ namespace client.plugins.serverPlugins.clients
     [ProtoContract, Serializable, MessagePackObject]
     public class ClientInfo
     {
-        [ProtoMember(1),Key(1)]
+        [ProtoMember(1), Key(1)]
         public bool Connecting { get; set; } = false;
         [ProtoMember(2), Key(2)]
         public bool TcpConnecting { get; set; } = false;
@@ -25,10 +25,10 @@ namespace client.plugins.serverPlugins.clients
         [ProtoMember(4), Key(4)]
         public bool TcpConnected { get; set; } = false;
 
-        [ProtoIgnore, JsonIgnore,IgnoreMember]
+        [ProtoIgnore, JsonIgnore, IgnoreMember]
         public Socket Socket { get; set; } = null;
 
-        [ProtoIgnore, JsonIgnore,IgnoreMember]
+        [ProtoIgnore, JsonIgnore, IgnoreMember]
         public IPEndPoint Address { get; set; } = null;
         [ProtoMember(5), Key(5)]
         public int Port { get; set; } = 0;
@@ -49,6 +49,15 @@ namespace client.plugins.serverPlugins.clients
 
         [ProtoMember(13), Key(13)]
         public long SelfId { get; set; } = 0;
+
+        public bool IsNeedHeart()
+        {
+            return (LastTime > 0 && Helper.GetTimeStamp() - LastTime > 5000);
+        }
+        public bool IsNeedTcpHeart()
+        {
+            return (TcpLastTime > 0 && Helper.GetTimeStamp() - TcpLastTime > 5000);
+        }
 
         public bool IsTimeout()
         {
@@ -82,6 +91,7 @@ namespace client.plugins.serverPlugins.clients
             LastTime = Helper.GetTimeStamp();
             Address = address;
             Connecting = false;
+            UdpAddressId = address.ToInt64();
         }
         public void OfflineTcp()
         {
@@ -95,11 +105,19 @@ namespace client.plugins.serverPlugins.clients
         }
         public void OnlineTcp(Socket socket)
         {
+            var ip = IPEndPoint.Parse(socket.RemoteEndPoint.ToString());
             TcpConnected = true;
             TcpConnecting = false;
             TcpLastTime = Helper.GetTimeStamp();
             Socket = socket;
-            Ip = IPEndPoint.Parse(socket.RemoteEndPoint.ToString()).Address.ToString();
+            Ip = ip.Address.ToString();
+            TcpAddressId = ip.ToInt64();
         }
+
+
+        [ProtoIgnore, JsonIgnore, IgnoreMember]
+        public long UdpAddressId { get; set; } = 0;
+        [ProtoIgnore, JsonIgnore, IgnoreMember]
+        public long TcpAddressId { get; set; } = 0;
     }
 }

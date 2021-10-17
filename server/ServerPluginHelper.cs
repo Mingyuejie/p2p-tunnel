@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -35,12 +36,22 @@ namespace server
             {
                 for (int i = 0, len = wrap.Data.Length; i < len; i++)
                 {
+                    //var watch = new MyStopwatch();
+                    // watch.Start();
                     InputData(wrap.Data[i], wrap);
+                    //watch.Stop();
+                    //watch.Output("TCP消息处理耗时:");
                 }
             });
             this.udpserver.OnPacket.Sub((wrap) =>
             {
+                //var watch = new MyStopwatch();
+                //watch.Start();
+
                 InputData(wrap.Data, wrap);
+
+                // watch.Stop();
+                //watch.Output("UDP消息处理耗时:");
             });
 
             _ = Task.Factory.StartNew(() =>
@@ -247,8 +258,16 @@ namespace server
             }
         }
 
+
+        public SimplePushSubHandler<OnInputDataParam> OnInputData { get; } = new SimplePushSubHandler<OnInputDataParam>();
         public void InputData<T>(IPacket packet, ServerDataWrap<T> param)
         {
+            OnInputData.Push(new OnInputDataParam
+            {
+                Address = param.Address,
+                ServerType = param.ServerType
+            });
+
             ServerMessageWrap wrap = packet.Chunk.DeBytes<ServerMessageWrap>();
             if (wrap.Type == ServerMessageTypes.RESPONSE)
             {
@@ -354,6 +373,11 @@ namespace server
     }
 }
 
+public class OnInputDataParam
+{
+    public IPEndPoint Address { get; set; }
+    public ServerType ServerType { get; set; }
+}
 public class SendCacheModel
 {
     public TaskCompletionSource<ServerMessageResponeWrap> Tcs { get; set; }
