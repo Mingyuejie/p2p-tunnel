@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:10:48
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-29 15:32:00
+ * @LastEditTime: 2021-10-18 21:26:05
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\Index.vue
@@ -23,10 +23,16 @@
 import Progress from './Progress.vue'
 import List from './List.vue'
 import { provideFilesData } from './list-share-data'
+import { provideCmd } from '../../../states/cmd'
+import { reactive } from '@vue/reactivity'
 export default {
     components: { List, Progress },
     setup () {
         provideFilesData();
+        const stateCmd = reactive({
+            clientId: null
+        });
+        provideCmd(stateCmd);
         return {}
     }
 }

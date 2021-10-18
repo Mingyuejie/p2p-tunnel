@@ -187,7 +187,7 @@ namespace server
             ReceiveModel model = new ReceiveModel { ConnectId = connectId, ErrorCallback = errorCallback, Id = Id, Address = ip, Socket = socket, Buffer = Array.Empty<byte>() };
             _ = ReceiveModel.Add(model);
 
-            model.Buffer = new byte[4096];
+            model.Buffer = new byte[8*1024];
             _ = socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
         }
         private void Receive(ReceiveModel model, byte[] buffer)

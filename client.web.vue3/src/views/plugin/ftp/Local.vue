@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:51:49
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-29 15:43:43
+ * @LastEditTime: 2021-10-18 21:24:53
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\Local.vue
@@ -45,11 +45,13 @@ import ContextMenu from './ContextMenu.vue'
 import { ElMessageBox } from 'element-plus'
 import { injectFilesData } from './list-share-data'
 import { pushListener } from '../../../apis/request'
+import { injectCmd } from '../../../states/cmd'
 export default {
     components: { FileTree, ContextMenu },
     setup () {
 
         const listShareData = injectFilesData();
+        const stateCmd = injectCmd();
         const state = reactive({
             data: [],
             multipleSelection: [],
@@ -106,17 +108,21 @@ export default {
                                     type: 'warning'
                                 }).then(() => {
                                     state.loading = true;
-                                    sendRemoteUpload(listShareData.clientId || 0, row.Name).then(() => {
+                                    sendRemoteUpload(stateCmd.clientId || 0, row.Name).then((res) => {
+                                        console.log(res);
                                         state.loading = false;
-                                    }).catch(() => {
+                                    }).catch((err) => {
+                                        console.log(err);
                                         state.loading = false;
                                     });
                                 });
                             } else {
                                 state.loading = true;
-                                sendRemoteUpload(listShareData.clientId || 0, row.Name).then(() => {
+                                sendRemoteUpload(stateCmd.clientId || 0, row.Name).then((res) => {
+                                    console.log(res);
                                     state.loading = false;
-                                }).catch(() => {
+                                }).catch((err) => {
+                                    console.log(err);
                                     state.loading = false;
                                 });
                             }
@@ -131,7 +137,7 @@ export default {
                                     type: 'warning'
                                 }).then(() => {
                                     state.loading = true;
-                                    sendRemoteUpload(listShareData.clientId || 0, state.multipleSelection.map(c => c.Name).join(','))
+                                    sendRemoteUpload(stateCmd.clientId || 0, state.multipleSelection.map(c => c.Name).join(','))
                                         .then(() => {
                                             state.loading = false;
                                         }).catch((e) => {

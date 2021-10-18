@@ -251,7 +251,6 @@ namespace client.service.ftp
                         byte[] data = new byte[packSize];
                         fs.Read(data, 0, packSize);
                         cmd.Data = data;
-
                         if (client != null && !SendOnlyTcp(cmd, client.Socket))
                         {
                             save.State = UploadState.Error;
@@ -261,7 +260,7 @@ namespace client.service.ftp
                         index++;
                         if (index % 10 == 0)
                         {
-                            Thread.Sleep(1);
+                            // Thread.Sleep(1);
                         }
                     }
                     if (save.Token.IsCancellationRequested)

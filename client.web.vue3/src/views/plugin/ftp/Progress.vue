@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:43:21
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-30 18:47:19
+ * @LastEditTime: 2021-10-18 21:28:08
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\Progress.vue
@@ -63,11 +63,13 @@ import { onMounted, onUnmounted } from '@vue/runtime-core';
 import ContextMenu from './ContextMenu.vue'
 import { injectFilesData } from './list-share-data'
 import { ElMessageBox } from 'element-plus'
+import { injectCmd } from '../../../states/cmd'
 export default {
     components: { ContextMenu },
     setup () {
 
         const listShareData = injectFilesData();
+        const stateCmd = injectCmd();
         const state = reactive({
             upload: [],
             download: [],
@@ -105,7 +107,7 @@ export default {
                                 type: 'warning'
                             }).then(() => {
                                 state.loading = true;
-                                sendLocalCancel(listShareData.clientId || 0, row.Md5).then(() => {
+                                sendLocalCancel(stateCmd.clientId || 0, row.Md5).then(() => {
                                     state.loading = false;
                                 }).catch(() => {
                                     state.loading = false;
@@ -128,7 +130,7 @@ export default {
                                 type: 'warning'
                             }).then(() => {
                                 state.loading = true;
-                                sendRemoteCancel(listShareData.clientId || 0, row.Md5).then((res) => {
+                                sendRemoteCancel(stateCmd.clientId || 0, row.Md5).then((res) => {
                                     state.loading = false;
                                 }).catch(() => {
                                     state.loading = false;

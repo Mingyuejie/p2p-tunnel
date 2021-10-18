@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:51:49
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-15 14:56:14
+ * @LastEditTime: 2021-10-18 21:24:24
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\Remote.vue
@@ -57,26 +57,24 @@ import { injectClients } from '../../../states/clients'
 import SettingModal from '../SettingModal.vue'
 import { injectFilesData } from './list-share-data'
 import { pushListener } from '../../../apis/request'
-import { provideCmd } from '../../../states/cmd'
+import { injectCmd } from '../../../states/cmd'
 import Cmd from '../cmd/Cmd.vue'
 export default {
     components: { FileTree, ContextMenu, SettingModal, Cmd },
     setup () {
         const listShareData = injectFilesData();
         const clientState = injectClients();
+        const stateCmd = injectCmd();
         const state = reactive({
             data: [],
             multipleSelection: [],
             loading: false,
             showCmd: false
         });
-        const stateCmd = reactive({
-            clientId: null
-        });
-        provideCmd(stateCmd);
+
         const getFiles = (path = '') => {
             state.loading = true;
-            geRemoteList(state.clientId || 0, path).then((res) => {
+            geRemoteList(stateCmd.clientId || 0, path).then((res) => {
                 state.loading = false;
                 listShareData.remotes = state.data = [{ Name: '..', Label: '.. 上一级', Length: 0, Type: 0 }].concat(res.map(c => {
                     c.Label = c.Name;
@@ -99,7 +97,6 @@ export default {
         });
 
         const handleClientChange = () => {
-            listShareData.clientId = state.clientId;
             getFiles();
         }
         const handleRowDblClick = (row) => {
@@ -120,7 +117,7 @@ export default {
                                     type: 'warning'
                                 }).then(() => {
                                     state.loading = true;
-                                    sendRemoteDownload(state.clientId || 0, row.Name).then(() => {
+                                    sendRemoteDownload(stateCmd.clientId || 0, row.Name).then(() => {
                                         state.loading = false;
                                     }).catch(() => {
                                         state.loading = false;
@@ -128,7 +125,7 @@ export default {
                                 });
                             } else {
                                 state.loading = true;
-                                sendRemoteDownload(state.clientId || 0, row.Name).then(() => {
+                                sendRemoteDownload(stateCmd.clientId || 0, row.Name).then(() => {
                                     state.loading = false;
                                 }).catch(() => {
                                     state.loading = false;
@@ -145,7 +142,7 @@ export default {
                                     type: 'warning'
                                 }).then(() => {
                                     state.loading = true;
-                                    sendRemoteDownload(state.clientId || 0, state.multipleSelection.map(c => c.Name).join(',')).then(() => {
+                                    sendRemoteDownload(stateCmd.clientId || 0, state.multipleSelection.map(c => c.Name).join(',')).then(() => {
                                         getFiles();
                                     }).catch(() => {
                                         state.loading = false;
@@ -162,7 +159,7 @@ export default {
                                 inputValue: '新建文件夹'
                             }).then(({ value }) => {
                                 state.loading = true;
-                                sendRemoteCreate(state.clientId || 0, value).then(() => {
+                                sendRemoteCreate(stateCmd.clientId || 0, value).then(() => {
                                     getFiles();
                                 }).catch(() => {
                                     state.loading = false;
@@ -178,7 +175,7 @@ export default {
                                 type: 'warning'
                             }).then(() => {
                                 state.loading = true;
-                                sendRemoteDelete(state.clientId || 0, row.Name).then(() => {
+                                sendRemoteDelete(stateCmd.clientId || 0, row.Name).then(() => {
                                     getFiles();
                                 }).catch(() => {
                                     state.loading = false;
@@ -195,7 +192,7 @@ export default {
                                     type: 'warning'
                                 }).then(() => {
                                     state.loading = true;
-                                    sendRemoteDelete(state.clientId || 0, state.multipleSelection.map(c => c.Name).join(',')).then(() => {
+                                    sendRemoteDelete(stateCmd.clientId || 0, state.multipleSelection.map(c => c.Name).join(',')).then(() => {
                                         getFiles();
                                     }).catch(() => {
                                         state.loading = false;
