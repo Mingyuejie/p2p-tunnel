@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 23:04:50
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-18 21:34:22
+ * @LastEditTime: 2021-10-19 00:11:56
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\apis\request.js
@@ -92,7 +92,7 @@ const onWebsocketMsg = (msg) => {
     }
 }
 const initWebsocket = () => {
-    ws = new WebSocket('ws://127.0.0.1:59411');
+    ws = new WebSocket('ws://127.0.0.1:59410');
     ws.onopen = onWebsocketOpen;
     ws.onclose = onWebsocketClose
     ws.onmessage = onWebsocketMsg

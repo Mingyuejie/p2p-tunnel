@@ -108,6 +108,20 @@ namespace server
             }
             return await tcs.Task;
         }
+        public async Task<ServerMessageResponeWrap> SendReplyTcp(SendMessageWrap<byte[]> msg)
+        {
+            if (msg.RequestId == 0)
+            {
+                msg.RequestId = NewRequestId();
+            }
+            TaskCompletionSource<ServerMessageResponeWrap> tcs = NewReply(msg.RequestId, msg.Timeout);
+            if (!SendOnlyTcp(msg))
+            {
+                RemoveReply(msg.RequestId);
+                tcs.SetResult(new ServerMessageResponeWrap { Code = ServerMessageResponeCodes.BAD_GATEWAY, ErrorMsg = "未运行" });
+            }
+            return await tcs.Task;
+        }
         public bool SendOnlyTcp<T>(SendMessageWrap<T> msg)
         {
             if (msg.TcpCoket != null)
@@ -138,7 +152,6 @@ namespace server
             }
             return false;
         }
-
         public bool SendOnlyTcp(SendMessageWrap<byte[]> msg)
         {
             if (msg.TcpCoket != null)
@@ -184,6 +197,20 @@ namespace server
             }
             return await tcs.Task;
         }
+        public async Task<ServerMessageResponeWrap> SendReply(SendMessageWrap<byte[]> msg)
+        {
+            if (msg.RequestId == 0)
+            {
+                msg.RequestId = NewRequestId();
+            }
+            TaskCompletionSource<ServerMessageResponeWrap> tcs = NewReply(msg.RequestId);
+            if (!SendOnly(msg))
+            {
+                RemoveReply(msg.RequestId);
+                tcs.SetResult(new ServerMessageResponeWrap { Code = ServerMessageResponeCodes.BAD_GATEWAY, ErrorMsg = "未运行" });
+            }
+            return await tcs.Task;
+        }
         public bool SendOnly<T>(SendMessageWrap<T> msg)
         {
             if (msg.Address != null)
@@ -198,6 +225,43 @@ namespace server
                     {
                         RequestId = msg.RequestId,
                         Content = msg.Data.ToBytes(),
+                        Path = msg.Path,
+                        Code = msg.Code,
+                        Type = msg.Type
+                    };
+
+                    _ = Interlocked.Increment(ref sequence);
+                    IEnumerable<UdpPacket> udpPackets = wrap.ToUdpPackets(sequence);
+
+                    foreach (UdpPacket udpPacket in udpPackets)
+                    {
+                        byte[] udpPacketDatagram = udpPacket.ToArray();
+                        udpserver.Send(udpPacketDatagram, msg.Address);
+                    }
+                    OnSendData.Push(new OnDataParam { Address = msg.Address.ToInt64(), ServerType = ServerType.UDP, Time = lastTime });
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance.Debug(ex + "");
+                }
+            }
+            return false;
+        }
+        public bool SendOnly(SendMessageWrap<byte[]> msg)
+        {
+            if (msg.Address != null)
+            {
+                try
+                {
+                    if (msg.RequestId == 0)
+                    {
+                        msg.RequestId = NewRequestId();
+                    }
+                    ServerMessageWrap wrap = new ServerMessageWrap
+                    {
+                        RequestId = msg.RequestId,
+                        Content = msg.Data,
                         Path = msg.Path,
                         Code = msg.Code,
                         Type = msg.Type
