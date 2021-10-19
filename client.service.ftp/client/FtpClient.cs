@@ -113,7 +113,7 @@ namespace client.service.ftp.client
             {
                 desktop = GetFolderPath(SpecialFolder.CommonDesktopDirectory);
             }
-           
+
             List<SpecialFolderInfo> child = new()
             {
                 new SpecialFolderInfo

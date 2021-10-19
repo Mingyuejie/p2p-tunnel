@@ -48,6 +48,7 @@ namespace client.service.ftp
             obj.UseFtpPlugin(AppDomain.CurrentDomain.GetAssemblies());
 
             Logger.Instance.Info("文件服务插件已加载");
+
             return obj;
         }
 

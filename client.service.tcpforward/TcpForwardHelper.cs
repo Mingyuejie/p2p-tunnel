@@ -194,19 +194,38 @@ namespace client.service.tcpforward
         private void Connect(IAsyncResult result)
         {
             var state = (ConnectState)result.AsyncState;
-            state.Client.TargetSocket.EndConnect(result);
-            result.AsyncWaitHandle.Close();
-            state.Client.Stream = new NetworkStream(state.Client.TargetSocket, false);
-
-            ClientModel.Add(state.Client);
-            BindReceive(state.Client);
-
-            if (state.Client.TargetSocket.Connected)
+            try
             {
-                state.Client.Stream.Write(state.Data);
-                state.Client.Stream.Flush();
+                state.Client.TargetSocket.EndConnect(result);
+                result.AsyncWaitHandle.Close();
+                state.Client.Stream = new NetworkStream(state.Client.TargetSocket, false);
 
-                state.Data = Array.Empty<byte>();
+                ClientModel.Add(state.Client);
+                BindReceive(state.Client);
+
+                if (state.Client.TargetSocket.Connected)
+                {
+                    state.Client.Stream.Write(state.Data);
+                    state.Client.Stream.Flush();
+
+                    state.Data = Array.Empty<byte>();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                ClientModel.Remove(state.Client.RequestId);
+                tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
+                {
+                    Data = new TcpForwardModel
+                    {
+                        RequestId = state.Client.RequestId,
+                        Type = TcpForwardType.FAIL,
+                        Buffer = Encoding.UTF8.GetBytes(ex.Message),
+                        AliveType = state.Client.AliveType
+                    },
+                    Socket = state.Client.SourceSocket
+                });
             }
         }
 

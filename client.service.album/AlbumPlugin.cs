@@ -42,6 +42,27 @@ namespace client.service.album
             albumSettingModel.UseServer = setting.UseServer;
             albumSettingModel.SaveConfig();
 
+
+            return ReloadService();
+        }
+
+        public object Load(ClientServicePluginExcuteWrap arg)
+        {
+            return albumSettingModel;
+        }
+
+        public bool SwitchEnable(bool enable)
+        {
+            albumSettingModel.UseServer = enable;
+            albumSettingModel.SaveConfig();
+
+            ReloadService();
+
+            return true;
+        }
+
+        private string ReloadService()
+        {
             tcpForwardHelper.DelByGroup("album");
             foreach (var item in albumSettingModel.Clients)
             {
@@ -79,22 +100,9 @@ namespace client.service.album
             }
             return string.Empty;
         }
-
-        public object Load(ClientServicePluginExcuteWrap arg)
-        {
-            return albumSettingModel;
-        }
-
-        public bool SwitchEnable(bool enable)
-        {
-            albumSettingModel.UseServer = enable;
-            albumSettingModel.SaveConfig();
-
-            return true;
-        }
     }
 
-    public class AlbumSettingModel: SettingModelBase
+    public class AlbumSettingModel : SettingModelBase
     {
         public AlbumSettingClientModel[] Clients { get; set; } = new AlbumSettingClientModel[]
         {

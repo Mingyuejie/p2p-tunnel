@@ -4,6 +4,7 @@ using common.extends;
 using ProtoBuf;
 using server.model;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 

@@ -340,13 +340,13 @@ namespace client.service.ftp
             return res;
         }
 
-        protected bool SendOnlyTcp<IFtpCommandBase>(IFtpCommandBase data, long clientId)
+        protected bool SendOnlyTcp<T>(T data, long clientId)
         {
             clientInfoCaching.Get(clientId, out ClientInfo client);
             if (client != null)
             {
 
-                var res = serverRequest.SendOnlyTcp(new SendTcpEventArg<IFtpCommandBase>
+                var res = serverRequest.SendOnlyTcp(new SendTcpEventArg<T>
                 {
                     Data = data,
                     Path = SocketPath,
@@ -357,11 +357,11 @@ namespace client.service.ftp
             }
             return false;
         }
-        protected bool SendOnlyTcp<IFtpCommandBase>(IFtpCommandBase data, Socket socket)
+        protected bool SendOnlyTcp<T>(T data, Socket socket)
         {
             if (socket != null)
             {
-                var res = serverRequest.SendOnlyTcp(new SendTcpEventArg<IFtpCommandBase>
+                var res = serverRequest.SendOnlyTcp(new SendTcpEventArg<T>
                 {
                     Data = data,
                     Path = SocketPath,
@@ -385,10 +385,10 @@ namespace client.service.ftp
             }
             return false;
         }
-        protected async Task<ServerMessageResponeWrap> SendReplyTcp<IFtpCommandBase>(IFtpCommandBase data, long clientId)
+        protected async Task<ServerMessageResponeWrap> SendReplyTcp<T>(T data, long clientId)
         {
             clientInfoCaching.Get(clientId, out ClientInfo client);
-            return await serverRequest.SendReplyTcp(new SendTcpEventArg<IFtpCommandBase>
+            return await serverRequest.SendReplyTcp(new SendTcpEventArg<T>
             {
                 Data = data,
                 Path = SocketPath,

@@ -1,4 +1,5 @@
-﻿using ProtoBuf;
+﻿using MessagePack;
+using ProtoBuf;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,34 +11,33 @@ namespace common.extends
 {
     public static class ByteArrayExtends
     {
+        static MessagePackSerializerOptions lz4Options = MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4BlockArray);
         public static Byte[] ToBytes<T>(this T obj)
         {
-            // return MessagePack.MessagePackSerializer.Serialize(obj);
-            using var memory = new MemoryStream();
-            Serializer.Serialize(memory, obj);
-            return memory.ToArray();
+            return MessagePackSerializer.Serialize(obj);
+            // using var memory = new MemoryStream();
+            //Serializer.Serialize(memory, obj);
+            //return memory.ToArray();
+        }
+        public static Byte[] ToBytesWithCompression<T>(this T obj)
+        {
+            return MessagePackSerializer.Serialize(obj, lz4Options);
+            // using var memory = new MemoryStream();
+            //Serializer.Serialize(memory, obj);
+            //return memory.ToArray();
         }
         public static T DeBytes<T>(this byte[] data)
         {
-            //return MessagePack.MessagePackSerializer.Deserialize<T>(data);
-            using var memory = new MemoryStream(data);
-            return Serializer.Deserialize<T>(memory);
-        }
-
-        public static Byte[] ToBytes2<T>(this T obj)
-        {
-            return MessagePack.MessagePackSerializer.Serialize(obj);
-            // using var memory = new MemoryStream();
-            // Serializer.Serialize(memory, obj);
-            //return memory.ToArray();
-        }
-        public static T DeBytes2<T>(this byte[] data)
-        {
-            return MessagePack.MessagePackSerializer.Deserialize<T>(data);
-            // using var memory = new MemoryStream(data);
+            return MessagePackSerializer.Deserialize<T>(data);
+            //using var memory = new MemoryStream(data);
             //return Serializer.Deserialize<T>(memory);
         }
-
+        public static T DeBytesWithCompression<T>(this byte[] data)
+        {
+            return MessagePackSerializer.Deserialize<T>(data, lz4Options);
+            //using var memory = new MemoryStream(data);
+            //return Serializer.Deserialize<T>(memory);
+        }
 
         private static byte[] optionsBytes = Encoding.ASCII.GetBytes("OPTIONS");
         public static bool IsOptionsMethod(this byte[] lines)

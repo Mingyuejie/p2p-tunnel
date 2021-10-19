@@ -148,6 +148,7 @@ namespace server
                 catch (Exception ex)
                 {
                     Logger.Instance.Debug(ex + "");
+                    Logger.Instance.Info(msg.Data.ToJson());
                 }
             }
             return false;
@@ -322,6 +323,17 @@ namespace server
                 SendOnly(data);
             }
         }
+        private void ReplayData(SendMessageWrap<byte[]> data, ServerType serverType)
+        {
+            if (serverType == ServerType.TCP)
+            {
+                SendOnlyTcp(data);
+            }
+            else
+            {
+                SendOnly(data);
+            }
+        }
 
 
         public SimplePushSubHandler<OnDataParam> OnInputData { get; } = new SimplePushSubHandler<OnDataParam>();
@@ -380,16 +392,32 @@ namespace server
                                 }
                                 if (resultObject != null)
                                 {
-                                    ReplayData(new SendMessageWrap<object>
+                                    if (resultObject is byte[])
                                     {
-                                        TcpCoket = param.Socket,
-                                        Address = param.Address,
-                                        Code = excute.Code,
-                                        Data = resultObject,
-                                        RequestId = wrap.RequestId,
-                                        Path = wrap.Path,
-                                        Type = ServerMessageTypes.RESPONSE
-                                    }, param.ServerType);
+                                        ReplayData(new SendMessageWrap<byte[]>
+                                        {
+                                            TcpCoket = param.Socket,
+                                            Address = param.Address,
+                                            Code = excute.Code,
+                                            Data = resultObject as byte[],
+                                            RequestId = wrap.RequestId,
+                                            Path = wrap.Path,
+                                            Type = ServerMessageTypes.RESPONSE
+                                        }, param.ServerType);
+                                    }
+                                    else
+                                    {
+                                        ReplayData(new SendMessageWrap<object>
+                                        {
+                                            TcpCoket = param.Socket,
+                                            Address = param.Address,
+                                            Code = excute.Code,
+                                            Data = resultObject,
+                                            RequestId = wrap.RequestId,
+                                            Path = wrap.Path,
+                                            Type = ServerMessageTypes.RESPONSE
+                                        }, param.ServerType);
+                                    }
                                 }
                             }
                         }

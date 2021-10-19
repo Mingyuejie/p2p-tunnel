@@ -54,7 +54,7 @@ namespace client.service.ftp.server
             }
         }
 
-        public IEnumerable<FileInfo> GetFiles(FtpListCommand cmd)
+        public FileInfo[] GetFiles(FtpListCommand cmd)
         {
             DirectoryInfo dirInfo = JoinPath(cmd);
             return dirInfo.GetDirectories()
@@ -77,7 +77,7 @@ namespace client.service.ftp.server
                 LastWriteTime = c.LastWriteTime,
                 LastAccessTime = c.LastAccessTime,
                 Type = FileType.File,
-            }));
+            })).ToArray();
         }
 
         public List<string> Create(FtpCreateCommand cmd)
