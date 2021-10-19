@@ -171,7 +171,9 @@ namespace server
                         Type = msg.Type,
                         Code = msg.Code
                     };
+
                     bool res = tcpserver.Send(TcpPacket.ToArray(wrap.ToArray()), msg.TcpCoket);
+                  
                     OnSendData.Push(new OnDataParam { Address = (msg.TcpCoket.RemoteEndPoint as IPEndPoint).ToInt64(), ServerType = ServerType.TCP, Time = lastTime });
                     return res;
                 }

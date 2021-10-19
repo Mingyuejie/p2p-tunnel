@@ -248,6 +248,7 @@ namespace client.service.ftp
                         byte[] data = new byte[packSize];
                         fs.Read(data, 0, packSize);
                         cmd.Data = data;
+
                         if (client != null && !SendOnlyTcp(cmd, client.Socket))
                         {
                             save.State = UploadState.Error;
@@ -255,10 +256,6 @@ namespace client.service.ftp
 
                         save.IndexLength += packSize;
                         index++;
-                        if (index % 10 == 0)
-                        {
-                            // Thread.Sleep(1);
-                        }
                     }
                     if (save.Token.IsCancellationRequested)
                     {
@@ -351,7 +348,8 @@ namespace client.service.ftp
             if (socket != null)
             {
                 IFtpCommandBase _base = (IFtpCommandBase)data;
-                return SendOnlyTcp(data.ToBytes(), socket, _base.Cmd, _base.SessionId);
+                bool res =  SendOnlyTcp(data.ToBytes(), socket, _base.Cmd, _base.SessionId);
+                return res;
             }
             return false;
         }
@@ -374,7 +372,6 @@ namespace client.service.ftp
             clientInfoCaching.Get(clientId, out ClientInfo client);
 
             IFtpCommandBase _base = (IFtpCommandBase)data;
-
             return await serverRequest.SendReplyTcp(new SendTcpEventArg<byte[]>
             {
                 Data = AddAttributes(data.ToBytes(), _base.Cmd, _base.SessionId),
