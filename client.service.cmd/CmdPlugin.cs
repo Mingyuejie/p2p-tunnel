@@ -221,7 +221,6 @@ namespace client.service.cmd
         }
     }
 
-
     public class RemoteCmdModel
     {
         public long Id { get; set; }

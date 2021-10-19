@@ -211,8 +211,8 @@ namespace client.service.ftp.client
 
         public object Excute(PluginParamWrap data)
         {
-            FtpCommandBase cmd = data.Wrap.Content.DeBytes<FtpCommandBase>();
-
+            FtpCommandBase cmd = ftpClient.ReadAttribute(data.Wrap.Content);
+            //data.Wrap.Content = Array.Empty<byte>();
             FtpPluginParamWrap wrap = new FtpPluginParamWrap
             {
                 Code = data.Code,
@@ -220,7 +220,8 @@ namespace client.service.ftp.client
                 ServerType = data.ServerType,
                 SourcePoint = data.SourcePoint,
                 TcpSocket = data.TcpSocket,
-                Wrap = data.Wrap
+                Wrap = data.Wrap,
+                Data = cmd.Data
             };
             wrap.SetErrorMessage(data.ErrorMessage);
             if (clientInfoCaching.Get(cmd.SessionId, out ClientInfo client))

@@ -32,7 +32,20 @@ namespace common.extends
             //using var memory = new MemoryStream(data);
             //return Serializer.Deserialize<T>(memory);
         }
+        public static T DeBytes<T>(this Memory<byte> data)
+        {
+            return MessagePackSerializer.Deserialize<T>(data);
+            //using var memory = new MemoryStream(data);
+            //return Serializer.Deserialize<T>(memory);
+        }
+
         public static T DeBytesWithCompression<T>(this byte[] data)
+        {
+            return MessagePackSerializer.Deserialize<T>(data, lz4Options);
+            //using var memory = new MemoryStream(data);
+            //return Serializer.Deserialize<T>(memory);
+        }
+        public static T DeBytesWithCompression<T>(this Memory<byte> data)
         {
             return MessagePackSerializer.Deserialize<T>(data, lz4Options);
             //using var memory = new MemoryStream(data);

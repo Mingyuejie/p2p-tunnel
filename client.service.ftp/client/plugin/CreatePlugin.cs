@@ -22,7 +22,7 @@ namespace client.service.ftp.client.plugin
 
         public object Excute(FtpPluginParamWrap arg)
         {
-            FtpCreateCommand cmd = arg.Wrap.Content.DeBytes<FtpCreateCommand>();
+            FtpCreateCommand cmd = arg.Data.DeBytes<FtpCreateCommand>();
 
             if (string.IsNullOrWhiteSpace(cmd.Path))
             {

@@ -12,6 +12,7 @@ namespace server.extends
         public static IEnumerable<UdpPacket> ToUdpPackets(this object obj, long sequence, short ttl = 5)
         {
             return obj.ToBytes().Split(sequence, ttl);
+            //return obj.ToBytes().Split(sequence, ttl);
         }
 
         public static TcpPacket ToTcpPacket(this object obj)

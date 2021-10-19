@@ -23,7 +23,7 @@ namespace client.service.ftp.server.plugin
 
         public object Excute(FtpPluginParamWrap arg)
         {
-            FtpCancelCommand cmd = arg.Wrap.Content.DeBytes<FtpCancelCommand>();
+            FtpCancelCommand cmd = arg.Data.DeBytes<FtpCancelCommand>();
 
             ftpServer.OnFileUploadCancel(cmd);
 
@@ -43,7 +43,7 @@ namespace client.service.ftp.server.plugin
 
         public object Excute(FtpPluginParamWrap arg)
         {
-            FtpCanceledCommand cmd = arg.Wrap.Content.DeBytes<FtpCanceledCommand>();
+            FtpCanceledCommand cmd = arg.Data.DeBytes<FtpCanceledCommand>();
 
             ftpServer.OnFileUploadCanceled(cmd);
 

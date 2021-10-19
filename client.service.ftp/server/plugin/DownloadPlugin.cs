@@ -19,7 +19,7 @@ namespace client.service.ftp.server.plugin
 
         public object Excute(FtpPluginParamWrap arg)
         {
-            FtpDownloadCommand cmd = arg.Wrap.Content.DeBytes<FtpDownloadCommand>();
+            FtpDownloadCommand cmd = arg.Data.DeBytes<FtpDownloadCommand>();
 
             IEnumerable<string> error = ftpServer.Upload(cmd, arg);
             if (error.Any())

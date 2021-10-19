@@ -21,9 +21,7 @@ namespace client.service.ftp.client.plugin
 
         public object Excute(FtpPluginParamWrap data)
         {
-            //FtpFileCommand cmd = new FtpFileCommand();
-            //cmd.FromBytes(data.Wrap.Content);
-            FtpFileCommand cmd = data.Wrap.Content.DeBytes<FtpFileCommand>();
+            FtpFileCommand cmd = data.Data.DeBytes<FtpFileCommand>();
 
             ftpClient.OnFile(cmd, data);
             return null;
@@ -41,7 +39,7 @@ namespace client.service.ftp.client.plugin
 
         public object Excute(FtpPluginParamWrap data)
         {
-            FtpFileEndCommand cmd = data.Wrap.Content.DeBytes<FtpFileEndCommand>();
+            FtpFileEndCommand cmd = data.Data.DeBytes<FtpFileEndCommand>();
             ftpClient.OnFileEnd(cmd);
             return null;
         }

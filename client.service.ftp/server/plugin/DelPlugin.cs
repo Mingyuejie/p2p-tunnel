@@ -23,7 +23,7 @@ namespace client.service.ftp.server.plugin
 
         public object Excute(FtpPluginParamWrap arg)
         {
-            FtpDelCommand cmd = arg.Wrap.Content.DeBytes<FtpDelCommand>();
+            FtpDelCommand cmd = arg.Data.DeBytes<FtpDelCommand>();
 
             if (string.IsNullOrWhiteSpace(cmd.Path))
             {

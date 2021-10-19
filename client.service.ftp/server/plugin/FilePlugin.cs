@@ -19,7 +19,7 @@ namespace client.service.ftp.server.plugin
             // FtpFileCommand cmd = new FtpFileCommand();
             // cmd.FromBytes(data.Wrap.Content);
 
-            FtpFileCommand cmd = data.Wrap.Content.DeBytes<FtpFileCommand>();
+            FtpFileCommand cmd = data.Data.DeBytes<FtpFileCommand>();
             ftpServer.OnFile(cmd, data);
 
             return true;

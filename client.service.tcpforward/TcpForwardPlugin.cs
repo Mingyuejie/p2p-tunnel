@@ -1,11 +1,8 @@
-﻿using client.servers.clientServer;
-using client.service.tcpforward.client;
+﻿using client.service.tcpforward.client;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
 using server.model;
 using server.plugin;
-using System;
-using System.IO;
 
 namespace client.service.tcpforward
 {

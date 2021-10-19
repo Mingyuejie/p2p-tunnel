@@ -141,14 +141,13 @@ namespace server
                         Type = msg.Type,
                         Code = msg.Code
                     };
-                    bool res = tcpserver.Send(TcpPacket.ToArray(wrap.ToBytes()), msg.TcpCoket);
+                    bool res = tcpserver.Send(TcpPacket.ToArray(wrap.ToArray()), msg.TcpCoket);
                     OnSendData.Push(new OnDataParam { Address = (msg.TcpCoket.RemoteEndPoint as IPEndPoint).ToInt64(), ServerType = ServerType.TCP, Time = lastTime });
                     return res;
                 }
                 catch (Exception ex)
                 {
                     Logger.Instance.Debug(ex + "");
-                    Logger.Instance.Info(msg.Data.ToJson());
                 }
             }
             return false;
@@ -172,7 +171,7 @@ namespace server
                         Type = msg.Type,
                         Code = msg.Code
                     };
-                    bool res = tcpserver.Send(TcpPacket.ToArray(wrap.ToBytes()), msg.TcpCoket);
+                    bool res = tcpserver.Send(TcpPacket.ToArray(wrap.ToArray()), msg.TcpCoket);
                     OnSendData.Push(new OnDataParam { Address = (msg.TcpCoket.RemoteEndPoint as IPEndPoint).ToInt64(), ServerType = ServerType.TCP, Time = lastTime });
                     return res;
                 }
@@ -232,7 +231,7 @@ namespace server
                     };
 
                     _ = Interlocked.Increment(ref sequence);
-                    IEnumerable<UdpPacket> udpPackets = wrap.ToUdpPackets(sequence);
+                    IEnumerable<UdpPacket> udpPackets = wrap.ToArray().Split(sequence);
 
                     foreach (UdpPacket udpPacket in udpPackets)
                     {
@@ -269,7 +268,7 @@ namespace server
                     };
 
                     _ = Interlocked.Increment(ref sequence);
-                    IEnumerable<UdpPacket> udpPackets = wrap.ToUdpPackets(sequence);
+                    IEnumerable<UdpPacket> udpPackets = wrap.ToArray().Split(sequence);
 
                     foreach (UdpPacket udpPacket in udpPackets)
                     {
@@ -347,7 +346,9 @@ namespace server
                 Time = lastTime
             });
 
-            ServerMessageWrap wrap = packet.Chunk.DeBytes<ServerMessageWrap>();
+            ServerMessageWrap wrap = new ServerMessageWrap();
+            wrap.FromArray(packet.Chunk);
+
             if (wrap.Type == ServerMessageTypes.RESPONSE)
             {
                 if (sends.TryRemove(wrap.RequestId, out SendCacheModel send) && send != null)

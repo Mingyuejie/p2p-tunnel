@@ -15,15 +15,15 @@ namespace client.service.ftp.server.plugin
     {
         public FtpCommand Cmd => FtpCommand.CREATE;
 
-        private readonly FtpServer  ftpServer;
-        public CreatePlugin( FtpServer ftpServer)
+        private readonly FtpServer ftpServer;
+        public CreatePlugin(FtpServer ftpServer)
         {
             this.ftpServer = ftpServer;
         }
 
         public object Excute(FtpPluginParamWrap arg)
         {
-            FtpCreateCommand cmd = arg.Wrap.Content.DeBytes<FtpCreateCommand>();
+            FtpCreateCommand cmd = arg.Data.DeBytes<FtpCreateCommand>();
 
             if (string.IsNullOrWhiteSpace(cmd.Path))
             {

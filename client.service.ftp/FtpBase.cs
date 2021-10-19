@@ -46,9 +46,6 @@ namespace client.service.ftp
 
             LoopProgress();
             LoopUpload();
-
-            AppDomain.CurrentDomain.ProcessExit += (s, e) => Exit();
-            Console.CancelKeyPress += (s, e) => Exit();
         }
 
         protected List<string> Create(string currentPath, string path)
@@ -345,15 +342,7 @@ namespace client.service.ftp
             clientInfoCaching.Get(clientId, out ClientInfo client);
             if (client != null)
             {
-
-                var res = serverRequest.SendOnlyTcp(new SendTcpEventArg<T>
-                {
-                    Data = data,
-                    Path = SocketPath,
-                    Socket = client.Socket
-                });
-
-                return res;
+                return SendOnlyTcp(data, client.Socket);
             }
             return false;
         }
@@ -361,23 +350,18 @@ namespace client.service.ftp
         {
             if (socket != null)
             {
-                var res = serverRequest.SendOnlyTcp(new SendTcpEventArg<T>
-                {
-                    Data = data,
-                    Path = SocketPath,
-                    Socket = socket
-                });
-                return res;
+                IFtpCommandBase _base = (IFtpCommandBase)data;
+                return SendOnlyTcp(data.ToBytes(), socket, _base.Cmd, _base.SessionId);
             }
             return false;
         }
-        protected bool SendOnlyTcp(byte[] data, Socket socket)
+        protected bool SendOnlyTcp(byte[] data, Socket socket, FtpCommand cmd, long sessionid)
         {
             if (socket != null)
             {
                 var res = serverRequest.SendOnlyTcp(new SendTcpEventArg<byte[]>
                 {
-                    Data = data,
+                    Data = AddAttributes(data, cmd, sessionid),
                     Path = SocketPath,
                     Socket = socket
                 });
@@ -388,9 +372,12 @@ namespace client.service.ftp
         protected async Task<ServerMessageResponeWrap> SendReplyTcp<T>(T data, long clientId)
         {
             clientInfoCaching.Get(clientId, out ClientInfo client);
-            return await serverRequest.SendReplyTcp(new SendTcpEventArg<T>
+
+            IFtpCommandBase _base = (IFtpCommandBase)data;
+
+            return await serverRequest.SendReplyTcp(new SendTcpEventArg<byte[]>
             {
-                Data = data,
+                Data = AddAttributes(data.ToBytes(), _base.Cmd, _base.SessionId),
                 Path = SocketPath,
                 Socket = client?.Socket ?? null
             });
@@ -442,10 +429,42 @@ namespace client.service.ftp
             }, TaskCreationOptions.LongRunning);
         }
 
-        private void Exit()
+        protected byte[] AddAttributes(byte[] bytes, FtpCommand cmd, long sessionid)
         {
-            // Downloads.Clear(client.Id);
-            // Uploads.Clear(client.Id);
+            byte cmdByte = (byte)cmd;
+
+            byte[] sessionidBytes = BitConverter.GetBytes(sessionid);
+
+            var res = new byte[1 + sessionidBytes.Length + bytes.Length];
+            res[0] = cmdByte;
+            int index = 1;
+
+            Array.Copy(sessionidBytes, 0, res, index, sessionidBytes.Length);
+            index += sessionidBytes.Length;
+
+            Array.Copy(bytes, 0, res, index, bytes.Length);
+            index += bytes.Length;
+
+            return res;
+        }
+        public FtpCommandBase ReadAttribute(byte[] bytes)
+        {
+            var span = bytes.AsMemory();
+
+            FtpCommandBase cmdBase = new FtpCommandBase();
+            cmdBase.Cmd = (FtpCommand)span.Span[0];
+            int index = 1;
+
+            cmdBase.SessionId = BitConverter.ToInt64(span.Span.Slice(index, 8));
+            index += 8;
+
+            cmdBase.Data = span.Slice(index, span.Length - index);
+
+            return cmdBase;
+        }
+        public Memory<byte> RemoveAttribute(byte[] bytes)
+        {
+            return bytes.AsMemory().Slice(1 + 8);
         }
     }
 
@@ -617,5 +636,6 @@ namespace client.service.ftp
     public class FtpPluginParamWrap : PluginParamWrap
     {
         public ClientInfo Client { get; set; }
+        public Memory<byte> Data { get; set; }
     }
 }

@@ -29,16 +29,20 @@ namespace client.service.ftp.protocol
     public interface IFtpCommandBase
     {
         public FtpCommand Cmd { get; }
+        public long SessionId { get; set; }
     }
 
     [ProtoContract, MessagePackObject]
     public class FtpCommandBase : IFtpCommandBase
     {
-        [ProtoMember(1, IsRequired = true),Key(1)]
-        public FtpCommand Cmd { get; }
+        [ProtoMember(1, IsRequired = true), Key(1)]
+        public FtpCommand Cmd { get; set; }
 
-        [ProtoMember(2),Key(2)]
+        [ProtoMember(2), Key(2)]
         public long SessionId { get; set; }
+
+        [ProtoMember(3), Key(3)]
+        public Memory<byte> Data { get; set; }
     }
 
 }

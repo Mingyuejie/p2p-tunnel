@@ -22,7 +22,7 @@ namespace client.service.ftp.server.plugin
 
         public object Excute(FtpPluginParamWrap data)
         {
-            FtpListCommand cmd = data.Wrap.Content.DeBytes<FtpListCommand>();
+            FtpListCommand cmd = data.Data.DeBytes<FtpListCommand>();
             return ftpServer.GetFiles(cmd);
         }
     }
