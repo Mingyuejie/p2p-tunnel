@@ -19,7 +19,7 @@ namespace server.service.plugins
 
         public bool Excute(PluginParamWrap data)
         {
-            ExitModel model = data.Wrap.Content.DeBytes<ExitModel>();
+            ExitModel model = data.Wrap.Memory.DeBytes<ExitModel>();
 
             if (!clientRegisterCache.Verify(model.Id, data)) return false;
 

@@ -166,7 +166,7 @@ namespace client.service.ftp.server
             }
             else
             {
-                FtpCommandBase cmd = ftpServer.ReadAttribute(data.Wrap.Content);
+                FtpCommandBase cmd = ftpServer.ReadAttribute(data.Wrap.Memory);
                 //data.Wrap.Content = Array.Empty<byte>();
                 FtpPluginParamWrap wrap = new FtpPluginParamWrap
                 {

@@ -96,7 +96,7 @@ namespace client.service.cmd
         }
         public CmdResultModel Excute(PluginParamWrap arg)
         {
-            CmdModel cmd = arg.Wrap.Content.DeBytes<CmdModel>();
+            CmdModel cmd = arg.Wrap.Memory.DeBytes<CmdModel>();
             if (!config.Enable)
             {
                 return new CmdResultModel { Err = "远程命令服务未开启" };

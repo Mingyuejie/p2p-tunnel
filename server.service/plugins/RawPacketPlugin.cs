@@ -22,7 +22,7 @@ namespace server.service.plugins
 
         public bool Excute(PluginParamWrap data)
         {
-            RawPacketModel model = data.Wrap.Content.DeBytes<RawPacketModel>();
+            RawPacketModel model = data.Wrap.Memory.DeBytes<RawPacketModel>();
 
             //A已注册
             RegisterCacheModel source = clientRegisterCache.Get(model.FormId);

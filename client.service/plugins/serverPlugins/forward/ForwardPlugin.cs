@@ -16,7 +16,7 @@ namespace client.service.plugins.serverPlugins.forward
 
         public void Excute(PluginParamWrap data)
         {
-            ForwardModel model = data.Wrap.Content.DeBytes<ForwardModel>();
+            ForwardModel model = data.Wrap.Memory.DeBytes<ForwardModel>();
 
             IPacket packet = data.Packet;
             packet.Chunk = model.Data;

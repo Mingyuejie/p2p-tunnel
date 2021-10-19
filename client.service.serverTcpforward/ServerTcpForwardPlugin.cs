@@ -21,7 +21,7 @@ namespace client.service.serverTcpforward
 
         public void Excute(PluginParamWrap data)
         {
-            ServerTcpForwardModel model = data.Wrap.Content.DeBytes<ServerTcpForwardModel>();
+            ServerTcpForwardModel model = data.Wrap.Memory.DeBytes<ServerTcpForwardModel>();
             serverTcpForwardHelper.Request(model);
         }
     }

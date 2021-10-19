@@ -18,7 +18,7 @@ namespace server.service.plugins
 
         public void Excute(PluginParamWrap data)
         {
-            HeartModel model = data.Wrap.Content.DeBytes<HeartModel>();
+            HeartModel model = data.Wrap.Memory.DeBytes<HeartModel>();
 
             if (clientRegisterCache.Verify(model.SourceId, data))
             {

@@ -19,7 +19,7 @@ namespace server.service.plugins
 
         public bool Excute(PluginParamWrap data)
         {
-            PunchHoleModel model = data.Wrap.Content.DeBytes<PunchHoleModel>();
+            PunchHoleModel model = data.Wrap.Memory.DeBytes<PunchHoleModel>();
 
             if (!clientRegisterCache.Verify(model.Id, data)) return false;
 

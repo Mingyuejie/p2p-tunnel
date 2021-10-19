@@ -41,7 +41,7 @@ namespace server.service.plugins
                 data.SetCode(ServerMessageResponeCodes.ACCESS, "服务端未开启TCP转发");
                 return false;
             }
-            ServerTcpForwardRegisterModel foreards = data.Wrap.Content.DeBytes<ServerTcpForwardRegisterModel>();
+            ServerTcpForwardRegisterModel foreards = data.Wrap.Memory.DeBytes<ServerTcpForwardRegisterModel>();
             if (!clientRegisterCache.Verify(foreards.Id, data))
             {
                 data.SetCode(ServerMessageResponeCodes.ACCESS, "认证失败");
@@ -96,7 +96,7 @@ namespace server.service.plugins
         }
         public void Response(PluginParamWrap data)
         {
-            var model = data.Wrap.Content.DeBytes<ServerTcpForwardModel>();
+            var model = data.Wrap.Memory.DeBytes<ServerTcpForwardModel>();
             if (model.Type == ServerTcpForwardType.RESPONSE)
             {
                 tcpForwardServer.Response(model);

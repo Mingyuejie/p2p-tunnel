@@ -18,7 +18,7 @@ namespace client.service.plugins.serverPlugins.heart
         public void Excute(PluginParamWrap model)
         {
 
-            HeartModel data = model.Wrap.Content.DeBytes<HeartModel>();
+            HeartModel data = model.Wrap.Memory.DeBytes<HeartModel>();
             heartEventHandles.OnHeart.Push(new OnHeartEventArg
             {
                 Packet = model,

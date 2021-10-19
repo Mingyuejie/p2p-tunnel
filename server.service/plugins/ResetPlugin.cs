@@ -17,7 +17,7 @@ namespace server.service.plugins
 
         public bool Excute(PluginParamWrap data)
         {
-            ResetModel model = data.Wrap.Content.DeBytes<ResetModel>();
+            ResetModel model = data.Wrap.Memory.DeBytes<ResetModel>();
 
             if (!clientRegisterCache.Verify(model.Id, data)) return false;
 

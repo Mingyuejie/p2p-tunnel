@@ -218,16 +218,17 @@ namespace client.service.ftp
 
             Task.Run(() =>
             {
+                FtpFileCommand cmd = new FtpFileCommand
+                {
+                    SessionId = client.SelfId,
+                    Md5 = save.Md5,
+                    Size = save.TotalLength,
+                    Name = save.CacheFileName
+                };
                 try
                 {
                     save.State = UploadState.Uploading;
-                    FtpFileCommand cmd = new FtpFileCommand
-                    {
-                        SessionId = client.SelfId,
-                        Md5 = save.Md5,
-                        Size = save.TotalLength,
-                        Name = save.CacheFileName
-                    };
+
                     int packSize = 32 * 1024; //每个包大小
                     int packCount = (int)(save.TotalLength / packSize);
                     int lastPackSize = (int)(save.TotalLength - (packCount * packSize));
@@ -238,10 +239,12 @@ namespace client.service.ftp
                     {
                         if (save.Token.IsCancellationRequested)
                         {
+                            Uploads.Remove(cmd.SessionId, cmd.Md5);
                             return;
                         }
                         if (save.State != UploadState.Uploading)
                         {
+                            Uploads.Remove(cmd.SessionId, cmd.Md5);
                             return;
                         }
 
@@ -259,10 +262,12 @@ namespace client.service.ftp
                     }
                     if (save.Token.IsCancellationRequested)
                     {
+                        Uploads.Remove(cmd.SessionId, cmd.Md5);
                         return;
                     }
                     if (save.State != UploadState.Uploading)
                     {
+                        Uploads.Remove(cmd.SessionId, cmd.Md5);
                         return;
                     }
                     if (lastPackSize > 0)
@@ -276,6 +281,7 @@ namespace client.service.ftp
                 }
                 catch (Exception ex)
                 {
+                    Uploads.Remove(cmd.SessionId, cmd.Md5);
                     save.State = UploadState.Error;
                     Logger.Instance.Error($" Upload {ex}");
                 }
@@ -348,7 +354,7 @@ namespace client.service.ftp
             if (socket != null)
             {
                 IFtpCommandBase _base = (IFtpCommandBase)data;
-                bool res =  SendOnlyTcp(data.ToBytes(), socket, _base.Cmd, _base.SessionId);
+                bool res = SendOnlyTcp(data.ToBytes(), socket, _base.Cmd, _base.SessionId);
                 return res;
             }
             return false;
@@ -444,18 +450,16 @@ namespace client.service.ftp
 
             return res;
         }
-        public FtpCommandBase ReadAttribute(byte[] bytes)
+        public FtpCommandBase ReadAttribute(Memory<byte> bytes)
         {
-            var span = bytes.AsMemory();
-
             FtpCommandBase cmdBase = new FtpCommandBase();
-            cmdBase.Cmd = (FtpCommand)span.Span[0];
+            cmdBase.Cmd = (FtpCommand)bytes.Span[0];
             int index = 1;
 
-            cmdBase.SessionId = BitConverter.ToInt64(span.Span.Slice(index, 8));
+            cmdBase.SessionId = BitConverter.ToInt64(bytes.Span.Slice(index, 8));
             index += 8;
 
-            cmdBase.Data = span.Slice(index, span.Length - index);
+            cmdBase.Data = bytes.Slice(index, bytes.Length - index);
 
             return cmdBase;
         }

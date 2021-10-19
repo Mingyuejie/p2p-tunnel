@@ -25,7 +25,7 @@ namespace server.service.plugins
 
         public bool Excute(PluginParamWrap data)
         {
-            ForwardModel model = data.Wrap.Content.DeBytes<ForwardModel>();
+            ForwardModel model = data.Wrap.Memory.DeBytes<ForwardModel>();
 
             if (!clientRegisterCache.Verify(model.Id, data)) return false;
 

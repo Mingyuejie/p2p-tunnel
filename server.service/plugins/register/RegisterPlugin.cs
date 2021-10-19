@@ -20,7 +20,7 @@ namespace server.service.plugins.register
         {
             try
             {
-                RegisterModel model = data.Wrap.Content.DeBytes<RegisterModel>();
+                RegisterModel model = data.Wrap.Memory.DeBytes<RegisterModel>();
                 if (data.ServerType == ServerType.UDP)
                 {
                     if (clientRegisterCache.GetBySameGroup(model.GroupId, model.Name) == null)

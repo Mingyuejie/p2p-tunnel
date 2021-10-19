@@ -27,7 +27,7 @@ namespace client.service.plugins.punchHolePlugins
 
         public void Excute(PluginParamWrap data)
         {
-            PunchHoleModel model = data.Wrap.Content.DeBytes<PunchHoleModel>();
+            PunchHoleModel model = data.Wrap.Memory.DeBytes<PunchHoleModel>();
 
             if (data.ServerType == ServerType.TCP)
             {

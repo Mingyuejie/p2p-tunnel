@@ -16,7 +16,7 @@ namespace client.service.tcpforward
 
         public void Excute(PluginParamWrap arg)
         {
-            TcpForwardModel data = arg.Wrap.Content.DeBytes<TcpForwardModel>();
+            TcpForwardModel data = arg.Wrap.Memory.DeBytes<TcpForwardModel>();
             tcpForwardEventHandles.OnTcpForward(new OnTcpForwardEventArg
             {
                 Packet = arg,

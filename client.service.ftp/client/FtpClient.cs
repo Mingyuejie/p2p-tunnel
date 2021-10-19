@@ -211,7 +211,7 @@ namespace client.service.ftp.client
 
         public object Excute(PluginParamWrap data)
         {
-            FtpCommandBase cmd = ftpClient.ReadAttribute(data.Wrap.Content);
+            FtpCommandBase cmd = ftpClient.ReadAttribute(data.Wrap.Memory);
             //data.Wrap.Content = Array.Empty<byte>();
             FtpPluginParamWrap wrap = new FtpPluginParamWrap
             {

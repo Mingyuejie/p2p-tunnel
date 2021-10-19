@@ -16,12 +16,23 @@ namespace server.model
         public string Path { get; set; } = string.Empty;
         [ProtoMember(2), Key(2)]
         public long RequestId { get; set; } = 0;
+
+        /// <summary>
+        /// 写入数据用这个
+        /// </summary>
         [ProtoMember(3), Key(3)]
         public byte[] Content { get; set; } = Array.Empty<byte>();
         [ProtoMember(4, IsRequired = true), Key(4)]
         public ServerMessageTypes Type { get; set; } = ServerMessageTypes.REQUEST;
         [ProtoMember(5, IsRequired = true), Key(5)]
         public ServerMessageResponeCodes Code { get; set; } = ServerMessageResponeCodes.OK;
+
+        /// <summary>
+        /// 读取数据用这个
+        /// </summary>
+        [IgnoreMember, ProtoIgnore]
+        public Memory<byte> Memory { get; set; } = Array.Empty<byte>();
+
 
         public byte[] ToArray()
         {
@@ -74,7 +85,7 @@ namespace server.model
             Path = Encoding.ASCII.GetString(span.Slice(index, pathLength));
             index += pathLength;
 
-            Content = span.Slice(index, span.Length - index).ToArray();
+            Memory = new Memory<byte>(bytes, index, span.Length - index);
 
         }
     }

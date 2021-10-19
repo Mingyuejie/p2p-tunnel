@@ -16,7 +16,7 @@ namespace client.service.plugins.serverPlugins.clients
 
         public void Excute(PluginParamWrap model)
         {
-            ClientsModel res = model.Wrap.Content.DeBytes<ClientsModel>();
+            ClientsModel res = model.Wrap.Memory.DeBytes<ClientsModel>();
             clientsEventHandles.OnData.Push(new OnServerSendClientsEventArg
             {
                 Data = res,
