@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-04 00:32:20
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-04 00:35:25
+ * @LastEditTime: 2021-10-20 22:13:45
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\publish.md
@@ -14,9 +14,13 @@
 # 发布命令
 命令行进入项目目录 
 ```
-dotnet publish -c release -o ./publish-win -r win-x64
+dotnet publish 
 
-dotnet publish -c release -o ./publish-osx -r osx-x64
-
-dotnet publish -c release -o ./publish-linux -r linux-x64
+-c release                         配置
+-o ./publish-linux             输出目录
+-r linux-x64                     环境
+--self-contained=true          包含环境
+-p:PublishSingleFile=true    单文件（native dll 单独）
+-p:PublishTrimmed=true      剪裁未使用程序集
+-p:IncludeNativeLibrariesForSelfExtract=true  打包 native dll
 ```
