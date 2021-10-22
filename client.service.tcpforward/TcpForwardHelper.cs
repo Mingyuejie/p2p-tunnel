@@ -174,8 +174,6 @@ namespace client.service.tcpforward
                         FromId = arg.Data.FromID
                     };
                     IPEndPoint dnsEndPoint = new(Helper.GetDomainIp(arg.Data.TargetIp), arg.Data.TargetPort);
-
-                    //socket.Connect(dnsEndPoint);
                     socket.BeginConnect(dnsEndPoint, new AsyncCallback(Connect), new ConnectState
                     {
                         Client = client,
@@ -249,12 +247,12 @@ namespace client.service.tcpforward
                     try
                     {
                         var bytes = client.Stream.ReceiveAll();
-                        if (client.AliveType == TcpForwardAliveTypes.WEB && IsClose(bytes))
-                        {
-                            break;
-                        }
                         if (bytes.Length > 0)
                         {
+                            if (client.AliveType == TcpForwardAliveTypes.WEB && IsClose(bytes))
+                            {
+                                break;
+                            }
                             Receive(client, bytes);
                         }
                         else

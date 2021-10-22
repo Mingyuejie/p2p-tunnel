@@ -246,7 +246,6 @@ namespace client.service.tcpforward
 
         public void Fail(TcpForwardModel failModel, string body = "")
         {
-            Logger.Instance.Info($"{failModel.RequestId}");
             if (ClientCacheModel.Get(failModel.RequestId, out ClientCacheModel client) && client != null)
             {
                 if (failModel.AliveType == TcpForwardAliveTypes.WEB)
@@ -287,10 +286,6 @@ namespace client.service.tcpforward
                     Logger.Instance.Error(Encoding.UTF8.GetString(failModel.Buffer));
                 }
                 client.Remove();
-            }
-            else
-            {
-                Logger.Instance.Error("不存在");
             }
         }
 
