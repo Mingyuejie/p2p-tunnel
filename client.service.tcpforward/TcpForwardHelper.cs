@@ -108,7 +108,6 @@ namespace client.service.tcpforward
                     break;
             }
         }
-
         private void Request(OnTcpForwardEventArg arg)
         {
             if (!tcpForwardSettingModel.Enable)
@@ -205,7 +204,6 @@ namespace client.service.tcpforward
                 });
             }
         }
-
         private void Connect(IAsyncResult result)
         {
             var state = (ConnectState)result.AsyncState;
@@ -242,7 +240,6 @@ namespace client.service.tcpforward
                 });
             }
         }
-
         private void BindReceive(ClientModel client)
         {
             _ = Task.Run(() =>
@@ -252,7 +249,7 @@ namespace client.service.tcpforward
                     try
                     {
                         var bytes = client.Stream.ReceiveAll();
-                        if (IsClose(bytes))
+                        if (client.AliveType == TcpForwardAliveTypes.WEB && IsClose(bytes))
                         {
                             break;
                         }
@@ -273,7 +270,6 @@ namespace client.service.tcpforward
                 client.Remove();
             });
         }
-
         private void Receive(ClientModel client, byte[] data)
         {
             tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
@@ -369,12 +365,10 @@ namespace client.service.tcpforward
 
             return string.Empty;
         }
-
         public string Start(int id)
         {
             return Start(Mappings.FirstOrDefault(c => c.ID == id));
         }
-
         public string Start(TcpForwardRecordBaseModel model)
         {
             try
@@ -416,12 +410,10 @@ namespace client.service.tcpforward
                 Start(c);
             });
         }
-
         public void Stop(int id)
         {
             Stop(Mappings.FirstOrDefault(c => c.ID == id));
         }
-
         public void Stop(TcpForwardRecordBaseModel model)
         {
             tcpForwardServer.Stop(model.SourcePort);
@@ -470,7 +462,6 @@ namespace client.service.tcpforward
             }
         }
 
-
         private byte[] connectionBytes = Encoding.ASCII.GetBytes("Connection:");
         private byte[] closeBytes = Encoding.ASCII.GetBytes("close");
         private byte[] endBytes = Encoding.ASCII.GetBytes("\r\n");
@@ -490,7 +481,6 @@ namespace client.service.tcpforward
     public class ConfigFileModel
     {
         public ConfigFileModel() { }
-
         public List<TcpForwardRecordBaseModel> Mappings { get; set; } = new List<TcpForwardRecordBaseModel>();
     }
 
@@ -513,7 +503,6 @@ namespace client.service.tcpforward
         public int TargetPort { get; set; } = 0;
         public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.WEB;
         public NetworkStream Stream { get; set; }
-
         private readonly static ConcurrentDictionary<long, ClientModel> clients = new();
 
         public static bool Add(ClientModel model)

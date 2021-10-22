@@ -17,6 +17,7 @@ using client.service.wakeup;
 using common;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Threading;
 
 namespace client.service
 {
@@ -107,6 +108,8 @@ namespace client.service
             Logger.Instance.Warning("=======================================");
             Logger.Instance.Warning($"前端管理地址:http://{config.Web.BindIp}:{config.Web.Port}");
             Logger.Instance.Warning($"管理通信地址:ws://{config.Websocket.BindIp}:{config.Websocket.Port}");
+
+            ThreadPool.SetMaxThreads(65535, 65535);
         }
     }
 }

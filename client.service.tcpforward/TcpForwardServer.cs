@@ -60,7 +60,7 @@ namespace client.service.tcpforward
             int sourcePort = mapping.SourcePort;
             int targetPort = mapping.TargetPort;
             string targetIp = mapping.TargetIp;
-            ClientInfo targetClient = mapping.Client;
+            ClientInfo targetClient = mapping.Client ?? new ClientInfo { Name = mapping.TargetName };
             TcpForwardAliveTypes aliveType = mapping.AliveType;
 
             _ = Task.Factory.StartNew((e) =>
@@ -246,6 +246,7 @@ namespace client.service.tcpforward
 
         public void Fail(TcpForwardModel failModel, string body = "")
         {
+            Logger.Instance.Info($"{failModel.RequestId}");
             if (ClientCacheModel.Get(failModel.RequestId, out ClientCacheModel client) && client != null)
             {
                 if (failModel.AliveType == TcpForwardAliveTypes.WEB)
