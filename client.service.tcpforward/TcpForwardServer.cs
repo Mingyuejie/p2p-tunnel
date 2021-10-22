@@ -129,8 +129,7 @@ namespace client.service.tcpforward
 
         public void BindReceive(ClientModel2 client)
         {
-            
-            Task.Run(() =>
+            Task.Factory.StartNew(() =>
             {
                 while (client.Stream.CanRead && ClientCacheModel.Contains(client.RequestId))
                 {
@@ -154,7 +153,7 @@ namespace client.service.tcpforward
                     }
                 }
                 ClientCacheModel.Remove(client.RequestId);
-            });
+            },TaskCreationOptions.LongRunning);
         }
         private void Receive(ClientModel2 client, byte[] data)
         {

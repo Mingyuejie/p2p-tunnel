@@ -237,7 +237,7 @@ namespace server.service.plugins
                 {
                     try
                     {
-                        var bytes = client.Stream.ReceiveAll();
+                        byte[] bytes = client.Stream.ReceiveAll();
                         if (bytes.Length > 0)
                         {
                             Receive(client, bytes);
@@ -246,7 +246,6 @@ namespace server.service.plugins
                         {
                             ClientCacheModel.Remove(client.RequestId);
                         }
-
                     }
                     catch (Exception)
                     {
@@ -259,17 +258,15 @@ namespace server.service.plugins
         }
         private void Receive(ClientModel2 client, byte[] data)
         {
-            string targetIp = client.TargetIp;
-            int targetPort = client.TargetPort;
             //web的时候，根据请求的域名 指向不同的目标ip和端口，所以需要解析一下 request headers 拿到host
-            if (client.AliveType == ServerTcpForwardAliveTypes.WEB)
+            if (client.AliveType == ServerTcpForwardAliveTypes.WEB && client.TargetPort == 0)
             {
                 string host = GetHost(data);
                 if (client.WebForwards.ContainsKey(host))
                 {
                     var item = client.WebForwards[host];
-                    targetPort = item.TargetPort;
-                    targetIp = item.TargetIp;
+                    client.TargetPort = item.TargetPort;
+                    client.TargetIp = item.TargetIp;
                 }
             }
 
@@ -286,12 +283,12 @@ namespace server.service.plugins
                     RequestId = client.RequestId,
                     Buffer = data,
                     Type = ServerTcpForwardType.REQUEST,
-                    TargetPort = targetPort,
+                    TargetPort = client.TargetPort,
                     AliveType = client.AliveType,
-                    TargetIp = targetIp
+                    TargetIp = client.TargetIp
                 },
             };
-            if (targetPort == 0)
+            if (client.TargetPort == 0)
             {
                 Fail(model.Data, "未选择转发对象，或者未与转发对象建立连接");
                 return;
@@ -382,29 +379,17 @@ namespace server.service.plugins
         }
 
         private byte[] hostBytes = Encoding.ASCII.GetBytes("Host:");
+        private byte[] endBytes = Encoding.ASCII.GetBytes("\r\n");
         private string GetHost(byte[] bytes)
         {
-            int lastIndex = 0;
-            for (int i = 0; i < bytes.Length; i++)
+            Span<byte> span = bytes.AsSpan();
+            int index = span.IndexOf(hostBytes) + hostBytes.Length;
+            if (index < 0)
             {
-                if (bytes[i] == 10 && bytes[i - 1] == 13)
-                {
-                    if (bytes.Length - i >= hostBytes.Length)
-                    {
-                        if (Enumerable.SequenceEqual(bytes.Skip(lastIndex).Take(hostBytes.Length), hostBytes))
-                        {
-                            return Encoding.UTF8.GetString(bytes.Skip(lastIndex + hostBytes.Length + 1).Take(i - lastIndex - hostBytes.Length - 2).ToArray()).Split(':')[0];
-                        }
-                    }
-                    lastIndex = i + 1;
-                }
-                //头结束
-                if (bytes[i] == 10 && bytes[i - 1] == 13 && bytes[i - 2] == 10 && bytes[i - 3] == 13)
-                {
-                    break;
-                }
+                return string.Empty;
             }
-            return string.Empty;
+            int index2 = span.Slice(index).IndexOf(endBytes) + index;
+            return Encoding.UTF8.GetString(span.Slice(index + 1, index2 - (index + 1)));
         }
     }
 

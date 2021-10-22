@@ -146,9 +146,7 @@ namespace server
                             }
                             else
                             {
-                                byte[] bytes = new byte[length];
-                                Array.Copy(model.Buffer, 0, bytes, 0, bytes.Length);
-                                Receive(model, bytes);
+                                Receive(model, model.Buffer.AsSpan().Slice(0, length).ToArray());
                             }
                             _ = model.Socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
                         }
