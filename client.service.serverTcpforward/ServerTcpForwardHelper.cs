@@ -67,6 +67,12 @@ namespace client.service.serverTcpforward
 
         public void Request(ServerTcpForwardModel data)
         {
+            if (data.Type == ServerTcpForwardType.CLOSE)
+            {
+                ClientModel.Remove(data.RequestId);
+                return;
+            }
+
             if (!serverTcpForwardRegisterConfig.Enable)
             {
                 serverRequest.SendOnlyTcp(new SendTcpEventArg<ServerTcpForwardModel>

@@ -1,0 +1,10 @@
+﻿{
+  "Enable": false,
+
+  "Platform": {
+    "Name": "Aliyun",
+    "AccessKey": "accessKey",
+    "AccessSecret": "accessSecret",
+    "Domain": "test.com"
+  }
+}

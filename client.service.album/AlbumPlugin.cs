@@ -10,7 +10,7 @@ using System.Net;
 
 namespace client.service.album
 {
-    public class AlbumSettingPlugin : IClientServiceSettingPlugin, IClientServicePlugin
+    public class AlbumSettingPlugin : IClientServicePlugin, IClientServiceSettingPlugin
     {
         private readonly AlbumSettingModel albumSettingModel;
         private readonly TcpForwardHelper tcpForwardHelper;

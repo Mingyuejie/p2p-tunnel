@@ -109,6 +109,7 @@ namespace client.service.plugins.serverPlugins.clients
             {
                 client.Offline();
                 client.OfflineTcp();
+                OnTcpOffline.Push(client);
             }
         }
 

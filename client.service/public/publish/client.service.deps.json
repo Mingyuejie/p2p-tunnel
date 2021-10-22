@@ -12,6 +12,7 @@
           "client": "1.0.0",
           "client.service.album": "1.0.0",
           "client.service.cmd": "1.0.0",
+          "client.service.ddns": "1.0.0",
           "client.service.ftp": "1.0.0",
           "client.service.logger": "1.0.0",
           "client.service.serverTcpforward": "1.0.0",
@@ -408,6 +409,15 @@
           "client.service.cmd.dll": {}
         }
       },
+      "client.service.ddns/1.0.0": {
+        "dependencies": {
+          "client": "1.0.0",
+          "common": "1.0.0"
+        },
+        "runtime": {
+          "client.service.ddns.dll": {}
+        }
+      },
       "client.service.ftp/1.0.0": {
         "dependencies": {
           "client": "1.0.0",
@@ -761,6 +771,11 @@
       "sha512": ""
     },
     "client.service.cmd/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "client.service.ddns/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

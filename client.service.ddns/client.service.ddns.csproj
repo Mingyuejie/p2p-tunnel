@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="ddns-appsettings.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="ddns-appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\client\client.csproj" />
+    <ProjectReference Include="..\common\common.csproj" />
+  </ItemGroup>
+
+</Project>

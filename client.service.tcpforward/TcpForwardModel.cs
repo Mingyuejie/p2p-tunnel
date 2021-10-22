@@ -30,6 +30,9 @@ namespace client.service.tcpforward
 
         [ProtoMember(7), Key(7)]
         public byte Compress { get; set; } = 0;
+
+        [ProtoMember(8), Key(8)]
+        public long FromID { get; set; } = 0;
     }
 
 
@@ -37,7 +40,7 @@ namespace client.service.tcpforward
     [Flags]
     public enum TcpForwardType
     {
-        REQUEST, RESPONSE, FAIL, RESPONSE_END
+        REQUEST, RESPONSE, FAIL, RESPONSE_END,CLOSE
     }
 
     [ProtoContract, MessagePackObject]

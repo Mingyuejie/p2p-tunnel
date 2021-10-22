@@ -53,6 +53,11 @@ namespace client.service.tcpforward
                 }
             });
 
+            clientInfoCaching.OnTcpOffline.Sub((client) =>
+            {
+                ClientModel.ClearFromId(client.Id);
+            });
+
         }
         public void Start()
         {
@@ -91,6 +96,12 @@ namespace client.service.tcpforward
                 case TcpForwardType.REQUEST:
                     {
                         Request(arg);
+                    }
+                    break;
+                //关闭
+                case TcpForwardType.CLOSE:
+                    {
+                        ClientModel.Remove(arg.Data.RequestId);
                     }
                     break;
                 default:
@@ -152,6 +163,7 @@ namespace client.service.tcpforward
                 if (client == null)
                 {
                     Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
                     client = new ClientModel
                     {
                         RequestId = arg.Data.RequestId,
@@ -159,16 +171,19 @@ namespace client.service.tcpforward
                         TargetPort = arg.Data.TargetPort,
                         AliveType = arg.Data.AliveType,
                         TargetIp = arg.Data.TargetIp,
-                        SourceSocket = arg.Packet.TcpSocket
+                        SourceSocket = arg.Packet.TcpSocket,
+                        FromId = arg.Data.FromID
                     };
                     IPEndPoint dnsEndPoint = new(Helper.GetDomainIp(arg.Data.TargetIp), arg.Data.TargetPort);
+
+                    //socket.Connect(dnsEndPoint);
                     socket.BeginConnect(dnsEndPoint, new AsyncCallback(Connect), new ConnectState
                     {
                         Client = client,
                         Data = arg.Data.Buffer
                     });
                 }
-                if (client.TargetSocket.Connected)
+                else if (client.TargetSocket.Connected)
                 {
                     client.Stream.Write(arg.Data.Buffer);
                     client.Stream.Flush();
@@ -207,7 +222,6 @@ namespace client.service.tcpforward
                 {
                     state.Client.Stream.Write(state.Data);
                     state.Client.Stream.Flush();
-
                     state.Data = Array.Empty<byte>();
                 }
 
@@ -238,18 +252,21 @@ namespace client.service.tcpforward
                     try
                     {
                         var bytes = client.Stream.ReceiveAll();
+                        if (IsClose(bytes))
+                        {
+                            break;
+                        }
                         if (bytes.Length > 0)
                         {
                             Receive(client, bytes);
                         }
                         else
                         {
-                            client.Remove();
+                            break;
                         }
                     }
                     catch (Exception)
                     {
-                        client.Remove();
                         break;
                     }
                 }
@@ -324,7 +341,7 @@ namespace client.service.tcpforward
                 //    return "源端口已被其它程序占用";
                 //}
 
-                System.Threading.Interlocked.Increment(ref maxId);
+                Interlocked.Increment(ref maxId);
                 model.ID = maxId;
                 Mappings.Add(model);
             }
@@ -452,6 +469,22 @@ namespace client.service.tcpforward
                 return (ex.Message);
             }
         }
+
+
+        private byte[] connectionBytes = Encoding.ASCII.GetBytes("Connection:");
+        private byte[] closeBytes = Encoding.ASCII.GetBytes("close");
+        private byte[] endBytes = Encoding.ASCII.GetBytes("\r\n");
+        private bool IsClose(byte[] bytes)
+        {
+            Span<byte> span = bytes.AsSpan();
+            int index = span.IndexOf(connectionBytes) + connectionBytes.Length;
+            if (index < 0)
+            {
+                return false;
+            }
+            int index2 = span.Slice(index).IndexOf(endBytes) + index;
+            return span.Slice(index + 1, index2 - (index + 1)).SequenceEqual(closeBytes.AsSpan());
+        }
     }
 
     public class ConfigFileModel
@@ -471,6 +504,7 @@ namespace client.service.tcpforward
     public class ClientModel
     {
         public long RequestId { get; set; }
+        public long FromId { get; set; }
         public int SourcePort { get; set; } = 0;
         public Socket SourceSocket { get; set; }
         public Socket TargetSocket { get; set; }
@@ -519,6 +553,15 @@ namespace client.service.tcpforward
         public static void Clear(int sourcePort)
         {
             IEnumerable<long> requestIds = clients.Where(c => c.Value.SourcePort == sourcePort).Select(c => c.Key);
+            foreach (var requestId in requestIds)
+            {
+                Remove(requestId);
+            }
+        }
+
+        public static void ClearFromId(long id)
+        {
+            IEnumerable<long> requestIds = clients.Where(c => c.Value.FromId == id).Select(c => c.Key);
             foreach (var requestId in requestIds)
             {
                 Remove(requestId);

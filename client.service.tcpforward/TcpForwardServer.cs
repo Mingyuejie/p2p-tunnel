@@ -30,6 +30,7 @@ namespace client.service.tcpforward
 
         public void Start(TcpForwardRecordModel mapping)
         {
+
             if (ServerModel.Contains(mapping.SourcePort))
             {
                 return;
@@ -79,6 +80,7 @@ namespace client.service.tcpforward
                             SourcePort = sourcePort,
                             AcceptDone = server.AcceptDone
                         });
+                        _ = server.AcceptDone.WaitOne();
                     }
                     catch (Exception)
                     {
@@ -86,7 +88,6 @@ namespace client.service.tcpforward
                         server.Remove();
                         break;
                     }
-                    _ = server.AcceptDone.WaitOne();
                 }
             }, TaskCreationOptions.LongRunning, server.CancelToken.Token);
 
@@ -98,6 +99,7 @@ namespace client.service.tcpforward
             server.AcceptDone.Set();
             try
             {
+
                 Socket socket = server.SourceSocket.EndAccept(result);
                 _ = Interlocked.Increment(ref requestId);
 
@@ -123,13 +125,12 @@ namespace client.service.tcpforward
             }
             catch (Exception)
             {
-                Stop(server.SourcePort);
             }
         }
 
         public void BindReceive(ClientModel2 client)
         {
-            Task.Factory.StartNew(() =>
+            Task.Run(() =>
             {
                 while (client.Stream.CanRead && ClientCacheModel.Contains(client.RequestId))
                 {
@@ -142,35 +143,36 @@ namespace client.service.tcpforward
                         }
                         else
                         {
-                            ClientCacheModel.Remove(client.RequestId);
+                            break;
                         }
 
                     }
                     catch (Exception)
                     {
-                        ClientCacheModel.Remove(client.RequestId);
                         break;
                     }
                 }
                 ClientCacheModel.Remove(client.RequestId);
-            },TaskCreationOptions.LongRunning);
+                Socket socket = GetSocket(client);
+                OnRequest.Push(new TcpForwardRequestModel
+                {
+                    Msg = new TcpForwardModel
+                    {
+                        RequestId = client.RequestId,
+                        Buffer = Array.Empty<byte>(),
+                        Type = TcpForwardType.CLOSE,
+                        TargetPort = client.TargetPort,
+                        AliveType = client.AliveType,
+                        TargetIp = client.TargetIp
+                    },
+                    Socket = socket
+                });
+
+            });
         }
         private void Receive(ClientModel2 client, byte[] data)
         {
-            Socket socket = null;
-            if (client.TargetClient != null)
-            {
-                socket = client.TargetClient.Socket;
-                if (socket == null || !socket.Connected || client.TargetClient.Name != client.TargetClient.Name)
-                {
-                    client.TargetClient = clientInfoCaching.All().FirstOrDefault(c => c.Name == client.TargetClient.Name);
-                    if (client.TargetClient != null)
-                    {
-                        socket = client.TargetClient.Socket;
-                    }
-                }
-            }
-
+            Socket socket = GetSocket(client);
             OnRequest.Push(new TcpForwardRequestModel
             {
                 Msg = new TcpForwardModel
@@ -180,10 +182,31 @@ namespace client.service.tcpforward
                     Type = TcpForwardType.REQUEST,
                     TargetPort = client.TargetPort,
                     AliveType = client.AliveType,
-                    TargetIp = client.TargetIp
+                    TargetIp = client.TargetIp,
+                    FromID = client.TargetClient.Id
                 },
                 Socket = socket
             });
+        }
+
+        private Socket GetSocket(ClientModel2 client)
+        {
+
+            Socket socket = null;
+            if (client.TargetClient != null)
+            {
+                socket = client.TargetClient.Socket;
+                if (socket == null || !socket.Connected || client.TargetClient.Name != client.TargetClient.Name)
+                {
+                    var clientinfo = clientInfoCaching.All().FirstOrDefault(c => c.Name == client.TargetClient.Name);
+                    if (clientinfo != null)
+                    {
+                        client.TargetClient = clientinfo;
+                        socket = client.TargetClient.Socket;
+                    }
+                }
+            }
+            return socket;
         }
 
         public void StartAll(List<TcpForwardRecordBaseModel> mappings)
@@ -228,6 +251,16 @@ namespace client.service.tcpforward
                 if (failModel.AliveType == TcpForwardAliveTypes.WEB)
                 {
                     StringBuilder sb = new StringBuilder();
+                    byte[] bytes = Array.Empty<byte>();
+                    if (!string.IsNullOrWhiteSpace(body))
+                    {
+                        bytes = Encoding.UTF8.GetBytes(body);
+                    }
+                    else if (failModel.Buffer != null && failModel.Buffer.Length > 0)
+                    {
+                        bytes = failModel.Buffer;
+                    }
+
                     if (failModel.Buffer.IsOptionsMethod())
                     {
                         sb.Append("HTTP/1.1 204 No Content\r\n");
@@ -237,21 +270,15 @@ namespace client.service.tcpforward
                         sb.Append("HTTP/1.1 404 Not Found\r\n");
                     }
                     sb.Append("Content-Type: text/html;charset=utf-8\r\n");
+                    sb.Append($"Content-Length: {bytes.Length}\r\n");
                     sb.Append("Access-Control-Allow-Credentials: true\r\n");
+                    sb.Append("Connection: close\r\n");
                     sb.Append("Access-Control-Allow-Headers: *\r\n");
                     sb.Append("Access-Control-Allow-Methods: *\r\n");
                     sb.Append("Access-Control-Allow-Origin: *\r\n");
                     sb.Append("\r\n");
                     client.Stream.Write(Encoding.UTF8.GetBytes(sb.ToString()));
-
-                    if (!string.IsNullOrWhiteSpace(body))
-                    {
-                        client.Stream.Write(Encoding.UTF8.GetBytes(body));
-                    }
-                    else if (failModel.Buffer != null && failModel.Buffer.Length > 0)
-                    {
-                        client.Stream.Write(failModel.Buffer);
-                    }
+                    client.Stream.Write(bytes);
                     client.Stream.Flush();
                 }
                 else
@@ -259,6 +286,10 @@ namespace client.service.tcpforward
                     Logger.Instance.Error(Encoding.UTF8.GetString(failModel.Buffer));
                 }
                 client.Remove();
+            }
+            else
+            {
+                Logger.Instance.Error("不存在");
             }
         }
 
@@ -308,6 +339,7 @@ namespace client.service.tcpforward
     {
         public ClientInfo TargetClient { get; set; }
         public ManualResetEvent AcceptDone { get; set; }
+        public MyStopwatch Watch { get; set; }
     }
 
 
@@ -318,6 +350,8 @@ namespace client.service.tcpforward
         public int SourcePort { get; set; } = 0;
         public Socket Socket { get; set; }
         public long RequestId { get; set; }
+
+        public MyStopwatch Watch { get; set; }
 
         public NetworkStream Stream { get; set; }
 
@@ -363,6 +397,11 @@ namespace client.service.tcpforward
         public void Remove()
         {
             Remove(RequestId);
+        }
+
+        public static int Count()
+        {
+            return clients.Count;
         }
     }
     public class ServerModel

@@ -55,6 +55,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\client.service.album\client.service.album.csproj" />
 		<ProjectReference Include="..\client.service.cmd\client.service.cmd.csproj" />
+		<ProjectReference Include="..\client.service.ddns\client.service.ddns.csproj" />
 		<ProjectReference Include="..\client.service.ftp\client.service.ftp.csproj" />
 		<ProjectReference Include="..\client.service.logger\client.service.logger.csproj" />
 		<ProjectReference Include="..\client.service.serverTcpforward\client.service.serverTcpforward.csproj" />

@@ -87,6 +87,6 @@ namespace server.model
     [Flags]
     public enum ServerTcpForwardType
     {
-        REQUEST, RESPONSE, FAIL, RESPONSE_END
+        REQUEST, RESPONSE, FAIL, RESPONSE_END,CLOSE
     }
 }

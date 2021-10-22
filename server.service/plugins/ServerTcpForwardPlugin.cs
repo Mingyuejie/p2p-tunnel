@@ -254,6 +254,29 @@ namespace server.service.plugins
                     }
                 }
                 ClientCacheModel.Remove(client.RequestId);
+
+                var registerInfo = clientRegisterCache.Get(client.TargetClientId);
+                if (client.TargetPort != 0)
+                {
+                    SendMessageWrap<ServerTcpForwardModel> model = new SendMessageWrap<ServerTcpForwardModel>
+                    {
+                        Code = ServerMessageResponeCodes.OK,
+                        Path = "ServerTcpForward/excute",
+                        RequestId = client.RequestId,
+                        TcpCoket = registerInfo?.TcpSocket,
+                        Type = ServerMessageTypes.REQUEST,
+                        Data = new ServerTcpForwardModel
+                        {
+                            RequestId = client.RequestId,
+                            Buffer = Array.Empty<byte>(),
+                            Type = ServerTcpForwardType.CLOSE,
+                            TargetPort = client.TargetPort,
+                            AliveType = client.AliveType,
+                            TargetIp = client.TargetIp
+                        },
+                    };
+                    serverPluginHelper.SendOnlyTcp(model);
+                }
             });
         }
         private void Receive(ClientModel2 client, byte[] data)
@@ -290,12 +313,12 @@ namespace server.service.plugins
             };
             if (client.TargetPort == 0)
             {
-                Fail(model.Data, "未选择转发对象，或者未与转发对象建立连接");
+                Fail(model.Data, "未选择转发对象，或者未与转发对象建立连接1");
                 return;
             }
             if (client.SourceSocket == null || !client.SourceSocket.Connected)
             {
-                Fail(model.Data, "未选择转发对象，或者未与转发对象建立连接");
+                Fail(model.Data, "未选择转发对象，或者未与转发对象建立连接1");
                 return;
             }
             serverPluginHelper.SendOnlyTcp(model);
@@ -325,6 +348,17 @@ namespace server.service.plugins
                 if (failModel.AliveType == ServerTcpForwardAliveTypes.WEB)
                 {
                     StringBuilder sb = new StringBuilder();
+
+                    byte[] bytes = Array.Empty<byte>();
+                    if (!string.IsNullOrWhiteSpace(body))
+                    {
+                        bytes = Encoding.UTF8.GetBytes(body);
+                    }
+                    else if (failModel.Buffer != null && failModel.Buffer.Length > 0)
+                    {
+                        bytes = failModel.Buffer;
+                    }
+
                     if (failModel.Buffer.IsOptionsMethod())
                     {
                         sb.Append("HTTP/1.1 204 No Content\r\n");
@@ -334,21 +368,15 @@ namespace server.service.plugins
                         sb.Append("HTTP/1.1 404 Not Found\r\n");
                     }
                     sb.Append("Content-Type: text/html;charset=utf-8\r\n");
+                    sb.Append($"Content-Length: {bytes.Length}\r\n");
+                    sb.Append("Connection: close\r\n");
                     sb.Append("Access-Control-Allow-Credentials: true\r\n");
                     sb.Append("Access-Control-Allow-Headers: *\r\n");
                     sb.Append("Access-Control-Allow-Methods: *\r\n");
                     sb.Append("Access-Control-Allow-Origin: *\r\n");
                     sb.Append("\r\n");
                     client.Stream.Write(Encoding.UTF8.GetBytes(sb.ToString()));
-
-                    if (!string.IsNullOrWhiteSpace(body))
-                    {
-                        client.Stream.Write(Encoding.UTF8.GetBytes(body));
-                    }
-                    else if (failModel.Buffer != null && failModel.Buffer.Length > 0)
-                    {
-                        client.Stream.Write(failModel.Buffer);
-                    }
+                    client.Stream.Write(bytes);
                     client.Stream.Flush();
                 }
                 else

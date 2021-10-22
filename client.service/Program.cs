@@ -1,5 +1,7 @@
 ﻿using client.service.album;
 using client.service.cmd;
+using client.service.ddns;
+using client.service.ddns.client;
 using client.service.ftp;
 using client.service.ftp.server;
 using client.service.logger;
@@ -52,6 +54,7 @@ namespace client.service
                 typeof(CmdPlugin).Assembly,
                 typeof(LoggerPlugin).Assembly,
                 typeof(ServerTcpForwardPlugin).Assembly,
+                typeof(DdnsPlugin).Assembly,
             };
 
             serviceCollection
@@ -70,7 +73,8 @@ namespace client.service
                 .AddCmdPlugin() //远程命令
                 .AddLoggerPlugin() //日志
                 .AddServerTcpForwardPlugin()//服务器TCP转发
-                ;
+                .AddDdnsPlugin();
+            ;
 
 
             serviceProvider = serviceCollection.BuildServiceProvider();
@@ -89,7 +93,8 @@ namespace client.service
                 .UseUpnpPlugin()//upnp映射
                 .UseFtpPlugin() //文件服务
                 .UseCmdPlugin() //远程命令
-                .UseServerTcpForwardPlugin();//服务器TCP转发
+                .UseServerTcpForwardPlugin()//服务器TCP转发
+                .UseDdnsPlugin()
                ;
             //自动注册
             if (config.Client.AutoReg)
