@@ -249,10 +249,10 @@ namespace client.service.tcpforward
                         var bytes = client.Stream.ReceiveAll();
                         if (bytes.Length > 0)
                         {
-                            if (client.AliveType == TcpForwardAliveTypes.WEB && IsClose(bytes))
-                            {
-                                break;
-                            }
+                            //if (client.AliveType == TcpForwardAliveTypes.WEB && IsClose(bytes))
+                            //{
+                            //    break;
+                            //}
                             Receive(client, bytes);
                         }
                         else
@@ -502,6 +502,11 @@ namespace client.service.tcpforward
         public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.WEB;
         public NetworkStream Stream { get; set; }
         private readonly static ConcurrentDictionary<long, ClientModel> clients = new();
+
+        public static IEnumerable<long> Ids()
+        {
+            return clients.Keys;
+        }
 
         public static bool Add(ClientModel model)
         {

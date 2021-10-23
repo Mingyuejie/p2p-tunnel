@@ -351,6 +351,11 @@ namespace client.service.tcpforward
 
         public NetworkStream Stream { get; set; }
 
+        public static IEnumerable<long> Ids()
+        {
+            return clients.Keys;
+        }
+
         public static bool Add(ClientCacheModel model)
         {
             return clients.TryAdd(model.RequestId, model);
