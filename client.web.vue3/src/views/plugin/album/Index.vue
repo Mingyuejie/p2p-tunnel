@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-24 10:29:45
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-30 18:45:46
+ * @LastEditTime: 2021-10-23 21:13:01
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\album\Index.vue
@@ -15,13 +15,13 @@
                 </el-option>
             </el-select>
             <span class="split"></span>
-            <SettingModal className="AlbumSettingPlugin" @success="loadClients">
-                <el-button size="mini">配置插件</el-button>
-            </SettingModal>
-            <span class="split"></span>
             <el-button size="mini" @click="loadClients" :loading="loading">刷新目标</el-button>
             <div class="flex-1"></div>
             <el-button type="warning" size="mini" @click="handleVerify" :loading="loading">管理验证</el-button>
+            <span class="split"></span>
+            <SettingModal className="AlbumSettingPlugin" @success="loadClients">
+                <el-button size="mini">配置插件</el-button>
+            </SettingModal>
         </div>
         <div class="body flex-1 scrollbar">
             <Categorys v-if="category == null"></Categorys>
@@ -37,7 +37,7 @@ import { reactive, toRefs } from '@vue/reactivity'
 import { loadSetting } from '../../../apis/plugins/album'
 import Axios from '../../../apis/axios'
 import { onMounted, provide } from '@vue/runtime-core'
-import SettingModal from '../SettingModal.vue'
+import SettingModal from '../setting/SettingModal.vue'
 import Categorys from './Categorys.vue'
 import Album from './Album.vue'
 import { ElMessageBox, ElMessage } from 'element-plus'

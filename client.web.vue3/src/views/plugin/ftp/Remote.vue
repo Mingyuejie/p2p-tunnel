@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-26 19:51:49
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-18 21:24:24
+ * @LastEditTime: 2021-10-23 21:13:35
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ftp\Remote.vue
@@ -10,10 +10,6 @@
 <template>
     <div class="flex flex-column h-100">
         <div class="head flex flex-nowrap">
-            <SettingModal className="FtpSettingPlugin">
-                <el-button size="mini">配置插件</el-button>
-            </SettingModal>
-            <span class="split"></span>
             <el-select v-model="clientId" placeholder="请选择已连接的目标客户端" @change="handleClientChange" size="mini">
                 <template v-for="client in clients" :key="client.Id">
                     <el-option :label="client.Name" :value="client.Id">
@@ -23,6 +19,10 @@
             <span class="split"></span>
             <el-button size="mini" :loading="loading" @click="getFiles('')">刷新列表</el-button>
             <el-button size="mini" :loading="loading" @click="showCmd = true">执行命令</el-button>
+            <span class="split"></span>
+            <SettingModal className="FtpSettingPlugin">
+                <el-button size="mini">配置插件</el-button>
+            </SettingModal>
         </div>
         <div class="body flex-1 relative">
             <div class="absolute">
@@ -54,7 +54,7 @@ import FileTree from './FileTree.vue'
 import ContextMenu from './ContextMenu.vue'
 import { ElMessageBox } from 'element-plus'
 import { injectClients } from '../../../states/clients'
-import SettingModal from '../SettingModal.vue'
+import SettingModal from '../setting/SettingModal.vue'
 import { injectFilesData } from './list-share-data'
 import { pushListener } from '../../../apis/request'
 import { injectCmd } from '../../../states/cmd'

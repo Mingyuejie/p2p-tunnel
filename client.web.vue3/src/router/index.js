@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-16 00:56:07
+ * @LastEditTime: 2021-10-23 21:05:07
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\router\index.js
@@ -30,7 +30,7 @@ const routes = [
             {
                 path: '/plugin-setting.html',
                 name: 'PluginSetting',
-                component: () => import('../views/plugin/Setting.vue'),
+                component: () => import('../views/plugin/setting/Setting.vue'),
                 meta: { name: '插件配置' }
             },
             {
@@ -74,6 +74,12 @@ const routes = [
                 name: 'PluginWakeUp',
                 component: () => import('../views/plugin/WakeUp.vue'),
                 meta: { name: '幻数据包' }
+            },
+            {
+                path: '/plugin-ddns.html',
+                name: 'PluginDdns',
+                component: () => import('../views/plugin/ddns/Index.vue'),
+                meta: { name: '域名解析' }
             },
         ]
     },

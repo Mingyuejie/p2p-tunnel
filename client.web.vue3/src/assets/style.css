@@ -28,6 +28,10 @@ body{
 }
 
 span.split{width: 0.6rem;}
+span.split-pad{padding:0 0.3rem;}
+span.split-pad10{padding:0 1rem;}
+.middle{vertical-align: middle;}
+.red{color: red;}
 
 :root{
     --main-color:#409EFF;

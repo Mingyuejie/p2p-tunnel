@@ -2,10 +2,10 @@
  * @Author: snltty
  * @Date: 2021-09-24 14:36:58
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-12 15:46:32
+ * @LastEditTime: 2021-10-23 21:04:37
  * @version: v1.0.0
  * @Descripttion: 功能说明
- * @FilePath: \client.web.vue3\src\views\plugin\SettingModal.vue
+ * @FilePath: \client.web.vue3\src\views\plugin\setting\SettingModal.vue
 -->
 <template>
     <span @click="handleEdit">
@@ -28,7 +28,7 @@
 
 <script>
 import { toRefs, reactive, ref } from '@vue/reactivity';
-import { loadSetting, saveSetting } from '../../apis/plugins/setting'
+import { loadSetting, saveSetting } from '../../../apis/plugins/setting'
 import { ElMessage } from 'element-plus'
 import { nextTick } from '@vue/runtime-core';
 import JSONEditor from 'jsoneditor'

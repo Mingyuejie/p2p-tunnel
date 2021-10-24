@@ -2,10 +2,10 @@
  * @Author: snltty
  * @Date: 2021-10-08 09:11:34
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-08 09:34:52
+ * @LastEditTime: 2021-10-23 21:04:32
  * @version: v1.0.0
  * @Descripttion: 功能说明
- * @FilePath: \client.web.vue3\src\views\plugin\Setting.vue
+ * @FilePath: \client.web.vue3\src\views\plugin\setting\Setting.vue
 -->
 <template>
     <div class="plugin-setting-wrap">
@@ -33,7 +33,7 @@
 </template>
 <script>
 import { reactive, ref, toRefs } from '@vue/reactivity'
-import { getPlugins, sendEnable } from '../../apis/plugins/setting'
+import { getPlugins, sendEnable } from '../../../apis/plugins/setting'
 import SettingModal from './SettingModal.vue'
 export default {
     components: { SettingModal },

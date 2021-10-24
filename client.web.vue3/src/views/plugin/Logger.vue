@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-10-02 14:16:32
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-02 14:54:26
+ * @LastEditTime: 2021-10-23 21:12:00
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\Logger.vue
@@ -10,10 +10,6 @@
 <template>
     <div class="logger-setting-wrap flex flex-column h-100">
         <div class="head flex">
-            <SettingModal className="LoggerSettingPlugin">
-                <el-button size="mini">配置插件</el-button>
-            </SettingModal>
-            <span class="split"></span>
             <el-select v-model="Type" size="mini" @change="loadData">
                 <el-option :value="-1" label="全部"></el-option>
                 <el-option :value="0" label="debug"></el-option>
@@ -24,6 +20,10 @@
             <span class="split"></span>
             <el-button size="mini" :loading="loading" @click="loadData">刷新列表</el-button>
             <el-button type="warning" size="mini" :loading="loading" @click="clearData">清空</el-button>
+            <span class="flex-1"></span>
+            <SettingModal className="LoggerSettingPlugin">
+                <el-button size="mini">配置插件</el-button>
+            </SettingModal>
         </div>
         <div class="body flex-1 relative">
             <div class="absolute">
@@ -49,7 +49,7 @@
 <script>
 import { reactive, toRefs } from '@vue/reactivity'
 import { getLoggers, clearLoggers } from '../../apis/plugins/logger'
-import SettingModal from './SettingModal.vue'
+import SettingModal from './setting/SettingModal.vue'
 import { onMounted } from '@vue/runtime-core'
 export default {
     components: { SettingModal },

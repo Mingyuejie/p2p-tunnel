@@ -51,7 +51,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "client.service.logger", "cl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "client.service.serverTcpforward", "client.service.serverTcpforward\client.service.serverTcpforward.csproj", "{D0DA73F7-B3C8-4E1A-A02A-F3D80AD8679A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "client.service.ddns", "client.service.ddns\client.service.ddns.csproj", "{5220533C-32FF-46F2-AB3E-6FE5653DF1C0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "client.service.ddns", "client.service.ddns\client.service.ddns.csproj", "{5220533C-32FF-46F2-AB3E-6FE5653DF1C0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

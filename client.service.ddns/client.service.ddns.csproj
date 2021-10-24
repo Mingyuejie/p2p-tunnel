@@ -19,4 +19,15 @@
     <ProjectReference Include="..\common\common.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="aliyun\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AlibabaCloud.EndpointUtil" Version="0.1.1" />
+    <PackageReference Include="AlibabaCloud.OpenApiClient" Version="0.0.15" />
+    <PackageReference Include="AlibabaCloud.TeaUtil" Version="0.1.11" />
+    <PackageReference Include="Tea" Version="1.0.11" />
+  </ItemGroup>
+
 </Project>

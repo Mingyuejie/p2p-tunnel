@@ -1,10 +1,29 @@
 ﻿{
   "Enable": false,
-
-  "Platform": {
-    "Name": "Aliyun",
-    "AccessKey": "accessKey",
-    "AccessSecret": "accessSecret",
-    "Domain": "test.com"
-  }
+  "Interval": 1000,
+  "Platforms": [
+    {
+      "Name": "Aliyun",
+      "Groups": [
+        {
+          "Name": "默认分组",
+          "Key": "Fjq6aos2jmfhPyCj",
+          "Secret": "FFVNuc1K968zErOsNHT53cClBdOtTd",
+          "AutoUpdate": true,
+          "Domains": [
+            {
+              "Domain": "snltty.com",
+              "RRS": [],
+              "AutoUpdate": false
+            },
+            {
+              "Domain": "snltty1.com",
+              "RRS": [],
+              "AutoUpdate": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

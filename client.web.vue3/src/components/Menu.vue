@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-16 00:49:18
+ * @LastEditTime: 2021-10-23 20:56:35
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -17,68 +17,28 @@
             <router-link :to="{name:'Register'}">注册服务 <i class="el-icon-circle-check" :class="{active:LocalInfo.TcpConnected}"></i></router-link>
             <router-link :to="{name:'PluginSetting'}">插件配置</router-link>
             <el-dropdown>
-                <span class="el-dropdown-link">应用插件 <i class="el-icon-arrow-down el-icon--right"></i></span>
+                <span class="el-dropdown-link">
+                    <span>应用插件</span>
+                    <span>{{routeName}}</span>
+                    <i class="el-icon-arrow-down el-icon--right"></i>
+                </span>
                 <template #dropdown>
                     <el-dropdown-menu>
                         <template v-if="websocketState.connected">
-                            <auth-item name="TcpForwardPlugin">
-                                <el-dropdown-item>
-                                    <router-link :to="{name:'PluginTcpForward'}">TCP转发 <i class="el-icon-circle-check" :class="{active:tcpForwardConnected}"></i></router-link>
-                                </el-dropdown-item>
-                            </auth-item>
-                            <auth-item name="AlbumSettingPlugin">
-                                <el-dropdown-item>
-                                    <router-link :to="{name:'PluginAlbum'}">图片相册</router-link>
-                                </el-dropdown-item>
-                            </auth-item>
-                            <auth-item name="FtpPlugin">
-                                <el-dropdown-item>
-                                    <router-link :to="{name:'PluginFtp'}">文件服务</router-link>
-                                </el-dropdown-item>
-                            </auth-item>
-                            <auth-item name="CmdsPlugin">
-                                <el-dropdown-item>
-                                    <router-link :to="{name:'PluginCmd'}">远程命令</router-link>
-                                </el-dropdown-item>
-                            </auth-item>
-                            <auth-item name="UpnpPlugin">
-                                <el-dropdown-item>
-                                    <router-link :to="{name:'PluginUPNP'}">UPNP映射</router-link>
-                                </el-dropdown-item>
-                            </auth-item>
-                            <auth-item name="WakeUpPlugin">
-                                <el-dropdown-item>
-                                    <router-link :to="{name:'PluginWakeUp'}">幻数据包</router-link>
-                                </el-dropdown-item>
-                            </auth-item>
-                            <auth-item name="LoggerPlugin">
-                                <el-dropdown-item>
-                                    <router-link :to="{name:'PluginLogger'}">日志信息</router-link>
-                                </el-dropdown-item>
-                            </auth-item>
+                            <template v-for="(item,index) in menus" :key="index">
+                                <auth-item name="TcpForwardPlugin">
+                                    <el-dropdown-item>
+                                        <router-link :to="{name:item.name}">{{item.text}}</router-link>
+                                    </el-dropdown-item>
+                                </auth-item>
+                            </template>
                         </template>
                         <template v-else>
-                            <el-dropdown-item>
-                                <router-link :to="{name:'PluginTcpForward'}" class="disabled">TCP转发</router-link>
-                            </el-dropdown-item>
-                            <el-dropdown-item>
-                                <router-link :to="{name:'PluginAlbum'}" class="disabled">图片相册</router-link>
-                            </el-dropdown-item>
-                            <el-dropdown-item>
-                                <router-link :to="{name:'PluginFtp'}" class="disabled">文件服务</router-link>
-                            </el-dropdown-item>
-                            <el-dropdown-item>
-                                <router-link :to="{name:'PluginCmd'}" class="disabled">远程命令</router-link>
-                            </el-dropdown-item>
-                            <el-dropdown-item>
-                                <router-link :to="{name:'PluginUPNP'}" class="disabled">UPNP映射</router-link>
-                            </el-dropdown-item>
-                            <el-dropdown-item>
-                                <router-link :to="{name:'PluginWakeUp'}" class="disabled">幻数据包</router-link>
-                            </el-dropdown-item>
-                            <el-dropdown-item>
-                                <router-link :to="{name:'PluginLogger'}" class="disabled">日志信息</router-link>
-                            </el-dropdown-item>
+                            <template v-for="(item,index) in menus" :key="index">
+                                <el-dropdown-item>
+                                    <router-link :to="{name:item.name}" class="disabled">{{item.text}}</router-link>
+                                </el-dropdown-item>
+                            </template>
                         </template>
                     </el-dropdown-menu>
                 </template>
@@ -97,10 +57,9 @@ import { injectRegister } from '../states/register'
 import { injectWebsocket } from '../states/websocket'
 import { injectTcpForward } from '../states/tcpForward'
 import { injectFileserver } from '../states/fileserver'
-import { subNotifyMsg } from '../apis/request'
-import { ElNotification } from 'element-plus'
 import Theme from './Theme.vue'
 import AuthItem from './auth/AuthItem.vue';
+import { useRoute } from 'vue-router'
 export default {
     components: { Theme, AuthItem },
     setup () {
@@ -114,22 +73,30 @@ export default {
         const fileserverState = injectFileserver();
         const fileServerStarted = computed(() => fileserverState.IsStart);
 
-        subNotifyMsg('system/version', (json) => {
-            let localVersion = json.Local.split('\r\n')[0];
-            let remoteVersion = json.Remote.split('\n')[0];
-            if (localVersion != remoteVersion && remoteVersion.length > 0) {
-                ElNotification({
-                    title: '新信息',
-                    dangerouslyUseHTMLString: true,
-                    message: `<ul><li>${json.Remote.split('\r\n').slice(1).join('</li><li>')}</li></ul>`,
-                    type: 'warning',
-                    duration: 0
-                });
+        const route = useRoute();
+        const routeName = computed(() => {
+            if (route.matched.length > 0 && route.matched[0].name == 'Pugins') {
+                return `-${route.meta.name}`;
             }
+            return '';
         });
 
+        const menus = [
+            { name: 'PluginTcpForward', text: 'TCP转发', plugin: 'TcpForwardPlugin' },
+            { name: 'PluginAlbum', text: '图片相册', plugin: 'AlbumSettingPlugin' },
+            { name: 'PluginFtp', text: '文件服务', plugin: 'FtpPlugin' },
+            { name: 'PluginFtp', text: '远程命令', plugin: 'CmdsPlugin' },
+            { name: 'PluginUPNP', text: 'UPNP映射', plugin: 'UpnpPlugin' },
+            { name: 'PluginDdns', text: '域名解析', plugin: 'DdnsPlugin' },
+            { name: 'PluginWakeUp', text: '幻数据包', plugin: 'WakeUpPlugin' },
+            { name: 'PluginLogger', text: '日志信息', plugin: 'LoggerPlugin' }
+        ];
+
+
         return {
-            ...toRefs(registerState), websocketState, connectStr, tcpForwardConnected, fileServerStarted
+            ...toRefs(registerState),
+            websocketState, connectStr, tcpForwardConnected, fileServerStarted,
+            routeName, menus
         }
     }
 }
