@@ -1,4 +1,4 @@
-﻿{
+{
   "Enable": false,
   "Interval": 1000,
   "Platforms": [
@@ -7,8 +7,8 @@
       "Groups": [
         {
           "Name": "默认分组",
-          "Key": "Fjq6aos2jmfhPyCj",
-          "Secret": "FFVNuc1K968zErOsNHT53cClBdOtTd",
+          "Key": "",
+          "Secret": "",
           "AutoUpdate": true,
           "Domains": [
             {
