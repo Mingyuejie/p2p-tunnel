@@ -35,11 +35,11 @@ namespace client.service.ddns.platform
         /// <returns></returns>
         bool UpdateDomainRecord(UpdateDomainRecordModel model, string domain);
         /// <summary>
-        /// 设置解析状态
+        /// 切换解析状态
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        bool SetDomainRecordStatus(SetDomainRecordStatusModel model, string domain);
+        bool SwitchDomainRecordStatus(SetDomainRecordStatusModel model, string domain);
         /// <summary>
         /// 更新解析备注
         /// </summary>
@@ -57,7 +57,7 @@ namespace client.service.ddns.platform
     {
         public string DomainName { get; set; }
         public string RR { get; set; }
-        public RecordType Type { get; set; }
+        public string Type { get; set; }
         public string Value { get; set; }
         public long TTL { get; set; }
         public long Priority { get; set; }
@@ -76,7 +76,7 @@ namespace client.service.ddns.platform
     {
         public string RecordId { get; set; }
         public string RR { get; set; }
-        public RecordType Type { get; set; }
+        public string Type { get; set; }
         public string Value { get; set; }
         public long TTL { get; set; }
         public long Priority { get; set; }

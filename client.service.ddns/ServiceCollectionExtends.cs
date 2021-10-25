@@ -3,11 +3,14 @@ using client.service.ddns.platform;
 using common;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace client.service.ddns
 {
@@ -82,6 +85,7 @@ namespace client.service.ddns
     public class DomainInfo
     {
         public string Domain { get; set; } = string.Empty;
+        public List<string> Records { get; set; } = new List<string>();
         public bool AutoUpdate { get; set; } = false;
     }
 }

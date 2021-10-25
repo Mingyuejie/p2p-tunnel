@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-10-23 21:16:42
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-24 19:58:39
+ * @LastEditTime: 2021-10-25 11:32:37
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ddns\Domains.vue
@@ -17,7 +17,7 @@
             <template v-for="(platform,index) in shareData.platforms" :key="index">
                 <el-option-group v-for="group in platform.Groups" :key="group.key" :label="platform.Name">
                     <el-option :value="group" :label="group.key">
-                        <el-popover placement="bottom-end" title="啥意思" trigger="hover" content="当IP变化时，自动更新此平台下所有域名解析">
+                        <el-popover placement="bottom-end" title="啥意思" trigger="hover" content="当IP变化时，自动更新此平台下域名">
                             <template #reference>
                                 <el-switch :loading="group.loading" v-model="group.AutoUpdate" @click.stop @change="handleGroupAutoUpdateChange(group)" />
                             </template>
@@ -36,7 +36,7 @@
             </template>
             <template v-for="(item,index) in shareData.group.Domains" :key="index">
                 <el-option :value="item" :label="item.Domain">
-                    <el-popover placement="bottom-end" title="啥意思" trigger="hover" content="当IP变化时，自动更新此平台下所有域名解析">
+                    <el-popover placement="bottom-end" title="啥意思" trigger="hover" content="当IP变化时，自动更新此域名下的解析">
                         <template #reference>
                             <el-switch :loading="item.loading" v-model="item.AutoUpdate" @click.stop @change="handleDomainAutoUpdateChange(item)" />
                         </template>

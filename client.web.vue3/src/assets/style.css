@@ -3,7 +3,7 @@
     padding: 0;
     list-style: none;
 }
-a{text-decoration: none;}
+a{text-decoration: none;color: #6f9ccd;}
 
 .flex {display: flex;display: -webkit-flex;display: -ms-flex;display: -o-flex;flex-wrap: wrap;}
 .flex-nowrap {flex-wrap: nowrap;} 

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-10-23 20:36:48
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-24 19:59:13
+ * @LastEditTime: 2021-10-25 09:47:49
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ddns\Index.vue
@@ -12,7 +12,6 @@
         <div class="head flex">
             <Domains></Domains>
             <span class="split"></span>
-            <el-button size="mini">刷新列表</el-button>
             <span class="flex-1"></span>
             <SettingModal className="DdnsSettingPlugin">
                 <el-button size="mini">配置插件</el-button>

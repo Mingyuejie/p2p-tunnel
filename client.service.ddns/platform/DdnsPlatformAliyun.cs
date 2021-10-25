@@ -17,6 +17,10 @@ namespace client.service.ddns.platform
 
         public bool AddDomainRecord(AddDomainRecordModel model, string domain)
         {
+            if (model.Priority < 1 || model.Priority > 50)
+            {
+                model.Priority = 1;
+            }
             AddDomainRecordRequest request = new AddDomainRecordRequest
             {
                 DomainName = model.DomainName,
@@ -24,13 +28,31 @@ namespace client.service.ddns.platform
                 Priority = model.Priority,
                 RR = model.RR,
                 TTL = model.TTL,
-                Type = model.Type.ToString(),
+                Type = model.Type,
                 Value = model.Value
             };
             var response = GetClient(domain).AddDomainRecord(request);
             return true;
         }
-
+        public bool UpdateDomainRecord(UpdateDomainRecordModel model, string domain)
+        {
+            if (model.Priority < 1 || model.Priority > 50)
+            {
+                model.Priority = 1;
+            }
+            UpdateDomainRecordRequest request = new UpdateDomainRecordRequest
+            {
+                RecordId = model.RecordId,
+                Line = model.Line,
+                Priority = model.Priority,
+                RR = model.RR,
+                TTL = model.TTL,
+                Type = model.Type,
+                Value = model.Value
+            };
+            var response = GetClient(domain).UpdateDomainRecord(request);
+            return true;
+        }
         public bool DeleteDomainRecord(DeleteDomainRecordModel model, string domain)
         {
             DeleteDomainRecordRequest request = new DeleteDomainRecordRequest
@@ -78,7 +100,7 @@ namespace client.service.ddns.platform
 
             };
             var response = GetClient(domain).DescribeSupportLines(request);
-            return response.Body.RecordLines.RecordLine.Select(c => new DescribeSupportLine
+            return response.Body.RecordLines.RecordLine.Take(10).Select(c => new DescribeSupportLine
             {
                 FatherCode = c.FatherCode,
                 LineCode = c.LineCode,
@@ -87,30 +109,19 @@ namespace client.service.ddns.platform
             });
         }
 
-        public bool SetDomainRecordStatus(SetDomainRecordStatusModel model, string domain)
+        private Dictionary<string, string> RecordStatusSwitchMap = new Dictionary<string, string>
+        {
+            {"ENABLE","DISABLE" },
+            {"DISABLE","ENABLE" },
+        };
+        public bool SwitchDomainRecordStatus(SetDomainRecordStatusModel model, string domain)
         {
             SetDomainRecordStatusRequest request = new SetDomainRecordStatusRequest
             {
                 RecordId = model.RecordId,
-                Status = model.Status
+                Status = RecordStatusSwitchMap[model.Status]
             };
             var response = GetClient(domain).SetDomainRecordStatus(request);
-            return true;
-        }
-
-        public bool UpdateDomainRecord(UpdateDomainRecordModel model, string domain)
-        {
-            UpdateDomainRecordRequest request = new UpdateDomainRecordRequest
-            {
-                RecordId = model.RecordId,
-                Line = model.Line,
-                Priority = model.Priority,
-                RR = model.RR,
-                TTL = model.TTL,
-                Type = model.Type.ToString(),
-                Value = model.Value
-            };
-            var response = GetClient(domain).UpdateDomainRecord(request);
             return true;
         }
 

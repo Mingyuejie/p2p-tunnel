@@ -1,6 +1,6 @@
 {
   "Enable": false,
-  "Interval": 1000,
+  "Interval": 60000,
   "Platforms": [
     {
       "Name": "Aliyun",
@@ -9,16 +9,11 @@
           "Name": "默认分组",
           "Key": "",
           "Secret": "",
-          "AutoUpdate": true,
+          "AutoUpdate": false,
           "Domains": [
             {
               "Domain": "snltty.com",
-              "RRS": [],
-              "AutoUpdate": false
-            },
-            {
-              "Domain": "snltty1.com",
-              "RRS": [],
+              "Records": [],
               "AutoUpdate": false
             }
           ]
