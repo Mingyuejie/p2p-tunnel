@@ -11,46 +11,68 @@ namespace client.service.ddns.platform
         string Platform { get; }
 
         /// <summary>
+        /// 域名列表
+        /// </summary>
+        /// <param name="group">本地分组</param>
+        /// <returns></returns>
+        DescribeDomains DescribeDomains(DescribeDomainsParam model,string group);
+        /// <summary>
+        /// 添加域名
+        /// </summary>
+        /// <param name="group">本地分组</param>
+        /// <param name="domain">顶级域名</param>
+        /// <returns></returns>
+        public bool AddDomain(string group, string domain);
+
+        /// <summary>
+        /// 删除域名
+        /// </summary>
+        /// <param name="group">本地分组</param>
+        /// <param name="domain">顶级域名</param>
+        /// <returns></returns>
+        public bool DeleteDomain(string group, string domain);
+
+        /// <summary>
         /// 解析列表
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        DescribeDomainRecord DescribeDomainRecords(DescribeDomainRecordsModel model, string domain);
+        DescribeDomainRecord DescribeDomainRecords(DescribeDomainRecordsModel model, string group);
         /// <summary>
         /// 添加解析
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        bool AddDomainRecord(AddDomainRecordModel model, string domain);
+        bool AddDomainRecord(AddDomainRecordModel model, string group);
         /// <summary>
         /// 删除解析
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        bool DeleteDomainRecord(DeleteDomainRecordModel model, string domain);
+        bool DeleteDomainRecord(DeleteDomainRecordModel model, string group);
         /// <summary>
         /// 更新解析
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        bool UpdateDomainRecord(UpdateDomainRecordModel model, string domain);
+        bool UpdateDomainRecord(UpdateDomainRecordModel model, string group);
         /// <summary>
         /// 切换解析状态
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        bool SwitchDomainRecordStatus(SetDomainRecordStatusModel model, string domain);
+        bool SwitchDomainRecordStatus(SetDomainRecordStatusModel model, string group);
         /// <summary>
         /// 更新解析备注
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        bool UpdateDomainRecordRemark(UpdateDomainRecordRemarkModel model, string domain);
+        bool UpdateDomainRecordRemark(UpdateDomainRecordRemarkModel model, string group);
         /// <summary>
         /// 获取解析线路
         /// </summary>
         /// <returns></returns>
-        IEnumerable<DescribeSupportLine> DescribeSupportLines(string domain);
+        IEnumerable<DescribeSupportLine> DescribeSupportLines(string group, string domain);
     }
 
     public class AddDomainRecordModel
@@ -71,10 +93,12 @@ namespace client.service.ddns.platform
     public class DeleteDomainRecordModel
     {
         public string RecordId { get; set; }
+        public string Domain { get; set; }
     }
     public class UpdateDomainRecordModel
     {
         public string RecordId { get; set; }
+        public string Domain { get; set; }
         public string RR { get; set; }
         public string Type { get; set; }
         public string Value { get; set; }
@@ -90,6 +114,7 @@ namespace client.service.ddns.platform
     public class SetDomainRecordStatusModel
     {
         public string RecordId { get; set; }
+        public string Domain { get; set; }
         public string Status { get; set; } //Enable  //Disable
     }
 
@@ -104,13 +129,16 @@ namespace client.service.ddns.platform
     public class UpdateDomainRecordRemarkModel
     {
         public string RecordId { get; set; }
+        public string Domain { get; set; }
         public string Remark { get; set; }
     }
+
 
     public class DescribeDomainRecordsModel
     {
         public string DomainName { get; set; }
-        public int PageSize { get; set; } = 500;
+        public long PageNumber { get; set; } = 1;
+        public long PageSize { get; set; } = 500;
     }
 
     public class DescribeDomainRecord
@@ -118,6 +146,7 @@ namespace client.service.ddns.platform
         public IEnumerable<DomainRecordsModel> DomainRecords { get; set; }
         public long PageNumber { get; set; } = 1;
         public long PageSize { get; set; } = 500;
+        public long Count { get; set; } = 0;
 
     }
 
@@ -135,5 +164,25 @@ namespace client.service.ddns.platform
         public string Type { get; set; }
         public string Value { get; set; }
         public int Weight { get; set; }
+    }
+
+
+    public class DescribeDomains
+    {
+        public IEnumerable<DescribeDomainModel> Domains { get; set; }
+        public long PageNumber { get; set; } = 1;
+        public long PageSize { get; set; } = 500;
+        public long TotalCount { get; set; } = 0;
+    }
+    public class DescribeDomainsParam
+    {
+        public long PageNumber { get; set; } = 1;
+        public long PageSize { get; set; } = 500;
+    }
+
+    public class DescribeDomainModel
+    {
+        public string DomainId { get; set; }
+        public string DomainName { get; set; }
     }
 }

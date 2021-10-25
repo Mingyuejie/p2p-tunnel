@@ -15,7 +15,50 @@ namespace client.service.ddns.platform
             this.config = config;
         }
 
-        public bool AddDomainRecord(AddDomainRecordModel model, string domain)
+        public DescribeDomains DescribeDomains(DescribeDomainsParam model, string group)
+        {
+            DescribeDomainsRequest request = new DescribeDomainsRequest
+            {
+                PageNumber = model.PageNumber,
+                PageSize = model.PageSize
+            };
+
+            var response = GetClientByGroup(group).DescribeDomains(request);
+
+            return new DescribeDomains
+            {
+                Domains = response.Body.Domains.Domain.Select(c => new DescribeDomainModel
+                {
+                    DomainId = c.DomainId,
+                    DomainName = c.DomainName
+                }),
+                PageNumber = response.Body.PageNumber ?? 1,
+                PageSize = response.Body.PageSize ?? 50,
+                TotalCount = response.Body.TotalCount ?? 0
+            };
+        }
+        public bool AddDomain(string group, string domain)
+        {
+            AddDomainRequest request = new AddDomainRequest
+            {
+                DomainName = domain,
+
+            };
+            var response = GetClientByGroup(group).AddDomain(request);
+            return true;
+        }
+        public bool DeleteDomain(string group, string domain)
+        {
+            DeleteDomainRequest request = new DeleteDomainRequest
+            {
+                DomainName = domain,
+
+            };
+            var response = GetClientByGroup(group).DeleteDomain(request);
+            return true;
+        }
+
+        public bool AddDomainRecord(AddDomainRecordModel model, string group)
         {
             if (model.Priority < 1 || model.Priority > 50)
             {
@@ -31,10 +74,10 @@ namespace client.service.ddns.platform
                 Type = model.Type,
                 Value = model.Value
             };
-            var response = GetClient(domain).AddDomainRecord(request);
+            var response = GetClientByGroup(group).AddDomainRecord(request);
             return true;
         }
-        public bool UpdateDomainRecord(UpdateDomainRecordModel model, string domain)
+        public bool UpdateDomainRecord(UpdateDomainRecordModel model, string group)
         {
             if (model.Priority < 1 || model.Priority > 50)
             {
@@ -50,31 +93,33 @@ namespace client.service.ddns.platform
                 Type = model.Type,
                 Value = model.Value
             };
-            var response = GetClient(domain).UpdateDomainRecord(request);
+            var response = GetClientByGroup(group).UpdateDomainRecord(request);
             return true;
         }
-        public bool DeleteDomainRecord(DeleteDomainRecordModel model, string domain)
+        public bool DeleteDomainRecord(DeleteDomainRecordModel model, string group)
         {
             DeleteDomainRecordRequest request = new DeleteDomainRecordRequest
             {
                 RecordId = model.RecordId
             };
-            var response = GetClient(domain).DeleteDomainRecord(request);
+            var response = GetClientByGroup(group).DeleteDomainRecord(request);
             return true;
         }
 
-        public DescribeDomainRecord DescribeDomainRecords(DescribeDomainRecordsModel model, string domain)
+        public DescribeDomainRecord DescribeDomainRecords(DescribeDomainRecordsModel model, string group)
         {
             DescribeDomainRecordsRequest request = new DescribeDomainRecordsRequest
             {
                 DomainName = model.DomainName,
-                PageSize = model.PageSize
+                PageSize = model.PageSize,
+                PageNumber = model.PageNumber
             };
-            var response = GetClient(domain).DescribeDomainRecords(request);
+            var response = GetClientByGroup(group).DescribeDomainRecords(request);
             return new DescribeDomainRecord
             {
                 PageSize = response.Body.PageSize ?? 0,
                 PageNumber = response.Body.PageNumber ?? 0,
+                Count = response.Body.TotalCount ?? 0,
                 DomainRecords = response.Body.DomainRecords.Record.Select(c => new DomainRecordsModel
                 {
                     DomainName = c.DomainName,
@@ -93,13 +138,13 @@ namespace client.service.ddns.platform
             };
         }
 
-        public IEnumerable<DescribeSupportLine> DescribeSupportLines(string domain)
+        public IEnumerable<DescribeSupportLine> DescribeSupportLines(string group, string domain)
         {
             DescribeSupportLinesRequest request = new DescribeSupportLinesRequest
             {
 
             };
-            var response = GetClient(domain).DescribeSupportLines(request);
+            var response = GetClientByGroup(group).DescribeSupportLines(request);
             return response.Body.RecordLines.RecordLine.Take(10).Select(c => new DescribeSupportLine
             {
                 FatherCode = c.FatherCode,
@@ -114,34 +159,37 @@ namespace client.service.ddns.platform
             {"ENABLE","DISABLE" },
             {"DISABLE","ENABLE" },
         };
-        public bool SwitchDomainRecordStatus(SetDomainRecordStatusModel model, string domain)
+        public bool SwitchDomainRecordStatus(SetDomainRecordStatusModel model, string group)
         {
             SetDomainRecordStatusRequest request = new SetDomainRecordStatusRequest
             {
                 RecordId = model.RecordId,
                 Status = RecordStatusSwitchMap[model.Status]
             };
-            var response = GetClient(domain).SetDomainRecordStatus(request);
+            var response = GetClientByGroup(group).SetDomainRecordStatus(request);
             return true;
         }
 
-        public bool UpdateDomainRecordRemark(UpdateDomainRecordRemarkModel model, string domain)
+        public bool UpdateDomainRecordRemark(UpdateDomainRecordRemarkModel model, string group)
         {
             UpdateDomainRecordRemarkRequest request = new UpdateDomainRecordRemarkRequest
             {
                 RecordId = model.RecordId,
                 Remark = model.Remark
             };
-            GetClient(domain).UpdateDomainRecordRemark(request);
+            GetClientByGroup(group).UpdateDomainRecordRemark(request);
             return true;
         }
 
-        private AlibabaCloud.SDK.Alidns20150109.Client GetClient(string domain)
+        private AlibabaCloud.SDK.Alidns20150109.Client GetClientByGroup(string group)
         {
-            var group = config.Platforms
+            return GetClientByGroup(config.Platforms
                 .FirstOrDefault(c => c.Name == Platform)
-                .Groups.FirstOrDefault(c => c.Domains.FirstOrDefault(c => c.Domain == domain) != null);
+                .Groups.FirstOrDefault(c => c.Name == group));
+        }
 
+        private AlibabaCloud.SDK.Alidns20150109.Client GetClientByGroup(GroupInfo group)
+        {
             return new AlibabaCloud.SDK.Alidns20150109.Client(new AlibabaCloud.OpenApiClient.Models.Config
             {
                 AccessKeyId = group.Key,
@@ -149,5 +197,6 @@ namespace client.service.ddns.platform
                 Endpoint = "dns.aliyuncs.com"
             });
         }
+
     }
 }

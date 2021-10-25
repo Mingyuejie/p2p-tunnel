@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-10-24 19:40:41
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-25 11:33:03
+ * @LastEditTime: 2021-10-25 17:05:04
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ddns\Record.vue
@@ -14,7 +14,7 @@
             <el-button size="mini" @click="loadData">刷新列表</el-button>
         </div>
         <div class="body flex-1">
-            <el-table v-loading="loading" :data="list" border size="mini" height="100%">
+            <el-table v-loading="loading" :data="records.DomainRecords" border size="mini" height="100%">
                 <el-table-column prop="RR" label="主机记录">
                     <template #default="scope">
                         <div class="flex">
@@ -22,7 +22,7 @@
                             <span class="flex-1"></span>
                             <el-popover placement="bottom-end" title="啥意思" trigger="hover" content="当IP变化时，是否更新此条解析记录">
                                 <template #reference>
-                                    <el-switch v-model="scope.row.autoUpdate" @change="handleRecordAutoUpdateChange(scope.row.RR,form.autoUpdate)" />
+                                    <el-switch v-model="scope.row.autoUpdate" @change="handleRecordAutoUpdateChange(scope.row)" />
                                 </template>
                             </el-popover>
                         </div>
@@ -40,7 +40,7 @@
                         <span>{{status[scope.row.Status]}}</span>
                     </template>
                 </el-table-column>
-                <el-table-column prop="TTL" label="TTL" width="50"></el-table-column>
+                <el-table-column prop="TTL" label="TTL" width="80"></el-table-column>
                 <el-table-column prop="Remark" label="备注"></el-table-column>
                 <el-table-column prop="todo" label="操作" width="165" fixed="right" class="t-c">
                     <template #default="scope">
@@ -57,6 +57,10 @@
                     </template>
                 </el-table-column>
             </el-table>
+        </div>
+        <div class="pages t-c" v-if="records.TotalCount > 0">
+            <el-pagination :total="records.TotalCount" v-model:currentPage="records.PageNumber" :page-size="records.PageSize" @current-change="loadData" background layout="total,prev, pager, next">
+            </el-pagination>
         </div>
     </div>
     <el-dialog title="增加解析" v-model="showAdd" center :close-on-click-modal="false" width="50rem">
@@ -115,9 +119,6 @@
                     </el-col>
                 </el-row>
             </el-form-item>
-            <el-form-item label="自动更新" prop="AutoUpdate">
-                <el-switch v-model="form.AutoUpdate" />
-            </el-form-item>
         </el-form>
         <template #footer>
             <el-button @click="showAdd = false">取 消</el-button>
@@ -140,49 +141,73 @@ export default {
     setup () {
 
         const shareData = injectShareData();
-        watch(() => shareData.group, () => {
+        watch(() => shareData.domain, () => {
             loadData();
         });
 
         const state = reactive({
             loading: false,
-            list: [],
+            records: {
+                DomainRecords: [],
+                PageNumber: 1,
+                PageSize: 100,
+                TotalCount: 0
+            },
             status: { 'ENABLE': '正常', 'DISABLE': '禁用' },
             statusBtn: { 'ENABLE': '禁用', 'DISABLE': '启用' },
 
         });
         const loadData = () => {
-            if (shareData.group.platform && shareData.domain.Domain) {
+            if (shareData.group.platform && shareData.domain.DomainName) {
+                state.loading = true;
                 getRecords({
                     Platform: shareData.group.platform,
-                    Domain: shareData.domain.Domain
+                    Group: shareData.group.Name,
+                    Domain: shareData.domain.DomainName,
+                    PageSize: state.records.PageSize,
+                    PageNumber: state.records.PageNumber,
                 }).then((res) => {
-                    const arr = res.DomainRecords || [];
-                    arr.forEach(c => {
-                        c.autoUpdate = shareData.domain.Records.indexOf(c.RR) >= 0;
+                    state.loading = false;
+                    res.DomainRecords.forEach(c => {
+                        c.autoUpdate = shareData.domain.records.indexOf(c.RR) >= 0;
                     });
-                    state.list = arr;
+                    state.records = res;
+                }).catch((e) => {
+                    state.loading = false;
                 });
                 getRecordLines({
                     Platform: shareData.group.platform,
-                    Domain: shareData.domain.Domain
+                    Domain: shareData.domain.DomainName,
+                    Group: shareData.group.Name,
                 }).then((res) => {
+                    state.loading = false;
+                    addState.form.Line = null;
                     addState.recordLines = res;
                     addState.recordLinesJson = res.reduce((json, item) => {
                         json[item.LineCode] = item.LineName;
                         return json;
                     }, {});
-                })
+                }).catch((e) => {
+                    state.loading = false;
+                });
             }
         }
         const handleDel = (row) => {
-            delRecord({ 'RecordId': row.RecordId, 'Domain': row.DomainName, 'Platform': shareData.group.platform }).then(() => {
+            state.loading = true;
+            delRecord({ 'RecordId': row.RecordId, 'Domain': shareData.domain.DomainName, 'Group': shareData.group.Name, 'Platform': shareData.group.platform }).then(() => {
+                state.loading = false;
                 loadData();
+            }).catch((e) => {
+                state.loading = false;
             });
         }
         const handleSwitchStatus = (row) => {
-            setRecordStatus({ 'RecordId': row.RecordId, 'Status': row.Status, 'Domain': row.DomainName, 'Platform': shareData.group.platform }).then(() => {
+            state.loading = true;
+            setRecordStatus({ 'RecordId': row.RecordId, 'Status': row.Status, 'Domain': shareData.domain.DomainName, 'Group': shareData.group.Name, 'Platform': shareData.group.platform }).then(() => {
+                state.loading = false;
                 loadData();
+            }).catch((e) => {
+                state.loading = false;
             });
         }
         const handleRemark = (row) => {
@@ -192,22 +217,30 @@ export default {
                 inputValue: row.Remark
             }).then(({ value }) => {
                 if (value) {
-                    remarkRecord({ 'RecordId': row.RecordId, 'Remark': value, 'Domain': row.DomainName, 'Platform': shareData.group.platform }).then(() => {
+                    state.loading = true;
+                    remarkRecord({ 'RecordId': row.RecordId, 'Remark': value, 'Domain': shareData.domain.DomainName, 'Group': shareData.group.Name, 'Platform': shareData.group.platform }).then(() => {
+                        state.loading = false;
                         loadData();
+                    }).catch((e) => {
+                        state.loading = false;
                     });
                 }
             })
         }
-        const handleRecordAutoUpdateChange = (rr, autoUpdate) => {
+        const handleRecordAutoUpdateChange = (row) => {
+            state.loading = true;
             switchRecord({
                 Platform: shareData.group.platform,
                 Group: shareData.group.Name,
-                Domain: shareData.domain.Domain,
-                Record: rr,
-                AutoUpdate: autoUpdate,
+                Domain: shareData.domain.DomainName,
+                Record: row.RR,
+                AutoUpdate: row.autoUpdate,
             }).then(() => {
+                state.loading = false;
                 loadData();
-            })
+            }).catch((e) => {
+                state.loading = false;
+            });
         }
 
         onMounted(() => {
@@ -230,7 +263,7 @@ export default {
                 Type: 'A',
                 Value: '',
                 TTL: 600,
-                Line: 'default',
+                Line: null,
                 Priority: 10,
                 DomainName: '',
                 Platform: '',
@@ -267,7 +300,8 @@ export default {
                 state.loading = true;
                 addRecord({
                     Platform: shareData.group.platform,
-                    DomainName: shareData.domain.Domain,
+                    Group: shareData.group.Name,
+                    DomainName: shareData.domain.DomainName,
                     RecordId: addState.form.RecordId,
                     RR: addState.form.RR,
                     Type: addState.form.Type,
@@ -299,4 +333,7 @@ export default {
 .op
     a
         padding: 0 0.6rem;
+
+.pages
+    padding-top: 1rem;
 </style>

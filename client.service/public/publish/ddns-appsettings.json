@@ -1,10 +1,28 @@
-﻿{
-  "Enable": false,
-
-  "Platform": {
-    "Name": "Aliyun",
-    "AccessKey": "accessKey",
-    "AccessSecret": "accessSecret",
-    "Domain": "test.com"
-  }
+{
+  "Enable": true,
+  "Interval": 60000,
+  "Platforms": [
+    {
+      "Name": "Aliyun",
+      "Groups": [
+        {
+          "Name": "默认分组",
+          "Key": "",
+          "Secret": "",
+          "Records": []
+        }
+      ]
+    },
+    {
+      "Name": "Tencent",
+      "Groups": [
+        {
+          "Name": "默认分组",
+          "Key": "",
+          "Secret": "",
+          "Records": []
+        }
+      ]
+    }
+  ]
 }

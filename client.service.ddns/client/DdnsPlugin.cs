@@ -35,95 +35,55 @@ namespace client.service.ddns.client
             Loop();
         }
 
-        public IEnumerable<PlatformInfo> Domains(ClientServicePluginExcuteWrap arg)
+        public IEnumerable<PlatformInfo> Platforms(ClientServicePluginExcuteWrap arg)
         {
             return config.Platforms.Select(c => new PlatformInfo
             {
                 Name = c.Name,
                 Groups = c.Groups.Select(c => new PlatformInfo.GroupInfo
                 {
-                    AutoUpdate = c.AutoUpdate,
                     Name = c.Name,
-                    Domains = c.Domains.Select(c => new PlatformInfo.DomainInfo
-                    {
-                        AutoUpdate = c.AutoUpdate,
-                        Domain = c.Domain,
-                        Records = c.Records
-                    })
+                    Records = c.Records
                 })
             });
         }
-        public bool SwitchGroup(ClientServicePluginExcuteWrap arg)
+        public DescribeDomains Domains(ClientServicePluginExcuteWrap arg)
         {
-            SwitchGroupModel model = arg.Content.DeJson<SwitchGroupModel>();
-
-            var group = config.Platforms.FirstOrDefault(c => c.Name == model.Platform).Groups.FirstOrDefault(c => c.Name == model.Group);
-            group.AutoUpdate = model.AutoUpdate;
-
-            config.SaveConfig();
-
-            return true;
+            ParamBasePageInfo model = arg.Content.DeJson<ParamBasePageInfo>();
+            return plugins[model.Platform].DescribeDomains(new DescribeDomainsParam
+            {
+                PageSize = model.PageSize,
+                PageNumber = model.PageNumber
+            }, model.Group);
         }
-
         public bool AddDomain(ClientServicePluginExcuteWrap arg)
         {
-            AddDomainModel model = arg.Content.DeJson<AddDomainModel>();
-
-            var group = config.Platforms.FirstOrDefault(c => c.Name == model.Platform).Groups.FirstOrDefault(c => c.Name == model.Group);
-            var domain = group.Domains.FirstOrDefault(c => c.Domain == model.Domain);
-            if (domain != null)
+            try
             {
-                arg.SetCode(-1, "域名已存在");
-                return false;
+                ParamBaseInfo model = arg.Content.DeJson<ParamBaseInfo>();
+                return plugins[model.Platform].AddDomain(model.Group, model.Domain);
             }
-            group.Domains.Add(new DomainInfo
+            catch (Exception ex)
             {
-                AutoUpdate = model.AutoUpdate,
-                Domain = model.Domain
-            });
-            config.SaveConfig();
-            return true;
+                arg.SetCode(-1, ex.Message);
+            }
+            return false;
         }
-        public bool SwitchDomain(ClientServicePluginExcuteWrap arg)
+        public bool DelDomain(ClientServicePluginExcuteWrap arg)
         {
-            SwitchDomainModel model = arg.Content.DeJson<SwitchDomainModel>();
-
-            var group = config.Platforms.FirstOrDefault(c => c.Name == model.Platform).Groups.FirstOrDefault(c => c.Name == model.Group);
-            var domain = group.Domains.FirstOrDefault(c => c.Domain == model.Domain);
-            if (domain == null)
-            {
-                arg.SetCode(-1, "域名不存在");
-                return false;
-            }
-            domain.AutoUpdate = model.AutoUpdate;
-            config.SaveConfig();
-
-            return true;
-        }
-        public bool DeleteDomain(ClientServicePluginExcuteWrap arg)
-        {
-            DeleteDomainModel model = arg.Content.DeJson<DeleteDomainModel>();
-            var group = config.Platforms.FirstOrDefault(c => c.Name == model.Platform).Groups.FirstOrDefault(c => c.Name == model.Group);
-            var domain = group.Domains.FirstOrDefault(c => c.Domain == model.Domain);
-            if (domain == null)
-            {
-                arg.SetCode(-1, "域名不存在");
-                return false;
-            }
-            group.Domains.Remove(domain);
-            config.SaveConfig();
-
-            return true;
+            ParamBaseInfo model = arg.Content.DeJson<ParamBaseInfo>();
+            return plugins[model.Platform].DeleteDomain(model.Group, model.Domain);
         }
 
         public DescribeDomainRecord GetRecords(ClientServicePluginExcuteWrap arg)
         {
-            GetRecordsModel model = arg.Content.DeJson<GetRecordsModel>();
+            ParamBasePageInfo model = arg.Content.DeJson<ParamBasePageInfo>();
             return plugins[model.Platform].DescribeDomainRecords(new DescribeDomainRecordsModel
             {
                 DomainName = model.Domain,
-                PageSize = 500
-            }, model.Domain);
+                PageSize = model.PageSize,
+                PageNumber = model.PageNumber,
+            }, model.Group);
         }
         public bool SetRecordStatus(ClientServicePluginExcuteWrap arg)
         {
@@ -131,8 +91,9 @@ namespace client.service.ddns.client
             return plugins[model.Platform].SwitchDomainRecordStatus(new SetDomainRecordStatusModel
             {
                 RecordId = model.RecordId,
-                Status = model.Status
-            }, model.Domain);
+                Status = model.Status,
+                Domain = model.Domain
+            }, model.Group);
         }
         public bool DelRecord(ClientServicePluginExcuteWrap arg)
         {
@@ -140,7 +101,8 @@ namespace client.service.ddns.client
             return plugins[model.Platform].DeleteDomainRecord(new DeleteDomainRecordModel
             {
                 RecordId = model.RecordId,
-            }, model.Domain);
+                Domain = model.Domain
+            }, model.Group);
         }
         public bool RemarkRecord(ClientServicePluginExcuteWrap arg)
         {
@@ -148,8 +110,9 @@ namespace client.service.ddns.client
             return plugins[model.Platform].UpdateDomainRecordRemark(new UpdateDomainRecordRemarkModel
             {
                 RecordId = model.RecordId,
-                Remark = model.Remark
-            }, model.Domain);
+                Remark = model.Remark,
+                Domain = model.Domain
+            }, model.Group);
         }
         public List<string> GetRecordTypes(ClientServicePluginExcuteWrap arg)
         {
@@ -158,7 +121,7 @@ namespace client.service.ddns.client
         public IEnumerable<DescribeSupportLine> GetRecordLines(ClientServicePluginExcuteWrap arg)
         {
             GetRecordLinesModel model = arg.Content.DeJson<GetRecordLinesModel>();
-            return plugins[model.Platform].DescribeSupportLines(model.Domain);
+            return plugins[model.Platform].DescribeSupportLines(model.Group, model.Domain);
         }
         public bool AddRecord(ClientServicePluginExcuteWrap arg)
         {
@@ -176,12 +139,13 @@ namespace client.service.ddns.client
                         TTL = model.TTL,
                         Type = model.Type,
                         Value = model.Value
-                    }, model.DomainName);
+                    }, model.Group);
                 }
                 else
                 {
                     return plugins[model.Platform].UpdateDomainRecord(new UpdateDomainRecordModel
                     {
+                        Domain = model.DomainName,
                         RecordId = model.RecordId,
                         Line = model.Line,
                         Priority = model.Priority,
@@ -189,7 +153,7 @@ namespace client.service.ddns.client
                         TTL = model.TTL,
                         Type = model.Type,
                         Value = model.Value
-                    }, model.DomainName);
+                    }, model.Group);
                 }
             }
             catch (Exception ex)
@@ -201,22 +165,21 @@ namespace client.service.ddns.client
         public bool SwitchRecord(ClientServicePluginExcuteWrap arg)
         {
             RecordSwitchModel model = arg.Content.DeJson<RecordSwitchModel>();
-
             var group = config.Platforms.FirstOrDefault(c => c.Name == model.Platform).Groups.FirstOrDefault(c => c.Name == model.Group);
-            var domain = group.Domains.FirstOrDefault(c => c.Domain == model.Domain);
+            string record = $"{model.Record}|{model.Domain}";
+
             if (model.AutoUpdate)
             {
-                domain.Records.Add(model.Record);
+                group.Records.Add(record);
             }
             else
             {
-                domain.Records.Remove(model.Record);
+                group.Records.Remove(record);
             }
-            domain.Records = domain.Records.Distinct().ToList();
+            group.Records = group.Records.Distinct().ToList();
             config.SaveConfig();
             return true;
         }
-
 
         private void Loop()
         {
@@ -254,30 +217,25 @@ namespace client.service.ddns.client
                 //得存在这个平台的处理实现
                 if (plugins.ContainsKey(platform.Name))
                 {
-                    foreach (var group in platform.Groups.Where(c => c.AutoUpdate == true))
+                    foreach (var group in platform.Groups)
                     {
-                        foreach (var domain in group.Domains.Where(c => c.AutoUpdate == true))
+                        var parsedRecords = ParseDomainRecord(group.Records);
+                        foreach (var domain in parsedRecords)
                         {
                             //解析记录
                             var records = plugins[platform.Name].DescribeDomainRecords(new DescribeDomainRecordsModel
                             {
-                                DomainName = domain.Domain,
+                                DomainName = domain.Key,
                                 PageSize = 500
-                            }, domain.Domain).DomainRecords;
+                            }, group.Name).DomainRecords;
 
-                            //解析记录不存在的记录
-                            var excepts = domain.Records.Except(records.Select(c => c.RR));
-                            if (excepts.Any())
-                            {
-                                Logger.Instance.Error($"{domain.Domain} 下不存在解析记录：{string.Join(",", excepts)}，无法更新，请先手动添加解析");
-                            }
-
-                            foreach (var record in records.Where(c => domain.Records.Contains(c.RR)))
+                            foreach (var record in records.Where(c => domain.Value.Contains(c.RR)))
                             {
                                 try
                                 {
-                                    plugins[platform.Name].UpdateDomainRecord(new UpdateDomainRecordModel
+                                    var model = new UpdateDomainRecordModel
                                     {
+                                        Domain = domain.Key,
                                         Line = record.Line,
                                         Priority = record.Priority,
                                         RecordId = record.RecordId,
@@ -285,7 +243,8 @@ namespace client.service.ddns.client
                                         TTL = record.TTL,
                                         Type = record.Type,
                                         Value = ip,
-                                    }, domain.Domain);
+                                    };
+                                    plugins[platform.Name].UpdateDomainRecord(model, group.Name);
                                 }
                                 catch (Exception ex)
                                 {
@@ -297,8 +256,61 @@ namespace client.service.ddns.client
                 }
             }
         }
+        private Dictionary<string, List<string>> ParseDomainRecord(List<string> records)
+        {
+            Dictionary<string, List<string>> res = new Dictionary<string, List<string>>();
+            foreach (var record in records)
+            {
+                string[] arr = record.Split('|');
+                if (!res.ContainsKey(arr[1]))
+                {
+                    res.Add(arr[1], new List<string>());
+                }
+                res[arr[1]].Add(arr[0]);
+            }
+            return res;
+        }
+    }
+    public class ParamBaseInfo
+    {
+        public string Platform { get; set; }
+        public string Group { get; set; }
+        public string Domain { get; set; }
+    }
+    public class ParamBasePageInfo : ParamBaseInfo
+    {
+        public long PageNumber { get; set; }
+        public long PageSize { get; set; }
+    }
+    public class SetRecordStatusModel : ParamBaseInfo
+    {
+        public string RecordId { get; set; }
+        public string Status { get; set; }
+    }
+    public class DelRecordModel : ParamBaseInfo
+    {
+        public string RecordId { get; set; }
+    }
+    public class RemarkRecordModel : ParamBaseInfo
+    {
+        public string RecordId { get; set; }
+        public string Remark { get; set; }
+    }
+    public class GetRecordLinesModel : ParamBaseInfo
+    {
+    }
+    public class AddRecordModel : AddDomainRecordModel
+    {
+        public string RecordId { get; set; }
+        public string Platform { get; set; }
+        public string Group { get; set; }
     }
 
+    public class RecordSwitchModel : ParamBaseInfo
+    {
+        public string Record { get; set; }
+        public bool AutoUpdate { get; set; }
+    }
     public class PlatformInfo
     {
         public string Name { get; set; }
@@ -307,87 +319,8 @@ namespace client.service.ddns.client
         public class GroupInfo
         {
             public string Name { get; set; }
-            public bool AutoUpdate { get; set; }
-            public IEnumerable<DomainInfo> Domains { get; set; }
-        }
-
-        public class DomainInfo
-        {
-            public string Domain { get; set; }
             public List<string> Records { get; set; }
-            public bool AutoUpdate { get; set; }
         }
-    }
-    public class SwitchGroupModel
-    {
-        public string Platform { get; set; }
-        public string Group { get; set; }
-        public bool AutoUpdate { get; set; }
-    }
-    public class AddDomainModel
-    {
-        public string Platform { get; set; }
-        public string Group { get; set; }
-        public string Domain { get; set; }
-        public bool AutoUpdate { get; set; }
-    }
-    public class SwitchDomainModel
-    {
-        public string Platform { get; set; }
-        public string Group { get; set; }
-        public string Domain { get; set; }
-        public bool AutoUpdate { get; set; }
-    }
-    public class DeleteDomainModel
-    {
-        public string Platform { get; set; }
-        public string Group { get; set; }
-        public string Domain { get; set; }
-    }
-
-    public class GetRecordsModel
-    {
-        public string Platform { get; set; }
-        public string Domain { get; set; }
-    }
-    public class SetRecordStatusModel
-    {
-        public string Platform { get; set; }
-        public string Domain { get; set; }
-        public string RecordId { get; set; }
-        public string Status { get; set; }
-    }
-    public class DelRecordModel
-    {
-        public string Platform { get; set; }
-        public string Domain { get; set; }
-        public string RecordId { get; set; }
-    }
-    public class RemarkRecordModel
-    {
-        public string Platform { get; set; }
-        public string Domain { get; set; }
-        public string RecordId { get; set; }
-        public string Remark { get; set; }
-    }
-    public class GetRecordLinesModel
-    {
-        public string Platform { get; set; }
-        public string Domain { get; set; }
-    }
-    public class AddRecordModel : AddDomainRecordModel
-    {
-        public string RecordId { get; set; }
-        public string Platform { get; set; }
-    }
-
-    public class RecordSwitchModel
-    {
-        public string Platform { get; set; }
-        public string Group { get; set; }
-        public string Domain { get; set; }
-        public string Record { get; set; }
-        public bool AutoUpdate { get; set; }
     }
 
 

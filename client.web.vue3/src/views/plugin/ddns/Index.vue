@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-10-23 20:36:48
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-25 09:47:49
+ * @LastEditTime: 2021-10-25 15:03:33
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ddns\Index.vue
@@ -29,20 +29,27 @@ import SettingModal from '../setting/SettingModal.vue'
 import Domains from './Domains.vue'
 import Record from './Record.vue'
 import { provideShareData } from './share-data'
+
 export default {
     components: { SettingModal, Domains, Record },
     setup () {
         const shareState = reactive({
             platforms: [],
             group: {
-                AutoUpdate: false,
                 Name: '',
                 platform: '',
-                Domains: []
+                Records: [],
+                recordJson: {}
+            },
+            domains: {
+                Domains: [],
+                PageNumber: 1,
+                PageSize: 100,
+                TotalCount: 0
             },
             domain: {
-                AutoUpdate: false,
-            }
+                records: []
+            },
         });
         provideShareData(shareState);
 

@@ -78,14 +78,6 @@ namespace client.service.ddns
         public string Name { get; set; } = string.Empty;
         public string Key { get; set; } = string.Empty;
         public string Secret { get; set; } = string.Empty;
-        public bool AutoUpdate { get; set; } = false;
-        public List<DomainInfo> Domains { get; set; } = new List<DomainInfo>();
-    }
-
-    public class DomainInfo
-    {
-        public string Domain { get; set; } = string.Empty;
         public List<string> Records { get; set; } = new List<string>();
-        public bool AutoUpdate { get; set; } = false;
     }
 }

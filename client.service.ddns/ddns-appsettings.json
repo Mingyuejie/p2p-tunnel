@@ -1,5 +1,5 @@
 {
-  "Enable": false,
+  "Enable": true,
   "Interval": 60000,
   "Platforms": [
     {
@@ -9,14 +9,18 @@
           "Name": "默认分组",
           "Key": "",
           "Secret": "",
-          "AutoUpdate": false,
-          "Domains": [
-            {
-              "Domain": "snltty.com",
-              "Records": [],
-              "AutoUpdate": false
-            }
-          ]
+          "Records": []
+        }
+      ]
+    },
+    {
+      "Name": "Tencent",
+      "Groups": [
+        {
+          "Name": "默认分组",
+          "Key": "",
+          "Secret": "",
+          "Records": []
         }
       ]
     }

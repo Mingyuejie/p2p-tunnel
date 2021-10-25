@@ -2,49 +2,49 @@
  * @Author: snltty
  * @Date: 2021-08-20 16:06:04
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-25 10:53:16
+ * @LastEditTime: 2021-10-25 14:54:01
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\apis\plugins\ddns.js
  */
 import { sendWebsocketMsg } from "../request";
 
-export const switchGroup = (json = { Platform: '', Group: '', AutoUpdate: false, }) => {
-    return sendWebsocketMsg(`ddns/SwitchGroup`, json);
+export const getPlatforms = (json = { Platform: '', Group: '' }) => {
+    return sendWebsocketMsg(`ddns/Platforms`, json);
 }
-
-export const getDoamins = () => {
-    return sendWebsocketMsg(`ddns/domains`);
+export const getDoamins = (json = {
+    Platform: '', Group: '',
+    PageNumber: 1, PageSize: 500
+}) => {
+    return sendWebsocketMsg(`ddns/Domains`, json);
 }
-export const addDoamin = (json = { Platform: '', Group: '', Domain: '', AutoUpdate: false }) => {
+export const addDoamin = (json = { Platform: '', Group: '', Domain: '' }) => {
     return sendWebsocketMsg(`ddns/AddDomain`, json);
-}
-export const switchDomain = (json = { Platform: '', Group: '', Domain: '', AutoUpdate: false, }) => {
-    return sendWebsocketMsg(`ddns/SwitchDomain`, json);
 }
 export const deleteDomain = (json = { Platform: '', Group: '', Domain: '' }) => {
     return sendWebsocketMsg(`ddns/DeleteDomain`, json);
 }
-export const getRecords = (json = { Platform: '', Domain: '' }) => {
+export const getRecords = (json = { Platform: '', Group: '', Domain: '', PageNumber: 1, PageSize: 500 }) => {
     return sendWebsocketMsg(`ddns/GetRecords`, json);
 }
-export const setRecordStatus = (json = { Platform: '', Domain: '', RecordId: '', Status: '' }) => {
+export const setRecordStatus = (json = { Platform: '', Group: '', Domain: '', RecordId: '', Status: '' }) => {
     return sendWebsocketMsg(`ddns/SetRecordStatus`, json);
 }
-export const delRecord = (json = { Platform: '', Domain: '', RecordId: '' }) => {
+export const delRecord = (json = { Platform: '', Group: '', Domain: '', RecordId: '' }) => {
     return sendWebsocketMsg(`ddns/DelRecord`, json);
 }
-export const remarkRecord = (json = { Platform: '', Domain: '', RecordId: '', Remark: '' }) => {
+export const remarkRecord = (json = { Platform: '', Group: '', Domain: '', RecordId: '', Remark: '' }) => {
     return sendWebsocketMsg(`ddns/RemarkRecord`, json);
 }
 export const getRecordTypes = () => {
     return sendWebsocketMsg(`ddns/GetRecordTypes`);
 }
-export const getRecordLines = (json = { Platform: '', Domain: '' }) => {
+export const getRecordLines = (json = { Platform: '', Group: '', Domain: '' }) => {
     return sendWebsocketMsg(`ddns/GetRecordLines`, json);
 }
 export const addRecord = (json = {
     Platform: '',
+    Group: '',
     DomainName: '',
     RecordId: '',
     RR: '',
@@ -68,11 +68,7 @@ export const switchRecord = (json = {
     Record: '',
     AutoUpdate: false,
 }) => {
-    json.TTL = +json.TTL;
-    json.Priority = +json.Priority;
-    if (json.Priority == 0) {
-        json.Priority = 1;
-    }
+    console.log(json);
     return sendWebsocketMsg(`ddns/SwitchRecord`, json);
 }
 

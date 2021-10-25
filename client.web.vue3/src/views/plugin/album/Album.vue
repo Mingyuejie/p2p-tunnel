@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-24 15:24:48
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-25 01:36:34
+ * @LastEditTime: 2021-10-25 16:30:14
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\album\Album.vue
@@ -43,7 +43,7 @@
                 </div>
             </template>
         </div>
-        <div class="pages t-c">
+        <div class="pages t-c" v-if="page.count > 0">
             <el-pagination :total="page.count" v-model:currentPage="page.page" :page-size="page.pageSize" @current-change="loadData" background layout="total,prev, pager, next">
             </el-pagination>
         </div>
