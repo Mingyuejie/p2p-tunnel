@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-20 16:06:04
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-25 14:54:01
+ * @LastEditTime: 2021-10-25 20:07:29
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\apis\plugins\ddns.js
@@ -56,9 +56,6 @@ export const addRecord = (json = {
 }) => {
     json.TTL = +json.TTL;
     json.Priority = +json.Priority;
-    if (json.Priority == 0) {
-        json.Priority = 1;
-    }
     return sendWebsocketMsg(`ddns/AddRecord`, json);
 }
 export const switchRecord = (json = {
@@ -68,7 +65,6 @@ export const switchRecord = (json = {
     Record: '',
     AutoUpdate: false,
 }) => {
-    console.log(json);
     return sendWebsocketMsg(`ddns/SwitchRecord`, json);
 }
 

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-10-23 20:36:48
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-25 15:03:33
+ * @LastEditTime: 2021-10-25 20:06:13
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ddns\Index.vue
@@ -50,10 +50,14 @@ export default {
             domain: {
                 records: []
             },
+            updateFlag: 1,
+            loading: false
         });
         provideShareData(shareState);
 
-        return {}
+        return {
+            shareState
+        }
     }
 }
 </script>

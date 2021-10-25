@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-10-24 19:40:41
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-25 17:05:04
+ * @LastEditTime: 2021-10-25 20:06:49
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ddns\Record.vue
@@ -14,7 +14,7 @@
             <el-button size="mini" @click="loadData">刷新列表</el-button>
         </div>
         <div class="body flex-1">
-            <el-table v-loading="loading" :data="records.DomainRecords" border size="mini" height="100%">
+            <el-table v-loading="shareState.loading" :data="records.DomainRecords" border size="mini" height="100%">
                 <el-table-column prop="RR" label="主机记录">
                     <template #default="scope">
                         <div class="flex">
@@ -122,7 +122,7 @@
         </el-form>
         <template #footer>
             <el-button @click="showAdd = false">取 消</el-button>
-            <el-button type="primary" :loading="loading" @click="handleSubmit">确 定</el-button>
+            <el-button type="primary" :loading="shareState.loading" @click="handleSubmit">确 定</el-button>
         </template>
     </el-dialog>
 </template>
@@ -140,13 +140,12 @@ import { ElMessageBox } from 'element-plus'
 export default {
     setup () {
 
-        const shareData = injectShareData();
-        watch(() => shareData.domain, () => {
+        const shareState = injectShareData();
+        watch(() => shareState.domain, () => {
             loadData();
         });
 
         const state = reactive({
-            loading: false,
             records: {
                 DomainRecords: [],
                 PageNumber: 1,
@@ -158,29 +157,29 @@ export default {
 
         });
         const loadData = () => {
-            if (shareData.group.platform && shareData.domain.DomainName) {
-                state.loading = true;
+            if (shareState.group.platform && shareState.domain.DomainName) {
+                shareState.loading = true;
                 getRecords({
-                    Platform: shareData.group.platform,
-                    Group: shareData.group.Name,
-                    Domain: shareData.domain.DomainName,
+                    Platform: shareState.group.platform,
+                    Group: shareState.group.Name,
+                    Domain: shareState.domain.DomainName,
                     PageSize: state.records.PageSize,
                     PageNumber: state.records.PageNumber,
                 }).then((res) => {
-                    state.loading = false;
+                    shareState.loading = false;
                     res.DomainRecords.forEach(c => {
-                        c.autoUpdate = shareData.domain.records.indexOf(c.RR) >= 0;
+                        c.autoUpdate = shareState.domain.records.indexOf(c.RR) >= 0;
                     });
                     state.records = res;
                 }).catch((e) => {
-                    state.loading = false;
+                    shareState.loading = false;
                 });
                 getRecordLines({
-                    Platform: shareData.group.platform,
-                    Domain: shareData.domain.DomainName,
-                    Group: shareData.group.Name,
+                    Platform: shareState.group.platform,
+                    Domain: shareState.domain.DomainName,
+                    Group: shareState.group.Name,
                 }).then((res) => {
-                    state.loading = false;
+                    shareState.loading = false;
                     addState.form.Line = null;
                     addState.recordLines = res;
                     addState.recordLinesJson = res.reduce((json, item) => {
@@ -188,26 +187,26 @@ export default {
                         return json;
                     }, {});
                 }).catch((e) => {
-                    state.loading = false;
+                    shareState.loading = false;
                 });
             }
         }
         const handleDel = (row) => {
-            state.loading = true;
-            delRecord({ 'RecordId': row.RecordId, 'Domain': shareData.domain.DomainName, 'Group': shareData.group.Name, 'Platform': shareData.group.platform }).then(() => {
-                state.loading = false;
+            shareState.loading = true;
+            delRecord({ 'RecordId': row.RecordId, 'Domain': shareState.domain.DomainName, 'Group': shareState.group.Name, 'Platform': shareState.group.platform }).then(() => {
+                shareState.loading = false;
                 loadData();
             }).catch((e) => {
-                state.loading = false;
+                shareState.loading = false;
             });
         }
         const handleSwitchStatus = (row) => {
-            state.loading = true;
-            setRecordStatus({ 'RecordId': row.RecordId, 'Status': row.Status, 'Domain': shareData.domain.DomainName, 'Group': shareData.group.Name, 'Platform': shareData.group.platform }).then(() => {
-                state.loading = false;
+            shareState.loading = true;
+            setRecordStatus({ 'RecordId': row.RecordId, 'Status': row.Status, 'Domain': shareState.domain.DomainName, 'Group': shareState.group.Name, 'Platform': shareState.group.platform }).then(() => {
+                shareState.loading = false;
                 loadData();
             }).catch((e) => {
-                state.loading = false;
+                shareState.loading = false;
             });
         }
         const handleRemark = (row) => {
@@ -217,29 +216,30 @@ export default {
                 inputValue: row.Remark
             }).then(({ value }) => {
                 if (value) {
-                    state.loading = true;
-                    remarkRecord({ 'RecordId': row.RecordId, 'Remark': value, 'Domain': shareData.domain.DomainName, 'Group': shareData.group.Name, 'Platform': shareData.group.platform }).then(() => {
-                        state.loading = false;
+                    shareState.loading = true;
+                    remarkRecord({ 'RecordId': row.RecordId, 'Remark': value, 'Domain': shareState.domain.DomainName, 'Group': shareState.group.Name, 'Platform': shareState.group.platform }).then(() => {
+                        shareState.loading = false;
                         loadData();
                     }).catch((e) => {
-                        state.loading = false;
+                        shareState.loading = false;
                     });
                 }
             })
         }
         const handleRecordAutoUpdateChange = (row) => {
-            state.loading = true;
+            shareState.loading = true;
             switchRecord({
-                Platform: shareData.group.platform,
-                Group: shareData.group.Name,
-                Domain: shareData.domain.DomainName,
+                Platform: shareState.group.platform,
+                Group: shareState.group.Name,
+                Domain: shareState.domain.DomainName,
                 Record: row.RR,
                 AutoUpdate: row.autoUpdate,
             }).then(() => {
-                state.loading = false;
-                loadData();
+                shareState.updateFlag = Date.now();
+                shareState.loading = false;
+                //loadData();
             }).catch((e) => {
-                state.loading = false;
+                shareState.loading = false;
             });
         }
 
@@ -297,11 +297,11 @@ export default {
                 if (!valid) {
                     return false;
                 }
-                state.loading = true;
+                shareState.loading = true;
                 addRecord({
-                    Platform: shareData.group.platform,
-                    Group: shareData.group.Name,
-                    DomainName: shareData.domain.DomainName,
+                    Platform: shareState.group.platform,
+                    Group: shareState.group.Name,
+                    DomainName: shareState.domain.DomainName,
                     RecordId: addState.form.RecordId,
                     RR: addState.form.RR,
                     Type: addState.form.Type,
@@ -310,17 +310,17 @@ export default {
                     Priority: addState.form.Priority,
                     Line: addState.form.Line,
                 }).then(() => {
-                    state.loading = false;
+                    shareState.loading = false;
                     addState.showAdd = false;
                     handleRecordAutoUpdateChange(addState.form.RR, addState.form.AutoUpdate);
                 }).catch((e) => {
-                    state.loading = false;
+                    shareState.loading = false;
                 });
             })
         }
 
         return {
-            ...toRefs(state), loadData, handleDel, handleSwitchStatus, handleRemark, handleRecordAutoUpdateChange,
+            shareState, ...toRefs(state), loadData, handleDel, handleSwitchStatus, handleRemark, handleRecordAutoUpdateChange,
             ...toRefs(addState), formDom, handleAdd, handleEdit, handleSubmit
         }
     }

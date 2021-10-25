@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-07 00:37:53
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-25 17:11:32
+ * @LastEditTime: 2021-10-25 20:11:22
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\home.md
@@ -19,7 +19,7 @@
     - CPU：i5 8400、
     - 内存：威刚 XPG D60 3600 8G*2、 
     - 包大小：5KB，次数：100000、耗时：1162ms （局域网，无业务，只序列化与发送）
-8. 多平台域名解析服务，动态更新解析(当IP变化时自动更新)
+8. 多平台域名解析服务，动态更新解析(当IP变化时自动更新),支持 **阿里云、腾讯云**
 
 ### 消息方式
 1. 默认打洞直连  **A->B**，250MB/s+ 的文件传输速度

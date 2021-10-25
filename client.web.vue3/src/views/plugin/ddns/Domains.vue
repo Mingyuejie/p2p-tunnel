@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-10-23 21:16:42
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-25 16:17:32
+ * @LastEditTime: 2021-10-25 20:06:05
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\plugin\ddns\Domains.vue
@@ -37,7 +37,7 @@
             </template>
         </el-select>
         <span class="split-pad"></span>
-        <el-button size="mini" @click="handleAddDomain">增加域名</el-button>
+        <el-button size="mini" @click="handleAddDomain" :loading="shareData.loading">增加域名</el-button>
     </div>
 </template>
 
@@ -76,6 +76,9 @@ export default {
             });
         }
 
+        watch(() => shareData.updateFlag, () => {
+            loadPlatforms();
+        });
         watch(() => shareData.group, () => {
             shareData.group.recordJson = shareData.group.Records.map(c => c.split('|')).reduce((json, item) => {
                 if (!json[item[1]]) {

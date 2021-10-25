@@ -117,6 +117,7 @@ namespace client.service.ddns.platform
             {
                 Offset = ((model.PageNumber - 1) * model.PageSize),
                 Limit = model.PageSize,
+                
             };
 
             var resp = GetClientByGroup(group).DescribeDomainListSync(req);
