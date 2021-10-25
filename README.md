@@ -2,10 +2,10 @@
  * @Author: snltty
  * @Date: 2021-08-22 14:09:03
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-20 16:51:04
+ * @LastEditTime: 2021-10-25 17:09:53
  * @version: v1.0.0
  * @Descripttion: 功能说明
- * @FilePath: \client.web.vue3d:\Desktop\p2p-tunnel\README.md
+ * @FilePath: \client.web.vue3c:\Users\ASUS\Desktop\p2p-tunnel\README.md
 -->
 # 详细说明
 
@@ -22,7 +22,7 @@
     - CPU：i5 8400、
     - 内存：威刚 XPG D60 3600 8G*2、 
     - 包大小：5KB，次数：100000、耗时：1162ms （局域网，无业务，只序列化与发送）
-
+8. 多平台域名解析服务，动态更新解析(当IP变化时自动更新)
 
 ### 消息方式
 1. 默认打洞直连  **A->B**，250MB/s+ 的文件传输速度
@@ -43,13 +43,14 @@
     3. client.service.album 客户端服务的 图片相册插件
     4. client.service.ftp 客户端服务的  文件服务插件
     5. client.service.tcpforward 客户端服务的 tcp转发插件
-    5. client.service.upnp 网关端口映射管理
-    5. client.service.wakeup 幻数据包唤醒
-    5. client.service.cmd p2p远程客户端命令
-    5. client.service.serverTcpforward 服务端TCP转发(需要自己部署服务器)
-    6. common 一些公共的功能
-    7. server 服务器
-    8. server.service 打洞服务器的服务端
+    6. client.service.upnp 网关端口映射管理
+    7. client.service.wakeup 幻数据包唤醒
+    8. client.service.cmd p2p远程客户端命令
+    9. client.service.ddns 域名解析
+    10. client.service.serverTcpforward 服务端TCP转发(需要自己部署服务器)
+    11. common 一些公共的功能
+    12. server 服务器
+    13. server.service 打洞服务器的服务端
 2. platform 跟平台有关的一些实验项目
     1. win  windows特有的
         1. remoteDektop 远程桌面相关

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-03 11:06:47
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-16 01:15:38
+ * @LastEditTime: 2021-10-25 17:20:47
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\Index.vue
@@ -25,6 +25,9 @@
                 </li>
                 <li>
                     <router-link :to="{name:'ServerTcpforward'}">服务器转发穿透</router-link>
+                </li>
+                <li>
+                    <router-link :to="{name:'AboutDdns'}">域名解析插件</router-link>
                 </li>
                 <li>
                     <router-link :to="{name:'AboutPublish'}">自己发布代码</router-link>

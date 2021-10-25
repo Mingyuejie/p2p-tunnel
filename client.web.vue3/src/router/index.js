@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-23 21:05:07
+ * @LastEditTime: 2021-10-25 17:22:12
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\router\index.js
@@ -119,7 +119,6 @@ const routes = [
                 name: 'AboutUse',
                 component: () => import('../views/about/Use.vue')
             },
-
             {
                 path: '/about-publish.html',
                 name: 'AboutPublish',
@@ -129,6 +128,11 @@ const routes = [
                 path: '/about-winservice.html',
                 name: 'AboutWinService',
                 component: () => import('../views/about/WinService.vue')
+            },
+            {
+                path: '/about-ddns.html',
+                name: 'AboutDdns',
+                component: () => import('../views/about/Ddns.vue')
             }
         ]
     }
