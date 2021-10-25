@@ -19,7 +19,7 @@ namespace server
         private long Id = 0;
 
         private readonly ConcurrentDictionary<int, ServerModel> servers = new ConcurrentDictionary<int, ServerModel>();
-
+        public SimplePushSubHandler<ServerDataWrap<TcpPacket[]>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<TcpPacket[]>>();
         private CancellationTokenSource cancellationTokenSource;
 
         private bool Running
@@ -29,11 +29,6 @@ namespace server
                 return cancellationTokenSource != null && !cancellationTokenSource.IsCancellationRequested;
             }
         }
-
-        public TCPServer()
-        {
-        }
-
         public void Start(int port, IPAddress ip = null)
         {
             if (Running)
@@ -41,10 +36,9 @@ namespace server
                 return;
             }
             cancellationTokenSource = new CancellationTokenSource();
-            BindAccept(port, ip ?? IPAddress.Any, cancellationTokenSource);
-
+            BindAccept(port, ip ?? IPAddress.Any);
         }
-        public void BindAccept(int port, IPAddress ip, CancellationTokenSource tokenSource)
+        public void BindAccept(int port, IPAddress ip)
         {
             if (servers.ContainsKey(port)) return;
 
@@ -59,27 +53,94 @@ namespace server
                 Socket = socket
             };
             servers.TryAdd(port, server);
-
-            _ = Task.Factory.StartNew((e) =>
+            _ = server.Socket.BeginAccept(new AsyncCallback(Accept), server);
+        }
+        private void Accept(IAsyncResult result)
+        {
+            ServerModel server = (ServerModel)result.AsyncState;
+            try
             {
-                while (!tokenSource.IsCancellationRequested)
+                Socket client = server.Socket.EndAccept(result);
+                result.AsyncWaitHandle.Close();
+                BindReceive(client);
+                _ = server.Socket.BeginAccept(new AsyncCallback(Accept), server);
+            }
+            catch (Exception ex)
+            {
+                Stop();
+                Logger.Instance.Debug(ex + "");
+            }
+        }
+        public void BindReceive(Socket socket, Action<SocketError> errorCallback = null, long connectId = 0)
+        {
+            IPEndPoint ip = IPEndPoint.Parse(socket.RemoteEndPoint.ToString());
+            Interlocked.Increment(ref Id);
+            ReceiveModel model = new ReceiveModel { ConnectId = connectId, ErrorCallback = errorCallback, Id = Id, Address = ip, Socket = socket, Buffer = Array.Empty<byte>() };
+            _ = ReceiveModel.Add(model);
+
+            model.Buffer = new byte[8 * 1024];
+            _ = socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
+        }
+        private void Receive(IAsyncResult result)
+        {
+            ReceiveModel model = (ReceiveModel)result.AsyncState;
+            try
+            {
+                if (model.Socket != null && model.Socket.Connected)
                 {
-                    server.AcceptDone.Reset();
-                    try
+                    int length = model.Socket.EndReceive(result);
+                    result.AsyncWaitHandle.Close();
+                    if (length > 0)
                     {
-                        _ = socket.BeginAccept(new AsyncCallback(Accept), server);
+                        if (Running)
+                        {
+                            if (length == model.Buffer.Length)
+                            {
+                                model.CacheBuffer.AddRange(model.Buffer);
+                            }
+                            else
+                            {
+                                model.CacheBuffer.AddRange(model.Buffer.AsSpan().Slice(0, length).ToArray());
+                            }
+                            _ = model.Socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
+                            Receive(model);
+                        }
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        Logger.Instance.Debug(ex + "");
-                        Stop();
-                        break;
+                        model.Clear();
                     }
-                    _ = server.AcceptDone.WaitOne();
                 }
 
-            }, TaskCreationOptions.LongRunning, tokenSource.Token);
+            }
+            catch (SocketException ex)
+            {
+                model.ErrorCallback?.Invoke(ex.SocketErrorCode);
+                Logger.Instance.Debug(ex);
+                model.Clear();
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.Debug(ex);
+                model.Clear();
+            }
         }
+        private void Receive(ReceiveModel model)
+        {
+            TcpPacket[] bytesArray = TcpPacket.FromArray(model.CacheBuffer).ToArray();
+            if (bytesArray.Length > 0)
+            {
+                var address = model.Socket.RemoteEndPoint as IPEndPoint;
+                OnPacket.Push(new ServerDataWrap<TcpPacket[]>
+                {
+                    Data = bytesArray,
+                    Address = address,
+                    ServerType = ServerType.TCP,
+                    Socket = model.Socket
+                });
+            }
+        }
+
         public void Stop()
         {
             cancellationTokenSource.Cancel();
@@ -106,108 +167,11 @@ namespace server
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.Error(ex + "");
+                    Logger.Instance.Error(ex);
                 }
             }
             return false;
         }
-
-        private void Accept(IAsyncResult result)
-        {
-            ServerModel server = (ServerModel)result.AsyncState;
-            _ = server.AcceptDone.Set();
-
-            try
-            {
-                Socket client = server.Socket.EndAccept(result);
-                BindReceive(client);
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.Debug(ex + "");
-            }
-        }
-        private void Receive(IAsyncResult result)
-        {
-            ReceiveModel model = (ReceiveModel)result.AsyncState;
-            try
-            {
-                if (model.Socket != null && model.Socket.Connected)
-                {
-                    int length = model.Socket.EndReceive(result);
-                    result.AsyncWaitHandle.Close();
-                    if (length > 0)
-                    {
-                        if (Running)
-                        {
-                            if (length == model.Buffer.Length)
-                            {
-                                Receive(model, model.Buffer);
-                            }
-                            else
-                            {
-                                Receive(model, model.Buffer.AsSpan().Slice(0, length).ToArray());
-                            }
-                            _ = model.Socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
-                        }
-                        else
-                        {
-                            Logger.Instance.Debug("!Running");
-                        }
-                    }
-                    else
-                    {
-                        Logger.Instance.Debug($"length:{length}");
-                        model.Clear();
-                    }
-                }
-
-            }
-            catch (SocketException ex)
-            {
-                if (ex.SocketErrorCode == SocketError.ConnectionAborted)
-                {
-                }
-                model.ErrorCallback?.Invoke(ex.SocketErrorCode);
-                Logger.Instance.Debug(ex + "");
-                model.Clear();
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.Debug(ex + "");
-                model.Clear();
-            }
-        }
-        public void BindReceive(Socket socket, Action<SocketError> errorCallback = null, long connectId = 0)
-        {
-            IPEndPoint ip = IPEndPoint.Parse(socket.RemoteEndPoint.ToString());
-            Interlocked.Increment(ref Id);
-            ReceiveModel model = new ReceiveModel { ConnectId = connectId, ErrorCallback = errorCallback, Id = Id, Address = ip, Socket = socket, Buffer = Array.Empty<byte>() };
-            _ = ReceiveModel.Add(model);
-
-            model.Buffer = new byte[8*1024];
-            _ = socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
-        }
-        private void Receive(ReceiveModel model, byte[] buffer)
-        {
-            model.CacheBuffer.AddRange(buffer);
-
-            TcpPacket[] bytesArray = TcpPacket.FromArray(model.CacheBuffer).ToArray();
-            if (bytesArray.Length > 0)
-            {
-                var address = model.Socket.RemoteEndPoint as IPEndPoint;
-                OnPacket.Push(new ServerDataWrap<TcpPacket[]>
-                {
-                    Data = bytesArray,
-                    Address = address,
-                    ServerType = ServerType.TCP,
-                    Socket = model.Socket
-                });
-            }
-        }
-
-        public SimplePushSubHandler<ServerDataWrap<TcpPacket[]>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<TcpPacket[]>>();
-
     }
 
     public class ReceiveModel
@@ -264,5 +228,4 @@ namespace server
         public Socket Socket { get; set; }
         public ManualResetEvent AcceptDone { get; set; }
     }
-
 }

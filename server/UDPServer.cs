@@ -18,8 +18,8 @@ namespace server
         }
 
         private UdpClient UdpcRecv { get; set; } = null;
-        IPEndPoint IpepServer { get; set; } = null;
         private CancellationTokenSource cancellationTokenSource;
+        public SimplePushSubHandler<ServerDataWrap<UdpPacket>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<UdpPacket>>();
 
         private bool Running
         {
@@ -34,8 +34,7 @@ namespace server
             if (!Running)
             {
                 cancellationTokenSource = new CancellationTokenSource();
-                IpepServer = new IPEndPoint(ip ?? IPAddress.Any, port);
-                UdpcRecv = new UdpClient(IpepServer);
+                UdpcRecv = new UdpClient(new IPEndPoint(ip ?? IPAddress.Any, port));
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
@@ -45,13 +44,33 @@ namespace server
                     UdpcRecv.Client.IOControl(SIO_UDP_CONNRESET, new byte[] { Convert.ToByte(false) }, null);
                 }
 
-                _ = Task.Factory.StartNew((e) =>
+                UdpcRecv.BeginReceive(new AsyncCallback(Receive), null);
+            }
+        }
+
+        private void Receive(IAsyncResult result)
+        {
+            try
+            {
+                IPEndPoint ipepClient = null;
+                byte[] bytRecv = UdpcRecv.EndReceive(result, ref ipepClient);
+                result.AsyncWaitHandle.Close();
+                UdpcRecv.BeginReceive(new AsyncCallback(Receive), null);
+                UdpPacket packet = UdpPacket.FromArray(ipepClient, bytRecv);
+                if (packet != null)
                 {
-                    while (Running)
+                    OnPacket.Push(new ServerDataWrap<UdpPacket>
                     {
-                        Receive();
-                    }
-                }, TaskCreationOptions.LongRunning, cancellationTokenSource.Token);
+                        Data = packet,
+                        Address = ipepClient,
+                        ServerType = ServerType.UDP,
+                        Socket = null
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.Error(ex.Message);
             }
         }
 
@@ -63,7 +82,6 @@ namespace server
                 UdpcRecv.Close();
                 UdpcRecv.Dispose();
                 UdpcRecv = null;
-                IpepServer = null;
             }
         }
 
@@ -83,32 +101,5 @@ namespace server
             }
             return false;
         }
-
-        private void Receive()
-        {
-            try
-            {
-                IPEndPoint ipepClient = null;
-                byte[] bytRecv = UdpcRecv.Receive(ref ipepClient);
-
-                UdpPacket packet = UdpPacket.FromArray(ipepClient, bytRecv);
-                if (packet != null)
-                {
-                    OnPacket.Push(new ServerDataWrap<UdpPacket>
-                    {
-                        Data = packet,
-                        Address = ipepClient,
-                        ServerType = ServerType.UDP,
-                        Socket = null
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.Error(ex.Message);
-            }
-        }
-
-        public SimplePushSubHandler<ServerDataWrap<UdpPacket>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<UdpPacket>>();
     }
 }

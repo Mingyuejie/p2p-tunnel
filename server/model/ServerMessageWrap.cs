@@ -22,10 +22,13 @@ namespace server.model
         /// </summary>
         [ProtoMember(3), Key(3)]
         public byte[] Content { get; set; } = Array.Empty<byte>();
+
         [ProtoMember(4, IsRequired = true), Key(4)]
         public ServerMessageTypes Type { get; set; } = ServerMessageTypes.REQUEST;
         [ProtoMember(5, IsRequired = true), Key(5)]
         public ServerMessageResponeCodes Code { get; set; } = ServerMessageResponeCodes.OK;
+        [ProtoMember(6), Key(6)]
+        public string Msg { get; set; } = string.Empty;
 
         /// <summary>
         /// 读取数据用这个
@@ -38,12 +41,23 @@ namespace server.model
         {
             byte typeByte = (byte)Type;
             byte[] requestIdByte = BitConverter.GetBytes(RequestId);
+
             byte[] codeByte = BitConverter.GetBytes((int)Code);
+
+            byte[] msg = Encoding.UTF8.GetBytes(Msg);
+            byte[] msgLength = BitConverter.GetBytes(msg.Length);
 
             byte[] pathByte = Encoding.ASCII.GetBytes(Path);
             byte[] pathLengthByte = BitConverter.GetBytes(pathByte.Length);
 
-            byte[] res = new byte[1 + requestIdByte.Length + codeByte.Length + pathByte.Length + pathLengthByte.Length + Content.Length];
+            byte[] res = new byte[
+                1 + 
+                requestIdByte.Length + 
+                codeByte.Length +
+                msgLength.Length + msg.Length +
+                pathByte.Length + pathLengthByte.Length +
+                Content.Length
+            ];
 
             int index = 1;
             res[0] = typeByte;
@@ -54,15 +68,18 @@ namespace server.model
             Array.Copy(codeByte, 0, res, index, codeByte.Length);
             index += codeByte.Length;
 
+            Array.Copy(msgLength, 0, res, index, msgLength.Length);
+            index += 4;
+            Array.Copy(msg, 0, res, index, msg.Length);
+            index += msg.Length;
+
             Array.Copy(pathLengthByte, 0, res, index, pathLengthByte.Length);
             index += pathLengthByte.Length;
-
             Array.Copy(pathByte, 0, res, index, pathByte.Length);
             index += pathByte.Length;
 
             Array.Copy(Content, 0, res, index, Content.Length);
             index += Content.Length;
-
             return res;
         }
 
@@ -79,14 +96,20 @@ namespace server.model
             Code = (ServerMessageResponeCodes)BitConverter.ToInt32(span.Slice(index, 4));
             index += 4;
 
+            int msgLength = BitConverter.ToInt32(span.Slice(index, 4));
+            index += 4;
+            if (msgLength > 0)
+            {
+                Msg = Encoding.UTF8.GetString(span.Slice(index, msgLength));
+                index += msgLength;
+            }
+
             int pathLength = BitConverter.ToInt32(span.Slice(index, 4));
             index += 4;
-
             Path = Encoding.ASCII.GetString(span.Slice(index, pathLength));
             index += pathLength;
 
             Memory = new Memory<byte>(bytes, index, span.Length - index);
-
         }
     }
 
@@ -168,6 +191,7 @@ namespace server.model
         /// 发送数据
         /// </summary>
         public T Data { get; set; } = default;
+        public string Msg { get; set; } = string.Empty;
 
         /// <summary>
         /// 超时时间，毫秒 0无限 -1一直超时 最小500

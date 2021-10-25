@@ -37,11 +37,7 @@ namespace server
             {
                 for (int i = 0, len = wrap.Data.Length; i < len; i++)
                 {
-                    //var watch = new MyStopwatch();
-                    //watch.Start();
                     InputData(wrap.Data[i], wrap);
-                    //watch.Stop();
-                    //watch.Output("TCP包耗时:");
                 }
             });
             this.udpserver.OnPacket.Sub((wrap) =>
@@ -55,10 +51,9 @@ namespace server
                 {
                     if (!sends.IsEmpty)
                     {
-                        long time = Helper.GetTimeStamp();
                         foreach (SendCacheModel item in sends.Values)
                         {
-                            if (item.Timeout > 0 && time - item.Time > item.Timeout)
+                            if (item.Timeout > 0 && lastTime - item.Time > item.Timeout)
                             {
                                 if (sends.TryRemove(item.RequestId, out SendCacheModel cache) && cache != null)
                                 {
@@ -76,6 +71,31 @@ namespace server
                 }
 
             }, TaskCreationOptions.LongRunning);
+        }
+
+        public void LoadPlugin(Type type, object obj)
+        {
+            Type voidType = typeof(void);
+            Type asyncType = typeof(IAsyncResult);
+            Type taskType = typeof(Task);
+
+            string path = type.Name.Replace("Plugin", "");
+            foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
+            {
+                string key = $"{path}/{method.Name}".ToLower();
+                if (!plugins.ContainsKey(key))
+                {
+                    PluginPathCacheInfo cache = new PluginPathCacheInfo
+                    {
+                        IsVoid = method.ReturnType == voidType,
+                        Method = method,
+                        Target = obj,
+                        IsTask = method.ReturnType.GetInterfaces().Contains(asyncType),
+                        IsTaskResult = method.ReturnType.IsSubclassOf(taskType)
+                    };
+                    plugins.TryAdd(key, cache);
+                }
+            }
         }
 
         public long NewRequestId()
@@ -139,7 +159,8 @@ namespace server
                         Content = msg.Data.ToBytes(),
                         Path = msg.Path,
                         Type = msg.Type,
-                        Code = msg.Code
+                        Code = msg.Code,
+                        Msg = msg.Msg
                     };
                     bool res = tcpserver.Send(TcpPacket.ToArray(wrap.ToArray()), msg.TcpCoket);
                     OnSendData.Push(new OnDataParam { Address = (msg.TcpCoket.RemoteEndPoint as IPEndPoint).ToInt64(), ServerType = ServerType.TCP, Time = lastTime });
@@ -169,11 +190,12 @@ namespace server
                         Content = msg.Data,
                         Path = msg.Path,
                         Type = msg.Type,
-                        Code = msg.Code
+                        Code = msg.Code,
+                        Msg = msg.Msg
                     };
 
                     bool res = tcpserver.Send(TcpPacket.ToArray(wrap.ToArray()), msg.TcpCoket);
-                  
+
                     OnSendData.Push(new OnDataParam { Address = (msg.TcpCoket.RemoteEndPoint as IPEndPoint).ToInt64(), ServerType = ServerType.TCP, Time = lastTime });
                     return res;
                 }
@@ -229,7 +251,8 @@ namespace server
                         Content = msg.Data.ToBytes(),
                         Path = msg.Path,
                         Code = msg.Code,
-                        Type = msg.Type
+                        Type = msg.Type,
+                        Msg = msg.Msg
                     };
 
                     _ = Interlocked.Increment(ref sequence);
@@ -245,7 +268,7 @@ namespace server
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.Debug(ex + "");
+                    Logger.Instance.Debug(ex);
                 }
             }
             return false;
@@ -266,7 +289,8 @@ namespace server
                         Content = msg.Data,
                         Path = msg.Path,
                         Code = msg.Code,
-                        Type = msg.Type
+                        Type = msg.Type,
+                        Msg = msg.Msg
                     };
 
                     _ = Interlocked.Increment(ref sequence);
@@ -282,35 +306,10 @@ namespace server
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.Debug(ex + "");
+                    Logger.Instance.Debug(ex);
                 }
             }
             return false;
-        }
-
-        public void LoadPlugin(Type type, object obj)
-        {
-            Type voidType = typeof(void);
-            Type asyncType = typeof(IAsyncResult);
-            Type taskType = typeof(Task);
-
-            string path = type.Name.Replace("Plugin", "");
-            foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
-            {
-                string key = $"{path}/{method.Name}".ToLower();
-                if (!plugins.ContainsKey(key))
-                {
-                    PluginPathCacheInfo cache = new PluginPathCacheInfo
-                    {
-                        IsVoid = method.ReturnType == voidType,
-                        Method = method,
-                        Target = obj,
-                        IsTask = method.ReturnType.GetInterfaces().Contains(asyncType),
-                        IsTaskResult = method.ReturnType.IsSubclassOf(taskType)
-                    };
-                    plugins.TryAdd(key, cache);
-                }
-            }
         }
 
         private void ReplayData<T>(SendMessageWrap<T> data, ServerType serverType)
@@ -355,7 +354,7 @@ namespace server
             {
                 if (sends.TryRemove(wrap.RequestId, out SendCacheModel send) && send != null)
                 {
-                    send.Tcs.SetResult(new ServerMessageResponeWrap { Code = wrap.Code, ErrorMsg = Encoding.UTF8.GetString(wrap.Memory.ToArray()), Data = wrap.Memory.ToArray() });
+                    send.Tcs.SetResult(new ServerMessageResponeWrap { Code = wrap.Code, ErrorMsg = wrap.Msg, Data = wrap.Memory.ToArray() });
                 }
             }
             else
@@ -431,7 +430,7 @@ namespace server
                                 TcpCoket = param.Socket,
                                 Address = param.Address,
                                 Code = excute.Code,
-                                Data = excute.ErrorMessage,
+                                Msg = excute.ErrorMessage,
                                 RequestId = wrap.RequestId,
                                 Path = wrap.Path,
                                 Type = ServerMessageTypes.RESPONSE
@@ -445,7 +444,7 @@ namespace server
                             TcpCoket = param.Socket,
                             Address = param.Address,
                             Code = ServerMessageResponeCodes.BAD_GATEWAY,
-                            Data = "没找到对应的插件执行你的操作",
+                            Msg = "没找到对应的插件执行你的操作",
                             RequestId = wrap.RequestId,
                             Path = wrap.Path,
                             Type = ServerMessageTypes.RESPONSE
@@ -454,13 +453,13 @@ namespace server
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.Error(ex + "");
+                    Logger.Instance.Error(ex);
                     ReplayData(new SendMessageWrap<object>
                     {
                         TcpCoket = param.Socket,
                         Address = param.Address,
                         Code = ServerMessageResponeCodes.BAD_GATEWAY,
-                        Data = ex.Message,
+                        Msg = ex.Message,
                         RequestId = wrap.RequestId,
                         Path = wrap.Path,
                         Type = ServerMessageTypes.RESPONSE

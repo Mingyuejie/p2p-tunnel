@@ -67,6 +67,11 @@ namespace common
             }
             queue.Enqueue(new LoggerModel { Type = LoggerTypes.DEBUG, Content = content });
         }
+        [Conditional("DEBUG")]
+        public void Debug(Exception ex)
+        {
+            queue.Enqueue(new LoggerModel { Type = LoggerTypes.DEBUG, Content = ex + "" });
+        }
         public void Info(string content, params object[] args)
         {
             if (args != null && args.Length > 0)
@@ -90,6 +95,10 @@ namespace common
                 content = string.Format(content, args);
             }
             queue.Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = content });
+        }
+        public void Error(Exception ex)
+        {
+            queue.Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = ex + "" });
         }
 
         public void Enqueue(LoggerModel model)
