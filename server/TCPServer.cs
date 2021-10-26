@@ -105,6 +105,7 @@ namespace server
                             TcpPacket[] bytesArray = TcpPacket.FromArray(model.CacheBuffer).ToArray();
 
                             Receive(model, bytesArray);
+
                             _ = model.Socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
                            
                         }

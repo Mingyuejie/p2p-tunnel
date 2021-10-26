@@ -91,9 +91,7 @@ namespace common
             System.Timers.Timer t = new(interval);//实例化Timer类，设置间隔时间为10000毫秒；
             t.Elapsed += new ElapsedEventHandler((object source, ElapsedEventArgs e) =>
             {
-                t.Stop();
                 action();
-                t.Start();
             });//到达时间的时候执行事件；
             t.AutoReset = true;//设置是执行一次（false）还是一直执行(true)；
             t.Enabled = true;//是否执行System.Timers.Timer.Elapsed事件；
@@ -102,6 +100,18 @@ namespace common
             setTimeoutCache.TryAdd(id, t);
 
             return id;
+        }
+
+        public static void Sleep(int milliseconds)
+        {
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            while (stopWatch.ElapsedMilliseconds < milliseconds)
+            {
+                int timeout = milliseconds - (int)stopWatch.ElapsedMilliseconds;
+                Thread.Sleep(timeout >= 0 ? timeout : 0);
+            }
+            stopWatch.Stop();
         }
 
         /// <summary>
@@ -228,7 +238,7 @@ namespace common
             }
             else
             {
-               return Dns.GetHostEntry(domain).AddressList[0];
+                return Dns.GetHostEntry(domain).AddressList[0];
             }
         }
 

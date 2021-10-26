@@ -407,8 +407,13 @@ namespace client.service.ftp
         {
             Task.Factory.StartNew(() =>
             {
+                int interval = 1000;
+                long us = 0;
                 while (true)
                 {
+                    var watch = new MyStopwatch();
+                    watch.Start();
+
                     if (!Uploads.Caches.IsEmpty)
                     {
                         foreach (var item in Uploads.Caches.SelectMany(c => c.Value.Values))
@@ -437,7 +442,19 @@ namespace client.service.ftp
                             }
                         }
                     }
-                    Thread.Sleep(1000);
+
+                    watch.Stop();
+                    us += watch.GetUs();
+                    if (us > 1000)
+                    {
+                        int ms = (int)(us / 1000);
+                        us = us - ms * 1000; 
+                        Helper.Sleep(interval-ms);
+                    }
+                    else
+                    {
+                        Helper.Sleep(interval);
+                    }
                 }
             }, TaskCreationOptions.LongRunning);
         }
