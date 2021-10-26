@@ -68,7 +68,7 @@ namespace server
             catch (Exception ex)
             {
                 Stop();
-                Logger.Instance.Debug(ex + "");
+                Logger.Instance.Debug(ex);
             }
         }
         public void BindReceive(Socket socket, Action<SocketError> errorCallback = null, long connectId = 0)
@@ -94,7 +94,7 @@ namespace server
                     {
                         if (Running)
                         {
-                            if (length == model.Buffer.Length)
+                            if (model.Buffer.Length == length)
                             {
                                 model.CacheBuffer.AddRange(model.Buffer);
                             }
@@ -102,8 +102,11 @@ namespace server
                             {
                                 model.CacheBuffer.AddRange(model.Buffer.AsSpan().Slice(0, length).ToArray());
                             }
+                            TcpPacket[] bytesArray = TcpPacket.FromArray(model.CacheBuffer).ToArray();
+
+                            Receive(model, bytesArray);
                             _ = model.Socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
-                            Receive(model);
+                           
                         }
                     }
                     else
@@ -125,9 +128,8 @@ namespace server
                 model.Clear();
             }
         }
-        private void Receive(ReceiveModel model)
+        private void Receive(ReceiveModel model, TcpPacket[] bytesArray)
         {
-            TcpPacket[] bytesArray = TcpPacket.FromArray(model.CacheBuffer).ToArray();
             if (bytesArray.Length > 0)
             {
                 var address = model.Socket.RemoteEndPoint as IPEndPoint;

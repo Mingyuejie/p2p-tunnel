@@ -1,4 +1,5 @@
-﻿using server.model;
+﻿using common;
+using server.model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -59,10 +60,7 @@ namespace server.packet
                 }
 
                 byte[] rev = buffer.GetRange(4, packageLen).ToArray();
-                lock (buffer)
-                {
-                    buffer.RemoveRange(0, packageLen + 4);
-                }
+                buffer.RemoveRange(0, packageLen + 4);
                 result.Add(new TcpPacket(rev));
             } while (buffer.Count > 4);
 
