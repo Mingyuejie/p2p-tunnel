@@ -101,8 +101,11 @@ namespace client.service.plugins.serverPlugins.register
                     registerState.LocalInfo.LocalIp = IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString();
                     tcpServer.BindReceive(registerState.TcpSocket, (code) =>
                     {
-                        registerEventHandles.SendExitMessage().Wait();
-                        AutoReg();
+                        if(code == SocketError.ConnectionReset)
+                        {
+                            registerEventHandles.SendExitMessage().Wait();
+                            AutoReg();
+                        }
                     });
 
                     //上报mac

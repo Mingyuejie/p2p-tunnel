@@ -1,6 +1,7 @@
 ﻿using common.extends;
 using server.model;
 using server.plugin;
+using System.Threading.Tasks;
 
 namespace client.service.plugins.serverPlugins.clients
 {
@@ -10,7 +11,8 @@ namespace client.service.plugins.serverPlugins.clients
     public class ClientsPlugin : IPlugin
     {
         private readonly ClientsEventHandles clientsEventHandles;
-        public ClientsPlugin(ClientsEventHandles clientsEventHandles) {
+        public ClientsPlugin(ClientsEventHandles clientsEventHandles)
+        {
             this.clientsEventHandles = clientsEventHandles;
         }
 

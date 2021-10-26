@@ -216,19 +216,19 @@ namespace client.service.ftp
                 Name = save.CacheFileName
             };
             save.State = UploadState.Uploading;
+            int packSize = 32 * 1024; //每个包大小
+            int packCount = (int)(save.TotalLength / packSize);
+            int lastPackSize = (int)(save.TotalLength - (packCount * packSize));
+
             Task.Run(() =>
             {
                 try
                 {
-                    int packSize = 32 * 1024; //每个包大小
-                    int packCount = (int)(save.TotalLength / packSize);
-                    int lastPackSize = (int)(save.TotalLength - (packCount * packSize));
-
                     using FileStream fs = new FileStream(save.FileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     int index = 0;
                     while (index < packCount)
                     {
-                        if (save.DataQueue.Count < 50)
+                        if (save.DataQueue.Count < 2000)
                         {
                             if (!save.Check())
                             {
@@ -289,6 +289,7 @@ namespace client.service.ftp
                         if (!save.DataQueue.IsEmpty)
                         {
                             save.DataQueue.TryDequeue(out FileSaveInfo.QueueModel model);
+
                             if (!SendOnlyTcp(model.Data, client.Socket, cmd.Cmd, cmd.SessionId))
                             {
                                 save.State = UploadState.Error;
@@ -373,6 +374,7 @@ namespace client.service.ftp
                     Path = SocketPath,
                     Socket = socket
                 });
+               
                 return res;
             }
             return false;
@@ -448,8 +450,8 @@ namespace client.service.ftp
                     if (us > 1000)
                     {
                         int ms = (int)(us / 1000);
-                        us = us - ms * 1000; 
-                        Helper.Sleep(interval-ms);
+                        us = us - ms * 1000;
+                        Helper.Sleep(interval - ms);
                     }
                     else
                     {
@@ -477,7 +479,7 @@ namespace client.service.ftp
 
             return res;
         }
-        public FtpCommandBase ReadAttribute(Memory<byte> bytes)
+        public FtpCommandBase ReadAttribute(ReadOnlyMemory<byte> bytes)
         {
             FtpCommandBase cmdBase = new FtpCommandBase();
             cmdBase.Cmd = (FtpCommand)bytes.Span[0];
@@ -686,6 +688,6 @@ namespace client.service.ftp
     public class FtpPluginParamWrap : PluginParamWrap
     {
         public ClientInfo Client { get; set; }
-        public Memory<byte> Data { get; set; }
+        public ReadOnlyMemory<byte> Data { get; set; }
     }
 }

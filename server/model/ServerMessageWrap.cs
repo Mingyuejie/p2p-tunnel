@@ -34,7 +34,7 @@ namespace server.model
         /// 读取数据用这个
         /// </summary>
         [IgnoreMember, ProtoIgnore]
-        public Memory<byte> Memory { get; set; } = Array.Empty<byte>();
+        public ReadOnlyMemory<byte> Memory { get; set; } = Array.Empty<byte>();
 
 
         public byte[] ToArray()
@@ -109,7 +109,7 @@ namespace server.model
             Path = Encoding.ASCII.GetString(span.Slice(index, pathLength));
             index += pathLength;
 
-            Memory = new Memory<byte>(bytes, index, span.Length - index);
+            Memory = new ReadOnlyMemory<byte>(bytes, index, span.Length - index);
         }
     }
 

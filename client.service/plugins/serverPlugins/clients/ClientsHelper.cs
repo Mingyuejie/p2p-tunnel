@@ -104,8 +104,6 @@ namespace client.service.plugins.serverPlugins.clients
 
                 System.Threading.Interlocked.Increment(ref readClientsTimes);
 
-                //Logger.Instance.Info(e.Data.Clients.ToJson());
-
                 //下线了的
                 IEnumerable<long> offlines = clientInfoCaching.AllIds().Except(e.Data.Clients.Select(c => c.Id));
                 foreach (long offid in offlines)

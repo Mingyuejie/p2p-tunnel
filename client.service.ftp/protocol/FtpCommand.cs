@@ -42,7 +42,7 @@ namespace client.service.ftp.protocol
         public long SessionId { get; set; }
 
         [ProtoMember(3), Key(3)]
-        public Memory<byte> Data { get; set; }
+        public ReadOnlyMemory<byte> Data { get; set; }
     }
 
 }
