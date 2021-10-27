@@ -353,7 +353,7 @@ namespace server
             {
                 if (sends.TryRemove(wrap.RequestId, out SendCacheModel send) && send != null)
                 {
-                    send.Tcs.SetResult(new ServerMessageResponeWrap { Code = wrap.Code, ErrorMsg = wrap.Msg, Data = wrap.Memory.ToArray() });
+                    send.Tcs.SetResult(new ServerMessageResponeWrap { Code = wrap.Code, ErrorMsg = wrap.Msg, Data = wrap.Memory });
                 }
             }
             else
