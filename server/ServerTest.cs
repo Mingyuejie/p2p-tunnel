@@ -29,7 +29,7 @@ namespace server
         public ServerTest()
         {
             m_numConnections = 100000;
-            m_receiveBufferSize = 9 * 1024;
+            m_receiveBufferSize = 2 * 1024;
             m_bufferManager = new BufferManager(m_receiveBufferSize * m_numConnections * opsToPreAlloc,
                 m_receiveBufferSize);
 
@@ -54,22 +54,7 @@ namespace server
 
         public void Start(int port, IPAddress ip = null)
         {
-            IPEndPoint localEndPoint = new IPEndPoint(ip, port);
-            long id = localEndPoint.ToInt64();
-            if (servers.ContainsKey(id))
-            {
-                return;
-            }
-
-            m_maxNumberAcceptedClients = new Semaphore(m_numConnections, m_numConnections);
-            var socket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            socket.Bind(localEndPoint);
-            socket.Listen(int.MaxValue);
-
-            servers.TryAdd(id, socket);
-
-            StartAccept(socket, null);
+            BindAccept(port, ip);
         }
         public void StartAccept(Socket socket, SocketAsyncEventArgs acceptEventArg)
         {
@@ -106,38 +91,14 @@ namespace server
             {
                 return;
             }
-            Task.Run(() =>
-            {
-                var socket = new Socket(ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                socket.Bind(new IPEndPoint(ip, port));
-                socket.Listen(int.MaxValue);
+            var socket = new Socket(ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            socket.Bind(new IPEndPoint(ip, port));
+            socket.Listen(int.MaxValue);
 
-                servers.TryAdd(localEndPoint.ToInt64(), socket);
-
-                StartAccept(socket, null);
-            });
+            servers.TryAdd(id, socket);
+            StartAccept(socket, null);
         }
-        public void BindReceive(Socket socket, Action<SocketError> errorCallback = null, long connectId = 0)
-        {
-            long id = (socket.LocalEndPoint as IPEndPoint).ToInt64();
-            Task.Run(() =>
-            {
-                SocketAsyncEventArgs readEventArgs = m_readWritePool.Pop();
-                var token = ((AsyncUserToken)readEventArgs.UserToken);
-                token.Socket = socket;
-                token.ErrorCallback = errorCallback;
-
-                servers.AddOrUpdate(id, socket, (a, b) => socket);
-
-                m_maxNumberAcceptedClients.WaitOne();
-                if (!socket.ReceiveAsync(readEventArgs))
-                {
-                    ProcessReceive(readEventArgs);
-                }
-            });
-        }
-
         private void ProcessAccept(Socket socket, SocketAsyncEventArgs e)
         {
             SocketAsyncEventArgs readEventArgs = m_readWritePool.Pop();
@@ -163,6 +124,26 @@ namespace server
                     Logger.Instance.Error(e.LastOperation.ToString());
                     break;
             }
+        }
+
+        public void BindReceive(Socket socket, Action<SocketError> errorCallback = null)
+        {
+            long id = (socket.LocalEndPoint as IPEndPoint).ToInt64();
+            Task.Run(() =>
+            {
+                SocketAsyncEventArgs readEventArgs = m_readWritePool.Pop();
+                var token = ((AsyncUserToken)readEventArgs.UserToken);
+                token.Socket = socket;
+                token.ErrorCallback = errorCallback;
+
+                servers.AddOrUpdate(id, socket, (a, b) => socket);
+
+                m_maxNumberAcceptedClients.WaitOne();
+                if (!socket.ReceiveAsync(readEventArgs))
+                {
+                    ProcessReceive(readEventArgs);
+                }
+            });
         }
         private void ProcessReceive(SocketAsyncEventArgs e)
         {

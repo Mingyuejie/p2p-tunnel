@@ -110,6 +110,8 @@ namespace client.service.ftp
             }
             catch (Exception ex)
             {
+                SendOnlyTcp(new FtpFileErrorCommand { SessionId = client.SelfId, Md5 = cmd.Md5, Msg = ex.Message }, client.Id);
+                Downloads.Remove(cmd.SessionId, cmd.Md5, true);
                 Logger.Instance.Error($"{ex}");
             }
         }
@@ -118,6 +120,11 @@ namespace client.service.ftp
         {
             Uploads.Remove(cmd.SessionId, cmd.Md5);
         }
+        public void OnFileError(FtpFileErrorCommand cmd)
+        {
+            Uploads.Remove(cmd.SessionId, cmd.Md5);
+        }
+
         public void OnFileUploadCancel(FtpCancelCommand cmd)
         {
             Uploads.Remove(cmd.SessionId, cmd.Md5);
@@ -205,8 +212,8 @@ namespace client.service.ftp
         private void Upload(FileSaveInfo save)
         {
             if (save == null) return;
+
             clientInfoCaching.Get(save.ClientId, out ClientInfo client);
-            if (client == null) return;
 
             FtpFileCommand cmd = new FtpFileCommand
             {
@@ -374,7 +381,7 @@ namespace client.service.ftp
                     Path = SocketPath,
                     Socket = socket
                 });
-               
+
                 return res;
             }
             return false;
@@ -428,7 +435,9 @@ namespace client.service.ftp
                         }
 
                         var saves = Uploads.Caches.SelectMany(c => c.Value.Values);
-                        if (saves.Count(c => c.State == UploadState.Uploading) < config.UploadNum)
+                        var count = saves.Count(c => c.State == UploadState.Uploading);
+                        var count1 = saves.Count(c => c.State == UploadState.Wait);
+                        if (count1 > 0 && count < config.UploadNum)
                         {
                             Upload(saves.FirstOrDefault(c => c.State == UploadState.Wait));
                         }
@@ -491,10 +500,6 @@ namespace client.service.ftp
             cmdBase.Data = bytes.Slice(index, bytes.Length - index);
 
             return cmdBase;
-        }
-        public Memory<byte> RemoveAttribute(byte[] bytes)
-        {
-            return bytes.AsMemory().Slice(1 + 8);
         }
     }
 

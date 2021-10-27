@@ -4,6 +4,7 @@ using common;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 
 namespace client.service.plugins.punchHolePlugins.plugins.udp
@@ -91,11 +92,16 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         {
             OnStep1Handler.Push(arg);
             //随便给来源客户端发个消息
-            punchHoldEventHandles.Send(new SendPunchHoleArg<Step21Model>
+
+            foreach (var ip in arg.Data.LocalIps.Split(',').Where(c => c.Length > 0))
             {
-                Address = new IPEndPoint(IPAddress.Parse(arg.Data.LocalIps), arg.Data.LocalUdpPort),
-                Data = new Step21Model { FromId = ConnectId }
-            });
+                punchHoldEventHandles.Send(new SendPunchHoleArg<Step21Model>
+                {
+                    Address = new IPEndPoint(IPAddress.Parse(ip), arg.Data.LocalUdpPort),
+                    Data = new Step21Model { FromId = ConnectId }
+                });
+            }
+
             punchHoldEventHandles.Send(new SendPunchHoleArg<Step21Model>
             {
                 Address = new IPEndPoint(IPAddress.Parse(arg.Data.Ip), arg.Data.Port),
@@ -134,10 +140,10 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         public void OnStep2(OnStep2EventArg e)
         {
             OnStep2Handler.Push(e);
-            List<Tuple<string, int>> ips = new List<Tuple<string, int>> {
-                new Tuple<string, int>(e.Data.LocalIps,e.Data.LocalUdpPort),
-                new Tuple<string, int>(e.Data.Ip,e.Data.Port),
-            };
+            List<Tuple<string, int>> ips = e.Data.LocalIps.Split(',').Where(c => c.Length > 0)
+                .Select(c => new Tuple<string, int>(c, e.Data.LocalUdpPort)).ToList();
+            ips.Add(new Tuple<string, int>(e.Data.Ip, e.Data.Port));
+
             foreach (Tuple<string, int> ip in ips)
             {
                 SendStep3(new SendStep3EventArg
@@ -174,7 +180,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         /// <param name="toid"></param>
         public void OnStep3(OnStep3EventArg e)
         {
-            OnStep3Handler.Push( e);
+            OnStep3Handler.Push(e);
             SendStep4(new SendStep4EventArg
             {
                 Address = e.Packet.SourcePoint,

@@ -12,7 +12,7 @@ namespace server
     public interface ITcpServer : IServer<TcpPacket[]>
     {
         public void BindAccept(int port, IPAddress ip);
-        public void BindReceive(Socket socket, Action<SocketError> errorCallback = null,long connectId = 0);
+        public void BindReceive(Socket socket, Action<SocketError> errorCallback = null);
 
         public bool Send(byte[] data, Socket socket);
     }

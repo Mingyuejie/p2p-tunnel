@@ -22,7 +22,6 @@ namespace client.service.ftp.client.plugin
 
         public object Excute(FtpPluginParamWrap data)
         {
-            Logger.Instance.Error(data.Data.Length.ToString());
             FtpFileCommand cmd = data.Data.DeBytes<FtpFileCommand>();
             ftpClient.OnFile(cmd, data);
             return null;

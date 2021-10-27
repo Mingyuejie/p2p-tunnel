@@ -49,7 +49,6 @@ namespace server
 
             ServerModel server = new()
             {
-                AcceptDone = new ManualResetEvent(false),
                 Socket = socket
             };
             servers.TryAdd(port, server);
@@ -71,11 +70,11 @@ namespace server
                 Logger.Instance.Debug(ex);
             }
         }
-        public void BindReceive(Socket socket, Action<SocketError> errorCallback = null, long connectId = 0)
+        public void BindReceive(Socket socket, Action<SocketError> errorCallback = null)
         {
             IPEndPoint ip = IPEndPoint.Parse(socket.RemoteEndPoint.ToString());
             Interlocked.Increment(ref Id);
-            ReceiveModel model = new ReceiveModel { ConnectId = connectId, ErrorCallback = errorCallback, Id = Id, Address = ip, Socket = socket, Buffer = Array.Empty<byte>() };
+            ReceiveModel model = new ReceiveModel {  ErrorCallback = errorCallback, Id = Id, Socket = socket, Buffer = Array.Empty<byte>() };
             _ = ReceiveModel.Add(model);
 
             model.Buffer = new byte[8 * 1024];
@@ -152,8 +151,6 @@ namespace server
             {
                 if (server != null && server.Socket != null)
                 {
-                    server.AcceptDone.Reset();
-                    server.AcceptDone.Dispose();
                     server.Socket.SafeClose();
                 }
             }
@@ -182,9 +179,7 @@ namespace server
         public static ConcurrentDictionary<long, ReceiveModel> clients = new ConcurrentDictionary<long, ReceiveModel>();
 
         public long Id { get; set; }
-        public long ConnectId { get; set; }
         public Socket Socket { get; set; }
-        public IPEndPoint Address { get; set; }
         public byte[] Buffer { get; set; }
         public List<byte> CacheBuffer { get; set; } = new List<byte>();
 
@@ -195,8 +190,6 @@ namespace server
             clients.TryRemove(Id, out _);
 
             Id = 0;
-            ConnectId = 0;
-            Address = null;
             CacheBuffer.Clear();
             Buffer = null;
             ErrorCallback = null;
@@ -229,6 +222,5 @@ namespace server
     public class ServerModel
     {
         public Socket Socket { get; set; }
-        public ManualResetEvent AcceptDone { get; set; }
     }
 }

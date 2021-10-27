@@ -101,7 +101,7 @@ namespace client.service.plugins.serverPlugins.register
                     registerState.LocalInfo.LocalIp = IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString();
                     tcpServer.BindReceive(registerState.TcpSocket, (code) =>
                     {
-                        if(code == SocketError.ConnectionReset)
+                        if (code == SocketError.ConnectionReset)
                         {
                             registerEventHandles.SendExitMessage().Wait();
                             AutoReg();
@@ -127,7 +127,10 @@ namespace client.service.plugins.serverPlugins.register
                         LocalUdpPort = registerState.LocalInfo.Port,
                         LocalTcpPort = registerState.LocalInfo.TcpPort,
                         Mac = mac,
-                        LocalIps = IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString(),
+                        LocalIps = string.Join(",", new List<string> {
+                            "127.0.0.1",
+                            IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString()
+                        }),
                         Timeout = 5 * 1000
                     });
                     if (result.Code == 0)

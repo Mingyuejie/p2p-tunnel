@@ -23,6 +23,7 @@ namespace client.service.ftp.protocol
         FILE_END = 5,
         FILE_CANCEL = 6,
         FILE_CANCELED = 7,
+        FILE_ERROR = 8,
     }
 
     [ProtoContract]

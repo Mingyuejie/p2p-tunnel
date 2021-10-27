@@ -6,6 +6,7 @@ using server;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -80,10 +81,10 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
         {
             OnStep1Handler.Push(e);
 
-            List<Tuple<string, int>> ips = new List<Tuple<string, int>> {
-             new Tuple<string, int>(e.Data.LocalIps,e.Data.LocalTcpPort),
-                new Tuple<string, int>(e.Data.Ip,e.Data.TcpPort),
-            };
+            List<Tuple<string, int>> ips = e.Data.LocalIps.Split(',').Where(c => c.Length > 0)
+                .Select(c => new Tuple<string, int>(c, e.Data.LocalTcpPort)).ToList();
+            ips.Add(new Tuple<string, int>(e.Data.Ip, e.Data.TcpPort));
+
             foreach (Tuple<string, int> ip in ips)
             {
                 _ = Task.Run(() =>
@@ -130,10 +131,10 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
         public void OnStep2(OnStep2EventArg e)
         {
             OnStep2Handler.Push(e);
-            List<Tuple<string, int>> ips = new List<Tuple<string, int>> {
-              new Tuple<string, int>(e.Data.LocalIps,e.Data.LocalTcpPort),
-                new Tuple<string, int>(e.Data.Ip,e.Data.TcpPort),
-            };
+
+            List<Tuple<string, int>> ips = e.Data.LocalIps.Split(',').Where(c => c.Length > 0)
+                .Select(c => new Tuple<string, int>(c, e.Data.LocalTcpPort)).ToList();
+            ips.Add(new Tuple<string, int>(e.Data.Ip, e.Data.TcpPort));
 
             _ = Task.Run(() =>
             {
@@ -157,11 +158,8 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                     try
                     {
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        //targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.NoDelay, true);
-                        // targetSocket.NoDelay = true;
-                        //targetSocket.SendBufferSize = 8 * 1024 * 1024;
                         targetSocket.Bind(new IPEndPoint(config.Client.BindIp, ClientTcpPort));
-                        Tuple<string, int> ip = index >= ips.Count ? ips[ips.Count - 1] : ips[index];
+                        Tuple<string, int> ip = index >= ips.Count ? ips[^1] : ips[index];
 
                         IAsyncResult result = targetSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2), null, null);
                         _ = result.AsyncWaitHandle.WaitOne(2000, false);
@@ -169,7 +167,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                         {
                             Logger.Instance.Debug($"{ip.Item1}:{ip.Item2} 连接成功");
                             targetSocket.EndConnect(result);
-                            tcpServer.BindReceive(targetSocket, connectId: e.Data.Id);
+                            tcpServer.BindReceive(targetSocket);
                             SendStep3(new SendStep3EventArg
                             {
                                 Socket = targetSocket,

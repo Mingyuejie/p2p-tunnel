@@ -33,4 +33,17 @@ namespace client.service.ftp.protocol
         [ProtoMember(3), Key(3)]
         public long Md5 { get; set; }
     }
+
+    [ProtoContract, MessagePackObject]
+    public class FtpFileErrorCommand : IFtpCommandBase
+    {
+        [ProtoMember(1, IsRequired = true), Key(1)]
+        public FtpCommand Cmd { get; } = FtpCommand.FILE_ERROR;
+        [ProtoMember(2), Key(2)]
+        public long SessionId { get; set; }
+        [ProtoMember(3), Key(3)]
+        public long Md5 { get; set; }
+        [ProtoMember(4), Key(4)]
+        public string Msg { get; set; }
+    }
 }
