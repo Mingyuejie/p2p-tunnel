@@ -102,11 +102,9 @@ namespace server
                                 model.CacheBuffer.AddRange(model.Buffer.AsSpan().Slice(0, length).ToArray());
                             }
                             TcpPacket[] bytesArray = TcpPacket.FromArray(model.CacheBuffer).ToArray();
-
                             Receive(model, bytesArray);
 
                             _ = model.Socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
-                           
                         }
                     }
                     else

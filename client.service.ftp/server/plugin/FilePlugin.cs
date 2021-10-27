@@ -1,5 +1,6 @@
 ﻿using client.service.ftp.plugin;
 using client.service.ftp.protocol;
+using common;
 using common.extends;
 using server.model;
 
@@ -16,9 +17,9 @@ namespace client.service.ftp.server.plugin
 
         public object Excute(FtpPluginParamWrap data)
         {
-            FtpFileCommand cmd = data.Data.DeBytes<FtpFileCommand>();
+            FtpFileCommand cmd = new FtpFileCommand();
+            cmd.FromBytes(data.Data);
             ftpServer.OnFile(cmd, data);
-
             return true;
         }
     }
