@@ -117,7 +117,7 @@ namespace server.model
     {
         public ServerMessageResponeCodes Code { get; set; } = ServerMessageResponeCodes.OK;
         public string ErrorMsg { get; set; } = string.Empty;
-        public byte[] Data { get; set; } = Array.Empty<byte>();
+        public ReadOnlyMemory<byte> Data { get; set; } = Array.Empty<byte>();
     }
 
     [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
  * @LastEditors: snltty
- * @LastEditTime: 2021-10-20 16:32:53
+ * @LastEditTime: 2021-10-27 20:42:19
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\Home.vue
@@ -14,7 +14,7 @@
                 <template #default="scope">
                     <div @click="handleClientClick(scope.row)">
                         <span style="margin-right:.6rem">{{scope.row.Name}}</span>
-                        <el-tag v-if="localIp == scope.row.Ip.split('.').slice(0, 3).join('.')" size="mini" effect="plain">局域网({{scope.row.Ip}})</el-tag>
+                        <el-tag v-if="scope.row.islocal" size="mini" effect="plain">局域网({{scope.row.Ip}})</el-tag>
                         <el-tag v-else size="mini" effect="plain" type="success">广域网({{scope.row.Ip}})</el-tag>
                     </div>
                 </template>

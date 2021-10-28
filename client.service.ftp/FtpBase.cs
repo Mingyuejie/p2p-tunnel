@@ -70,6 +70,7 @@ namespace client.service.ftp
                     fs = new FileSaveInfo
                     {
                         Stream = null,
+
                         IndexLength = 0,
                         TotalLength = cmd.Size,
                         FileName = Path.Combine(currentPath, cmd.Name),
@@ -84,7 +85,7 @@ namespace client.service.ftp
                 {
                     return;
                 }
-                if (cmd.Data == null || cmd.Data.Length == 0)
+                if (cmd.ReadData.Length == 0)
                 {
                     return;
                 }
@@ -98,8 +99,8 @@ namespace client.service.ftp
                     fs.Stream.Seek(0, SeekOrigin.Begin);
                 }
 
-                fs.Stream.Write(cmd.Data);
-                fs.IndexLength += cmd.Data.Length;
+                fs.Stream.Write(cmd.ReadData.Span);
+                fs.IndexLength += cmd.ReadData.Length;
 
                 if (fs.IndexLength >= cmd.Size)
                 {
@@ -195,14 +196,14 @@ namespace client.service.ftp
                 };
                 Uploads.Add(save);
 
-                SendOnlyTcp(new FtpFileCommand
-                {
-                    SessionId = client.SelfId,
-                    Md5 = save.Md5,
-                    Size = save.TotalLength,
-                    Name = save.CacheFileName,
-                    Data = Array.Empty<byte>()
-                }, client.Id);
+                //var cmd = new FtpFileCommand
+                //{
+                //    SessionId = client.SelfId,
+                //    Md5 = save.Md5,
+                //    Size = save.TotalLength,
+                //    Name = save.CacheFileName
+                //};
+                //SendOnlyTcp(cmd.ToBytes(),client.Socket, cmd.Cmd, cmd.SessionId);
             }
             catch (Exception ex)
             {
@@ -231,6 +232,7 @@ namespace client.service.ftp
             {
                 try
                 {
+                    cmd.ToBytes();
                     using FileStream fs = new FileStream(save.FileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     int index = 0;
                     while (index < packCount)
@@ -244,11 +246,9 @@ namespace client.service.ftp
 
                             byte[] data = new byte[packSize];
                             fs.Read(data, 0, packSize);
-                            cmd.Data = data;
-
                             save.DataQueue.Enqueue(new FileSaveInfo.QueueModel
                             {
-                                Data = cmd.ToBytes(),
+                                Data = cmd.WriteData(data),
                                 Length = data.Length
                             });
 
@@ -267,10 +267,9 @@ namespace client.service.ftp
                     {
                         byte[] data = new byte[lastPackSize];
                         fs.Read(data, 0, lastPackSize);
-                        cmd.Data = data;
                         save.DataQueue.Enqueue(new FileSaveInfo.QueueModel
                         {
-                            Data = cmd.ToBytes(),
+                            Data = cmd.WriteData(data),
                             Length = data.Length
                         });
                     }
