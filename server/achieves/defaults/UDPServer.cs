@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace server
+namespace server.achieves.defaults
 {
     public class UDPServer : IUdpServer
     {

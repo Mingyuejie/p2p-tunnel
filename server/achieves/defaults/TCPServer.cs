@@ -12,12 +12,10 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace server
+namespace server.achieves.defaults
 {
     public class TCPServer : ITcpServer
     {
-        private long Id = 0;
-
         private readonly ConcurrentDictionary<int, ServerModel> servers = new ConcurrentDictionary<int, ServerModel>();
         public SimplePushSubHandler<ServerDataWrap<TcpPacket[]>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<TcpPacket[]>>();
         private CancellationTokenSource cancellationTokenSource;
@@ -73,8 +71,8 @@ namespace server
         public void BindReceive(Socket socket, Action<SocketError> errorCallback = null)
         {
             IPEndPoint ip = IPEndPoint.Parse(socket.RemoteEndPoint.ToString());
-            Interlocked.Increment(ref Id);
-            ReceiveModel model = new ReceiveModel {  ErrorCallback = errorCallback, Id = Id, Socket = socket, Buffer = Array.Empty<byte>() };
+           
+            ReceiveModel model = new ReceiveModel {  ErrorCallback = errorCallback, Socket = socket, Buffer = Array.Empty<byte>() };
             _ = ReceiveModel.Add(model);
 
             model.Buffer = new byte[8 * 1024];
@@ -118,14 +116,14 @@ namespace server
             }
             catch (SocketException ex)
             {
+                model.Clear();
                 model.ErrorCallback?.Invoke(ex.SocketErrorCode);
                 Logger.Instance.Debug(ex);
-                model.Clear();
             }
             catch (Exception ex)
             {
-                Logger.Instance.Debug(ex);
                 model.Clear();
+                Logger.Instance.Debug(ex);
             }
         }
         private void Receive(ReceiveModel model, TcpPacket[] bytesArray)
@@ -176,6 +174,8 @@ namespace server
 
     public class ReceiveModel
     {
+        public static long FlagId = 0;
+
         public static ConcurrentDictionary<long, ReceiveModel> clients = new ConcurrentDictionary<long, ReceiveModel>();
 
         public long Id { get; set; }
@@ -199,9 +199,7 @@ namespace server
                 Socket.SafeClose();
                 Socket = null;
             }
-
         }
-
         public static void ClearAll()
         {
             foreach (ReceiveModel client in clients.Values)
@@ -212,9 +210,10 @@ namespace server
                 }
             }
         }
-
         public static bool Add(ReceiveModel model)
         {
+            Interlocked.Increment(ref FlagId);
+            model.Id = FlagId;
             return clients.TryAdd(model.Id, model);
         }
     }

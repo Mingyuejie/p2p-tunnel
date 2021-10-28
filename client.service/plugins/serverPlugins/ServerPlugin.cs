@@ -7,6 +7,7 @@ using client.service.plugins.serverPlugins.register;
 using client.service.plugins.serverPlugins.reset;
 using Microsoft.Extensions.DependencyInjection;
 using server;
+using server.achieves.defaults;
 using server.plugin;
 using server.plugins.register.caching;
 using System;
