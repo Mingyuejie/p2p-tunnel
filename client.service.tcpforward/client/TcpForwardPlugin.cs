@@ -123,6 +123,8 @@ namespace client.service.tcpforward.client
         public int[] PortBlackList { get; set; } = Array.Empty<int>();
 
         public bool Enable { get; set; } = true;
+        public int ReceiveBufferSize { get; set; } = 1024;
+        public int NumConnections { get; set; } = 3000;
 
         public static TcpForwardSettingModel ReadConfig()
         {
@@ -135,6 +137,9 @@ namespace client.service.tcpforward.client
 
             config.PortBlackList = PortBlackList;
             config.PortWhiteList = PortWhiteList;
+            config.Enable = Enable;
+            config.ReceiveBufferSize = ReceiveBufferSize;
+            config.NumConnections = NumConnections;
 
             ToFile(config,"tcpforward-appsettings.json");
         }

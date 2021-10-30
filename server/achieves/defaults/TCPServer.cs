@@ -71,8 +71,8 @@ namespace server.achieves.defaults
         public void BindReceive(Socket socket, Action<SocketError> errorCallback = null)
         {
             IPEndPoint ip = IPEndPoint.Parse(socket.RemoteEndPoint.ToString());
-           
-            ReceiveModel model = new ReceiveModel {  ErrorCallback = errorCallback, Socket = socket, Buffer = Array.Empty<byte>() };
+
+            ReceiveModel model = new ReceiveModel { ErrorCallback = errorCallback, Socket = socket, Buffer = Array.Empty<byte>() };
             _ = ReceiveModel.Add(model);
 
             model.Buffer = new byte[8 * 1024];

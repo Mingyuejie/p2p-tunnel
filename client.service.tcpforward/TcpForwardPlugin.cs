@@ -33,7 +33,7 @@ namespace client.service.tcpforward
             TcpForwardSettingModel config = TcpForwardSettingModel.ReadConfig();
             obj.AddSingleton((e) => config);
 
-            obj.AddSingleton<TcpForwardServer>();
+            obj.AddSingleton<ITcpForwardServer,TcpForwardServer>();
             obj.AddSingleton<TcpForwardHelper>();
             obj.AddSingleton<TcpForwardEventHandles>();
             return obj;

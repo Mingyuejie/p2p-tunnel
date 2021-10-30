@@ -1,5 +1,7 @@
 {
   "PortWhiteList": [],
   "PortBlackList": [],
-  "Enable": true
+  "Enable": true,
+  "NumConnections": 3000,
+  "ReceiveBufferSize": 1024
 }

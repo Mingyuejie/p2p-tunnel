@@ -22,14 +22,14 @@ namespace client.service.tcpforward
         private readonly string configFileName = "config_tcp_forward.json";
         public List<TcpForwardRecordBaseModel> Mappings { get; set; } = new List<TcpForwardRecordBaseModel>();
 
-        private readonly TcpForwardServer tcpForwardServer;
+        private readonly ITcpForwardServer tcpForwardServer;
         private readonly TcpForwardEventHandles tcpForwardEventHandles;
         private readonly IClientInfoCaching clientInfoCaching;
         private readonly TcpForwardSettingModel tcpForwardSettingModel;
 
         private int maxId = 0;
 
-        public TcpForwardHelper(TcpForwardServer tcpForwardServer, TcpForwardEventHandles tcpForwardEventHandles,
+        public TcpForwardHelper(ITcpForwardServer tcpForwardServer, TcpForwardEventHandles tcpForwardEventHandles,
             IClientInfoCaching clientInfoCaching, TcpForwardSettingModel tcpForwardSettingModel)
         {
             this.tcpForwardServer = tcpForwardServer;
@@ -110,6 +110,7 @@ namespace client.service.tcpforward
         }
         private void Request(OnTcpForwardEventArg arg)
         {
+
             if (!tcpForwardSettingModel.Enable)
             {
                 tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
@@ -125,7 +126,6 @@ namespace client.service.tcpforward
                 });
                 return;
             }
-
             if (tcpForwardSettingModel.PortWhiteList.Length > 0 && !tcpForwardSettingModel.PortWhiteList.Contains(arg.Data.TargetPort))
             {
                 tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
@@ -174,16 +174,27 @@ namespace client.service.tcpforward
                         FromId = arg.Data.FromID
                     };
                     IPEndPoint dnsEndPoint = new(Helper.GetDomainIp(arg.Data.TargetIp), arg.Data.TargetPort);
-                    socket.BeginConnect(dnsEndPoint, new AsyncCallback(Connect), new ConnectState
+                    socket.Connect(dnsEndPoint);
+                    ClientModel.Add(client);
+                    client.Stream = new NetworkStream(client.TargetSocket, false);
+
+                    if (client.AliveType == TcpForwardAliveTypes.TUNNEL)
                     {
-                        Client = client,
-                        Data = arg.Data.Buffer
-                    });
+                        BindReceive(client);
+                    }
                 }
-                else if (client.TargetSocket.Connected)
+
+                if (client.TargetSocket.Connected)
                 {
                     client.Stream.Write(arg.Data.Buffer);
                     client.Stream.Flush();
+                }
+                if (client.AliveType == TcpForwardAliveTypes.WEB)
+                {
+                    Task.Run(() =>
+                    {
+                        Receive(client, client.Stream.ReceiveAll());
+                    });
                 }
             }
             catch (Exception ex)
@@ -202,42 +213,6 @@ namespace client.service.tcpforward
                 });
             }
         }
-        private void Connect(IAsyncResult result)
-        {
-            var state = (ConnectState)result.AsyncState;
-            try
-            {
-                state.Client.TargetSocket.EndConnect(result);
-                result.AsyncWaitHandle.Close();
-                state.Client.Stream = new NetworkStream(state.Client.TargetSocket, false);
-
-                ClientModel.Add(state.Client);
-                BindReceive(state.Client);
-
-                if (state.Client.TargetSocket.Connected)
-                {
-                    state.Client.Stream.Write(state.Data);
-                    state.Client.Stream.Flush();
-                    state.Data = Array.Empty<byte>();
-                }
-
-            }
-            catch (Exception ex)
-            {
-                ClientModel.Remove(state.Client.RequestId);
-                tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
-                {
-                    Data = new TcpForwardModel
-                    {
-                        RequestId = state.Client.RequestId,
-                        Type = TcpForwardType.FAIL,
-                        Buffer = Encoding.UTF8.GetBytes(ex.Message),
-                        AliveType = state.Client.AliveType
-                    },
-                    Socket = state.Client.SourceSocket
-                });
-            }
-        }
         private void BindReceive(ClientModel client)
         {
             _ = Task.Run(() =>
@@ -249,10 +224,6 @@ namespace client.service.tcpforward
                         var bytes = client.Stream.ReceiveAll();
                         if (bytes.Length > 0)
                         {
-                            //if (client.AliveType == TcpForwardAliveTypes.WEB && IsClose(bytes))
-                            //{
-                            //    break;
-                            //}
                             Receive(client, bytes);
                         }
                         else
@@ -459,21 +430,6 @@ namespace client.service.tcpforward
                 return (ex.Message);
             }
         }
-
-        private byte[] connectionBytes = Encoding.ASCII.GetBytes("Connection:");
-        private byte[] closeBytes = Encoding.ASCII.GetBytes("close");
-        private byte[] endBytes = Encoding.ASCII.GetBytes("\r\n");
-        private bool IsClose(byte[] bytes)
-        {
-            Span<byte> span = bytes.AsSpan();
-            int index = span.IndexOf(connectionBytes) + connectionBytes.Length;
-            if (index < 0)
-            {
-                return false;
-            }
-            int index2 = span.Slice(index).IndexOf(endBytes) + index;
-            return span.Slice(index + 1, index2 - (index + 1)).SequenceEqual(closeBytes.AsSpan());
-        }
     }
 
     public class ConfigFileModel
@@ -481,13 +437,6 @@ namespace client.service.tcpforward
         public ConfigFileModel() { }
         public List<TcpForwardRecordBaseModel> Mappings { get; set; } = new List<TcpForwardRecordBaseModel>();
     }
-
-    public class ConnectState
-    {
-        public ClientModel Client { get; set; }
-        public byte[] Data { get; set; }
-    }
-
 
     public class ClientModel
     {

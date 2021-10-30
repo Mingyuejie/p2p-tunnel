@@ -1,9 +1,9 @@
 {
   "Web": [
     {
-      "Port": 8099,
+      "Port": 8098,
       "Forwards": {
-        "test1.snltty.com": {
+        "127.0.0.1:8098": {
           "TargetPort": 8099,
           "TargetIp": "127.0.0.1"
         }

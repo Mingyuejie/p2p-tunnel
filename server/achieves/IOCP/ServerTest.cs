@@ -20,7 +20,7 @@ namespace server.achieves.IOCP
         private int m_numConnections;   // the maximum number of connections the sample is designed to handle simultaneously
         private int m_receiveBufferSize;// buffer size to use for each socket I/O operation
         BufferManager m_bufferManager;  // represents a large reusable set of buffers for all socket operations
-        const int opsToPreAlloc = 2;    // read, write (don't alloc buffer space for accepts)
+        const int opsToPreAlloc = 1;    // read, write (don't alloc buffer space for accepts)
         SocketAsyncEventArgsPool m_readWritePool;
         Semaphore m_maxNumberAcceptedClients;
 
@@ -29,7 +29,7 @@ namespace server.achieves.IOCP
         public ServerTest()
         {
             m_numConnections = 100000;
-            m_receiveBufferSize = 2 * 1024;
+            m_receiveBufferSize = 1024;
             m_bufferManager = new BufferManager(m_receiveBufferSize * m_numConnections * opsToPreAlloc,
                 m_receiveBufferSize);
 
@@ -43,7 +43,7 @@ namespace server.achieves.IOCP
             for (int i = 0; i < m_numConnections; i++)
             {
                 readWriteEventArg = new SocketAsyncEventArgs();
-                readWriteEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(IO_Completed);
+                readWriteEventArg.Completed += IO_Completed;
                 readWriteEventArg.UserToken = new AsyncUserToken();
 
                 m_bufferManager.SetBuffer(readWriteEventArg);
@@ -56,33 +56,7 @@ namespace server.achieves.IOCP
         {
             BindAccept(port, ip);
         }
-        public void StartAccept(Socket socket, SocketAsyncEventArgs acceptEventArg)
-        {
-            try
-            {
-                if (acceptEventArg == null)
-                {
-                    acceptEventArg = new SocketAsyncEventArgs();
-                    acceptEventArg.Completed += new EventHandler<SocketAsyncEventArgs>((sender, e) =>
-                    {
-                        ProcessAccept(socket, e);
-                    });
-                }
-                else
-                {
-                    acceptEventArg.AcceptSocket = null;
-                }
 
-                m_maxNumberAcceptedClients.WaitOne();
-                if (!socket.AcceptAsync(acceptEventArg))
-                {
-                    ProcessAccept(socket, acceptEventArg);
-                }
-            }
-            catch (Exception)
-            {
-            }
-        }
         public void BindAccept(int port, IPAddress ip)
         {
             IPEndPoint localEndPoint = new IPEndPoint(ip, port);
@@ -99,18 +73,46 @@ namespace server.achieves.IOCP
             servers.TryAdd(id, socket);
             StartAccept(socket, null);
         }
+        public void StartAccept(Socket socket, SocketAsyncEventArgs acceptEventArg)
+        {
+            try
+            {
+                if (acceptEventArg == null)
+                {
+                    acceptEventArg = new SocketAsyncEventArgs();
+                    acceptEventArg.UserToken = new AsyncUserToken
+                    {
+                        Socket = socket
+                    };
+                    acceptEventArg.Completed += IO_Accept;
+                }
+                else
+                {
+                    acceptEventArg.AcceptSocket = null;
+                }
+
+                m_maxNumberAcceptedClients.WaitOne();
+                if (!socket.AcceptAsync(acceptEventArg))
+                {
+                    ProcessAccept(socket, acceptEventArg);
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+        private void IO_Accept(object sender, SocketAsyncEventArgs e)
+        {
+            AsyncUserToken token = ((AsyncUserToken)e.UserToken);
+            ProcessAccept(token.Socket, e);
+        }
         private void ProcessAccept(Socket socket, SocketAsyncEventArgs e)
         {
-            SocketAsyncEventArgs readEventArgs = m_readWritePool.Pop();
-            ((AsyncUserToken)readEventArgs.UserToken).Socket = e.AcceptSocket;
-
-            if (!e.AcceptSocket.ReceiveAsync(readEventArgs))
-            {
-                ProcessReceive(readEventArgs);
-            }
+            _BindReceive(e.AcceptSocket, null);
             StartAccept(socket, e);
         }
-        void IO_Completed(object sender, SocketAsyncEventArgs e)
+
+        private void IO_Completed(object sender, SocketAsyncEventArgs e)
         {
             switch (e.LastOperation)
             {
@@ -129,16 +131,19 @@ namespace server.achieves.IOCP
         public void BindReceive(Socket socket, Action<SocketError> errorCallback = null)
         {
             long id = (socket.LocalEndPoint as IPEndPoint).ToInt64();
+            servers.AddOrUpdate(id, socket, (a, b) => socket);
+            m_maxNumberAcceptedClients.WaitOne();
+
+            _BindReceive(socket, errorCallback);
+        }
+        private void _BindReceive(Socket socket, Action<SocketError> errorCallback = null)
+        {
             Task.Run(() =>
             {
                 SocketAsyncEventArgs readEventArgs = m_readWritePool.Pop();
                 var token = ((AsyncUserToken)readEventArgs.UserToken);
                 token.Socket = socket;
                 token.ErrorCallback = errorCallback;
-
-                servers.AddOrUpdate(id, socket, (a, b) => socket);
-
-                m_maxNumberAcceptedClients.WaitOne();
                 if (!socket.ReceiveAsync(readEventArgs))
                 {
                     ProcessReceive(readEventArgs);
@@ -152,20 +157,26 @@ namespace server.achieves.IOCP
             {
                 byte[] data = new byte[e.BytesTransferred];
                 Array.Copy(e.Buffer, e.Offset, data, 0, data.Length);
-                lock (token.CacheBuffer)
+                token.CacheBuffer.AddRange(data);
+
+                if (token.Socket.Available > 0)
                 {
-                    token.CacheBuffer.AddRange(data);
-                    TcpPacket[] bytesArray = TcpPacket.FromArray(token.CacheBuffer).ToArray();
-                    if (bytesArray.Length > 0)
+                    var bytes = new byte[token.Socket.Available];
+                    token.Socket.Receive(bytes);
+                    token.CacheBuffer.AddRange(bytes);
+                }
+                
+
+                TcpPacket[] bytesArray = TcpPacket.FromArray(token.CacheBuffer).ToArray();
+                if (bytesArray.Length > 0)
+                {
+                    OnPacket.Push(new ServerDataWrap<TcpPacket[]>
                     {
-                        OnPacket.Push(new ServerDataWrap<TcpPacket[]>
-                        {
-                            Data = bytesArray,
-                            Address = token.Socket.RemoteEndPoint as IPEndPoint,
-                            ServerType = ServerType.TCP,
-                            Socket = token.Socket
-                        });
-                    }
+                        Data = bytesArray,
+                        Address = token.Socket.RemoteEndPoint as IPEndPoint,
+                        ServerType = ServerType.TCP,
+                        Socket = token.Socket
+                    });
                 }
                 if (!token.Socket.ReceiveAsync(e))
                 {
@@ -178,6 +189,7 @@ namespace server.achieves.IOCP
                 token.ErrorCallback?.Invoke(e.SocketError);
             }
         }
+
         private void ProcessSend(SocketAsyncEventArgs e)
         {
             if (e.SocketError == SocketError.Success)
@@ -226,7 +238,10 @@ namespace server.achieves.IOCP
 
     public class AsyncUserToken
     {
+        
+        public ManualResetEvent Mre { get; set; }
         public Socket Socket { get; set; }
+        public string Msg { get; set; }
         public List<byte> CacheBuffer { get; set; } = new List<byte>();
         public Action<SocketError> ErrorCallback { get; set; }
     }

@@ -96,6 +96,7 @@ namespace client.service.serverTcpforward
                 if (client == null)
                 {
                     Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
                     client = new ClientModel
                     {
                         RequestId = data.RequestId,
@@ -107,20 +108,19 @@ namespace client.service.serverTcpforward
                     };
 
                     IPEndPoint dnsEndPoint = new(Helper.GetDomainIp(data.TargetIp), data.TargetPort);
-                    socket.BeginConnect(dnsEndPoint, new AsyncCallback(Connect), new ConnectState
-                    {
-                        Client = client,
-                        Data = data.Buffer
-                    });
+                    socket.Connect(dnsEndPoint);
+                    ClientModel.Add(client);
+                    client.Stream = new NetworkStream(client.TargetSocket, false);
 
+                    ClientModel.Add(client);
+
+                    BindReceive(client);
                 }
-                else
+
+                if (client.TargetSocket.Connected)
                 {
-                    if (client.TargetSocket.Connected)
-                    {
-                        client.Stream.Write(data.Buffer);
-                        client.Stream.Flush();
-                    }
+                    client.Stream.Write(data.Buffer);
+                    client.Stream.Flush();
                 }
 
             }
@@ -142,25 +142,6 @@ namespace client.service.serverTcpforward
             }
         }
 
-        private void Connect(IAsyncResult result)
-        {
-            var state = (ConnectState)result.AsyncState;
-            state.Client.TargetSocket.EndConnect(result);
-            result.AsyncWaitHandle.Close();
-            state.Client.Stream = new NetworkStream(state.Client.TargetSocket, false);
-
-            ClientModel.Add(state.Client);
-            BindReceive(state.Client);
-
-            if (state.Client.TargetSocket.Connected)
-            {
-                state.Client.Stream.Write(state.Data);
-                state.Client.Stream.Flush();
-
-                state.Data = Array.Empty<byte>();
-            }
-        }
-
         private void BindReceive(ClientModel client)
         {
             _ = Task.Run(() =>
@@ -176,12 +157,11 @@ namespace client.service.serverTcpforward
                         }
                         else
                         {
-                            client.Remove();
+                            break;
                         }
                     }
                     catch (Exception)
                     {
-                        client.Remove();
                         break;
                     }
                 }

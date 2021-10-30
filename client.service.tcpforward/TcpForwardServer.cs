@@ -1,6 +1,10 @@
 ﻿using client.plugins.serverPlugins.clients;
+using client.service.tcpforward.client;
 using common;
 using common.extends;
+using server.achieves.IOCP;
+using server.model;
+using server.packet;
 using server.plugins.register.caching;
 using System;
 using System.Collections.Concurrent;
@@ -14,229 +18,287 @@ using System.Threading.Tasks;
 
 namespace client.service.tcpforward
 {
-    public class TcpForwardServer
+    public class TcpForwardServer : ITcpForwardServer
     {
-        private readonly IClientInfoCaching clientInfoCaching;
-
-        public TcpForwardServer(IClientInfoCaching clientInfoCaching)
-        {
-            this.clientInfoCaching = clientInfoCaching;
-        }
-
-        private long requestId = 0;
+        private int m_numConnections;   // the maximum number of connections the sample is designed to handle simultaneously
+        private int m_receiveBufferSize;// buffer size to use for each socket I/O operation
+        BufferManager m_bufferManager;  // represents a large reusable set of buffers for all socket operations
+        const int opsToPreAlloc = 1;    // read, write (don't alloc buffer space for accepts)
+        SocketAsyncEventArgsPool m_readWritePool;
+        Semaphore m_maxNumberAcceptedClients;
 
         public SimplePushSubHandler<TcpForwardRequestModel> OnRequest { get; } = new SimplePushSubHandler<TcpForwardRequestModel>();
         public SimplePushSubHandler<ListeningChangeModel> OnListeningChange { get; } = new SimplePushSubHandler<ListeningChangeModel>();
 
+        private readonly IClientInfoCaching clientInfoCaching;
+        private readonly TcpForwardSettingModel tcpForwardSettingModel;
+        private long requestId = 0;
+
+        public TcpForwardServer(IClientInfoCaching clientInfoCaching, TcpForwardSettingModel tcpForwardSettingModel)
+        {
+            this.clientInfoCaching = clientInfoCaching;
+            this.tcpForwardSettingModel = tcpForwardSettingModel;
+
+            m_numConnections = tcpForwardSettingModel.NumConnections;
+            m_receiveBufferSize = tcpForwardSettingModel.ReceiveBufferSize;
+            m_bufferManager = new BufferManager(m_receiveBufferSize * m_numConnections * opsToPreAlloc,
+                m_receiveBufferSize);
+
+            m_readWritePool = new SocketAsyncEventArgsPool(m_numConnections);
+            m_maxNumberAcceptedClients = new Semaphore(m_numConnections, m_numConnections);
+
+            m_bufferManager.InitBuffer();
+
+            SocketAsyncEventArgs readWriteEventArg;
+
+            for (int i = 0; i < m_numConnections; i++)
+            {
+                readWriteEventArg = new SocketAsyncEventArgs();
+                readWriteEventArg.Completed += IO_Completed;
+                readWriteEventArg.UserToken = new AsyncUserToken();
+
+                m_bufferManager.SetBuffer(readWriteEventArg);
+
+                m_readWritePool.Push(readWriteEventArg);
+            }
+        }
+
         public void Start(TcpForwardRecordModel mapping)
         {
-
             if (ServerModel.Contains(mapping.SourcePort))
-            {
                 return;
-            }
 
-            Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-            socket.Bind(new IPEndPoint(IPAddress.Any, mapping.SourcePort));
-            socket.Listen(int.MaxValue);
+            BindAccept(mapping);
 
-
-            ServerModel server = new ServerModel
-            {
-                CancelToken = new CancellationTokenSource(),
-                AcceptDone = new ManualResetEvent(false),
-                Socket = socket,
-                SourcePort = mapping.SourcePort
-            };
-            ServerModel.Add(server);
             OnListeningChange.Push(new ListeningChangeModel
             {
                 SourcePort = mapping.SourcePort,
                 Listening = true
             });
-
-            int sourcePort = mapping.SourcePort;
-            int targetPort = mapping.TargetPort;
-            string targetIp = mapping.TargetIp;
-            ClientInfo targetClient = mapping.Client ?? new ClientInfo { Name = mapping.TargetName };
-            TcpForwardAliveTypes aliveType = mapping.AliveType;
-
-            _ = Task.Factory.StartNew((e) =>
-            {
-                while (!server.CancelToken.IsCancellationRequested)
-                {
-                    _ = server.AcceptDone.Reset();
-                    try
-                    {
-                        _ = socket.BeginAccept(new AsyncCallback(Accept), new ClientModel2
-                        {
-                            TargetClient = targetClient,
-                            TargetPort = targetPort,
-                            AliveType = aliveType,
-                            TargetIp = targetIp,
-                            SourceSocket = socket,
-                            SourcePort = sourcePort,
-                            AcceptDone = server.AcceptDone
-                        });
-                        _ = server.AcceptDone.WaitOne();
-                    }
-                    catch (Exception)
-                    {
-                        Stop(sourcePort);
-                        server.Remove();
-                        break;
-                    }
-                }
-            }, TaskCreationOptions.LongRunning, server.CancelToken.Token);
-
         }
 
-        private void Accept(IAsyncResult result)
+        private void BindAccept(TcpForwardRecordModel mapping)
         {
-            ClientModel2 server = (ClientModel2)result.AsyncState;
-            server.AcceptDone.Set();
+            IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Parse(mapping.SourceIp), mapping.SourcePort);
+
+            var socket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            socket.Bind(localEndPoint);
+            socket.Listen(int.MaxValue);
+
+            ServerModel.Add(new ServerModel
+            {
+                SourcePort = mapping.SourcePort,
+                Socket = socket
+            });
+
+            ClientInfo targetClient = mapping.Client ?? new ClientInfo { Name = mapping.TargetName };
+            SocketAsyncEventArgs acceptEventArg = new SocketAsyncEventArgs();
+            acceptEventArg.UserToken = new AsyncUserToken
+            {
+                SourceSocket = socket,
+                RequestId = 0,
+                TargetPort = mapping.TargetPort,
+                AliveType = mapping.AliveType,
+                TargetIp = mapping.TargetIp,
+                TargetClient = targetClient,
+                SourcePort = mapping.SourcePort
+            };
+            acceptEventArg.Completed += IO_Accept;
+            StartAccept(acceptEventArg);
+
+
+        }
+        private void StartAccept(SocketAsyncEventArgs acceptEventArg)
+        {
             try
             {
-
-                Socket socket = server.SourceSocket.EndAccept(result);
-                _ = Interlocked.Increment(ref requestId);
-
-                ClientCacheModel client = new ClientCacheModel
+                acceptEventArg.AcceptSocket = null;
+                AsyncUserToken token = ((AsyncUserToken)acceptEventArg.UserToken);
+                m_maxNumberAcceptedClients.WaitOne();
+                if (!token.SourceSocket.AcceptAsync(acceptEventArg))
                 {
-                    RequestId = requestId,
-                    SourcePort = server.SourcePort,
-                    Socket = socket
-                };
-                ClientCacheModel.Add(client);
-                client.Stream = new NetworkStream(socket, false);
-                ClientModel2 client1 = new()
-                {
-                    RequestId = client.RequestId,
-                    TargetPort = server.TargetPort,
-                    AliveType = server.AliveType,
-                    TargetIp = server.TargetIp,
-                    SourceSocket = socket,
-                    TargetClient = server.TargetClient,
-                    Stream = client.Stream
-                };
-                BindReceive(client1);
+                    ProcessAccept(acceptEventArg);
+                }
             }
             catch (Exception)
             {
             }
         }
-
-        public void BindReceive(ClientModel2 client)
+        private void IO_Accept(object sender, SocketAsyncEventArgs e)
         {
-            Task.Run(() =>
-            {
-                while (client.Stream.CanRead && ClientCacheModel.Contains(client.RequestId))
-                {
-                    try
-                    {
-                        var bytes = client.Stream.ReceiveAll();
-                        if (bytes.Length > 0)
-                        {
-                            Receive(client, bytes);
-                        }
-                        else
-                        {
-                            break;
-                        }
-
-                    }
-                    catch (Exception)
-                    {
-                        break;
-                    }
-                }
-                ClientCacheModel.Remove(client.RequestId);
-                Socket socket = GetSocket(client);
-                OnRequest.Push(new TcpForwardRequestModel
-                {
-                    Msg = new TcpForwardModel
-                    {
-                        RequestId = client.RequestId,
-                        Buffer = Array.Empty<byte>(),
-                        Type = TcpForwardType.CLOSE,
-                        TargetPort = client.TargetPort,
-                        AliveType = client.AliveType,
-                        TargetIp = client.TargetIp
-                    },
-                    Socket = socket
-                });
-
-            });
+            ProcessAccept(e);
         }
-        private void Receive(ClientModel2 client, byte[] data)
+        private void ProcessAccept(SocketAsyncEventArgs e)
         {
-            Socket socket = GetSocket(client);
+            _ = Interlocked.Increment(ref requestId);
+
+            var serverToken = (AsyncUserToken)e.UserToken;
+            SocketAsyncEventArgs readEventArgs = m_readWritePool.Pop();
+            var token = ((AsyncUserToken)readEventArgs.UserToken);
+            token.SourceSocket = e.AcceptSocket;
+            token.RequestId = requestId;
+            token.TargetPort = serverToken.TargetPort;
+            token.AliveType = serverToken.AliveType;
+            token.TargetIp = serverToken.TargetIp;
+            token.TargetClient = serverToken.TargetClient;
+            token.SourcePort = serverToken.SourcePort;
+
+            ClientCacheModel.Add(token);
+            if (!e.AcceptSocket.ReceiveAsync(readEventArgs))
+            {
+                ProcessReceive(readEventArgs);
+            }
+            StartAccept(e);
+        }
+
+        private void IO_Completed(object sender, SocketAsyncEventArgs e)
+        {
+            switch (e.LastOperation)
+            {
+                case SocketAsyncOperation.Receive:
+                    ProcessReceive(e);
+                    break;
+                case SocketAsyncOperation.Send:
+                    ProcessSend(e);
+                    break;
+                default:
+                    Logger.Instance.Error(e.LastOperation.ToString());
+                    break;
+            }
+        }
+
+        private void ProcessReceive(SocketAsyncEventArgs e)
+        {
+            AsyncUserToken token = (AsyncUserToken)e.UserToken;
+            if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
+            {
+                byte[] data = new byte[e.BytesTransferred];
+                Array.Copy(e.Buffer, e.Offset, data, 0, data.Length);
+                token.CacheBuffer.AddRange(data);
+
+                if (token.SourceSocket.Available > 0)
+                {
+                    var bytes = new byte[token.SourceSocket.Available];
+                    token.SourceSocket.Receive(bytes);
+                    token.CacheBuffer.AddRange(bytes);
+                }
+                Receive(e, token.CacheBuffer.ToArray());
+                token.CacheBuffer.Clear();
+                if (!token.SourceSocket.ReceiveAsync(e))
+                {
+                    ProcessReceive(e);
+                }
+            }
+            else
+            {
+                CloseClientSocket(e);
+            }
+        }
+
+        private void ProcessSend(SocketAsyncEventArgs e)
+        {
+            if (e.SocketError == SocketError.Success)
+            {
+
+            }
+            else
+            {
+                CloseClientSocket(e);
+            }
+        }
+        private void CloseClientSocket(SocketAsyncEventArgs e)
+        {
+            AsyncUserToken token = e.UserToken as AsyncUserToken;
+
+            ClientCacheModel.Remove(token.RequestId);
+            token.SourceSocket.SafeClose();
+            token.CacheBuffer.Clear();
+
+            m_readWritePool.Push(e);
+            m_maxNumberAcceptedClients.Release();
+
+
+            Socket socket = GetSocket(token);
             OnRequest.Push(new TcpForwardRequestModel
             {
                 Msg = new TcpForwardModel
                 {
-                    RequestId = client.RequestId,
-                    Buffer = data,
-                    Type = TcpForwardType.REQUEST,
-                    TargetPort = client.TargetPort,
-                    AliveType = client.AliveType,
-                    TargetIp = client.TargetIp,
-                    FromID = client.TargetClient.Id
+                    RequestId = token.RequestId,
+                    Buffer = Array.Empty<byte>(),
+                    Type = TcpForwardType.CLOSE,
+                    TargetPort = token.TargetPort,
+                    AliveType = token.AliveType,
+                    TargetIp = token.TargetIp
                 },
                 Socket = socket
             });
         }
 
-        private Socket GetSocket(ClientModel2 client)
+        private void Receive(SocketAsyncEventArgs e, byte[] data)
         {
+            var userToken = (AsyncUserToken)e.UserToken;
+            Socket socket = GetSocket(userToken);
 
-            Socket socket = null;
-            if (client.TargetClient != null)
+            //userToken.SourceSocket.Send(GetData("response text"));
+            OnRequest.Push(new TcpForwardRequestModel
             {
-                socket = client.TargetClient.Socket;
-                if (socket == null || !socket.Connected || client.TargetClient.Name != client.TargetClient.Name)
+                Msg = new TcpForwardModel
                 {
-                    var clientinfo = clientInfoCaching.All().FirstOrDefault(c => c.Name == client.TargetClient.Name);
+                    RequestId = userToken.RequestId,
+                    Buffer = data,
+                    Type = TcpForwardType.REQUEST,
+                    TargetPort = userToken.TargetPort,
+                    AliveType = userToken.AliveType,
+                    TargetIp = userToken.TargetIp,
+                    FromID = userToken.TargetClient.Id
+                },
+                Socket = socket
+            });
+        }
+        private byte[] GetData(string body)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("HTTP/1.1 200 OK\r\n");
+            sb.Append("Content-Type: text/html;charset=utf-8\r\n");
+            sb.Append($"Content-Length: {Encoding.UTF8.GetBytes(body).Length}\r\n");
+            sb.Append($"Connection: keep-alive\r\n");
+            sb.Append("Access-Control-Allow-Credentials: true\r\n");
+            sb.Append("Access-Control-Allow-Headers: *\r\n");
+            sb.Append("Access-Control-Allow-Methods: *\r\n");
+            sb.Append("Access-Control-Allow-Origin: *\r\n");
+            sb.Append("\r\n");
+            sb.Append(body);
+
+            return Encoding.UTF8.GetBytes(sb.ToString());
+        }
+
+        private Socket GetSocket(AsyncUserToken token)
+        {
+            Socket socket = null;
+            if (token.TargetClient != null)
+            {
+                socket = token.TargetClient.Socket;
+                if (socket == null || !socket.Connected || token.TargetClient.Name != token.TargetClient.Name)
+                {
+                    var clientinfo = clientInfoCaching.All().FirstOrDefault(c => c.Name == token.TargetClient.Name);
                     if (clientinfo != null)
                     {
-                        client.TargetClient = clientinfo;
-                        socket = client.TargetClient.Socket;
+                        token.TargetClient = clientinfo;
+                        socket = token.TargetClient.Socket;
                     }
                 }
             }
             return socket;
         }
 
-        public void StartAll(List<TcpForwardRecordBaseModel> mappings)
-        {
-            foreach (TcpForwardRecordBaseModel item in mappings)
-            {
-                Start(new TcpForwardRecordModel
-                {
-                    AliveType = item.AliveType,
-                    SourceIp = item.SourceIp,
-                    SourcePort = item.SourcePort,
-                    TargetIp = item.TargetIp,
-                    TargetName = item.TargetName,
-                    TargetPort = item.TargetPort,
-                    Listening = false,
-                });
-            }
-        }
-
         public void Response(TcpForwardModel model)
         {
-            if (ClientCacheModel.Get(model.RequestId, out ClientCacheModel client) && client != null)
+            if (ClientCacheModel.Get(model.RequestId, out AsyncUserToken client) && client != null)
             {
                 try
                 {
-                    if (client.Stream.CanWrite)
-                    {
-                        client.Stream.Write(model.Buffer);
-                        client.Stream.Flush();
-                    }
+                    client.SourceSocket.Send(model.Buffer);
                 }
                 catch (Exception)
                 {
@@ -246,46 +308,26 @@ namespace client.service.tcpforward
 
         public void Fail(TcpForwardModel failModel, string body = "")
         {
-            if (ClientCacheModel.Get(failModel.RequestId, out ClientCacheModel client) && client != null)
+            ClientCacheModel.Get(failModel.RequestId, out AsyncUserToken client);
+            if (client != null && failModel.AliveType == TcpForwardAliveTypes.WEB)
             {
-                if (failModel.AliveType == TcpForwardAliveTypes.WEB)
+                StringBuilder sb = new StringBuilder();
+                byte[] bytes = failModel.Buffer;
+                if (body.Length > 0)
                 {
-                    StringBuilder sb = new StringBuilder();
-                    byte[] bytes = Array.Empty<byte>();
-                    if (!string.IsNullOrWhiteSpace(body))
-                    {
-                        bytes = Encoding.UTF8.GetBytes(body);
-                    }
-                    else if (failModel.Buffer != null && failModel.Buffer.Length > 0)
-                    {
-                        bytes = failModel.Buffer;
-                    }
+                    bytes = Encoding.UTF8.GetBytes(body);
+                }
 
-                    if (failModel.Buffer.IsOptionsMethod())
-                    {
-                        sb.Append("HTTP/1.1 204 No Content\r\n");
-                    }
-                    else
-                    {
-                        sb.Append("HTTP/1.1 404 Not Found\r\n");
-                    }
-                    sb.Append("Content-Type: text/html;charset=utf-8\r\n");
-                    sb.Append($"Content-Length: {bytes.Length}\r\n");
-                    sb.Append("Access-Control-Allow-Credentials: true\r\n");
-                    sb.Append("Connection: close\r\n");
-                    sb.Append("Access-Control-Allow-Headers: *\r\n");
-                    sb.Append("Access-Control-Allow-Methods: *\r\n");
-                    sb.Append("Access-Control-Allow-Origin: *\r\n");
-                    sb.Append("\r\n");
-                    client.Stream.Write(Encoding.UTF8.GetBytes(sb.ToString()));
-                    client.Stream.Write(bytes);
-                    client.Stream.Flush();
-                }
-                else
-                {
-                    Logger.Instance.Error(Encoding.UTF8.GetString(failModel.Buffer));
-                }
-                client.Remove();
+                sb.Append("HTTP/1.1 200 OK\r\n");
+                sb.Append("Content-Type: text/html;charset=utf-8\r\n");
+                sb.Append($"Content-Length: {bytes.Length}\r\n");
+                sb.Append("Access-Control-Allow-Credentials: true\r\n");
+                sb.Append("Access-Control-Allow-Headers: *\r\n");
+                sb.Append("Access-Control-Allow-Methods: *\r\n");
+                sb.Append("Access-Control-Allow-Origin: *\r\n");
+                sb.Append("\r\n");
+                client.SourceSocket.Send(Encoding.UTF8.GetBytes(sb.ToString()));
+                client.SourceSocket.Send(bytes);
             }
         }
 
@@ -309,16 +351,20 @@ namespace client.service.tcpforward
                 Stop(model);
             }
         }
-
-        public void StopAll()
-        {
-            foreach (ServerModel item in ServerModel.All())
-            {
-                Stop(item);
-            }
-        }
     }
 
+    public class AsyncUserToken
+    {
+        public ClientInfo TargetClient { get; set; }
+        public List<byte> CacheBuffer { get; set; } = new List<byte>();
+        public long RequestId { get; set; }
+        public int SourcePort { get; set; } = 0;
+        public Socket SourceSocket { get; set; }
+        public byte[] BufferSize { get; set; }
+        public string TargetIp { get; set; } = string.Empty;
+        public int TargetPort { get; set; } = 0;
+        public TcpForwardAliveTypes AliveType { get; set; } = TcpForwardAliveTypes.WEB;
+    }
     public class ListeningChangeModel
     {
         public int SourcePort { get; set; } = 0;
@@ -331,17 +377,9 @@ namespace client.service.tcpforward
         public TcpForwardModel Msg { get; set; }
     }
 
-    public class ClientModel2 : ClientModel
-    {
-        public ClientInfo TargetClient { get; set; }
-        public ManualResetEvent AcceptDone { get; set; }
-        public MyStopwatch Watch { get; set; }
-    }
-
-
     public class ClientCacheModel
     {
-        private static ConcurrentDictionary<long, ClientCacheModel> clients = new();
+        private static ConcurrentDictionary<long, AsyncUserToken> clients = new();
 
         public int SourcePort { get; set; } = 0;
         public Socket Socket { get; set; }
@@ -356,7 +394,7 @@ namespace client.service.tcpforward
             return clients.Keys;
         }
 
-        public static bool Add(ClientCacheModel model)
+        public static bool Add(AsyncUserToken model)
         {
             return clients.TryAdd(model.RequestId, model);
         }
@@ -366,24 +404,16 @@ namespace client.service.tcpforward
             return clients.ContainsKey(id);
         }
 
-        public static bool Get(long id, out ClientCacheModel c)
+        public static bool Get(long id, out AsyncUserToken c)
         {
             return clients.TryGetValue(id, out c);
         }
 
         public static void Remove(long id)
         {
-            if (clients.TryRemove(id, out ClientCacheModel c))
+            if (clients.TryRemove(id, out AsyncUserToken c))
             {
-                c.Socket.SafeClose();
-                try
-                {
-                    c.Stream.Close();
-                    c.Stream.Dispose();
-                }
-                catch (Exception)
-                {
-                }
+                // c.SourceSocket.SafeClose();
             }
         }
         public static void Clear(int sourcePort)
@@ -405,12 +435,11 @@ namespace client.service.tcpforward
             return clients.Count;
         }
     }
+
     public class ServerModel
     {
         public int SourcePort { get; set; } = 0;
         public Socket Socket { get; set; }
-        public ManualResetEvent AcceptDone { get; set; }
-        public CancellationTokenSource CancelToken { get; set; }
 
         public static ConcurrentDictionary<int, ServerModel> services = new();
 
@@ -419,23 +448,21 @@ namespace client.service.tcpforward
             return services.TryAdd(model.SourcePort, model);
         }
 
-        public static bool Contains(int id)
+        public static bool Contains(int port)
         {
-            return services.ContainsKey(id);
+            return services.ContainsKey(port);
         }
 
-        public static bool Get(int id, out ServerModel c)
+        public static bool Get(int port, out ServerModel c)
         {
-            return services.TryGetValue(id, out c);
+            return services.TryGetValue(port, out c);
         }
 
-        public static void Remove(int id)
+        public static void Remove(int port)
         {
-            if (services.TryRemove(id, out ServerModel c))
+            if (services.TryRemove(port, out ServerModel c))
             {
                 c.Socket.SafeClose();
-                c.CancelToken.Cancel();
-                c.AcceptDone.Dispose();
             }
         }
         public static IEnumerable<ServerModel> All()
