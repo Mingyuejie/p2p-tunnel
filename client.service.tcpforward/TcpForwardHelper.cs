@@ -174,28 +174,25 @@ namespace client.service.tcpforward
                         FromId = arg.Data.FromID
                     };
                     IPEndPoint dnsEndPoint = new(Helper.GetDomainIp(arg.Data.TargetIp), arg.Data.TargetPort);
-                    socket.Connect(dnsEndPoint);
-                    ClientModel.Add(client);
-                    client.Stream = new NetworkStream(client.TargetSocket, false);
-
-                    if (client.AliveType == TcpForwardAliveTypes.TUNNEL)
+                    socket.BeginConnect(dnsEndPoint, new AsyncCallback(Connect), new ConnectState
                     {
-                        BindReceive(client);
-                    }
+                        Client = client,
+                        Data = arg.Data.Buffer
+                    });
                 }
-
-                if (client.TargetSocket.Connected)
+                else
                 {
                     client.Stream.Write(arg.Data.Buffer);
                     client.Stream.Flush();
-                }
-                if (client.AliveType == TcpForwardAliveTypes.WEB)
-                {
-                    Task.Run(() =>
+                    if (client.AliveType == TcpForwardAliveTypes.WEB)
                     {
-                        Receive(client, client.Stream.ReceiveAll());
-                    });
+                        Task.Run(() =>
+                        {
+                            Receive(client, client.Stream.ReceiveAll());
+                        });
+                    }
                 }
+
             }
             catch (Exception ex)
             {
@@ -213,6 +210,51 @@ namespace client.service.tcpforward
                 });
             }
         }
+        private void Connect(IAsyncResult result)
+        {
+            var state = (ConnectState)result.AsyncState;
+            try
+            {
+                state.Client.TargetSocket.EndConnect(result);
+                result.AsyncWaitHandle.Close();
+                state.Client.Stream = new NetworkStream(state.Client.TargetSocket, false);
+
+                ClientModel.Add(state.Client);
+                if (state.Client.AliveType == TcpForwardAliveTypes.TUNNEL)
+                {
+                    BindReceive(state.Client);
+                }
+
+                if (state.Client.TargetSocket.Connected)
+                {
+                    state.Client.Stream.Write(state.Data);
+                    state.Client.Stream.Flush();
+                    state.Data = Array.Empty<byte>();
+                }
+                if (state.Client.AliveType == TcpForwardAliveTypes.WEB)
+                {
+                    Receive(state.Client, state.Client.Stream.ReceiveAll());
+                }
+
+            }
+            catch (Exception ex)
+            {
+                ClientModel.Remove(state.Client.RequestId);
+                tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
+                {
+                    Data = new TcpForwardModel
+                    {
+                        RequestId = state.Client.RequestId,
+                        Type = TcpForwardType.FAIL,
+                        Buffer = Encoding.UTF8.GetBytes(ex.Message),
+                        AliveType = state.Client.AliveType
+                    },
+                    Socket = state.Client.SourceSocket
+                });
+            }
+        }
+
+
         private void BindReceive(ClientModel client)
         {
             _ = Task.Run(() =>
@@ -430,6 +472,12 @@ namespace client.service.tcpforward
                 return (ex.Message);
             }
         }
+    }
+
+    public class ConnectState
+    {
+        public ClientModel Client { get; set; }
+        public byte[] Data { get; set; }
     }
 
     public class ConfigFileModel

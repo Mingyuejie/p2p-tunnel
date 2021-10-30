@@ -1,1 +1,22 @@
-﻿{"Web":[{"Port":8000,"Forwards":{"120.79.205.184":{"TargetPort":8099,"TargetIp":"127.0.0.1"}}}],"Tunnel":[{"Port":3388,"TargetPort":3389,"TargetIp":"127.0.0.1"}],"Enable":true,"AutoReg":true}
+{
+  "Web": [
+    {
+      "Port": 8098,
+      "Forwards": {
+        "127.0.0.1:8098": {
+          "TargetPort": 8099,
+          "TargetIp": "127.0.0.1"
+        }
+      }
+    }
+  ],
+  "Tunnel": [
+    {
+      "Port": 3388,
+      "TargetPort": 3389,
+      "TargetIp": "127.0.0.1"
+    }
+  ],
+  "Enable": true,
+  "AutoReg": true
+}
