@@ -3,12 +3,13 @@
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net5.0</TargetFramework>
+		<AnalysisLevel>none</AnalysisLevel>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 	  <DefineConstants>DEBUG;TRACE</DefineConstants>
 	  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-	  <Optimize>true</Optimize>
+	  <Optimize>True</Optimize>
 	  <DebugType>portable</DebugType>
 	  <DebugSymbols>true</DebugSymbols>
 	</PropertyGroup>
@@ -18,6 +19,7 @@
 	  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	  <DebugType>none</DebugType>
 	  <DebugSymbols>false</DebugSymbols>
+	  <Optimize>True</Optimize>
 	</PropertyGroup>
 	<ItemGroup>
 		<Content Include="appsettings.json">
