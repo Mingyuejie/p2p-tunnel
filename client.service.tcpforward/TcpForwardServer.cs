@@ -107,7 +107,6 @@ namespace client.service.tcpforward
             acceptEventArg.Completed += IO_Accept;
             StartAccept(acceptEventArg);
 
-
         }
         private void StartAccept(SocketAsyncEventArgs acceptEventArg)
         {
@@ -184,7 +183,9 @@ namespace client.service.tcpforward
                     token.CacheBuffer.AddRange(bytes);
                 }
                 Receive(e, token.CacheBuffer.ToArray());
+                //token.SourceSocket.Send(GetData("response text"));
                 token.CacheBuffer.Clear();
+
                 if (!token.SourceSocket.ReceiveAsync(e))
                 {
                     ProcessReceive(e);
@@ -194,6 +195,22 @@ namespace client.service.tcpforward
             {
                 CloseClientSocket(e);
             }
+        }
+        private byte[] GetData(string body)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("HTTP/1.1 200 OK\r\n");
+            sb.Append("Content-Type: text/html;charset=utf-8\r\n");
+            sb.Append($"Content-Length: {Encoding.UTF8.GetBytes(body).Length}\r\n");
+            sb.Append($"Connection: keep-alive\r\n");
+            sb.Append("Access-Control-Allow-Credentials: true\r\n");
+            sb.Append("Access-Control-Allow-Headers: *\r\n");
+            sb.Append("Access-Control-Allow-Methods: *\r\n");
+            sb.Append("Access-Control-Allow-Origin: *\r\n");
+            sb.Append("\r\n");
+            sb.Append(body);
+
+            return Encoding.UTF8.GetBytes(sb.ToString());
         }
 
         private void ProcessSend(SocketAsyncEventArgs e)
@@ -255,22 +272,6 @@ namespace client.service.tcpforward
                 },
                 Socket = socket
             });
-        }
-        private byte[] GetData(string body)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("HTTP/1.1 200 OK\r\n");
-            sb.Append("Content-Type: text/html;charset=utf-8\r\n");
-            sb.Append($"Content-Length: {Encoding.UTF8.GetBytes(body).Length}\r\n");
-            sb.Append($"Connection: keep-alive\r\n");
-            sb.Append("Access-Control-Allow-Credentials: true\r\n");
-            sb.Append("Access-Control-Allow-Headers: *\r\n");
-            sb.Append("Access-Control-Allow-Methods: *\r\n");
-            sb.Append("Access-Control-Allow-Origin: *\r\n");
-            sb.Append("\r\n");
-            sb.Append(body);
-
-            return Encoding.UTF8.GetBytes(sb.ToString());
         }
 
         private Socket GetSocket(AsyncUserToken token)

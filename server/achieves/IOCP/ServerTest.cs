@@ -166,7 +166,6 @@ namespace server.achieves.IOCP
                     token.CacheBuffer.AddRange(bytes);
                 }
                 
-
                 TcpPacket[] bytesArray = TcpPacket.FromArray(token.CacheBuffer).ToArray();
                 if (bytesArray.Length > 0)
                 {
@@ -178,6 +177,7 @@ namespace server.achieves.IOCP
                         Socket = token.Socket
                     });
                 }
+
                 if (!token.Socket.ReceiveAsync(e))
                 {
                     ProcessReceive(e);
