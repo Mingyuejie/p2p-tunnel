@@ -75,7 +75,7 @@ namespace server.achieves.defaults
             ReceiveModel model = new ReceiveModel { ErrorCallback = errorCallback, Socket = socket, Buffer = Array.Empty<byte>() };
             _ = ReceiveModel.Add(model);
 
-            model.Buffer = new byte[8 * 1024];
+            model.Buffer = new byte[1024];
             _ = socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
         }
         private void Receive(IAsyncResult result)
@@ -89,21 +89,25 @@ namespace server.achieves.defaults
                     result.AsyncWaitHandle.Close();
                     if (length > 0)
                     {
-                        if (Running)
+                        if (model.Buffer.Length == length)
                         {
-                            if (model.Buffer.Length == length)
-                            {
-                                model.CacheBuffer.AddRange(model.Buffer);
-                            }
-                            else
-                            {
-                                model.CacheBuffer.AddRange(model.Buffer.AsSpan().Slice(0, length).ToArray());
-                            }
-                            TcpPacket[] bytesArray = TcpPacket.FromArray(model.CacheBuffer).ToArray();
-                            Receive(model, bytesArray);
-
-                            _ = model.Socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
+                            model.CacheBuffer.AddRange(model.Buffer);
                         }
+                        else
+                        {
+                            model.CacheBuffer.AddRange(model.Buffer.AsSpan().Slice(0, length).ToArray());
+                        }
+                        if (model.Socket.Available > 0)
+                        {
+                            var bytes = new byte[model.Socket.Available];
+                            model.Socket.Receive(bytes);
+                            model.CacheBuffer.AddRange(bytes);
+                        }
+
+                        TcpPacket[] bytesArray = TcpPacket.FromArray(model.CacheBuffer).ToArray();
+                        Receive(model, bytesArray);
+
+                        _ = model.Socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
                     }
                     else
                     {
