@@ -76,7 +76,7 @@ namespace server.achieves.defaults
             _ = ReceiveModel.Add(model);
 
             model.Buffer = new byte[1024];
-            _ = socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
+            _ = socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, Receive, model);
         }
         private void Receive(IAsyncResult result)
         {
@@ -99,7 +99,7 @@ namespace server.achieves.defaults
                         }
                         if (model.Socket.Available > 0)
                         {
-                            var bytes = new byte[model.Socket.Available];
+                            byte[] bytes = new byte[model.Socket.Available];
                             model.Socket.Receive(bytes);
                             model.CacheBuffer.AddRange(bytes);
                         }
@@ -107,14 +107,13 @@ namespace server.achieves.defaults
                         TcpPacket[] bytesArray = TcpPacket.FromArray(model.CacheBuffer).ToArray();
                         Receive(model, bytesArray);
 
-                        _ = model.Socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, new AsyncCallback(Receive), model);
+                        _ = model.Socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, Receive, model);
                     }
                     else
                     {
                         model.Clear();
                     }
                 }
-
             }
             catch (SocketException ex)
             {

@@ -28,7 +28,7 @@ namespace server.achieves.IOCP
 
         public ServerTest()
         {
-            m_numConnections = 100000;
+            m_numConnections = 3000;
             m_receiveBufferSize = 1024;
             m_bufferManager = new BufferManager(m_receiveBufferSize * m_numConnections * opsToPreAlloc,
                 m_receiveBufferSize);
@@ -155,26 +155,24 @@ namespace server.achieves.IOCP
             AsyncUserToken token = (AsyncUserToken)e.UserToken;
             if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
             {
-                byte[] data = new byte[e.BytesTransferred];
-                Array.Copy(e.Buffer, e.Offset, data, 0, data.Length);
-                token.CacheBuffer.AddRange(data);
-
+                token.CacheBuffer.AddRange(e.Buffer.AsSpan().Slice(e.Offset, e.BytesTransferred).ToArray());
                 if (token.Socket.Available > 0)
                 {
                     var bytes = new byte[token.Socket.Available];
                     token.Socket.Receive(bytes);
                     token.CacheBuffer.AddRange(bytes);
                 }
-                
+
                 TcpPacket[] bytesArray = TcpPacket.FromArray(token.CacheBuffer).ToArray();
+                var socket = token.Socket;
                 if (bytesArray.Length > 0)
                 {
                     OnPacket.Push(new ServerDataWrap<TcpPacket[]>
                     {
                         Data = bytesArray,
-                        Address = token.Socket.RemoteEndPoint as IPEndPoint,
+                        Address = socket.RemoteEndPoint as IPEndPoint,
                         ServerType = ServerType.TCP,
-                        Socket = token.Socket
+                        Socket = socket
                     });
                 }
 
@@ -182,6 +180,7 @@ namespace server.achieves.IOCP
                 {
                     ProcessReceive(e);
                 }
+                return;
             }
             else
             {
@@ -238,7 +237,7 @@ namespace server.achieves.IOCP
 
     public class AsyncUserToken
     {
-        
+
         public ManualResetEvent Mre { get; set; }
         public Socket Socket { get; set; }
         public string Msg { get; set; }
