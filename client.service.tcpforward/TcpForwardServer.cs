@@ -172,10 +172,7 @@ namespace client.service.tcpforward
             AsyncUserToken token = (AsyncUserToken)e.UserToken;
             if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
             {
-                byte[] data = new byte[e.BytesTransferred];
-                Array.Copy(e.Buffer, e.Offset, data, 0, data.Length);
-                token.CacheBuffer.AddRange(data);
-
+                token.CacheBuffer.AddRange(e.Buffer.AsSpan().Slice(e.Offset, e.BytesTransferred).ToArray());
                 if (token.SourceSocket.Available > 0)
                 {
                     var bytes = new byte[token.SourceSocket.Available];

@@ -180,7 +180,6 @@ namespace server.achieves.IOCP
                 {
                     ProcessReceive(e);
                 }
-                return;
             }
             else
             {
