@@ -3,9 +3,11 @@ using client.servers.clientServer;
 using common.extends;
 using server.plugins.register.caching;
 using System;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text.RegularExpressions;
 
 namespace client.service.wakeup
 {
@@ -43,23 +45,29 @@ namespace client.service.wakeup
         {
             using UdpClient udp = new();
 
-            byte[] packet = new byte[6 + (16 * 6)];
+            var wolPacket = new byte[17 * 6];
+            var ms = new MemoryStream(wolPacket, true);
+
             for (int i = 0; i < 6; i++)
             {
-                packet[i] = 0xFF;
+                ms.WriteByte(0xFF);
             }
 
-            byte[] macs = mac.Split(':').Select(x => Convert.ToByte(x, 16)).ToArray();
+            byte[] macs = GetMac(mac);
             for (int i = 0; i < 16; i++)
             {
-                for (int j = 0; j < 6; j++)
-                {
-                    packet[6 + (i * 6) + j] = macs[j];
-                }
+                ms.Write(macs, 0, macs.Length);
             }
+
             IPEndPoint endpoint = new(IPAddress.Parse(ip), port);
-            _ = udp.Send(packet, packet.Length, endpoint);
+            _ = udp.Send(wolPacket, wolPacket.Length, endpoint);
         }
+
+        public byte[] GetMac(string mac)
+        {
+            return mac.Trim().Replace("-", ":").Split(':').Select(x => Convert.ToByte(x, 16)).ToArray();
+        }
+
     }
 
     public class WakeUpModel
