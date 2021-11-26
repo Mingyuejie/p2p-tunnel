@@ -53,32 +53,31 @@ namespace server.service.plugins.register.caching
             return cache.Values.ToList();
         }
 
-        public long Add(RegisterCacheModel model, long id = 0)
+        public long Add(RegisterCacheModel model)
         {
-            if (id == 0)
+            if (model.Id == 0)
             {
                 Interlocked.Increment(ref Id);
-                id = Id;
+                model.Id = Id;
             }
-            model.Id = id;
             if (string.IsNullOrWhiteSpace(model.OriginGroupId))
             {
                 model.OriginGroupId = Guid.NewGuid().ToString().Md5();
             }
 
             model.GroupId = model.OriginGroupId.Md5();
-            _ = cache.AddOrUpdate(id, model, (a, b) => model);
-            return id;
+            _ = cache.AddOrUpdate(model.Id, model, (a, b) => model);
+            return model.Id;
         }
 
-        public bool UpdateTcpInfo(long id, Socket socket, int port, string groupId)
+        public bool UpdateTcpInfo(RegisterCacheUpdateModel model)
         {
-            RegisterCacheModel data = Get(id);
-            if (data != null && groupId.Md5() == data.GroupId)
+            RegisterCacheModel data = Get(model.Id);
+            if (data != null && model.GroupId.Md5() == data.GroupId)
             {
                 data.LastTime = Helper.GetTimeStamp();
-                data.TcpSocket = socket;
-                data.TcpPort = port;
+                data.TcpSocket = model.TcpSocket;
+                data.TcpPort = model.TcpPort;
                 return true;
             }
             return false;

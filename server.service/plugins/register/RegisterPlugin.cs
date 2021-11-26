@@ -37,15 +37,15 @@ namespace server.service.plugins.register
                             Mac = model.Mac,
                             LocalUdpPort = model.LocalUdpPort,
                             LocalTcpPort = model.LocalTcpPort,
-
+                            Id = 0
                         };
-                        long id = clientRegisterCache.Add(add, 0);
+                        clientRegisterCache.Add(add);
                         string origingid = add.OriginGroupId;
                         add.OriginGroupId = string.Empty;
 
                         return new RegisterResultModel
                         {
-                            Id = id,
+                            Id = add.Id,
                             Ip = data.SourcePoint.Address.ToString(),
                             Port = data.SourcePoint.Port,
                             TcpPort = 0,
@@ -64,8 +64,19 @@ namespace server.service.plugins.register
                 {
                     var endpoint = IPEndPoint.Parse(data.TcpSocket.RemoteEndPoint.ToString());
                     var client = clientRegisterCache.Get(model.Id);
-                    if (endpoint.Address.Equals(client.Address.Address) && clientRegisterCache.UpdateTcpInfo(model.Id, data.TcpSocket, endpoint.Port, model.GroupId))
+                    if (client == null || !endpoint.Address.Equals(client.Address.Address))
                     {
+                        data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, "TCP注册失败");
+                    }
+                    else
+                    {
+                        clientRegisterCache.UpdateTcpInfo(new RegisterCacheUpdateModel
+                        {
+                            Id = client.Id,
+                            TcpSocket = data.TcpSocket,
+                            TcpPort = endpoint.Port,
+                            GroupId = model.GroupId
+                        });
                         return new RegisterResultModel
                         {
                             Id = model.Id,
@@ -77,10 +88,6 @@ namespace server.service.plugins.register
                             LocalUdpPort = model.LocalUdpPort,
                             LocalTcpPort = model.LocalTcpPort,
                         };
-                    }
-                    else
-                    {
-                        data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, "TCP注册失败");
                     }
                 }
             }

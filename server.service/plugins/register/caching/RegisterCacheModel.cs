@@ -26,4 +26,12 @@ namespace server.service.plugins.register.caching
         public string Mac { get; set; } = string.Empty;
 
     }
+
+    public class RegisterCacheUpdateModel
+    {
+        public long Id { get; set; } = 0;
+        public Socket TcpSocket { get; set; } = null;
+        public int TcpPort { get; set; } = 0;
+        public string GroupId { get; set; } = string.Empty;
+    }
 }
