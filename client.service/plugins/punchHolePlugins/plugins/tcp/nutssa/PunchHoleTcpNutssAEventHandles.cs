@@ -133,7 +133,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
                 new Tuple<string, int>(e.Data.Ip,e.Data.TcpPort),
             };
 
-            _ = Task.Run(() =>
+            _ = Task.Run(async () =>
             {
                 long toid = e.Data.Id;
                 connectdIds.Add(toid);
@@ -194,7 +194,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
                             device.StartCapture();
                         }
 
-                        System.Threading.Thread.Sleep(100);
+                        await Task.Delay(100);
 
                         Logger.Instance.Debug($"连接 {ip.Item1}->{ip.Item2}");
                         IAsyncResult result = targetSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2), null, null);
@@ -221,7 +221,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssa
                                 }
                                 waitReplyTimes--;
 
-                                System.Threading.Thread.Sleep(100);
+                                await Task.Delay(100);
                             }
                             if (!connectdIds.Contains(toid))
                             {

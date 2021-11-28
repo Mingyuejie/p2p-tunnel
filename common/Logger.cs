@@ -41,7 +41,7 @@ namespace common
                 Console.ForegroundColor = currentForeColor;
             });
 
-            _ = Task.Factory.StartNew(() =>
+            _ = Task.Factory.StartNew(async () =>
             {
                 while (true)
                 {
@@ -53,7 +53,7 @@ namespace common
                             OnLogger.Push(model);
                         }
                     }
-                    System.Threading.Thread.Sleep(1);
+                    await Task.Delay(1);
                 }
             }, TaskCreationOptions.LongRunning);
         }

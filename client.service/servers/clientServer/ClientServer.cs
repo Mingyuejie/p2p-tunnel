@@ -197,7 +197,7 @@ namespace client.service.servers.clientServer
 
         private void Notify()
         {
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 while (true)
                 {
@@ -220,7 +220,7 @@ namespace client.service.servers.clientServer
                             })
                         }.ToJson());
                     }
-                    System.Threading.Thread.Sleep(300);
+                    await Task.Delay(300);
                 }
             });
         }

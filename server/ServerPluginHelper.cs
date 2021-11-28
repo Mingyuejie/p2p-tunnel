@@ -45,7 +45,7 @@ namespace server
                 InputData(wrap.Data, wrap);
             });
 
-            _ = Task.Factory.StartNew(() =>
+            _ = Task.Factory.StartNew(async () =>
             {
                 while (true)
                 {
@@ -67,7 +67,7 @@ namespace server
                         }
                     }
                     lastTime = Helper.GetTimeStamp();
-                    Thread.Sleep(1);
+                    await Task.Delay(1);
                 }
 
             }, TaskCreationOptions.LongRunning);

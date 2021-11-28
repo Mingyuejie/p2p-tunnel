@@ -309,13 +309,13 @@ namespace client.service.tcpforward
             ClientCacheModel.Get(failModel.RequestId, out AsyncUserToken client);
             if (client != null && failModel.AliveType == TcpForwardAliveTypes.WEB)
             {
-                StringBuilder sb = new StringBuilder();
                 byte[] bytes = failModel.Buffer;
-                if (body.Length > 0)
+                if (!string.IsNullOrWhiteSpace(body))
                 {
                     bytes = Encoding.UTF8.GetBytes(body);
                 }
 
+                StringBuilder sb = new StringBuilder();
                 sb.Append("HTTP/1.1 200 OK\r\n");
                 sb.Append("Content-Type: text/html;charset=utf-8\r\n");
                 sb.Append($"Content-Length: {bytes.Length}\r\n");
@@ -324,6 +324,7 @@ namespace client.service.tcpforward
                 sb.Append("Access-Control-Allow-Methods: *\r\n");
                 sb.Append("Access-Control-Allow-Origin: *\r\n");
                 sb.Append("\r\n");
+
                 client.SourceSocket.Send(Encoding.UTF8.GetBytes(sb.ToString()));
                 client.SourceSocket.Send(bytes);
             }
@@ -338,7 +339,6 @@ namespace client.service.tcpforward
             });
 
             ClientCacheModel.Clear(model.SourcePort);
-
             model.Remove();
         }
 

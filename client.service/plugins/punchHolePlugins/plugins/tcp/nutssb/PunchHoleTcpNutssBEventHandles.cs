@@ -136,7 +136,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                 .Select(c => new Tuple<string, int>(c, e.Data.LocalTcpPort)).ToList();
             ips.Add(new Tuple<string, int>(e.Data.Ip, e.Data.TcpPort));
 
-            _ = Task.Run(() =>
+            _ = Task.Run(async () =>
             {
                 connectdIds.Add(e.Data.Id);
                 bool success = false;
@@ -150,7 +150,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                     }
                     if (interval > 0)
                     {
-                        System.Threading.Thread.Sleep(interval);
+                        await Task.Delay(interval);
                         interval = 0;
                     }
 
@@ -185,7 +185,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                                 }
                                 waitReplyTimes--;
 
-                                System.Threading.Thread.Sleep(500);
+                                await Task.Delay(500);
                             }
                             if (!connectdIds.Contains(e.Data.Id))
                             {

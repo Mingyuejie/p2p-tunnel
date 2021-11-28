@@ -269,7 +269,7 @@ namespace client.service.plugins.serverPlugins.clients
             serverPluginHelper.OnSendData.Sub(OnData);
 
             //给各个客户端发送心跳包
-            _ = Task.Factory.StartNew(() =>
+            _ = Task.Factory.StartNew(async () =>
             {
                 while (true)
                 {
@@ -302,7 +302,7 @@ namespace client.service.plugins.serverPlugins.clients
                         }
 
                     }
-                    System.Threading.Thread.Sleep(5000);
+                    await Task.Delay(5000);
                 }
 
             }, TaskCreationOptions.LongRunning);

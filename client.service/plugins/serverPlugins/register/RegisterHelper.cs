@@ -55,7 +55,7 @@ namespace client.service.plugins.serverPlugins.register
 
         public void AutoReg()
         {
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 while (!registerState.LocalInfo.Connected)
                 {
@@ -64,7 +64,7 @@ namespace client.service.plugins.serverPlugins.register
                     {
                         break;
                     }
-                    Thread.Sleep(2000);
+                    await Task.Delay(500);
                 }
             });
             Logger.Instance.Info("已自动注册...");
@@ -193,7 +193,7 @@ namespace client.service.plugins.serverPlugins.register
             serverPluginHelper.OnSendData.Sub(OnData);
 
             //给服务器发送心跳包
-            _ = Task.Factory.StartNew(() =>
+            _ = Task.Factory.StartNew(async () =>
             {
                 while (true)
                 {
@@ -211,7 +211,7 @@ namespace client.service.plugins.serverPlugins.register
                         heartEventHandles.SendHeartMessage(registerState.RemoteInfo.ConnectId, registerState.UdpAddress);
                         heartEventHandles.SendTcpHeartMessage(registerState.RemoteInfo.ConnectId, registerState.TcpSocket);
                     }
-                    Thread.Sleep(heartInterval);
+                    await Task.Delay(heartInterval);
                 }
             }, TaskCreationOptions.LongRunning);
 

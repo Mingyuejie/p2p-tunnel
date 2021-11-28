@@ -25,7 +25,6 @@ namespace client.service.tcpforward
         }
     }
 
-
     public static class ServiceCollectionExtends
     {
         public static ServiceCollection AddTcpForwardPlugin(this ServiceCollection obj)

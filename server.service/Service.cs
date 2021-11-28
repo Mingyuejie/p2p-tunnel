@@ -75,7 +75,7 @@ namespace server.service
         {
             var clientRegisterCache = obj.GetService<IClientRegisterCaching>();
             ServerPluginHelper serverPluginHelper = obj.GetService<ServerPluginHelper>();
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 while (true)
                 {
@@ -119,7 +119,7 @@ namespace server.service
                         Logger.Instance.Debug($"发送广播客户端消息错误!{e.Message}");
                     }
 
-                    System.Threading.Thread.Sleep(1000);
+                    await Task.Delay(100);
                 }
             });
         }

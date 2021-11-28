@@ -136,7 +136,7 @@ namespace client.service.ftp
             int packCount = (int)(save.TotalLength / packSize);
             int lastPackSize = (int)(save.TotalLength - (packCount * packSize));
 
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 try
                 {
@@ -164,7 +164,7 @@ namespace client.service.ftp
                         }
                         else
                         {
-                            Thread.Sleep(1);
+                            await Task.Delay(1);
                         }
                     }
                     if (!save.Check())
@@ -189,7 +189,7 @@ namespace client.service.ftp
                 }
             }, save.Token.Token);
 
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 try
                 {
@@ -212,7 +212,7 @@ namespace client.service.ftp
                         }
                         else
                         {
-                            Thread.Sleep(1);
+                           await Task.Delay(1);
                         }
                     }
                 }
@@ -398,15 +398,10 @@ namespace client.service.ftp
         }
         private void LoopProgress()
         {
-            Task.Factory.StartNew(() =>
+            Task.Factory.StartNew(async () =>
             {
-                int interval = 1000;
-                long us = 0;
                 while (true)
                 {
-                    MyStopwatch watch = new MyStopwatch();
-                    watch.Start();
-
                     if (!Uploads.Caches.IsEmpty)
                     {
                         foreach (var item in Uploads.Caches.SelectMany(c => c.Value.Values))
@@ -438,18 +433,7 @@ namespace client.service.ftp
                         }
                     }
 
-                    watch.Stop();
-                    us += watch.GetUs();
-                    if (us > 1000)
-                    {
-                        int ms = (int)(us / 1000);
-                        us = us - ms * 1000;
-                        Helper.Sleep(interval - ms);
-                    }
-                    else
-                    {
-                        Helper.Sleep(interval);
-                    }
+                    await Task.Delay(1000);
                 }
             }, TaskCreationOptions.LongRunning);
         }

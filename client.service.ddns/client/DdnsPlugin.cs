@@ -183,7 +183,7 @@ namespace client.service.ddns.client
 
         private void Loop()
         {
-            Task.Factory.StartNew(() =>
+            Task.Factory.StartNew(async () =>
             {
                 string oldIp = string.Empty;
                 while (true)
@@ -212,7 +212,7 @@ namespace client.service.ddns.client
                         }
                     }
 
-                    System.Threading.Thread.Sleep(config.Interval);
+                    await Task.Delay(config.Interval);
                 }
 
             }, TaskCreationOptions.LongRunning);

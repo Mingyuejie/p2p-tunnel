@@ -19,7 +19,7 @@ namespace server.service.plugins.register.caching
 
         public ClientRegisterCaching()
         {
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 while (true)
                 {
@@ -32,7 +32,7 @@ namespace server.service.plugins.register.caching
                             _ = cache.TryRemove(item.Id, out _);
                         }
                     }
-                    Thread.Sleep(100);
+                    await Task.Delay(100);
                 }
             });
         }
