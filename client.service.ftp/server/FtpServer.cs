@@ -25,7 +25,6 @@ namespace client.service.ftp.server
         protected override string SocketPath => "ftpclient/excute";
         protected override string RootPath { get { return config.ServerRoot; } }
 
-
         private readonly ServiceProvider serviceProvider;
 
         public FtpServer(ServiceProvider serviceProvider, IServerRequest serverRequest, Config config, IClientInfoCaching clientInfoCaching)
@@ -79,7 +78,6 @@ namespace client.service.ftp.server
                 Type = FileType.File,
             })).ToArray();
         }
-
         public List<string> Create(FtpCreateCommand cmd)
         {
             return Create(GetCurrentPath(cmd.SessionId), cmd.Path);

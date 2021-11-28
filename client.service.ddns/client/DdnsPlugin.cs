@@ -190,18 +190,25 @@ namespace client.service.ddns.client
                 {
                     if (config.Enable)
                     {
-                        using HttpClient client = new HttpClient();
-                        client.DefaultRequestHeaders.Add("host", "ip.cn");
-                        client.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36");
-                        JObject jobj = JObject.Parse(client.GetStringAsync("https://ip.cn/api/index?ip=&type=0").Result);
-                        if (jobj["code"].ToString() == "0")
+                        try
                         {
-                            string ip = jobj["ip"].ToString();
-                            if (ip != oldIp)
+                            using HttpClient client = new HttpClient();
+                            client.DefaultRequestHeaders.Add("host", "ip.cn");
+                            client.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36");
+                            JObject jobj = JObject.Parse(client.GetStringAsync("https://ip.cn/api/index?ip=&type=0").Result);
+                            if (jobj["code"].ToString() == "0")
                             {
-                                oldIp = ip;
-                                UpdateRecord(ip);
+                                string ip = jobj["ip"].ToString();
+                                if (ip != oldIp)
+                                {
+                                    oldIp = ip;
+                                    UpdateRecord(ip);
+                                }
                             }
+                        }
+                        catch (Exception)
+                        {
+
                         }
                     }
 

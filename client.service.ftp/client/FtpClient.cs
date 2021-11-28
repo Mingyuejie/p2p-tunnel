@@ -147,7 +147,6 @@ namespace client.service.ftp.client
                 Child = child.ToArray()
             };
         }
-
         public List<string> Create(string path)
         {
             return Create(CurrentPath, path);
@@ -212,7 +211,6 @@ namespace client.service.ftp.client
         public object Excute(PluginParamWrap data)
         {
             FtpCommandBase cmd = ftpClient.ReadAttribute(data.Wrap.Memory);
-            //data.Wrap.Content = Array.Empty<byte>();
             FtpPluginParamWrap wrap = new FtpPluginParamWrap
             {
                 Code = data.Code,

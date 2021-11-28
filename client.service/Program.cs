@@ -1,4 +1,4 @@
-﻿using client.service.album;
+﻿//using client.service.album;
 using client.service.cmd;
 using client.service.ddns;
 using client.service.ddns.client;
@@ -47,7 +47,7 @@ namespace client.service
 
             //外部程序集的插件
             var externalAddembly = new[] {
-                typeof(AlbumSettingPlugin).Assembly,
+                //typeof(AlbumSettingPlugin).Assembly,
                 typeof(TcpForwardPlugin).Assembly,
                 typeof(UpnpPlugin).Assembly,
                 typeof(FtpServerPlugin).Assembly,
@@ -68,7 +68,7 @@ namespace client.service
                 //外部插件
                 .AddServerPlugin(externalAddembly).AddClientServer(externalAddembly)
                 .AddTcpForwardPlugin()  //客户端tcp转发
-                .AddAlbumPlugin() //图片相册插件
+                //.AddAlbumPlugin() //图片相册插件
                 .AddUpnpPlugin()//upnp映射
                 .AddFtpPlugin() //文件服务
                 .AddCmdPlugin() //远程命令
@@ -90,7 +90,7 @@ namespace client.service
                 //外部插件
                 .UseServerPlugin(externalAddembly).UseClientServer(externalAddembly)
                 .UseTcpForwardPlugin()//客户端tcp转发
-                .UseAlbumPlugin() //图片相册插件
+                //.UseAlbumPlugin() //图片相册插件
                 .UseUpnpPlugin()//upnp映射
                 .UseFtpPlugin() //文件服务
                 .UseCmdPlugin() //远程命令

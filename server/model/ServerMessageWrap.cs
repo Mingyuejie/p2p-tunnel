@@ -29,13 +29,11 @@ namespace server.model
         public ServerMessageResponeCodes Code { get; set; } = ServerMessageResponeCodes.OK;
         [ProtoMember(6), Key(6)]
         public string Msg { get; set; } = string.Empty;
-
         /// <summary>
         /// 读取数据用这个
         /// </summary>
         [IgnoreMember, ProtoIgnore]
         public ReadOnlyMemory<byte> Memory { get; set; } = Array.Empty<byte>();
-
 
         public byte[] ToArray()
         {
@@ -82,7 +80,6 @@ namespace server.model
             index += Content.Length;
             return res;
         }
-
         public void FromArray(byte[] bytes)
         {
             var span = bytes.AsSpan();
