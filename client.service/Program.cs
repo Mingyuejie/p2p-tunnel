@@ -46,8 +46,7 @@ namespace client.service
             serviceCollection.AddSingleton((e) => serviceProvider);
 
             //外部程序集的插件
-            var externalAddembly = new[] {
-                //typeof(AlbumSettingPlugin).Assembly,
+            var assemblys = new[] {
                 typeof(TcpForwardPlugin).Assembly,
                 typeof(UpnpPlugin).Assembly,
                 typeof(FtpServerPlugin).Assembly,
@@ -66,9 +65,9 @@ namespace client.service
                 .AddWebServer()//客户端页面
 
                 //外部插件
-                .AddServerPlugin(externalAddembly).AddClientServer(externalAddembly)
+                .AddServerPlugin(assemblys).AddClientServer(assemblys)
+
                 .AddTcpForwardPlugin()  //客户端tcp转发
-                //.AddAlbumPlugin() //图片相册插件
                 .AddUpnpPlugin()//upnp映射
                 .AddFtpPlugin() //文件服务
                 .AddCmdPlugin() //远程命令
@@ -88,9 +87,9 @@ namespace client.service
                 .UseWebServer()//客户端页面
 
                 //外部插件
-                .UseServerPlugin(externalAddembly).UseClientServer(externalAddembly)
+                .UseServerPlugin(assemblys).UseClientServer(assemblys)
+
                 .UseTcpForwardPlugin()//客户端tcp转发
-                //.UseAlbumPlugin() //图片相册插件
                 .UseUpnpPlugin()//upnp映射
                 .UseFtpPlugin() //文件服务
                 .UseCmdPlugin() //远程命令
