@@ -218,7 +218,7 @@ namespace client.service.servers.clientServer
                                     Path = c.Key
                                 };
                             })
-                        }.ToJson());
+                        }.ToJson()).Wait();
                     }
                     await Task.Delay(300);
                 }

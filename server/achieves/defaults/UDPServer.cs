@@ -44,7 +44,7 @@ namespace server.achieves.defaults
                     UdpcRecv.Client.IOControl(SIO_UDP_CONNRESET, new byte[] { Convert.ToByte(false) }, null);
                 }
 
-                UdpcRecv.BeginReceive(new AsyncCallback(Receive), null);
+                IAsyncResult res = UdpcRecv.BeginReceive(Receive, null);
             }
         }
 
@@ -55,7 +55,7 @@ namespace server.achieves.defaults
                 IPEndPoint ipepClient = null;
                 byte[] bytRecv = UdpcRecv.EndReceive(result, ref ipepClient);
                 result.AsyncWaitHandle.Close();
-                UdpcRecv.BeginReceive(new AsyncCallback(Receive), null);
+
                 UdpPacket packet = UdpPacket.FromArray(ipepClient, bytRecv);
                 if (packet != null)
                 {
@@ -67,6 +67,7 @@ namespace server.achieves.defaults
                         Socket = null
                     });
                 }
+                IAsyncResult res = UdpcRecv.BeginReceive(Receive, null);
             }
             catch (Exception ex)
             {

@@ -29,7 +29,7 @@ namespace server.achieves.IOCP
         public ServerTest()
         {
             m_numConnections = 3000;
-            m_receiveBufferSize = 1024;
+            m_receiveBufferSize = 8 * 1024;
             m_bufferManager = new BufferManager(m_receiveBufferSize * m_numConnections * opsToPreAlloc,
                 m_receiveBufferSize);
 
@@ -155,6 +155,11 @@ namespace server.achieves.IOCP
             AsyncUserToken token = (AsyncUserToken)e.UserToken;
             if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
             {
+                if (e.BytesTransferred + e.Offset == e.MemoryBuffer.Length)
+                {
+                    e.SetBuffer(e.MemoryBuffer);
+                }
+
                 token.CacheBuffer.AddRange(e.Buffer.AsSpan().Slice(e.Offset, e.BytesTransferred).ToArray());
                 if (token.Socket.Available > 0)
                 {
@@ -164,17 +169,18 @@ namespace server.achieves.IOCP
                 }
 
                 TcpPacket[] bytesArray = TcpPacket.FromArray(token.CacheBuffer).ToArray();
-                var socket = token.Socket;
                 if (bytesArray.Length > 0)
                 {
                     OnPacket.Push(new ServerDataWrap<TcpPacket[]>
                     {
                         Data = bytesArray,
-                        Address = socket.RemoteEndPoint as IPEndPoint,
+                        Address = token.Socket.RemoteEndPoint as IPEndPoint,
                         ServerType = ServerType.TCP,
-                        Socket = socket
+                        Socket = token.Socket
                     });
                 }
+
+
 
                 if (!token.Socket.ReceiveAsync(e))
                 {

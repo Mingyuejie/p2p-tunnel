@@ -93,6 +93,8 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                     using Socket targetSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     try
                     {
+                        //targetSocket.SendBufferSize = 16 * 1024;
+                        //targetSocket.ReceiveBufferSize = 16 * 1024;
                         targetSocket.Ttl = (short)(RouteLevel + 2);
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                         targetSocket.Bind(new IPEndPoint(config.Client.BindIp, ClientTcpPort));
@@ -155,6 +157,8 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                     }
 
                     Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    //targetSocket.SendBufferSize = 16 * 1024;
+                    //targetSocket.ReceiveBufferSize = 16 * 1024;
                     try
                     {
                         targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
@@ -276,6 +280,8 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                 Logger.Instance.Debug($"低ttl {e.Data.Ip}:{ e.Data.TcpPort}");
                 //随便给目标客户端发个低TTL消息
                 using Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                //targetSocket.SendBufferSize = 16 * 1024;
+                //targetSocket.ReceiveBufferSize = 16 * 1024;
                 targetSocket.Ttl = (short)(RouteLevel + 5);
                 targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                 targetSocket.Bind(new IPEndPoint(config.Client.BindIp, ClientTcpPort));

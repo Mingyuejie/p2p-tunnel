@@ -37,7 +37,7 @@
           }
         }
       },
-      "AlibabaCloud.OpenApiClient/0.0.15": {
+      "AlibabaCloud.OpenApiClient/0.0.18": {
         "dependencies": {
           "AlibabaCloud.OpenApiUtil": "1.0.11",
           "AlibabaCloud.TeaUtil": "0.1.11",
@@ -46,8 +46,8 @@
         },
         "runtime": {
           "lib/netstandard2.0/AlibabaCloud.OpenApiClient.dll": {
-            "assemblyVersion": "0.0.14.0",
-            "fileVersion": "0.0.14.0"
+            "assemblyVersion": "0.0.18.0",
+            "fileVersion": "0.0.18.0"
           }
         }
       },
@@ -240,7 +240,7 @@
       "client.service.ddns/1.0.0": {
         "dependencies": {
           "AlibabaCloud.EndpointUtil": "0.1.1",
-          "AlibabaCloud.OpenApiClient": "0.0.15",
+          "AlibabaCloud.OpenApiClient": "0.0.18",
           "AlibabaCloud.TeaUtil": "0.1.11",
           "Tea": "1.0.11",
           "TencentCloudSDK": "3.0.389",
@@ -341,12 +341,12 @@
       "path": "alibabacloud.endpointutil/0.1.1",
       "hashPath": "alibabacloud.endpointutil.0.1.1.nupkg.sha512"
     },
-    "AlibabaCloud.OpenApiClient/0.0.15": {
+    "AlibabaCloud.OpenApiClient/0.0.18": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-IJqRZcUSzaP/z6taD4m5RL+Jxiz4wBsiFLlv4w8nGLj2fXsOBFvyr4FPmwCibdWxJaJDE36y67rzB5QshVZFkg==",
-      "path": "alibabacloud.openapiclient/0.0.15",
-      "hashPath": "alibabacloud.openapiclient.0.0.15.nupkg.sha512"
+      "sha512": "sha512-JlDFMwEhvQZKDdqWY5NWKdNAP5wAkpso6GWchTT28k9eSKYUF0SaFxUzmC3PVu8Zn/vf1SuxWkjO6GqIZszo0g==",
+      "path": "alibabacloud.openapiclient/0.0.18",
+      "hashPath": "alibabacloud.openapiclient.0.0.18.nupkg.sha512"
     },
     "AlibabaCloud.OpenApiUtil/1.0.11": {
       "type": "package",

@@ -1,20 +1,21 @@
 ﻿using common;
 using common.extends;
-using server.extends;
 using server.model;
 using server.packet;
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace server.achieves.defaults
+namespace server.achieves.async
 {
-    public class TCPServer : ITcpServer
+    public class ServerTaskAsync : ITcpServer
     {
         private readonly ConcurrentDictionary<int, ServerModel> servers = new ConcurrentDictionary<int, ServerModel>();
         public SimplePushSubHandler<ServerDataWrap<TcpPacket[]>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<TcpPacket[]>>();
@@ -42,8 +43,6 @@ namespace server.achieves.defaults
 
             var socket = new Socket(ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            //socket.ReceiveBufferSize = 16 * 1024;
-            //socket.SendBufferSize = 16 * 1024;
             socket.Bind(new IPEndPoint(ip, port));
             socket.Listen(int.MaxValue);
 
@@ -74,20 +73,23 @@ namespace server.achieves.defaults
         {
             IPEndPoint ip = IPEndPoint.Parse(socket.RemoteEndPoint.ToString());
 
-            ReceiveModel model = new ReceiveModel { ErrorCallback = errorCallback, Socket = socket, Buffer = new byte[1 * 1024] };
+            ReceiveModel model = new ReceiveModel { ErrorCallback = errorCallback, Socket = socket, Buffer = ReceiveModel.ArrayPool.Rent(8*1024) };
             _ = ReceiveModel.Add(model);
 
-            IAsyncResult res = socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, Receive, model);
+            Task.Run(async () =>
+            {
+                await Receive(model);
+            });
         }
 
-        private void Receive(IAsyncResult result)
+
+        private async Task Receive(ReceiveModel model)
         {
-            ReceiveModel model = (ReceiveModel)result.AsyncState;
-            try
+            while (model.Socket != null && model.Socket.Connected)
             {
-                if (model.Socket != null && model.Socket.Connected)
+                try
                 {
-                    int length = model.Socket.EndReceive(result);
+                    int length = await model.Socket.ReceiveAsync(model.Buffer, SocketFlags.None);
                     if (length > 0)
                     {
                         if (model.Buffer.Length == length)
@@ -98,35 +100,38 @@ namespace server.achieves.defaults
                         {
                             model.CacheBuffer.AddRange(model.Buffer.AsSpan().Slice(0, length).ToArray());
                         }
-
                         if (model.Socket.Available > 0)
                         {
                             byte[] bytes = new byte[model.Socket.Available];
                             model.Socket.Receive(bytes);
                             model.CacheBuffer.AddRange(bytes);
                         }
-                        TcpPacket[] bytesArray = TcpPacket.FromArray(model.CacheBuffer).ToArray();
-                        Receive(model, bytesArray);
 
-                        IAsyncResult res = model.Socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, Receive, model);
+                        TcpPacket[] bytesArray = TcpPacket.FromArray(model.CacheBuffer).ToArray();
+
+                        Receive(model, bytesArray);
                     }
                     else
                     {
                         model.Clear();
+                        break;
                     }
                 }
+                catch (SocketException ex)
+                {
+                    Logger.Instance.Debug(ex);
+                    model.ErrorCallback?.Invoke(ex.SocketErrorCode);
+                    model.Clear();
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance.Debug(ex);
+                    model.Clear();
+                    break;
+                }
             }
-            catch (SocketException ex)
-            {
-                Logger.Instance.Debug(ex);
-                model.ErrorCallback?.Invoke(ex.SocketErrorCode);
-                model.Clear();
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.Debug(ex);
-                model.Clear();
-            }
+
         }
         private void Receive(ReceiveModel model, TcpPacket[] bytesArray)
         {
@@ -179,6 +184,7 @@ namespace server.achieves.defaults
         public static long FlagId = 0;
 
         public static ConcurrentDictionary<long, ReceiveModel> clients = new ConcurrentDictionary<long, ReceiveModel>();
+        public static ArrayPool<byte> ArrayPool = ArrayPool<byte>.Shared;
 
         public long Id { get; set; }
         public Socket Socket { get; set; }
@@ -193,6 +199,7 @@ namespace server.achieves.defaults
 
             Id = 0;
             CacheBuffer.Clear();
+            ArrayPool.Return(Buffer);
             Buffer = null;
             ErrorCallback = null;
 
