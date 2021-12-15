@@ -4,9 +4,9 @@ using System;
 
 namespace client.service.plugins.serverPlugins.clients
 {
-    public class ClientsEventHandles
+    public class ClientsMessageHelper
     {
-        public ClientsEventHandles()
+        public ClientsMessageHelper()
         {
         }
 

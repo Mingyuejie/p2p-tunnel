@@ -120,19 +120,25 @@ namespace common
         /// <returns></returns>
         public static int GetRouteLevel()
         {
-            List<string> starts = new() { "10.", "100.", "192.168.", "172." };
-            IEnumerable<IPAddress> list = GetTraceRoute("www.baidu.com");
-            for (int i = 0; i < list.Count(); i++)
+            try
             {
-                string ip = list.ElementAt(i).ToString();
-                if (ip.StartsWith(starts[0]) || ip.StartsWith(starts[1]) || ip.StartsWith(starts[2]))
+                List<string> starts = new() { "10.", "100.", "192.168.", "172." };
+                IEnumerable<IPAddress> list = GetTraceRoute("www.baidu.com");
+                for (int i = 0; i < list.Count(); i++)
                 {
+                    string ip = list.ElementAt(i).ToString();
+                    if (ip.StartsWith(starts[0]) || ip.StartsWith(starts[1]) || ip.StartsWith(starts[2]))
+                    {
 
+                    }
+                    else
+                    {
+                        return i;
+                    }
                 }
-                else
-                {
-                    return i;
-                }
+            }
+            catch (Exception)
+            {
             }
             return -1;
         }

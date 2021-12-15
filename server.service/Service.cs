@@ -1,4 +1,5 @@
 ﻿using common;
+using common.extends;
 using Microsoft.Extensions.DependencyInjection;
 using server.achieves.defaults;
 using server.model;
@@ -73,53 +74,38 @@ namespace server.service
 
         private static void Loop(ServiceProvider obj)
         {
-            var clientRegisterCache = obj.GetService<IClientRegisterCaching>();
+            IClientRegisterCaching clientRegisterCache = obj.GetService<IClientRegisterCaching>();
             ServerPluginHelper serverPluginHelper = obj.GetService<ServerPluginHelper>();
-            Task.Run(async () =>
+
+            clientRegisterCache.OnChanged.Sub((string group) =>
             {
-                while (true)
+                List<ClientsClientModel> clients = clientRegisterCache.GetAll().Where(c => c.GroupId == group).Select(c => new ClientsClientModel
                 {
-                    try
+                    Address = c.Address.Address.ToString(),
+                    EndPoint = c.Address,
+                    TcpSocket = c.TcpSocket,
+                    Id = c.Id,
+                    Name = c.Name,
+                    Port = c.Address.Port,
+                    TcpPort = c.TcpPort,
+                    Mac = c.Mac
+                }).ToList();
+                if (clients.Any())
+                {
+                    byte[] bytes = new ClientsModel
                     {
-                        //按分组id分组
-                        var clients = clientRegisterCache.GetAll()
-                        .GroupBy(c => c.GroupId)
-                        .Select(c => new KeyValuePair<string, IEnumerable<ClientsClientModel>>(c.Key, c.Select(c => new ClientsClientModel
-                        {
-                            Address = c.Address.Address.ToString(),
-                            TcpSocket = c.TcpSocket,
-                            Id = c.Id,
-                            Name = c.Name,
-                            Port = c.Address.Port,
-                            TcpPort = c.TcpPort,
-                            Mac = c.Mac
-                        }).ToList()));
-
-                        //每个分组
-                        foreach (var group in clients)
-                        {
-                            //分组里的每个客户端
-                            foreach (var client in group.Value)
-                            {
-                                serverPluginHelper.SendOnlyTcp(new SendMessageWrap<object>
-                                {
-                                    Address = IPEndPoint.Parse(client.Address),
-                                    TcpCoket = client.TcpSocket,
-                                    Data = new ClientsModel
-                                    {
-                                        Clients = group.Value
-                                    },
-                                    Path = "clients/excute"
-                                });
-                            }
-                        }
-                    }
-                    catch (Exception e)
+                        Clients = clients
+                    }.ToBytes();
+                    foreach (ClientsClientModel client in clients)
                     {
-                        Logger.Instance.Debug($"发送广播客户端消息错误!{e.Message}");
+                        serverPluginHelper.SendOnlyTcp(new SendMessageWrap<byte[]>
+                        {
+                            Address = client.EndPoint,
+                            TcpCoket = client.TcpSocket,
+                            Data = bytes,
+                            Path = "clients/excute"
+                        });
                     }
-
-                    await Task.Delay(100);
                 }
             });
         }

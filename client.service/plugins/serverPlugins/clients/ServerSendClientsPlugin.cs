@@ -10,16 +10,16 @@ namespace client.service.plugins.serverPlugins.clients
     /// </summary>
     public class ClientsPlugin : IPlugin
     {
-        private readonly ClientsEventHandles clientsEventHandles;
-        public ClientsPlugin(ClientsEventHandles clientsEventHandles)
+        private readonly ClientsMessageHelper clientsMessageHelper;
+        public ClientsPlugin(ClientsMessageHelper clientsMessageHelper)
         {
-            this.clientsEventHandles = clientsEventHandles;
+            this.clientsMessageHelper = clientsMessageHelper;
         }
 
         public void Excute(PluginParamWrap model)
         {
             ClientsModel res = model.Wrap.Memory.DeBytes<ClientsModel>();
-            clientsEventHandles.OnData.Push(new OnServerSendClientsEventArg
+            clientsMessageHelper.OnData.Push(new OnServerSendClientsEventArg
             {
                 Data = res,
                 Packet = model

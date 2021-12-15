@@ -33,11 +33,11 @@ namespace client.service.plugins.serverPlugins
 
             obj.AddSingleton<IServerRequest, ServerRequestHelper>();
 
-            obj.AddSingleton<ResetEventHandles>();
-            obj.AddSingleton<HeartEventHandles>();
+            obj.AddSingleton<ResetMessageHelper>();
+            obj.AddSingleton<HeartMessageHelper>();
             obj.AddSingleton<ClientsHelper>();
-            obj.AddSingleton<ClientsEventHandles>();
-            obj.AddSingleton<RegisterEventHandles>();
+            obj.AddSingleton<ClientsMessageHelper>();
+            obj.AddSingleton<RegisterMessageHelper>();
             obj.AddSingleton<RegisterHelper>();
             obj.AddSingleton<RegisterState>();
 

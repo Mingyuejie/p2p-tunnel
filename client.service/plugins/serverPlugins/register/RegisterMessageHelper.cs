@@ -12,14 +12,14 @@ using System.Threading.Tasks;
 
 namespace client.service.plugins.serverPlugins.register
 {
-    public class RegisterEventHandles
+    public class RegisterMessageHelper
     {
         private readonly IServerRequest serverRequest;
         private readonly RegisterState registerState;
         private readonly IUdpServer udpServer;
         private readonly ITcpServer tcpServer;
 
-        public RegisterEventHandles(IServerRequest serverRequest, RegisterState registerState, IUdpServer udpServer, ITcpServer tcpServer)
+        public RegisterMessageHelper(IServerRequest serverRequest, RegisterState registerState, IUdpServer udpServer, ITcpServer tcpServer)
         {
             this.serverRequest = serverRequest;
             this.registerState = registerState;
@@ -30,14 +30,10 @@ namespace client.service.plugins.serverPlugins.register
             Console.CancelKeyPress += (s, e) => _ = SendExitMessage();
         }
 
-        private IPEndPoint UdpServer => registerState.UdpAddress;
-        private Socket TcpServer => registerState.TcpSocket;
-        private long ConnectId => registerState.RemoteInfo.ConnectId;
-
-        public int ClientTcpPort => registerState.RemoteInfo.TcpPort;
-        public int RouteLevel => registerState.LocalInfo.RouteLevel;
-
-        public SimplePushSubHandler<SendEventArg<ExitModel>> OnExitMessage { get; } = new SimplePushSubHandler<SendEventArg<ExitModel>>();
+        /// <summary>
+        /// 注册Tcp状态发生变化
+        /// </summary>
+        public SimplePushSubHandler<RegisterEventArg> OnRegisterStateChange { get; } = new SimplePushSubHandler<RegisterEventArg>();
 
         /// <summary>
         /// 发送退出消息
@@ -45,35 +41,23 @@ namespace client.service.plugins.serverPlugins.register
         /// <param name="arg"></param>
         public async Task SendExitMessage()
         {
-            SendEventArg<ExitModel> arg = new()
+            await serverRequest.SendReplyTcp(new SendTcpEventArg<ExitModel>
             {
-                Address = UdpServer,
+                Socket = registerState.TcpSocket,
                 Data = new ExitModel
                 {
-                    Id = ConnectId,
-                }
-            };
+                    Id = registerState.RemoteInfo.ConnectId,
+                },
+                Path = "exit/excute"
+            });
 
-            if (UdpServer != null)
+            udpServer.Stop();
+            tcpServer.Stop();
+
+            OnRegisterStateChange.Push(new RegisterEventArg
             {
-                if (TcpServer != null && TcpServer.Connected)
-                {
-                    await serverRequest.SendReply(new SendEventArg<ExitModel>
-                    {
-                        Address = arg.Address,
-                        Data = arg.Data,
-                        Path = "exit/excute"
-                    });
-                }
-                udpServer.Stop();
-                tcpServer.Stop();
-
-                OnRegisterStateChange.Push(new RegisterEventArg
-                {
-                    State = false
-                });
-            }
-            OnExitMessage.Push(arg);
+                State = false
+            });
 
             Helper.FlushMemory();
         }
@@ -84,12 +68,9 @@ namespace client.service.plugins.serverPlugins.register
         /// <param name="arg"></param>
         public async Task<RegisterResultModel> SendRegisterMessage(RegisterParams param)
         {
-
-            var watch = new MyStopwatch();
-            watch.Start();
             ServerMessageResponeWrap result = await serverRequest.SendReply(new SendEventArg<RegisterModel>
             {
-                Address = UdpServer,
+                Address = registerState.UdpAddress,
                 Path = "register/excute",
                 Data = new RegisterModel
                 {
@@ -102,20 +83,16 @@ namespace client.service.plugins.serverPlugins.register
 
                 }
             });
-            watch.Stop();
-            watch.Output("UDP注册耗时:");
             if (result.Code != ServerMessageResponeCodes.OK)
             {
                 return new RegisterResultModel { Code = -1, Msg = result.ErrorMsg };
             }
 
-            var res = result.Data.DeBytes<RegisterResultModel>();
+            RegisterResultModel res = result.Data.DeBytes<RegisterResultModel>();
 
-            var watch1 = new MyStopwatch();
-            watch1.Start();
-            var tcpResult = await serverRequest.SendReplyTcp(new SendTcpEventArg<RegisterModel>
+            ServerMessageResponeWrap tcpResult = await serverRequest.SendReplyTcp(new SendTcpEventArg<RegisterModel>
             {
-                Socket = TcpServer,
+                Socket = registerState.TcpSocket,
                 Path = "register/excute",
                 Data = new RegisterModel
                 {
@@ -127,8 +104,6 @@ namespace client.service.plugins.serverPlugins.register
                     LocalUdpPort = param.LocalUdpPort
                 }
             });
-            watch1.Stop();
-            watch1.Output("TCP注册耗时:");
             if (tcpResult.Code != ServerMessageResponeCodes.OK)
             {
                 return new RegisterResultModel { Code = -1, Msg = tcpResult.ErrorMsg };
@@ -144,10 +119,6 @@ namespace client.service.plugins.serverPlugins.register
 
         }
 
-        /// <summary>
-        /// 注册Tcp状态发生变化
-        /// </summary>
-        public SimplePushSubHandler<RegisterEventArg> OnRegisterStateChange { get; } = new SimplePushSubHandler<RegisterEventArg>();
     }
 
     #region 注册model

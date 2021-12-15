@@ -9,8 +9,8 @@ namespace client.service.plugins.serverPlugins.heart
     /// </summary>
     public class HeartPlugin : IPlugin
     {
-        private readonly HeartEventHandles heartEventHandles;
-        public HeartPlugin(HeartEventHandles heartEventHandles)
+        private readonly HeartMessageHelper heartEventHandles;
+        public HeartPlugin(HeartMessageHelper heartEventHandles)
         {
             this.heartEventHandles = heartEventHandles;
         }

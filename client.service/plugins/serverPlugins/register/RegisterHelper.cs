@@ -16,12 +16,12 @@ namespace client.service.plugins.serverPlugins.register
 {
     public class RegisterHelper
     {
-        private readonly RegisterEventHandles registerEventHandles;
+        private readonly RegisterMessageHelper registerEventHandles;
         private readonly ITcpServer tcpServer;
         private readonly IUdpServer udpServer;
         private readonly Config config;
         private readonly RegisterState registerState;
-        private readonly HeartEventHandles heartEventHandles;
+        private readonly HeartMessageHelper heartEventHandles;
         private readonly ServerPluginHelper serverPluginHelper;
 
         private long lastTime = 0;
@@ -29,7 +29,7 @@ namespace client.service.plugins.serverPlugins.register
         private readonly int heartInterval = 5000;
 
         public RegisterHelper(
-            RegisterEventHandles registerEventHandles, HeartEventHandles heartEventHandles,
+            RegisterMessageHelper registerEventHandles, HeartMessageHelper heartEventHandles,
             ITcpServer tcpServer, IUdpServer udpServer,
             Config config, RegisterState registerState,
             ServerPluginHelper serverPluginHelper
@@ -44,10 +44,13 @@ namespace client.service.plugins.serverPlugins.register
             this.serverPluginHelper = serverPluginHelper;
 
             //退出消息
-            registerEventHandles.OnExitMessage.Sub((e) =>
+            registerEventHandles.OnRegisterStateChange.Sub((e) =>
             {
-                registerState.Offline();
-                ResetLastTime();
+                if (e.State == false)
+                {
+                    registerState.Offline();
+                    ResetLastTime();
+                }
             });
 
             Heart();
@@ -55,103 +58,92 @@ namespace client.service.plugins.serverPlugins.register
 
         public void AutoReg()
         {
-            Task.Run(async () =>
+            if (config.Client.AutoReg)
             {
-                while (!registerState.LocalInfo.Connected)
+                if (registerState.LocalInfo.Connected)
                 {
-                    var result = Start().Result;
-                    if (result.Data)
-                    {
-                        break;
-                    }
-                    await Task.Delay(500);
+                    registerEventHandles.SendExitMessage().Wait();
                 }
-            });
-            Logger.Instance.Info("已自动注册...");
+
+                Task.Run(async () =>
+                {
+                    CommonTaskResponseModel<bool> result = null;
+                    while (result == null || result.Data == false)
+                    {
+                        result = await Start();
+                        if (result.Data == true)
+                        {
+                            break;
+                        }
+                        await Task.Delay(500);
+                    }
+                });
+                Logger.Instance.Info("已自动注册...");
+            }
         }
 
         public async Task<CommonTaskResponseModel<bool>> Start()
         {
-            var tcs = new TaskCompletionSource<CommonTaskResponseModel<bool>>();
+            TaskCompletionSource<CommonTaskResponseModel<bool>> tcs = new TaskCompletionSource<CommonTaskResponseModel<bool>>();
 
-            //不管三七二十一，先停止一波
-            bool connecting = registerState.LocalInfo.IsConnecting;
             await registerEventHandles.SendExitMessage();
-            if (connecting)
+
+            try
             {
-                tcs.SetResult(new CommonTaskResponseModel<bool> { Data = false, ErrorMsg = "正在注册！" });
-            }
-            else
-            {
-                try
+                IPAddress serverAddress = Helper.GetDomainIp(config.Server.Ip);
+                registerState.LocalInfo.IsConnecting = true;
+                registerState.LocalInfo.Port = Helper.GetRandomPort();
+                registerState.LocalInfo.TcpPort = Helper.GetRandomPort(new List<int> { registerState.LocalInfo.Port });
+                registerState.LocalInfo.Mac = string.Empty;
+                registerState.UdpAddress = new IPEndPoint(serverAddress, config.Server.Port);
+
+                //TCP 本地开始监听
+                tcpServer.Start(registerState.LocalInfo.TcpPort, config.Client.BindIp);
+                //UDP 开始监听
+                udpServer.Start(registerState.LocalInfo.Port, config.Client.BindIp);
+
+                //TCP 连接服务器
+                registerState.TcpSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                registerState.TcpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                registerState.TcpSocket.Bind(new IPEndPoint(config.Client.BindIp, registerState.LocalInfo.TcpPort));
+                registerState.TcpSocket.Connect(new IPEndPoint(serverAddress, config.Server.TcpPort));
+                registerState.LocalInfo.LocalIp = IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString();
+                if (config.Client.UseMac)
                 {
-                    registerState.LocalInfo.IsConnecting = true;
-                    registerState.LocalInfo.Port = Helper.GetRandomPort();
-                    IPAddress serverAddress = Helper.GetDomainIp(config.Server.Ip);
-
-                    //TCP 本地开始监听
-                    registerState.LocalInfo.TcpPort = Helper.GetRandomPort(new List<int> { registerState.LocalInfo.Port });
-                    tcpServer.Start(registerState.LocalInfo.TcpPort, config.Client.BindIp);
-
-                    //TCP 连接服务器
-                    registerState.TcpSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                    registerState.TcpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                    registerState.TcpSocket.Bind(new IPEndPoint(config.Client.BindIp, registerState.LocalInfo.TcpPort));
-                    registerState.TcpSocket.Connect(new IPEndPoint(serverAddress, config.Server.TcpPort));
-                    registerState.LocalInfo.LocalIp = IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString();
-                    tcpServer.BindReceive(registerState.TcpSocket, (code) =>
-                    {
-                        if (code == SocketError.ConnectionReset)
-                        {
-                            registerEventHandles.SendExitMessage().Wait();
-                            AutoReg();
-                        }
-                    });
-
-                    //上报mac
-                    string mac = string.Empty;
-                    if (config.Client.UseMac)
-                    {
-                        registerState.LocalInfo.Mac = mac = Helper.GetMacAddress(IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString());
-                    }
-                    //UDP 开始监听
-                    udpServer.Start(registerState.LocalInfo.Port, config.Client.BindIp);
-                    registerState.UdpAddress = new IPEndPoint(serverAddress, config.Server.Port);
-
-
-                    //注册
-                    RegisterResultModel result = await registerEventHandles.SendRegisterMessage(new RegisterParams
-                    {
-                        ClientName = config.Client.Name,
-                        GroupId = config.Client.GroupId,
-                        LocalUdpPort = registerState.LocalInfo.Port,
-                        LocalTcpPort = registerState.LocalInfo.TcpPort,
-                        Mac = mac,
-                        LocalIps = string.Join(",", new List<string> {
+                    registerState.LocalInfo.Mac = Helper.GetMacAddress(IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString());
+                }
+                tcpServer.BindReceive(registerState.TcpSocket);
+                //注册
+                RegisterResultModel result = await registerEventHandles.SendRegisterMessage(new RegisterParams
+                {
+                    ClientName = config.Client.Name,
+                    GroupId = config.Client.GroupId,
+                    LocalUdpPort = registerState.LocalInfo.Port,
+                    LocalTcpPort = registerState.LocalInfo.TcpPort,
+                    Mac = registerState.LocalInfo.Mac,
+                    LocalIps = string.Join(",", new List<string> {
                             "127.0.0.1",
                             IPEndPoint.Parse(registerState.TcpSocket.LocalEndPoint.ToString()).Address.ToString()
                         }),
-                        Timeout = 5 * 1000
-                    });
-                    if (result.Code == 0)
-                    {
-                        config.Client.GroupId = result.GroupId;
-                        registerState.Online(result.Id, result.Ip, result.TcpPort);
-                        tcs.SetResult(new CommonTaskResponseModel<bool> { Data = true, ErrorMsg = string.Empty });
-                    }
-                    else
-                    {
-                        registerState.LocalInfo.IsConnecting = false;
-                        tcs.SetResult(new CommonTaskResponseModel<bool> { Data = false, ErrorMsg = result.Msg });
-                    }
-                }
-                catch (Exception ex)
+                    Timeout = 5 * 1000
+                });
+                if (result.Code == 0)
                 {
-                    Logger.Instance.Error(ex + "");
-                    tcs.SetResult(new CommonTaskResponseModel<bool> { Data = false, ErrorMsg = ex.Message });
-                    registerState.LocalInfo.IsConnecting = false;
-                    await registerEventHandles.SendExitMessage();
+                    config.Client.GroupId = result.GroupId;
+                    registerState.Online(result.Id, result.Ip, result.TcpPort);
+                    tcs.SetResult(new CommonTaskResponseModel<bool> { Data = true, ErrorMsg = string.Empty });
                 }
+                else
+                {
+                    await registerEventHandles.SendExitMessage();
+                    tcs.SetResult(new CommonTaskResponseModel<bool> { Data = false, ErrorMsg = result.Msg });
+                }
+            }
+            catch (Exception ex)
+            {
+                await registerEventHandles.SendExitMessage();
+                tcs.SetResult(new CommonTaskResponseModel<bool> { Data = false, ErrorMsg = ex.Message });
+                Logger.Instance.Error(ex + "");
             }
 
             return await tcs.Task;
@@ -162,36 +154,20 @@ namespace client.service.plugins.serverPlugins.register
             lastTime = 0;
             lastTcpTime = 0;
         }
+
         private bool IsTimeout()
         {
             long time = Helper.GetTimeStamp();
             return (lastTime > 0 && time - lastTime > 20000) || (lastTcpTime > 0 && time - lastTcpTime > 20000);
         }
-
         private bool IsNeedHeart()
         {
             long time = Helper.GetTimeStamp();
-            return (lastTime == 0 || time - lastTime > 5000) || (lastTcpTime == 0 || time - lastTcpTime > 5000);
+            return ((lastTime == 0 || time - lastTime > 5000) || (lastTcpTime == 0 || time - lastTcpTime > 5000));
         }
 
-
-        private void OnData(OnDataParam param)
-        {
-            if (param.Address == registerState.TcpAddressId)
-            {
-                lastTcpTime = param.Time;
-            }
-            else if (param.Address == registerState.UdpAddressId)
-            {
-                lastTime = param.Time;
-            }
-        }
         private void Heart()
         {
-
-            serverPluginHelper.OnInputData.Sub(OnData);
-            serverPluginHelper.OnSendData.Sub(OnData);
-
             //给服务器发送心跳包
             _ = Task.Factory.StartNew(async () =>
             {
@@ -199,17 +175,18 @@ namespace client.service.plugins.serverPlugins.register
                 {
                     if (IsTimeout())
                     {
-                        registerEventHandles.SendExitMessage().Wait();
-
-                        if (config.Client.AutoReg)
-                        {
-                            AutoReg();
-                        }
+                        AutoReg();
                     }
-                    if (registerState.LocalInfo.Connected && registerState.LocalInfo.TcpConnected && IsNeedHeart())
+                    else if (IsNeedHeart())
                     {
-                        heartEventHandles.SendHeartMessage(registerState.RemoteInfo.ConnectId, registerState.UdpAddress);
-                        heartEventHandles.SendTcpHeartMessage(registerState.RemoteInfo.ConnectId, registerState.TcpSocket);
+                        if (registerState.LocalInfo.Connected)
+                        {
+                            heartEventHandles.SendHeartMessage(registerState.RemoteInfo.ConnectId, registerState.UdpAddress);
+                        }
+                        if (registerState.LocalInfo.TcpConnected)
+                        {
+                            heartEventHandles.SendTcpHeartMessage(registerState.RemoteInfo.ConnectId, registerState.TcpSocket);
+                        }
                     }
                     await Task.Delay(heartInterval);
                 }

@@ -1,6 +1,7 @@
 ﻿using MessagePack;
 using ProtoBuf;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
 
 namespace server.model
@@ -39,5 +40,8 @@ namespace server.model
 
         [ProtoIgnore, IgnoreMember]
         public Socket TcpSocket { get; set; }
+
+        [ProtoIgnore, IgnoreMember]
+        public IPEndPoint EndPoint { get; set; }
     }
 }

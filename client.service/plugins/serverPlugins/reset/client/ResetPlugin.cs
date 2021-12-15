@@ -9,9 +9,9 @@ namespace client.service.plugins.serverPlugins.reset.client
 {
     public class ResetPlugin : IClientServicePlugin
     {
-        private readonly ResetEventHandles resetEventHandles;
+        private readonly ResetMessageHelper resetEventHandles;
         private readonly ClientsHelper clientsHelper;
-        public ResetPlugin(ClientsHelper clientsHelper, ResetEventHandles resetEventHandles)
+        public ResetPlugin(ClientsHelper clientsHelper, ResetMessageHelper resetEventHandles)
         {
             this.clientsHelper = clientsHelper;
             this.resetEventHandles = resetEventHandles;

@@ -77,7 +77,7 @@ namespace server.achieves.defaults
 
         public void Stop()
         {
-            cancellationTokenSource.Cancel();
+            cancellationTokenSource?.Cancel();
             if (UdpcRecv != null)
             {
                 UdpcRecv.Close();
@@ -92,7 +92,7 @@ namespace server.achieves.defaults
             {
                 try
                 {
-                    _ = UdpcRecv.SendAsync(data, data.Length, address);
+                    _ = UdpcRecv.Send(data, data.Length, address);
                     return true;
                 }
                 catch (Exception ex)

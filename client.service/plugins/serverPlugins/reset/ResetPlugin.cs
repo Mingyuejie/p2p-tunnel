@@ -14,7 +14,7 @@ namespace client.service.plugins.serverPlugins.reset
 
         public void Excute(PluginParamWrap data)
         {
-            _ = registerHelper.Start();
+            registerHelper.Start().Wait();
         }
     }
 }

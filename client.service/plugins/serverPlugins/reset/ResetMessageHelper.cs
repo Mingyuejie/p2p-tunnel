@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 
 namespace client.service.plugins.serverPlugins.reset
 {
-    public class ResetEventHandles
+    public class ResetMessageHelper
     {
         private readonly IServerRequest  serverRequest;
         private readonly RegisterState registerState;
 
-        public ResetEventHandles(IServerRequest serverRequest, RegisterState registerState)
+        public ResetMessageHelper(IServerRequest serverRequest, RegisterState registerState)
         {
             this.serverRequest = serverRequest;
             this.registerState = registerState;

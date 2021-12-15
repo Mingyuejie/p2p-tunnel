@@ -95,7 +95,6 @@ namespace client.service.plugins.punchHolePlugins
                 }
             });
         }
-
         public void Send<T>(SendPunchHoleArg<T> arg)
         {
             var msg = ((IPunchHoleMessageBase)arg.Data);

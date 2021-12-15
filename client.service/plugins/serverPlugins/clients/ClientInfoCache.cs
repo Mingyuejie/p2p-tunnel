@@ -23,8 +23,7 @@ namespace client.service.plugins.serverPlugins.clients
 
         public void UpdateLastTime(long id)
         {
-            _ = clients.TryGetValue(id, out ClientInfo client);
-            if (client != null)
+            if (clients.TryGetValue(id, out ClientInfo client))
             {
                 client.UpdateLastTime();
             }
@@ -32,8 +31,7 @@ namespace client.service.plugins.serverPlugins.clients
 
         public void UpdateTcpLastTime(long id)
         {
-            _ = clients.TryGetValue(id, out ClientInfo client);
-            if (client != null)
+            if (clients.TryGetValue(id, out ClientInfo client))
             {
                 client.UpdateTcpLastTime();
             }
@@ -66,18 +64,16 @@ namespace client.service.plugins.serverPlugins.clients
 
         public void Offline(long id)
         {
-            _ = clients.TryGetValue(id, out ClientInfo client);
-            if (client != null)
+            if (clients.TryGetValue(id, out ClientInfo client))
             {
+                msgTimeUdp.TryRemove(client.UdpAddressId, out _);
                 client.Offline();
                 OnOffline.Push(client);
             }
         }
-
         public void Online(long id, IPEndPoint address)
         {
-            _ = clients.TryGetValue(id, out ClientInfo client);
-            if (client != null)
+            if (clients.TryGetValue(id, out ClientInfo client))
             {
                 client.Online(address);
             }
@@ -85,18 +81,16 @@ namespace client.service.plugins.serverPlugins.clients
 
         public void OfflineTcp(long id)
         {
-            _ = clients.TryGetValue(id, out ClientInfo client);
-            if (client != null)
+            if (clients.TryGetValue(id, out ClientInfo client))
             {
+                msgTimeTcp.TryRemove(client.TcpAddressId, out _);
                 client.OfflineTcp();
                 OnTcpOffline.Push(client);
             }
         }
-
         public void OnlineTcp(long id, Socket socket)
         {
-            _ = clients.TryGetValue(id, out ClientInfo client);
-            if (client != null)
+            if (clients.TryGetValue(id, out ClientInfo client))
             {
                 client.OnlineTcp(socket);
             }
@@ -104,9 +98,10 @@ namespace client.service.plugins.serverPlugins.clients
 
         public void OfflineBoth(long id)
         {
-            _ = clients.TryGetValue(id, out ClientInfo client);
-            if (client != null)
+            if (clients.TryGetValue(id, out ClientInfo client))
             {
+                msgTimeUdp.TryRemove(client.UdpAddressId, out _);
+                msgTimeTcp.TryRemove(client.TcpAddressId, out _);
                 client.Offline();
                 client.OfflineTcp();
                 OnTcpOffline.Push(client);

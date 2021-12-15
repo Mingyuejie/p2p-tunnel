@@ -14,8 +14,9 @@ namespace server.service.plugins.register.caching
     public class ClientRegisterCaching : IClientRegisterCaching
     {
         private readonly ConcurrentDictionary<long, RegisterCacheModel> cache = new();
-
         private static long Id = 0;
+
+        public SimplePushSubHandler<string> OnChanged => new SimplePushSubHandler<string>();
 
         public ClientRegisterCaching()
         {
@@ -78,6 +79,7 @@ namespace server.service.plugins.register.caching
                 data.LastTime = Helper.GetTimeStamp();
                 data.TcpSocket = model.TcpSocket;
                 data.TcpPort = model.TcpPort;
+                OnChanged.Push(data.GroupId);
                 return true;
             }
             return false;
@@ -85,7 +87,10 @@ namespace server.service.plugins.register.caching
 
         public void Remove(long id)
         {
-            _ = cache.TryRemove(id, out _);
+            if (cache.TryRemove(id, out RegisterCacheModel model))
+            {
+                OnChanged.Push(model.GroupId);
+            }
         }
 
         public void UpdateTime(long id)
@@ -114,5 +119,6 @@ namespace server.service.plugins.register.caching
             }
             return false;
         }
+
     }
 }

@@ -1,4 +1,5 @@
-﻿using common.extends;
+﻿using common;
+using common.extends;
 using server.model;
 using server.plugin;
 using server.service.plugins.register.caching;

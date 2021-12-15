@@ -163,7 +163,10 @@ namespace server
                         Msg = msg.Msg
                     };
                     bool res = tcpserver.Send(TcpPacket.ToArray(wrap.ToArray()), msg.TcpCoket);
-                    OnSendData.Push(new OnDataParam { Address = (msg.TcpCoket.RemoteEndPoint as IPEndPoint).ToInt64(), ServerType = ServerType.TCP, Time = lastTime });
+                    if (res)
+                    {
+                        OnSendData.Push(new OnDataParam { Address = (msg.TcpCoket.RemoteEndPoint as IPEndPoint).ToInt64(), ServerType = ServerType.TCP, Time = lastTime });
+                    }
                     return res;
                 }
                 catch (Exception ex)
@@ -194,7 +197,10 @@ namespace server
                         Msg = msg.Msg
                     };
                     bool res = tcpserver.Send(TcpPacket.ToArray(wrap.ToArray()), msg.TcpCoket);
-                    OnSendData.Push(new OnDataParam { Address = (msg.TcpCoket.RemoteEndPoint as IPEndPoint).ToInt64(), ServerType = ServerType.TCP, Time = lastTime });
+                    if (res)
+                    {
+                        OnSendData.Push(new OnDataParam { Address = (msg.TcpCoket.RemoteEndPoint as IPEndPoint).ToInt64(), ServerType = ServerType.TCP, Time = lastTime });
+                    }
                     
                     return res;
                 }
@@ -257,13 +263,21 @@ namespace server
                     _ = Interlocked.Increment(ref sequence);
                     IEnumerable<UdpPacket> udpPackets = wrap.ToArray().Split(sequence);
 
+                    bool res = true;
                     foreach (UdpPacket udpPacket in udpPackets)
                     {
                         byte[] udpPacketDatagram = udpPacket.ToArray();
-                        udpserver.Send(udpPacketDatagram, msg.Address);
+                        res = udpserver.Send(udpPacketDatagram, msg.Address);
+                        if (!res)
+                        {
+                            break;
+                        }
                     }
-                    OnSendData.Push(new OnDataParam { Address = msg.Address.ToInt64(), ServerType = ServerType.UDP, Time = lastTime });
-                    return true;
+                    if (res)
+                    {
+                        OnSendData.Push(new OnDataParam { Address = msg.Address.ToInt64(), ServerType = ServerType.UDP, Time = lastTime });
+                    }
+                    return res;
                 }
                 catch (Exception ex)
                 {
@@ -295,13 +309,21 @@ namespace server
                     _ = Interlocked.Increment(ref sequence);
                     IEnumerable<UdpPacket> udpPackets = wrap.ToArray().Split(sequence);
 
+                    bool res = true;
                     foreach (UdpPacket udpPacket in udpPackets)
                     {
                         byte[] udpPacketDatagram = udpPacket.ToArray();
-                        udpserver.Send(udpPacketDatagram, msg.Address);
+                        res = udpserver.Send(udpPacketDatagram, msg.Address);
+                        if (!res)
+                        {
+                            break;
+                        }
                     }
-                    OnSendData.Push(new OnDataParam { Address = msg.Address.ToInt64(), ServerType = ServerType.UDP, Time = lastTime });
-                    return true;
+                    if (res)
+                    {
+                        OnSendData.Push(new OnDataParam { Address = msg.Address.ToInt64(), ServerType = ServerType.UDP, Time = lastTime });
+                    }
+                    return res;
                 }
                 catch (Exception ex)
                 {

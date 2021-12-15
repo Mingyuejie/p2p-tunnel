@@ -7,15 +7,13 @@ using System.Net.Sockets;
 
 namespace client.service.plugins.serverPlugins.heart
 {
-    public class HeartEventHandles
+    public class HeartMessageHelper
     {
-        private readonly IServerRequest  serverRequest;
-        public HeartEventHandles(IServerRequest serverRequest)
+        private readonly IServerRequest serverRequest;
+        public HeartMessageHelper(IServerRequest serverRequest)
         {
             this.serverRequest = serverRequest;
         }
-
-
         /// <summary>
         /// 发送心跳消息
         /// </summary>
@@ -31,7 +29,6 @@ namespace client.service.plugins.serverPlugins.heart
                     SourceId = ConnectId
                 }
             };
-
             serverRequest.SendOnly(arg);
         }
         /// <summary>

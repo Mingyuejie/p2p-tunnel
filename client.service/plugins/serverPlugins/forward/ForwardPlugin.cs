@@ -6,6 +6,9 @@ using server.plugin;
 
 namespace client.service.plugins.serverPlugins.forward
 {
+    /// <summary>
+    /// 来自服务器的消息转发  a->服务器->b
+    /// </summary>
     public class ForwardPlugin : IPlugin
     {
         private readonly ServerPluginHelper serverPluginHelper;

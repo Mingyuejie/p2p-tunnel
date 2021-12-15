@@ -67,7 +67,7 @@ namespace client.service.plugins.punchHolePlugins
 
 
     /// <summary>
-    /// p2p消息插件，用于区别不同的消息类型
+    /// 打洞插件
     /// </summary>
     public interface IPunchHolePlugin
     {
@@ -77,7 +77,7 @@ namespace client.service.plugins.punchHolePlugins
     }
 
     /// <summary>
-    /// p2p消息类型
+    /// 打洞类型
     /// </summary>
     [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
@@ -88,7 +88,9 @@ namespace client.service.plugins.punchHolePlugins
         TCP_NUTSSB, //端口复用打洞
         REVERSE, //反向链接
     }
-
+    /// <summary>
+    /// 打洞消息
+    /// </summary>
     public interface IPunchHoleMessageBase
     {
         PunchHoleTypes PunchType { get; }
@@ -110,7 +112,6 @@ namespace client.service.plugins.punchHolePlugins
             obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssBEventHandles>();
             return obj;
         }
-
         public static ServiceCollection AddPunchHolePlugin(this ServiceCollection obj, Assembly[] assemblys)
         {
             var types = assemblys.SelectMany(c => c.GetTypes())

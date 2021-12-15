@@ -11,9 +11,9 @@ namespace client.service.plugins.serverPlugins.register.client
     {
         private readonly RegisterHelper registerHelper;
         private readonly RegisterState registerState;
-        private readonly RegisterEventHandles registerEventHandles;
+        private readonly RegisterMessageHelper registerEventHandles;
         private readonly Config config;
-        public RegisterPlugin(RegisterHelper registerHelper, RegisterState registerState, RegisterEventHandles registerEventHandles, Config config)
+        public RegisterPlugin(RegisterHelper registerHelper, RegisterState registerState, RegisterMessageHelper registerEventHandles, Config config)
         {
             this.registerHelper = registerHelper;
             this.registerState = registerState;

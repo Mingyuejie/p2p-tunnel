@@ -145,7 +145,8 @@ namespace server.achieves.defaults
 
         public void Stop()
         {
-            cancellationTokenSource.Cancel();
+            cancellationTokenSource?.Cancel();
+
             ReceiveModel.ClearAll();
             foreach (ServerModel server in servers.Values)
             {
