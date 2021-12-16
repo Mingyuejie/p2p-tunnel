@@ -19,7 +19,7 @@ namespace client.service.plugins.serverPlugins.clients
         public void Excute(PluginParamWrap model)
         {
             ClientsModel res = model.Wrap.Memory.DeBytes<ClientsModel>();
-            clientsMessageHelper.OnData.Push(new OnServerSendClientsEventArg
+            clientsMessageHelper.OnServerClientsData.Push(new OnServerSendClientsEventArg
             {
                 Data = res,
                 Packet = model

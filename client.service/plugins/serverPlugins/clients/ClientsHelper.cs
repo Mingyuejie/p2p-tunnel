@@ -54,9 +54,9 @@ namespace client.service.plugins.serverPlugins.clients
             //本客户端注册状态
             registerEventHandles.OnRegisterStateChange.Sub(OnRegisterStateChange);
             //收到来自服务器的 在线客户端 数据
-            clientsMessageHelper.OnData.Sub(OnServerSendClients);
-
-            _ = Task.Run(() =>
+            clientsMessageHelper.OnServerClientsData.Sub(OnServerSendClients);
+            
+            Task.Run(() =>
             {
                 registerState.LocalInfo.RouteLevel = Helper.GetRouteLevel();
             });
@@ -143,8 +143,7 @@ namespace client.service.plugins.serverPlugins.clients
 
         public void ConnectClient(long id)
         {
-            clientInfoCaching.Get(id, out ClientInfo client);
-            if (client != null)
+            if (clientInfoCaching.Get(id, out ClientInfo client))
             {
                 ConnectClient(client);
             }
