@@ -161,8 +161,6 @@ namespace client.service.tcpforward
             {
                 if (client == null)
                 {
-                    Logger.Instance.Error("new");
-
                     Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
                     client = new ClientModel
