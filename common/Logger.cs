@@ -41,7 +41,7 @@ namespace common
                 Console.ForegroundColor = currentForeColor;
             });
 
-            _ = Task.Factory.StartNew(async () =>
+            Task.Factory.StartNew(async () =>
             {
                 while (true)
                 {
@@ -94,7 +94,7 @@ namespace common
             {
                 content = string.Format(content, args);
             }
-            queue.Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = content });
+            queue.Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = content});
         }
         public void Error(Exception ex)
         {

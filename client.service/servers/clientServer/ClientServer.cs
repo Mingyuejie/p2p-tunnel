@@ -40,39 +40,33 @@ namespace client.service.servers.clientServer
             Type asyncType = typeof(IAsyncResult);
             Type taskType = typeof(Task);
 
-            IEnumerable<Type> types = assemblys
-                .SelectMany(c => c.GetTypes())
-                .Where(c => c.GetInterfaces().Contains(typeof(IClientServicePlugin)));
-            foreach (var item in types)
+            IEnumerable<Type> types = assemblys.SelectMany(c => c.GetTypes());
+            foreach (Type item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientServicePlugin))))
             {
                 string path = item.Name.Replace("Plugin", "");
                 object obj = serviceProvider.GetService(item);
-                foreach (var method in item.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
+                foreach (MethodInfo method in item.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
                 {
                     string key = $"{path}/{method.Name}".ToLower();
                     if (!plugins.ContainsKey(key))
                     {
-                        PluginPathCacheInfo cache = new PluginPathCacheInfo
+                        plugins.TryAdd(key, new PluginPathCacheInfo
                         {
                             IsVoid = method.ReturnType == voidType,
                             Method = method,
                             Target = obj,
                             IsTask = method.ReturnType.GetInterfaces().Contains(asyncType),
                             IsTaskResult = method.ReturnType.IsSubclassOf(taskType)
-                        };
-                        plugins.TryAdd(key, cache);
+                        });
                     }
                 }
             }
 
-            IEnumerable<Type> types2 = assemblys
-                .SelectMany(c => c.GetTypes())
-                .Where(c => c.GetInterfaces().Contains(typeof(IClientServerPushMsgPlugin)));
-            foreach (var item in types2)
+            foreach (Type item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientServerPushMsgPlugin))))
             {
                 string path = item.Name.Replace("PushMsgPlugin", "");
                 object obj = serviceProvider.GetService(item);
-                foreach (var method in item.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
+                foreach (MethodInfo method in item.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
                 {
                     string key = $"{path}/{method.Name}".ToLower();
                     if (!pushPlugins.ContainsKey(key))
@@ -81,11 +75,7 @@ namespace client.service.servers.clientServer
                     }
                 }
             }
-
-            IEnumerable<Type> types3 = assemblys
-                .SelectMany(c => c.GetTypes())
-                .Where(c => c.GetInterfaces().Contains(typeof(IClientServiceSettingPlugin)));
-            foreach (var item in types3)
+            foreach (Type item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientServiceSettingPlugin))))
             {
                 if (!settingPlugins.ContainsKey(item.Name))
                     settingPlugins.Add(item.Name, (IClientServiceSettingPlugin)serviceProvider.GetService(item));
@@ -121,15 +111,18 @@ namespace client.service.servers.clientServer
             {
                 socket.OnClose = () =>
                 {
-                    _ = websockets.TryRemove(socket.ConnectionInfo.Id, out _);
+                    websockets.TryRemove(socket.ConnectionInfo.Id, out _);
                 };
                 socket.OnOpen = () =>
                 {
-                    _ = websockets.TryAdd(socket.ConnectionInfo.Id, socket);
+                    websockets.TryAdd(socket.ConnectionInfo.Id, socket);
                 };
                 socket.OnMessage = message =>
                 {
-                    OnMessage(socket, message);
+                    Task.Run(() =>
+                    {
+                        OnMessage(socket, message);
+                    });
                 };
             });
 
@@ -138,66 +131,63 @@ namespace client.service.servers.clientServer
 
         private void OnMessage(IWebSocketConnection socket, string message)
         {
-            _ = Task.Run(() =>
+            ClientServiceMessageWrap model = message.DeJson<ClientServiceMessageWrap>();
+            model.Path = model.Path.ToLower();
+            if (plugins.ContainsKey(model.Path))
             {
-                ClientServiceMessageWrap model = message.DeJson<ClientServiceMessageWrap>();
-                model.Path = model.Path.ToLower();
-                if (plugins.ContainsKey(model.Path))
+                PluginPathCacheInfo plugin = plugins[model.Path];
+                try
                 {
-                    var plugin = plugins[model.Path];
-                    try
+                    ClientServicePluginExcuteWrap param = new ClientServicePluginExcuteWrap
                     {
-                        var param = new ClientServicePluginExcuteWrap
+                        Socket = socket,
+                        RequestId = model.RequestId,
+                        Content = model.Content,
+                        Websockets = websockets,
+                        Path = model.Path
+                    };
+                    dynamic resultAsync = plugin.Method.Invoke(plugin.Target, new object[] { param });
+                    object resultObject = null;
+                    if (!plugin.IsVoid && resultAsync != null)
+                    {
+                        if (plugin.IsTask)
                         {
-                            Socket = socket,
-                            RequestId = model.RequestId,
-                            Content = model.Content,
-                            Websockets = websockets,
-                            Path = model.Path
-                        };
-                        dynamic resultAsync = plugin.Method.Invoke(plugin.Target, new object[] { param });
-                        object resultObject = null;
-                        if (!plugin.IsVoid && resultAsync != null)
-                        {
-                            if (plugin.IsTask)
+                            resultAsync.Wait();
+                            if (plugin.IsTaskResult)
                             {
-                                resultAsync.Wait();
-                                if (plugin.IsTaskResult)
-                                {
-                                    resultObject = resultAsync.Result;
-                                }
-                            }
-                            else
-                            {
-                                resultObject = resultAsync;
+                                resultObject = resultAsync.Result;
                             }
                         }
-                        param.Socket.Send(new ClientServiceMessageResponseWrap
+                        else
                         {
-                            Content = param.Code == 0 ? resultObject : param.ErrorMessage,
-                            RequestId = param.RequestId,
-                            Path = param.Path,
-                            Code = param.Code
-                        }.ToJson());
+                            resultObject = resultAsync;
+                        }
                     }
-                    catch (Exception ex)
+                    param.Socket.Send(new ClientServiceMessageResponseWrap
                     {
-                        Logger.Instance.Error(ex + "");
-                        socket.Send(new ClientServiceMessageResponseWrap
-                        {
-                            Content = ex.Message,
-                            RequestId = model.RequestId,
-                            Path = model.Path,
-                            Code = -1
-                        }.ToJson());
-                    }
+                        Content = param.Code == 0 ? resultObject : param.ErrorMessage,
+                        RequestId = param.RequestId,
+                        Path = param.Path,
+                        Code = param.Code
+                    }.ToJson());
                 }
-            });
+                catch (Exception ex)
+                {
+                    Logger.Instance.Error(ex + "");
+                    socket.Send(new ClientServiceMessageResponseWrap
+                    {
+                        Content = ex.Message,
+                        RequestId = model.RequestId,
+                        Path = model.Path,
+                        Code = -1
+                    }.ToJson());
+                }
+            }
         }
 
         private void Notify()
         {
-            Task.Run(async () =>
+            Task.Factory.StartNew(async () =>
             {
                 while (true)
                 {
@@ -222,7 +212,7 @@ namespace client.service.servers.clientServer
                     }
                     await Task.Delay(300);
                 }
-            });
+            }, TaskCreationOptions.LongRunning);
         }
 
         public IClientServiceSettingPlugin GetSettingPlugin(string className)
@@ -260,49 +250,32 @@ namespace client.service.servers.clientServer
 
     public static class ServiceCollectionExtends
     {
-        public static ServiceCollection AddClientServer(this ServiceCollection obj)
-        {
-            obj.AddClientServer(AppDomain.CurrentDomain.GetAssemblies());
-            obj.AddSingleton<IClientServer, ClientServer>();
-
-            return obj;
-        }
         public static ServiceCollection AddClientServer(this ServiceCollection obj, Assembly[] assemblys)
         {
-            var types = assemblys.SelectMany(c => c.GetTypes())
-                 .Where(c => c.GetInterfaces().Contains(typeof(IClientServicePlugin)));
-            foreach (var item in types)
+            obj.AddSingleton<IClientServer, ClientServer>();
+
+            IEnumerable<Type> types = assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies()).SelectMany(c => c.GetTypes());
+
+            foreach (var item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientServicePlugin))))
+            {
+                obj.AddSingleton(item);
+            }
+            foreach (var item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientServerPushMsgPlugin))))
+            {
+                obj.AddSingleton(item);
+            }
+            foreach (var item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientServiceSettingPlugin))))
             {
                 obj.AddSingleton(item);
             }
 
-            var types2 = assemblys.SelectMany(c => c.GetTypes())
-                 .Where(c => c.GetInterfaces().Contains(typeof(IClientServerPushMsgPlugin)));
-            foreach (var item in types2)
-            {
-                obj.AddSingleton(item);
-            }
-
-            var types3 = assemblys.SelectMany(c => c.GetTypes())
-                .Where(c => c.GetInterfaces().Contains(typeof(IClientServiceSettingPlugin)));
-            foreach (var item in types3)
-            {
-                obj.AddSingleton(item);
-            }
-
-            return obj;
-        }
-
-        public static ServiceProvider UseClientServer(this ServiceProvider obj)
-        {
-            obj.UseClientServer(AppDomain.CurrentDomain.GetAssemblies());
-            obj.GetService<IClientServer>().Start();
             return obj;
         }
 
         public static ServiceProvider UseClientServer(this ServiceProvider obj, Assembly[] assemblys)
         {
-            obj.GetService<IClientServer>().LoadPlugins(assemblys);
+            obj.GetService<IClientServer>().Start();
+            obj.GetService<IClientServer>().LoadPlugins(assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies()).ToArray());
             return obj;
         }
     }

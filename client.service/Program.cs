@@ -46,7 +46,7 @@ namespace client.service
             serviceCollection.AddSingleton((e) => serviceProvider);
 
             //外部程序集的插件
-            var assemblys = new[] {
+            System.Reflection.Assembly[] assemblys = new[] {
                 typeof(TcpForwardPlugin).Assembly,
                 typeof(UpnpPlugin).Assembly,
                 typeof(FtpServerPlugin).Assembly,
@@ -59,40 +59,36 @@ namespace client.service
 
             serviceCollection
                 //基础的功能
-                .AddServerPlugin()
-                .AddPunchHolePlugin()//打洞
-                .AddClientServer() //客户端管理
+                .AddServerPlugin(assemblys)
+                //客户端管理
+                .AddClientServer(assemblys)
+
                 .AddWebServer()//客户端页面
-
-                //外部插件
-                .AddServerPlugin(assemblys).AddClientServer(assemblys)
-
+                .AddPunchHolePlugin()//打洞
                 .AddTcpForwardPlugin()  //客户端tcp转发
                 .AddUpnpPlugin()//upnp映射
                 .AddFtpPlugin() //文件服务
                 .AddCmdPlugin() //远程命令
                 .AddLoggerPlugin() //日志
                 .AddServerTcpForwardPlugin()//服务器TCP转发
-                .AddDdnsPlugin();
+                .AddDdnsPlugin()
             ;
 
 
             serviceProvider = serviceCollection.BuildServiceProvider();
             serviceProvider
                 //基础的功能
-                .UseLoggerPlugin() //日志
-                .UseServerPlugin()
-                .UsePunchHolePlugin()//打洞
-                .UseClientServer()//客户端管理
+                .UseServerPlugin(assemblys)
+                //客户端管理
+                .UseClientServer(assemblys)
+
                 .UseWebServer()//客户端页面
-
-                //外部插件
-                .UseServerPlugin(assemblys).UseClientServer(assemblys)
-
+                .UsePunchHolePlugin()//打洞
                 .UseTcpForwardPlugin()//客户端tcp转发
                 .UseUpnpPlugin()//upnp映射
                 .UseFtpPlugin() //文件服务
                 .UseCmdPlugin() //远程命令
+                .UseLoggerPlugin() //日志
                 .UseServerTcpForwardPlugin()//服务器TCP转发
                 .UseDdnsPlugin()
                ;

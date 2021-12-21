@@ -13,6 +13,7 @@ using server.achieves.IOCP;
 using server.plugin;
 using server.plugins.register.caching;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -20,16 +21,12 @@ namespace client.service.plugins.serverPlugins
 {
     public static class ServerPlugin
     {
-        public static ServiceCollection AddServerPlugin(this ServiceCollection obj)
+        public static ServiceCollection AddServerPlugin(this ServiceCollection obj, Assembly[] assemblys)
         {
-
-            obj.AddServerPlugin(AppDomain.CurrentDomain.GetAssemblies());
-
             obj.AddSingleton<ITcpServer, TCPServer>();
             obj.AddSingleton<IUdpServer, UDPServer>();
 
             obj.AddSingleton<IClientInfoCaching, ClientInfoCache>();
-
 
             obj.AddSingleton<IServerRequest, ServerRequestHelper>();
 
@@ -41,13 +38,10 @@ namespace client.service.plugins.serverPlugins
             obj.AddSingleton<RegisterHelper>();
             obj.AddSingleton<RegisterState>();
 
-            return obj;
-        }
-
-        public static ServiceCollection AddServerPlugin(this ServiceCollection obj, Assembly[] assemblys)
-        {
             obj.AddSingleton<ServerPluginHelper>();
-            var types = assemblys.SelectMany(c => c.GetTypes())
+
+            IEnumerable<Type> types = assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies())
+                .SelectMany(c => c.GetTypes())
                  .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
             foreach (var item in types)
             {
@@ -56,19 +50,14 @@ namespace client.service.plugins.serverPlugins
             return obj;
         }
 
-        public static ServiceProvider UseServerPlugin(this ServiceProvider obj)
-        {
-            obj.UseServerPlugin(AppDomain.CurrentDomain.GetAssemblies());
-
-            obj.GetService<ClientsHelper>();
-
-            return obj;
-        }
-
         public static ServiceProvider UseServerPlugin(this ServiceProvider obj, Assembly[] assemblys)
         {
+            obj.GetService<ClientsHelper>();
+
             ServerPluginHelper serverPluginHelper = obj.GetService<ServerPluginHelper>();
-            var types = assemblys.SelectMany(c => c.GetTypes())
+
+            IEnumerable<Type> types = assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies())
+                .SelectMany(c => c.GetTypes())
                  .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
             foreach (var item in types)
             {

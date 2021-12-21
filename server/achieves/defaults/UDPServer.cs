@@ -52,26 +52,29 @@ namespace server.achieves.defaults
         {
             try
             {
-                IPEndPoint ipepClient = null;
-                byte[] bytRecv = UdpcRecv.EndReceive(result, ref ipepClient);
-                result.AsyncWaitHandle.Close();
-
-                UdpPacket packet = UdpPacket.FromArray(ipepClient, bytRecv);
-                if (packet != null)
+                if(UdpcRecv != null)
                 {
-                    OnPacket.Push(new ServerDataWrap<UdpPacket>
+                    IPEndPoint ipepClient = null;
+                    byte[] bytRecv = UdpcRecv.EndReceive(result, ref ipepClient);
+                    result.AsyncWaitHandle.Close();
+
+                    UdpPacket packet = UdpPacket.FromArray(ipepClient, bytRecv);
+                    if (packet != null)
                     {
-                        Data = packet,
-                        Address = ipepClient,
-                        ServerType = ServerType.UDP,
-                        Socket = null
-                    });
+                        OnPacket.Push(new ServerDataWrap<UdpPacket>
+                        {
+                            Data = packet,
+                            Address = ipepClient,
+                            ServerType = ServerType.UDP,
+                            Socket = null
+                        });
+                    }
+                    IAsyncResult res = UdpcRecv.BeginReceive(Receive, null);
                 }
-                IAsyncResult res = UdpcRecv.BeginReceive(Receive, null);
             }
             catch (Exception ex)
             {
-                Logger.Instance.Error(ex.Message);
+                Logger.Instance.Error(ex);
             }
         }
 

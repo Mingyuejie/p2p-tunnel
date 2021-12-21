@@ -41,7 +41,7 @@ namespace client.service.tcpforward
 
             //A来了请求 ，转发到B，
             tcpForwardServer.OnRequest.Sub(OnRequest);
-            //B那边发生了错误，无法完成请求
+            //B接收到A的请求
             tcpForwardEventHandles.OnTcpForwardHandler.Sub(OnTcpForwardMessageHandler);
 
             tcpForwardServer.OnListeningChange.Sub((model) =>
@@ -161,6 +161,8 @@ namespace client.service.tcpforward
             {
                 if (client == null)
                 {
+                    Logger.Instance.Error("new");
+
                     Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
                     client = new ClientModel
@@ -186,10 +188,7 @@ namespace client.service.tcpforward
                     client.Stream.Flush();
                     if (client.AliveType == TcpForwardAliveTypes.WEB)
                     {
-                        Task.Run(() =>
-                        {
-                            Receive(client, client.Stream.ReceiveAll());
-                        });
+                        Receive(client, client.Stream.ReceiveAll());
                     }
                 }
 
@@ -342,12 +341,6 @@ namespace client.service.tcpforward
                 {
                     return "已存在相同源端口的记录";
                 }
-
-                //if (Helper.GetUsedPort().Contains(model.SourcePort))
-                //{
-                //    return "源端口已被其它程序占用";
-                //}
-
                 Interlocked.Increment(ref maxId);
                 model.ID = maxId;
                 Mappings.Add(model);
@@ -560,6 +553,36 @@ namespace client.service.tcpforward
         public void Remove()
         {
             Remove(RequestId);
+        }
+    }
+
+    public class ConnectPool
+    {
+        ConcurrentDictionary<EndPoint, ConcurrentStack<Socket>> connectStack = new ConcurrentDictionary<EndPoint, ConcurrentStack<Socket>>();
+
+        public Socket Get(EndPoint endPoint)
+        {
+            bool state = connectStack.TryGetValue(endPoint, out ConcurrentStack<Socket> stack);
+            if (!state)
+            {
+                stack = new ConcurrentStack<Socket>();
+                connectStack.TryAdd(endPoint, stack);
+            }
+            if (!stack.TryPop(out Socket socket))
+            {
+                socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                socket.Connect(endPoint);
+            }
+            return socket;
+        }
+
+        public void Return(Socket socket)
+        {
+            if (connectStack.TryGetValue(socket.RemoteEndPoint, out ConcurrentStack<Socket> stack))
+            {
+                stack.Push(socket);
+            }
         }
     }
 }

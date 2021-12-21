@@ -40,10 +40,8 @@ namespace server.achieves.defaults
         {
             if (servers.ContainsKey(port)) return;
 
-            var socket = new Socket(ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            Socket socket = new Socket(ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            //socket.ReceiveBufferSize = 16 * 1024;
-            //socket.SendBufferSize = 16 * 1024;
             socket.Bind(new IPEndPoint(ip, port));
             socket.Listen(int.MaxValue);
 
@@ -52,17 +50,23 @@ namespace server.achieves.defaults
                 Socket = socket
             };
             servers.TryAdd(port, server);
-            _ = server.Socket.BeginAccept(new AsyncCallback(Accept), server);
+            server.Socket.BeginAccept(new AsyncCallback(Accept), server);
         }
         private void Accept(IAsyncResult result)
         {
             ServerModel server = (ServerModel)result.AsyncState;
             try
             {
-                Socket client = server.Socket.EndAccept(result);
-                result.AsyncWaitHandle.Close();
-                BindReceive(client);
-                _ = server.Socket.BeginAccept(new AsyncCallback(Accept), server);
+                if (server.Socket != null)
+                {
+                    Socket client = server.Socket.EndAccept(result);
+                    BindReceive(client);
+                    server.Socket.BeginAccept(new AsyncCallback(Accept), server);
+                }
+                else
+                {
+                    Stop();
+                }
             }
             catch (Exception ex)
             {
@@ -72,10 +76,8 @@ namespace server.achieves.defaults
         }
         public void BindReceive(Socket socket, Action<SocketError> errorCallback = null)
         {
-            IPEndPoint ip = IPEndPoint.Parse(socket.RemoteEndPoint.ToString());
-
             ReceiveModel model = new ReceiveModel { ErrorCallback = errorCallback, Socket = socket, Buffer = new byte[1 * 1024] };
-            _ = ReceiveModel.Add(model);
+            ReceiveModel.Add(model);
 
             IAsyncResult res = socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, Receive, model);
         }
@@ -108,7 +110,14 @@ namespace server.achieves.defaults
                         TcpPacket[] bytesArray = TcpPacket.FromArray(model.CacheBuffer).ToArray();
                         Receive(model, bytesArray);
 
-                        IAsyncResult res = model.Socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, Receive, model);
+                        if (model.Socket != null && model.Socket.Connected)
+                        {
+                            IAsyncResult res = model.Socket.BeginReceive(model.Buffer, 0, model.Buffer.Length, SocketFlags.None, Receive, model);
+                        }
+                        else
+                        {
+                            model.Clear();
+                        }
                     }
                     else
                     {

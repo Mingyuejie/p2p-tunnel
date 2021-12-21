@@ -1,8 +1,8 @@
 <!--
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
- * @LastEditors: snltty
- * @LastEditTime: 2021-10-23 20:56:35
+ * @LastEditors: xr
+ * @LastEditTime: 2021-12-21 22:00:05
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -26,7 +26,7 @@
                     <el-dropdown-menu>
                         <template v-if="websocketState.connected">
                             <template v-for="(item,index) in menus" :key="index">
-                                <auth-item name="TcpForwardPlugin">
+                                <auth-item :name="item.plugin">
                                     <el-dropdown-item>
                                         <router-link :to="{name:item.name}">{{item.text}}</router-link>
                                     </el-dropdown-item>
