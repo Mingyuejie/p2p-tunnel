@@ -52,26 +52,49 @@ namespace common.extends
             }
         }
 
-        public static void KeepAlive(this Socket socket)
-        {
-            if (socket != null)
-            {
-                try
-                {
-                    socket.IOControl(IOControlCode.KeepAliveValues, GetKeepAliveData(), null);
-                }
-                catch (Exception)
-                {
 
-                }
-            }
+        public static void Reuse(this Socket socket,bool reuse = true)
+        {
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, reuse);
+        }
+        public static void ReuseBind(this Socket socket,IPEndPoint ip)
+        {
+            socket.Reuse(true);
+            socket.Bind(ip);
         }
 
-        private static byte[] keepaliveData = null;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="socket"></param>
+        /// <param name="time">多久没数据活动就发送一次</param>
+        /// <param name="interval">间隔多久尝试一次</param>
+        /// <param name="retryCount">尝试几次</param>
+        public static void KeepAlive(this Socket socket, int time = 20, int interval = 5, int retryCount = 5)
+        {
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+            socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, interval);
+            socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, retryCount);
+            socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, time);
+            //if (socket != null)
+            //{
+            //    try
+            //    {
+            //        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            //        {
+            //            socket.IOControl(IOControlCode.KeepAliveValues, GetKeepAliveData(), null);
+            //        }
+            //    }
+            //    catch (Exception)
+            //    {
+            //    }
+            //}
+        }
+        private static byte[] keepaliveData = null;
         public static byte[] GetKeepAliveData()
         {
-            if(keepaliveData == null)
+            if (keepaliveData == null)
             {
                 uint dummy = 0;
                 byte[] inOptionValues = new byte[Marshal.SizeOf(dummy) * 3];

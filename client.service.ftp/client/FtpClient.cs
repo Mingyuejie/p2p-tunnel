@@ -27,7 +27,7 @@ namespace client.service.ftp.client
     {
         public Dictionary<FtpCommand, IFtpClientPlugin> Plugins { get; } = new Dictionary<FtpCommand, IFtpClientPlugin>();
 
-        protected override string SocketPath => "ftpserver/excute";
+        protected override string SocketPath => "ftpserver/Execute";
         protected string CurrentPath { get { return config.ClientCurrentPath; } }
         protected override string RootPath { get { return config.ClientRootPath; } }
 
@@ -41,10 +41,10 @@ namespace client.service.ftp.client
 
         public void LoadPlugins(Assembly[] assemblys)
         {
-            var types = assemblys
+            IEnumerable<Type> types = assemblys
                .SelectMany(c => c.GetTypes())
                .Where(c => c.GetInterfaces().Contains(typeof(IFtpClientPlugin)));
-            foreach (var item in types)
+            foreach (Type item in types)
             {
                 IFtpClientPlugin obj = (IFtpClientPlugin)serviceProvider.GetService(item);
                 if (!Plugins.ContainsKey(obj.Cmd))
@@ -86,8 +86,7 @@ namespace client.service.ftp.client
                     LastWriteTime = c.LastWriteTime,
                     LastAccessTime = c.LastAccessTime,
                     Type = FileType.Folder,
-                }).Concat(dirInfo.GetFiles()
-            .Where(c => (c.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
+                }).Concat(dirInfo.GetFiles().Where(c => (c.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
             .Select(c => new FileInfo
             {
                 CreationTime = c.CreationTime,
@@ -155,39 +154,32 @@ namespace client.service.ftp.client
         {
             return Delete(CurrentPath, path);
         }
-        public void OnFile(FtpFileCommand cmd, FtpPluginParamWrap data)
+        public async Task OnFile(FtpFileCommand cmd, FtpPluginParamWrap data)
         {
-            OnFile(CurrentPath, cmd, data.Client);
+            await OnFile(CurrentPath, cmd, data);
         }
-        public void Upload(string path, ClientInfo client)
+        public async Task Upload(string path, ClientInfo client)
         {
-            Upload(CurrentPath, path, client);
+            await Upload(CurrentPath, path, client);
         }
 
-        public async Task<CommonTaskResponseModel<FileInfo[]>> RemoteList(string path, ClientInfo client)
+        public async Task<FileInfo[]> RemoteList(string path, ClientInfo client)
         {
-            CommonTaskResponseModel<FileInfo[]> res = new CommonTaskResponseModel<FileInfo[]>();
-            var response = await SendReplyTcp(new FtpListCommand { SessionId = client.SelfId, Path = path }, client.Id);
-            if (response.Code == ServerMessageResponeCodes.OK)
+            var response = await SendReplyTcp(new FtpListCommand { Path = path }, client);
+            if (response.Code == MessageResponeCode.OK)
             {
-                res.Data = response.Data.DeBytes<FileInfo[]>();
+                FtpResultModel result = FtpResultModel.FromBytes(response.Data);
+                if (result.Code == FtpResultModel.FtpResultCodes.OK)
+                {
+                    return result.ReadData.DeBytes<FileInfo[]>();
+                }
             }
-            else
-            {
-                res.ErrorMsg = response.ErrorMsg;
-            }
-            return res;
+            return Array.Empty<FileInfo>();
         }
-        public async Task<CommonTaskResponseModel<bool>> Download(string path, ClientInfo client)
+        public async Task<bool> Download(string path, ClientInfo client)
         {
-            CommonTaskResponseModel<bool> res = new CommonTaskResponseModel<bool> { Data = true };
-            var response = await SendReplyTcp(new FtpDownloadCommand { SessionId = client.SelfId, Path = path }, client.Id);
-            if (response.Code != ServerMessageResponeCodes.OK)
-            {
-                res.ErrorMsg = response.ErrorMsg;
-                res.Data = false;
-            }
-            return res;
+            var response = await SendReplyTcp(new FtpDownloadCommand { Path = path }, client);
+            return response.Code == MessageResponeCode.OK;
         }
     }
 
@@ -208,40 +200,36 @@ namespace client.service.ftp.client
             this.clientInfoCaching = clientInfoCaching;
         }
 
-        public object Excute(PluginParamWrap data)
+        public async Task<byte[]> Execute(PluginParamWrap data)
         {
             FtpCommandBase cmd = ftpClient.ReadAttribute(data.Wrap.Memory);
             FtpPluginParamWrap wrap = new FtpPluginParamWrap
             {
-                Code = data.Code,
                 Packet = data.Packet,
-                ServerType = data.ServerType,
-                SourcePoint = data.SourcePoint,
-                TcpSocket = data.TcpSocket,
+                Connection = data.Connection,
                 Wrap = data.Wrap,
                 Data = cmd.Data
             };
-            wrap.SetErrorMessage(data.ErrorMessage);
-            if (clientInfoCaching.Get(cmd.SessionId, out ClientInfo client))
+            if (clientInfoCaching.Get(data.Connection.ConnectId, out ClientInfo client))
             {
                 wrap.Client = client;
-            }
-            if (wrap.Client == null)
-            {
-                data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, "未找到来源客户端信息");
-            }
-            else
-            {
                 if (ftpClient.Plugins.ContainsKey(cmd.Cmd))
                 {
                     try
                     {
-                        return ftpClient.Plugins[cmd.Cmd].Excute(wrap);
+                        FtpResultModel res = await ftpClient.Plugins[cmd.Cmd].Execute(wrap);
+                        if (res != null)
+                        {
+                            return res.ToBytes();
+                        }
                     }
                     catch (Exception ex)
                     {
-                        Logger.Instance.Error(ex + "");
-                        data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, ex.Message);
+                        Logger.Instance.Error(ex);
+                        return new FtpResultModel
+                        {
+                            Code = FtpResultModel.FtpResultCodes.UNKNOW
+                        }.ToBytes();
                     }
                 }
             }

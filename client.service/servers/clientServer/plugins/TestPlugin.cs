@@ -27,7 +27,7 @@ namespace client.service.servers.clientServer.plugins
             this.registerState = registerState;
         }
 
-        public TestPacketResponse Packet(ClientServicePluginExcuteWrap arg)
+        public TestPacketResponse Packet(ClientServicePluginExecuteWrap arg)
         {
             TestPacketParam param = arg.Content.DeJson<TestPacketParam>();
 
@@ -43,13 +43,11 @@ namespace client.service.servers.clientServer.plugins
                 watch.Start();
                 for (int i = 0; i < param.Count; i++)
                 {
-                    serverRequest.SendOnlyTcp(new SendTcpEventArg<byte[]>
+                    serverRequest.SendOnly(new SendEventArg<byte[]>
                     {
                         Data = bytes,
-                        Id = registerState.RemoteInfo.ConnectId,
                         Path = "Test/Packet",
-                        Socket = client.Socket,
-                        ToId = client.Id,
+                        Connection = client.TcpConnection,
                         Timeout = 0
                     });
                 }
@@ -75,7 +73,7 @@ namespace client.service.servers.clientServer.plugins
     {
         public int Count { get; set; }
         public int KB { get; set; }
-        public long Id { get; set; }
+        public ulong Id { get; set; }
     }
     public class TestPacketResponse
     {

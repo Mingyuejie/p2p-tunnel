@@ -3,6 +3,7 @@ using client.service.ftp.protocol;
 using common;
 using common.extends;
 using server.model;
+using System.Threading.Tasks;
 
 namespace client.service.ftp.server.plugin
 {
@@ -15,12 +16,12 @@ namespace client.service.ftp.server.plugin
         }
         public FtpCommand Cmd => FtpCommand.FILE;
 
-        public object Excute(FtpPluginParamWrap data)
+        public async Task<FtpResultModel> Execute(FtpPluginParamWrap data)
         {
             FtpFileCommand cmd = new FtpFileCommand();
             cmd.FromBytes(data.Data);
-            ftpServer.OnFile(cmd, data);
-            return true;
+            await ftpServer.OnFile(cmd, data);
+            return null;
         }
     }
 
@@ -33,11 +34,10 @@ namespace client.service.ftp.server.plugin
         }
         public FtpCommand Cmd => FtpCommand.FILE_END;
 
-        public object Excute(FtpPluginParamWrap data)
+        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
         {
-            FtpFileEndCommand cmd = data.Data.DeBytes<FtpFileEndCommand>();
-            ftpServer.OnFileEnd(cmd);
-            return true;
+            ftpServer.OnFileEnd(arg.Data.DeBytes<FtpFileEndCommand>(), arg);
+            return await Task.FromResult<FtpResultModel>(null);
         }
     }
 
@@ -50,11 +50,11 @@ namespace client.service.ftp.server.plugin
         }
         public FtpCommand Cmd => FtpCommand.FILE_ERROR;
 
-        public object Excute(FtpPluginParamWrap data)
+        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
         {
-            FtpFileErrorCommand cmd = data.Data.DeBytes<FtpFileErrorCommand>();
-            ftpServer.OnFileError(cmd);
-            return true;
+            await Task.Yield();
+            ftpServer.OnFileError(arg.Data.DeBytes<FtpFileErrorCommand>(), arg);
+            return null;
         }
     }
 }

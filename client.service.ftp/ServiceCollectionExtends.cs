@@ -10,6 +10,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace client.service.ftp
 {
@@ -17,7 +18,7 @@ namespace client.service.ftp
     {
         public static ServiceCollection AddFtpPlugin(this ServiceCollection obj)
         {
-            Config config = Config.ReadConfig();
+            Config config = Config.ReadConfig().Result;
             obj.AddSingleton((e) => config);
 
             obj.AddFtpPlugin(AppDomain.CurrentDomain.GetAssemblies());
@@ -61,7 +62,7 @@ namespace client.service.ftp
         }
     }
 
-    public class Config: SettingModelBase
+    public class Config : SettingModelBase
     {
         private string serverRoot = string.Empty;
         public string ServerRoot
@@ -97,21 +98,21 @@ namespace client.service.ftp
 
 
 
-        public static Config ReadConfig()
+        public static async Task<Config> ReadConfig()
         {
-            return FromFile<Config>("ftp-appsettings.json") ?? new Config();
+            return await FromFile<Config>("ftp-appsettings.json") ?? new Config();
         }
 
-        public void SaveConfig()
+        public async Task SaveConfig()
         {
-            Config config = ReadConfig();
+            Config config = await ReadConfig();
 
             config.ServerRoot = ServerRoot;
             config.Password = Password;
             config.Enable = Enable;
             config.UploadNum = UploadNum;
 
-            ToFile(config, "ftp-appsettings.json");
+            await ToFile(config, "ftp-appsettings.json");
         }
     }
 }

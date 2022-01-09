@@ -13,11 +13,9 @@ namespace client.service.ftp.protocol
     {
         [ProtoMember(1, IsRequired = true),Key(1)]
         public FtpCommand Cmd { get; } = FtpCommand.FILE_CANCEL;
-        [ProtoMember(2), Key(2)]
-        public long SessionId { get; set; }
 
-        [ProtoMember(3), Key(3)]
-        public long Md5 { get; set; }
+        [ProtoMember(2), Key(2)]
+        public ulong Md5 { get; set; }
     }
 
     [ProtoContract, MessagePackObject]
@@ -25,10 +23,8 @@ namespace client.service.ftp.protocol
     {
         [ProtoMember(1, IsRequired = true), Key(1)]
         public FtpCommand Cmd { get; } = FtpCommand.FILE_CANCELED;
-        [ProtoMember(2), Key(2)]
-        public long SessionId { get; set; }
 
-        [ProtoMember(3), Key(3)]
-        public long Md5 { get; set; }
+        [ProtoMember(2), Key(2)]
+        public ulong Md5 { get; set; }
     }
 }

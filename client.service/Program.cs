@@ -40,7 +40,7 @@ namespace client.service
             ServiceProvider serviceProvider = null;
 
             //配置文件注入
-            Config config = Config.ReadConfig();
+            Config config = Config.ReadConfig().Result;
             serviceCollection.AddSingleton((e) => config);
             //注入 依赖注入服务供应 使得可以在别的地方通过注入的方式获得 ServiceProvider 以用来获取其它服务
             serviceCollection.AddSingleton((e) => serviceProvider);
@@ -58,11 +58,8 @@ namespace client.service
             };
 
             serviceCollection
-                //基础的功能
-                .AddServerPlugin(assemblys)
-                //客户端管理
-                .AddClientServer(assemblys)
-
+                .AddServerPlugin(assemblys)//基础的功能
+                .AddClientServer(assemblys)//客户端管理
                 .AddWebServer()//客户端页面
                 .AddPunchHolePlugin()//打洞
                 .AddTcpForwardPlugin()  //客户端tcp转发
@@ -77,11 +74,8 @@ namespace client.service
 
             serviceProvider = serviceCollection.BuildServiceProvider();
             serviceProvider
-                //基础的功能
-                .UseServerPlugin(assemblys)
-                //客户端管理
-                .UseClientServer(assemblys)
-
+                .UseServerPlugin(assemblys)//基础的功能
+                .UseClientServer(assemblys)//客户端管理
                 .UseWebServer()//客户端页面
                 .UsePunchHolePlugin()//打洞
                 .UseTcpForwardPlugin()//客户端tcp转发
@@ -93,7 +87,7 @@ namespace client.service
                 .UseDdnsPlugin()
                ;
             //自动注册
-            serviceProvider.GetService<RegisterHelper>().AutoReg();
+            _ = serviceProvider.GetService<RegisterHelper>().AutoReg();
 
             Logger.Instance.Warning("=======================================");
             Logger.Instance.Warning("没什么报红的，就说明运行成功了");

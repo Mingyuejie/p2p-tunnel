@@ -29,370 +29,259 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
             this.config = config;
         }
 
-        private Socket TcpServer => registerState.TcpSocket;
-        private long ConnectId => registerState.RemoteInfo.ConnectId;
+        private IConnection TcpServer => registerState.TcpConnection;
+        private ulong ConnectId => registerState.ConnectId;
 
         public int ClientTcpPort => registerState.LocalInfo.TcpPort;
         public int RouteLevel => registerState.LocalInfo.RouteLevel;
 
-        private readonly ConcurrentDictionary<long, ConnectTcpCache> connectTcpCache = new();
+        private readonly ConcurrentDictionary<ulong, ConnectTcpCache> connectTcpCache = new();
 
 
-        /// <summary>
-        /// 发送TCP连接客户端请求消息（给服务器）
-        /// </summary>
-        /// <param name="toid"></param>
-        public void Send(ConnectTcpParams param)
+        public async Task<ConnectResultModel> Send(ConnectTcpParams param)
         {
+            TaskCompletionSource<ConnectResultModel> tcs = new TaskCompletionSource<ConnectResultModel>();
             connectTcpCache.TryAdd(param.Id, new ConnectTcpCache
             {
-                Callback = param.Callback,
-                FailCallback = param.FailCallback,
-                Time = Helper.GetTimeStamp(),
-                Timeout = param.Timeout
+                TryTimes = param.TryTimes,
+                Tcs = tcs
             });
-            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg<Step1Model>
+            await punchHoldEventHandles.Send(new SendPunchHoleArg<Step1Model>
             {
-                Socket = TcpServer,
+                Connection = TcpServer,
                 ToId = param.Id,
-                Data = new Step1Model
-                {
-                    FromId = ConnectId,
-                }
+                Data = new Step1Model { }
             });
 
-            long id = param.Id;
-            Helper.SetTimeout(() =>
-            {
-                if (connectTcpCache.TryGetValue(id, out ConnectTcpCache cache))
-                {
-                    connectTcpCache.TryRemove(id, out _);
-                    cache?.FailCallback(new ConnectFailModel
-                    {
-                        Msg = "TCP连接超时",
-                        Type = ConnectFailType.TIMEOUT
-                    });
-                }
-            }, param.Timeout);
+            return await tcs.Task;
         }
 
         public SimplePushSubHandler<OnStep1EventArg> OnStep1Handler { get; } = new SimplePushSubHandler<OnStep1EventArg>();
-        public void OnStep1(OnStep1EventArg e)
+        public async Task OnStep1(OnStep1EventArg e)
         {
             OnStep1Handler.Push(e);
 
-            List<Tuple<string, int>> ips = e.Data.LocalIps.Split(',').Where(c => c.Length > 0)
+            List<Tuple<string, int>> ips = e.Data.LocalIps.Split(Helper.SeparatorChar).Where(c => c.Length > 0)
                 .Select(c => new Tuple<string, int>(c, e.Data.LocalTcpPort)).ToList();
             ips.Add(new Tuple<string, int>(e.Data.Ip, e.Data.TcpPort));
 
             foreach (Tuple<string, int> ip in ips)
             {
-                _ = Task.Run(() =>
+                using Socket targetSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                try
                 {
-                    //随便给目标客户端发个低TTL消息
-                    using Socket targetSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                    try
-                    {
-                        //targetSocket.SendBufferSize = 16 * 1024;
-                        //targetSocket.ReceiveBufferSize = 16 * 1024;
-                        targetSocket.Ttl = (short)(RouteLevel + 2);
-                        targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        targetSocket.Bind(new IPEndPoint(config.Client.BindIp, ClientTcpPort));
-                        targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2));
-                    }
-                    catch (Exception)
-                    {
-                    }
-                    //System.Threading.Thread.Sleep(500);
-                    targetSocket.SafeClose();
-                });
+                    targetSocket.Ttl = (short)(RouteLevel + 2);
+                    targetSocket.ReuseBind(new IPEndPoint(config.Client.BindIp, ClientTcpPort));
+                    _ = targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2));
+                }
+                catch (Exception)
+                {
+                }
+                targetSocket.SafeClose();
             }
 
-            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg<Step2Model>
+            await punchHoldEventHandles.Send(new SendPunchHoleArg<Step2Model>
             {
-                Socket = TcpServer,
-                ToId = e.Data.Id,
-                Data = new Step2Model
-                {
-                    FromId = ConnectId
-                }
+                Connection = TcpServer,
+                ToId = e.RawData.FromId,
+                Data = new Step2Model { }
             });
         }
 
-
-        /// <summary>
-        /// 服务器TCP消息，来源客户端已经准备好
-        /// </summary>
         public SimplePushSubHandler<OnStep2EventArg> OnStep2Handler { get; } = new SimplePushSubHandler<OnStep2EventArg>();
-        private readonly List<long> replyIds = new();
-        private readonly List<long> connectdIds = new();
-        /// <summary>
-        /// 服务器TCP消息，来源客户端已经准备好
-        /// </summary>
-        /// <param name="toid"></param>
-        public void OnStep2(OnStep2EventArg e)
+        public async Task OnStep2(OnStep2EventArg e)
         {
             OnStep2Handler.Push(e);
 
-            List<Tuple<string, int>> ips = e.Data.LocalIps.Split(',').Where(c => c.Length > 0)
+            List<Tuple<string, int>> ips = e.Data.LocalIps.Split(Helper.SeparatorChar).Where(c => c.Length > 0)
                 .Select(c => new Tuple<string, int>(c, e.Data.LocalTcpPort)).ToList();
             ips.Add(new Tuple<string, int>(e.Data.Ip, e.Data.TcpPort));
 
-            _ = Task.Run(async () =>
+            if (!connectTcpCache.TryGetValue(e.RawData.FromId, out ConnectTcpCache cache))
             {
-                connectdIds.Add(e.Data.Id);
-                bool success = false;
-                int length = 5, index = 0, errLength = 10;
-                int interval = 0;
-                while (length > 0 && errLength > 0)
+                return;
+            }
+
+
+            bool success = false;
+            int length = cache.TryTimes, index = 0, interval = 0;
+            while (length > 0)
+            {
+                if (cache.Canceled)
                 {
-                    if (!connectdIds.Contains(e.Data.Id))
+                    break;
+                }
+                if (interval > 0)
+                {
+                    await Task.Delay(interval);
+                    interval = 0;
+                }
+
+                Tuple<string, int> ip = index >= ips.Count ? ips[^1] : ips[index];
+                IPEndPoint targetEndpoint = new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2);
+                Socket targetSocket = new Socket(targetEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                try
+                {
+                    targetSocket.KeepAlive();
+                    targetSocket.ReuseBind(new IPEndPoint(config.Client.BindIp, ClientTcpPort));
+                    IAsyncResult result = targetSocket.BeginConnect(targetEndpoint, null, null);
+                    result.AsyncWaitHandle.WaitOne(2000, false);
+
+                    if (result.IsCompleted)
                     {
+                        if (cache.Canceled)
+                        {
+                            targetSocket.SafeClose();
+                            break;
+                        }
+
+                        Logger.Instance.Debug($"{ip.Item1}:{ip.Item2} 连接成功");
+                        targetSocket.EndConnect(result);
+                        tcpServer.BindReceive(targetSocket);
+
+                        await punchHoldEventHandles.Send(new SendPunchHoleArg<Step3Model>
+                        {
+                            Connection = tcpServer.CreateConnection(targetSocket),
+                            Data = new Step3Model
+                            {
+                                FromId = ConnectId
+                            }
+                        });
+                        success = true;
                         break;
                     }
-                    if (interval > 0)
+                    else
                     {
-                        await Task.Delay(interval);
-                        interval = 0;
-                    }
-
-                    Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                    //targetSocket.SendBufferSize = 16 * 1024;
-                    //targetSocket.ReceiveBufferSize = 16 * 1024;
-                    try
-                    {
-                        targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        targetSocket.Bind(new IPEndPoint(config.Client.BindIp, ClientTcpPort));
-                        Tuple<string, int> ip = index >= ips.Count ? ips[^1] : ips[index];
-
-                        IAsyncResult result = targetSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(ip.Item1), ip.Item2), null, null);
-                        _ = result.AsyncWaitHandle.WaitOne(2000, false);
-                        if (result.IsCompleted)
-                        {
-                            Logger.Instance.Debug($"{ip.Item1}:{ip.Item2} 连接成功");
-                            targetSocket.EndConnect(result);
-                            tcpServer.BindReceive(targetSocket);
-                            SendStep3(new SendStep3EventArg
-                            {
-                                Socket = targetSocket,
-                                ToId = ConnectId
-                            });
-
-                            int waitReplyTimes = 10;
-                            while (waitReplyTimes > 0)
-                            {
-                                if (replyIds.Contains(e.Data.Id))
-                                {
-                                    _ = replyIds.Remove(e.Data.Id);
-
-                                    break;
-                                }
-                                waitReplyTimes--;
-
-                                await Task.Delay(500);
-                            }
-                            if (!connectdIds.Contains(e.Data.Id))
-                            {
-                                targetSocket.SafeClose();
-                                break;
-                            }
-
-                            if (waitReplyTimes > 0)
-                            {
-                                success = true;
-                                _ = connectdIds.Remove(e.Data.Id);
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            Logger.Instance.Debug($"{ip.Item1}:{ip.Item2} 连接失败");
-                            targetSocket.SafeClose();
-                            interval = 300;
-                            SendStep2Retry(e.Data.Id);
-                            length--;
-                        }
-                    }
-                    catch (SocketException ex)
-                    {
+                        Logger.Instance.Debug($"{ip.Item1}:{ip.Item2} 连接失败");
                         targetSocket.SafeClose();
-                        targetSocket = null;
-                        if (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
-                        {
-                            interval = 2000;
-                            errLength--;
-                        }
-                        else
-                        {
-                            interval = 100;
-                            SendStep2Retry(e.Data.Id);
-                            length--;
-                        }
+                        interval = 300;
+                        await SendStep2Retry(e.RawData.FromId);
+                        length--;
                     }
-                    catch (Exception ex)
-                    {
-                        Logger.Instance.Error(ex + "");
-                    }
-
-                    index++;
                 }
-                if (!success)
+                catch (SocketException ex)
                 {
-                    SendStep2Fail(new OnSendStep2FailEventArg
+                    targetSocket.SafeClose();
+                    targetSocket = null;
+                    if (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
                     {
-                        Id = ConnectId,
-                        ToId = e.Data.Id
-                    });
-                    connectdIds.Remove(e.Data.Id);
+                        interval = 2000;
+                    }
+                    else
+                    {
+                        interval = 100;
+                        await SendStep2Retry(e.RawData.FromId);
+                        length--;
+                    }
                 }
-            });
-        }
+                catch (Exception ex)
+                {
+                    Logger.Instance.Error(ex);
+                }
 
-        /// <summary>
-        /// 服务器TCP消息，重试一次
-        /// </summary>
-        /// <param name="toid"></param>
-        public void SendStep2Retry(long toid)
-        {
-            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg<Step2TryModel>
+                index++;
+            }
+            if (!success)
             {
-                Socket = TcpServer,
-                ToId = toid,
-                Data = new Step2TryModel
+                await SendStep2Fail(new SendStep2FailEventArg
                 {
-                    FromId = ConnectId,
-                }
+                    Id = ConnectId,
+                    ToId = e.RawData.FromId
+                });
+            }
+        }
+
+        private async Task SendStep2Retry(ulong toid)
+        {
+            await punchHoldEventHandles.Send(new SendPunchHoleArg<Step2TryModel>
+            {
+                Connection = TcpServer,
+                ToId = toid,
+                Data = new Step2TryModel { }
             });
         }
-        /// <summary>
-        /// 服务器TCP消息，来源客户端已经准备好
-        /// </summary>
         public SimplePushSubHandler<OnStep2RetryEventArg> OnStep2RetryHandler { get; } = new SimplePushSubHandler<OnStep2RetryEventArg>();
-        /// <summary>
-        /// 服务器TCP消息，来源客户端已经准备好
-        /// </summary>
-        /// <param name="toid"></param>
-        public void OnStep2Retry(OnStep2RetryEventArg e)
+        public async Task OnStep2Retry(OnStep2RetryEventArg e)
         {
             OnStep2RetryHandler.Push(e);
-            Task.Run(() =>
+            await Task.Run(() =>
             {
-                Logger.Instance.Debug($"低ttl {e.Data.Ip}:{ e.Data.TcpPort}");
-                //随便给目标客户端发个低TTL消息
                 using Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                //targetSocket.SendBufferSize = 16 * 1024;
-                //targetSocket.ReceiveBufferSize = 16 * 1024;
                 targetSocket.Ttl = (short)(RouteLevel + 5);
-                targetSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                targetSocket.Bind(new IPEndPoint(config.Client.BindIp, ClientTcpPort));
+                targetSocket.ReuseBind(new IPEndPoint(config.Client.BindIp, ClientTcpPort));
                 targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(e.Data.Ip), e.Data.TcpPort));
-                //System.Threading.Thread.Sleep(500);
                 targetSocket.SafeClose();
             });
         }
 
-
-        /// <summary>
-        /// 服务器TCP消息，链接失败
-        /// </summary>
-        /// <param name="toid"></param>
-        public void SendStep2Fail(OnSendStep2FailEventArg arg)
+        private async Task SendStep2Fail(SendStep2FailEventArg arg)
         {
-            if (connectTcpCache.TryGetValue(arg.ToId, out ConnectTcpCache cache))
+            if (connectTcpCache.TryRemove(arg.ToId, out ConnectTcpCache cache))
             {
-                _ = connectTcpCache.TryRemove(arg.ToId, out _);
-                cache?.FailCallback(new ConnectFailModel
+                cache.Canceled = true;
+                cache.Tcs.SetResult(new ConnectResultModel
                 {
-                    Msg = "失败",
-                    Type = ConnectFailType.ERROR
+                    State = false,
+                    Result = new ConnectFailModel
+                    {
+                        Msg = "失败",
+                        Type = ConnectFailType.ERROR
+                    }
                 });
             }
-            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg<Step2FailModel>
+            await punchHoldEventHandles.Send(new SendPunchHoleArg<Step2FailModel>
             {
-                Socket = TcpServer,
+                Connection = TcpServer,
                 ToId = arg.ToId,
-                Data = new Step2FailModel
-                {
-                    FromId = arg.Id
-                }
+                Data = new Step2FailModel { }
             });
         }
-
-        /// <summary>
-        /// 服务器TCP消息，链接失败
-        /// </summary>
         public SimplePushSubHandler<OnStep2FailEventArg> OnStep2FailHandler { get; } = new SimplePushSubHandler<OnStep2FailEventArg>();
-        /// <summary>
-        /// 服务器TCP消息，链接失败
-        /// </summary>
-        /// <param name="toid"></param>
-        public void OnStep2Fail(OnStep2FailEventArg arg)
+        public async Task OnStep2Fail(OnStep2FailEventArg arg)
         {
+            await Task.CompletedTask;
             OnStep2FailHandler.Push(arg);
         }
-
-        public void SendStep2Stop(long toid)
+        public async Task SendStep2Stop(ulong toid)
         {
-            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg<Step2StopModel>
+            await punchHoldEventHandles.Send(new SendPunchHoleArg<Step2StopModel>
             {
-                Socket = TcpServer,
+                Connection = TcpServer,
                 ToId = toid,
-                Data = new Step2StopModel
-                {
-                    FromId = ConnectId,
-
-                }
+                Data = new Step2StopModel { }
             });
+            Cancel(toid);
+        }
+        public async Task OnStep2Stop(OnStep2StopEventArg e)
+        {
+            await Task.CompletedTask;
+            Cancel(e.RawData.FromId);
         }
 
-        public void OnStep2Stop(Step2StopModel e)
+        private void Cancel(ulong id)
         {
-            connectdIds.Remove(e.FromId);
-        }
-
-        /// <summary>
-        /// 开始连接目标客户端
-        /// </summary>
-        /// <param name="toid"></param>
-        public void SendStep3(SendStep3EventArg arg)
-        {
-            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg<Step3Model>
+            if (connectTcpCache.TryRemove(id, out ConnectTcpCache cache))
             {
-                Socket = arg.Socket,
-                Data = new Step3Model
+                cache.Canceled = true;
+                cache.Tcs.SetResult(new ConnectResultModel
                 {
-                    FromId = ConnectId
-                }
-            });
+                    State = false,
+                    Result = new ConnectFailModel
+                    {
+                        Msg = "取消",
+                        Type = ConnectFailType.CANCEL
+                    }
+                });
+            }
         }
-        /// <summary>
-        /// 对方连接我了
-        /// </summary>
+
         public SimplePushSubHandler<OnStep3EventArg> OnStep3Handler { get; } = new SimplePushSubHandler<OnStep3EventArg>();
-        /// <summary>
-        /// 对方连接我了
-        /// </summary>
-        /// <param name="toid"></param>
-        public void OnStep3(OnStep3EventArg arg)
+        public async Task OnStep3(OnStep3EventArg arg)
         {
-            SendStep4(new SendStep4EventArg
-            {
-                Socket = arg.Packet.TcpSocket,
-                ToId = ConnectId
-            });
             OnStep3Handler.Push(arg);
-
-        }
-
-        /// <summary>
-        /// 回应目标客户端
-        /// </summary>
-        /// <param name="toid"></param>
-        public void SendStep4(SendStep4EventArg arg)
-        {
-            punchHoldEventHandles.SendTcp(new SendPunchHoleTcpArg<Step4Model>
+            await punchHoldEventHandles.Send(new SendPunchHoleArg<Step4Model>
             {
-                Socket = arg.Socket,
+                Connection = arg.Packet.Connection,
                 Data = new Step4Model
                 {
                     FromId = ConnectId
@@ -400,34 +289,16 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
             });
         }
 
-        /// <summary>
-        /// 来源客户端回应我了
-        /// </summary>
         public SimplePushSubHandler<OnStep4EventArg> OnStep4Handler { get; } = new SimplePushSubHandler<OnStep4EventArg>();
-        /// <summary>
-        /// 来源客户端回应我了
-        /// </summary>
-        /// <param name="toid"></param>
-        public void OnStep4(OnStep4EventArg arg)
+        public async Task OnStep4(OnStep4EventArg arg)
         {
-            if (connectTcpCache.TryGetValue(arg.Data.FromId, out ConnectTcpCache cache))
+            await Task.CompletedTask;
+            if (connectTcpCache.TryRemove(arg.Data.FromId, out ConnectTcpCache cache))
             {
-                connectTcpCache.TryRemove(arg.Data.FromId, out _);
-                cache?.Callback(arg);
+                cache.Tcs.SetResult(new ConnectResultModel { State = true, Result = arg });
             }
-            replyIds.Add(arg.Data.FromId);
             OnStep4Handler.Push(arg);
         }
 
-
-        public SimplePushSubHandler<OnStepPacketEventArg> OnStepPacketHandler { get; } = new SimplePushSubHandler<OnStepPacketEventArg>();
-        public void SendStepPacket(SendStepPacketEventArg arg)
-        {
-        }
-
-        public void OnStepPacket(OnStepPacketEventArg arg)
-        {
-            OnStepPacketHandler.Push(arg);
-        }
     }
 }

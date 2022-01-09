@@ -11,31 +11,32 @@ namespace client.service.plugins.serverPlugins.register.client
     {
         private readonly RegisterHelper registerHelper;
         private readonly RegisterState registerState;
-        private readonly RegisterMessageHelper registerEventHandles;
+        private readonly RegisterMessageHelper registerMessageHelper;
         private readonly Config config;
-        public RegisterPlugin(RegisterHelper registerHelper, RegisterState registerState, RegisterMessageHelper registerEventHandles, Config config)
+        public RegisterPlugin(RegisterHelper registerHelper, RegisterState registerState, RegisterMessageHelper registerMessageHelper, Config config)
         {
             this.registerHelper = registerHelper;
             this.registerState = registerState;
-            this.registerEventHandles = registerEventHandles;
+            this.registerMessageHelper = registerMessageHelper;
             this.config = config;
         }
 
-        public async Task Start(ClientServicePluginExcuteWrap arg)
+        public async Task<bool> Start(ClientServicePluginExecuteWrap arg)
         {
-            var result = await registerHelper.Start();
+            var result = await registerHelper.Register();
             if (!result.Data)
             {
                 arg.SetCode(-1, result.ErrorMsg);
             }
+            return result.Data;
         }
 
-        public async Task Stop(ClientServicePluginExcuteWrap arg)
+        public async Task Stop(ClientServicePluginExecuteWrap arg)
         {
-            await registerEventHandles.SendExitMessage();
+            await registerHelper.Exit();
         }
 
-        public RegisterInfo Info(ClientServicePluginExcuteWrap arg)
+        public RegisterInfo Info(ClientServicePluginExecuteWrap arg)
         {
             return new RegisterInfo
             {
@@ -72,7 +73,7 @@ namespace client.service.plugins.serverPlugins.register.client
     [ProtoContract, MessagePackObject]
     public class RegisterInfo
     {
-        [ProtoMember(1),Key(1)]
+        [ProtoMember(1), Key(1)]
         public ClientConfig ClientConfig { get; set; } = new ClientConfig();
         [ProtoMember(2), Key(2)]
         public ServerConfig ServerConfig { get; set; } = new ServerConfig();

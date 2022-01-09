@@ -15,19 +15,19 @@ namespace client.service.serverTcpforward
 
         public bool Enable { get; set; } = true;
         public bool AutoReg { get; set; } = true;
-        
 
-        public static ServerTcpForwardRegisterConfig ReadConfig()
+
+        public static async Task<ServerTcpForwardRegisterConfig> ReadConfig()
         {
-            return FromFile<ServerTcpForwardRegisterConfig>("servertcpforward-appsettings.json") ?? new ServerTcpForwardRegisterConfig();
+            return await FromFile<ServerTcpForwardRegisterConfig>("servertcpforward-appsettings.json") ?? new ServerTcpForwardRegisterConfig();
         }
 
-        public void SaveConfig()
+        public async Task SaveConfig()
         {
-            ServerTcpForwardRegisterConfig config = ReadConfig();
+            ServerTcpForwardRegisterConfig config = await ReadConfig();
             config.Web = Web;
             config.Tunnel = Tunnel;
-            ToFile(config, "servertcpforward-appsettings.json");
+            await ToFile(config, "servertcpforward-appsettings.json");
         }
     }
 }

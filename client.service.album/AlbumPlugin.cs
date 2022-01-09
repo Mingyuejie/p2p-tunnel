@@ -7,6 +7,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 
 namespace client.service.album
 {
@@ -28,33 +29,33 @@ namespace client.service.album
 
         public bool Enable => albumSettingModel.UseServer;
 
-        public object LoadSetting()
+        public async Task<object> LoadSetting()
         {
-            return albumSettingModel;
+            return await Task.FromResult(albumSettingModel);
         }
 
-        public string SaveSetting(string jsonStr)
+        public async Task<string> SaveSetting(string jsonStr)
         {
             AlbumSettingModel setting = jsonStr.DeJson<AlbumSettingModel>();
 
             albumSettingModel.Clients = setting.Clients;
             albumSettingModel.ServerPort = setting.ServerPort;
             albumSettingModel.UseServer = setting.UseServer;
-            albumSettingModel.SaveConfig();
+            await albumSettingModel.SaveConfig();
 
 
             return ReloadService();
         }
 
-        public object Load(ClientServicePluginExcuteWrap arg)
+        public object Load(ClientServicePluginExecuteWrap arg)
         {
             return albumSettingModel;
         }
 
-        public bool SwitchEnable(bool enable)
+        public async Task<bool> SwitchEnable(bool enable)
         {
             albumSettingModel.UseServer = enable;
-            albumSettingModel.SaveConfig();
+            await albumSettingModel.SaveConfig();
 
             ReloadService();
 
@@ -112,18 +113,18 @@ namespace client.service.album
         public bool UseServer { get; set; } = false;
         public string AdminPssd { get; set; } = string.Empty;
 
-        public static AlbumSettingModel ReadConfig()
+        public static async Task<AlbumSettingModel> ReadConfig()
         {
-            return FromFile<AlbumSettingModel>("album-appsettings.json") ?? new AlbumSettingModel();
+            return await FromFile<AlbumSettingModel>("album-appsettings.json") ?? new AlbumSettingModel();
         }
 
-        public void SaveConfig()
+        public async Task SaveConfig()
         {
-            AlbumSettingModel config = ReadConfig();
+            AlbumSettingModel config = await ReadConfig();
             config.Clients = Clients;
             config.ServerPort = ServerPort;
 
-            ToFile(config, "album-appsettings.json");
+            await ToFile(config, "album-appsettings.json");
         }
     }
     public class AlbumSettingClientModel

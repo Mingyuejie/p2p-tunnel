@@ -1,5 +1,7 @@
 ﻿using MessagePack;
 using ProtoBuf;
+using System;
+using System.ComponentModel;
 
 namespace server.model
 {
@@ -11,17 +13,12 @@ namespace server.model
     {
         public RegisterModel() { }
 
-        /// <summary>
-        /// 客户端ID  第一次 UDP注册得到，第二次TCP注册带过来
-        /// </summary>
-        [ProtoMember(1),Key(1)]
-        public long Id { get; set; } = 0;
+        [ProtoMember(1), Key(1)]
+        public ulong Id { get; set; } = 0;
 
         [ProtoMember(2), Key(2)]
         public string GroupId { get; set; } = string.Empty;
-        /// <summary>
-        /// 显示名称
-        /// </summary>
+
         [ProtoMember(3), Key(3)]
         public string Name { get; set; } = string.Empty;
 
@@ -39,38 +36,48 @@ namespace server.model
     }
 
     [ProtoContract, MessagePackObject]
+    public class RegisterNotifyModel
+    {
+        public RegisterNotifyModel() { }
+    }
+
+    [ProtoContract, MessagePackObject]
     public class RegisterResultModel
     {
         public RegisterResultModel() { }
 
         [ProtoMember(1), Key(1)]
-        public int Code { get; set; } = 0;
+        public RegisterResultCodes Code { get; set; } = RegisterResultCodes.OK;
 
         [ProtoMember(2), Key(2)]
-        public string Msg { get; set; } = string.Empty;
+        public ulong Id { get; set; } = 0;
 
         [ProtoMember(3), Key(3)]
-        public long Id { get; set; } = 0;
-
-        [ProtoMember(4), Key(4)]
         public string Ip { get; set; } = string.Empty;
 
-        [ProtoMember(5), Key(5)]
+        [ProtoMember(4), Key(4)]
         public int Port { get; set; } = 0;
 
-        [ProtoMember(6), Key(6)]
+        [ProtoMember(5), Key(5)]
         public int TcpPort { get; set; } = 0;
 
-        [ProtoMember(7), Key(7)]
+        [ProtoMember(6), Key(6)]
         public string GroupId { get; set; } = string.Empty;
 
-        [ProtoMember(8), Key(8)]
-        public string Mac { get; set; } = string.Empty;
 
-        [ProtoMember(9), Key(9)]
-        public int LocalTcpPort { get; set; } = 0;
+        [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
+        [Flags]
+        public enum RegisterResultCodes : byte
+        {
+            [Description("成功")]
+            OK = 0,
+            [Description("存在同名")]
+            SAME_NAMES = 1,
+            [Description("验证未通过")]
+            VERIFY = 1,
+            [Description("出错")]
+            UNKNOW = 255
+        }
 
-        [ProtoMember(10), Key(10)]
-        public int LocalUdpPort { get; set; } = 0;
     }
 }

@@ -19,46 +19,26 @@ namespace common
 {
     public static class Helper
     {
-        private static long setTimeoutId = 0;
-        private static readonly ConcurrentDictionary<long, System.Timers.Timer> setTimeoutCache = new();
+        private static readonly ConcurrentDictionary<ulong, System.Timers.Timer> setTimeoutCache = new();
 
-        public static string GetArg(string[] args, string name)
-        {
-            if (args != null)
-            {
-                int argsLength = args.Length;
-                for (int i = 0; i < argsLength; i++)
-                {
-                    if (args[i] == name)
-                    {
-                        if (args.Length > i + 1)
-                        {
-                            return args[i + 1];
-                        }
-                    }
-                }
-            }
-            return null;
-        }
+        public static string SeparatorString = ",";
+        public static char SeparatorChar = ',';
 
+        private static DateTime time1970 = new DateTime(1970, 1, 1, 0, 0, 0, 0);
         public static long GetTimeStamp()
         {
-            TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, 0);
-
-            return Convert.ToInt64(ts.TotalMilliseconds);
+            return Convert.ToInt64((DateTime.UtcNow - time1970).TotalMilliseconds);
         }
-
         public static long GetTimeStampSec()
         {
-            TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, 0);
-
-            return Convert.ToInt64(ts.TotalSeconds);
+            return Convert.ToInt64((DateTime.UtcNow - time1970).TotalSeconds);
         }
 
-        public static long SetTimeout(Action action, double interval)
+
+        private static NumberSpace setTimeoutNs = new NumberSpace(0);
+        public static ulong SetTimeout(Action action, double interval)
         {
-            _ = Interlocked.Increment(ref setTimeoutId);
-            long id = setTimeoutId;
+            ulong id = setTimeoutNs.Get();
 
             System.Timers.Timer t = new(interval);//实例化Timer类，设置间隔时间为10000毫秒；
             t.Elapsed += new ElapsedEventHandler((object source, ElapsedEventArgs e) =>
@@ -76,17 +56,16 @@ namespace common
             return id;
 
         }
-        public static void CloseTimeout(long id)
+        public static void CloseTimeout(ulong id)
         {
-            if (setTimeoutCache.TryRemove(id, out System.Timers.Timer t) && t != null)
+            if (setTimeoutCache.TryRemove(id, out System.Timers.Timer t))
             {
                 t.Close();
             }
         }
-        public static long SetInterval(Action action, double interval)
+        public static ulong SetInterval(Action action, double interval)
         {
-            _ = Interlocked.Increment(ref setTimeoutId);
-            long id = setTimeoutId;
+            ulong id = setTimeoutNs.Get();
 
             System.Timers.Timer t = new(interval);//实例化Timer类，设置间隔时间为10000毫秒；
             t.Elapsed += new ElapsedEventHandler((object source, ElapsedEventArgs e) =>
@@ -100,18 +79,6 @@ namespace common
             setTimeoutCache.TryAdd(id, t);
 
             return id;
-        }
-
-        public static void Sleep(int milliseconds)
-        {
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
-            while (stopWatch.ElapsedMilliseconds < milliseconds)
-            {
-                int timeout = milliseconds - (int)stopWatch.ElapsedMilliseconds;
-                Thread.Sleep(timeout >= 0 ? timeout : 0);
-            }
-            stopWatch.Stop();
         }
 
         /// <summary>
@@ -285,7 +252,7 @@ namespace common
                 int ldest = inet_addr(hostip);
                 long macinfo = new();
                 int len = 6;
-                _ = SendARP(ldest, 0, ref macinfo, ref len);
+                SendARP(ldest, 0, ref macinfo, ref len);
                 string tmpMac = Convert.ToString(macinfo, 16).PadLeft(12, '0');
                 mac = tmpMac.Substring(0, 2).ToUpper();
                 for (int i = 2; i < tmpMac.Length; i += 2)

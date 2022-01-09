@@ -23,56 +23,29 @@ namespace server.service.plugins
             this.serverPluginHelper = serverPluginHelper;
         }
 
-        public bool Excute(PluginParamWrap data)
+        public void Execute(PluginParamWrap data)
         {
             ForwardModel model = data.Wrap.Memory.DeBytes<ForwardModel>();
 
-            if (!clientRegisterCache.Verify(model.Id, data)) return false;
-
             //A已注册
-            RegisterCacheModel source = clientRegisterCache.Get(model.Id);
-            if (source != null)
+            if (clientRegisterCache.Get(data.Connection.ConnectId, out RegisterCacheModel source))
             {
                 //B已注册
-                RegisterCacheModel target = clientRegisterCache.Get(model.ToId);
-                if (target != null)
+                if (clientRegisterCache.Get(model.ToId, out RegisterCacheModel target))
                 {
                     //是否在同一个组
-                    if (source.GroupId != target.GroupId)
+                    if (source.GroupId == target.GroupId)
                     {
-                        return false;
-                    }
-
-                    if (data.ServerType == ServerType.UDP)
-                    {
-                        serverPluginHelper.SendOnly(new SendMessageWrap<byte[]>
+                        serverPluginHelper.SendOnly(new MessageRequestParamsWrap<byte[]>
                         {
-                            Address = target.Address,
-                            TcpCoket = null,
+                            Connection = data.Connection,
                             Data = model.Data,
                             Path = data.Wrap.Path,
-                            RequestId = data.Wrap.RequestId,
-                            Code = data.Wrap.Code,
-                            Type = data.Wrap.Type
-                        });
-                    }
-                    else if (data.ServerType == ServerType.TCP)
-                    {
-                        serverPluginHelper.SendOnlyTcp(new SendMessageWrap<byte[]>
-                        {
-                            Address = target.Address,
-                            TcpCoket = target.TcpSocket,
-                            Data = model.Data,
-                            Path = data.Wrap.Path,
-                            RequestId = data.Wrap.RequestId,
-                            Code = data.Wrap.Code,
-                            Type = data.Wrap.Type
+                            RequestId = data.Wrap.RequestId
                         });
                     }
                 }
             }
-
-            return true;
         }
     }
 }

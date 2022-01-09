@@ -16,7 +16,7 @@ namespace client.service.logger
     {
         public List<LoggerModel> Data { get; } = new List<LoggerModel>();
 
-        public PageModel List(ClientServicePluginExcuteWrap arg)
+        public PageModel List(ClientServicePluginExecuteWrap arg)
         {
             PageParamModel model = arg.Content.DeJson<PageParamModel>();
 
@@ -35,7 +35,7 @@ namespace client.service.logger
             };
         }
 
-        public void Clear(ClientServicePluginExcuteWrap arg)
+        public void Clear(ClientServicePluginExecuteWrap arg)
         {
             Data.Clear();
         }
@@ -59,7 +59,7 @@ namespace client.service.logger
     {
         public static ServiceCollection AddLoggerPlugin(this ServiceCollection obj)
         {
-            Config config = Config.ReadConfig();
+            Config config = Config.ReadConfig().Result;
             obj.AddSingleton((e) => config);
 
             return obj;
@@ -102,26 +102,26 @@ namespace client.service.logger
 
         public bool Enable => config.Enable;
 
-        public object LoadSetting()
+        public async Task<object> LoadSetting()
         {
-            return config;
+            return await Task.FromResult(config);
         }
 
-        public string SaveSetting(string jsonStr)
+        public async Task<string> SaveSetting(string jsonStr)
         {
             Config _config = jsonStr.DeJson<Config>();
 
             config.Enable = _config.Enable;
             config.MaxLength = _config.MaxLength;
-            config.SaveConfig();
+            await config.SaveConfig();
 
             return string.Empty;
         }
 
-        public bool SwitchEnable(bool enable)
+        public async Task<bool> SwitchEnable(bool enable)
         {
             config.Enable = enable;
-            config.SaveConfig();
+            await config.SaveConfig();
             return true;
         }
     }
@@ -131,17 +131,17 @@ namespace client.service.logger
         public bool Enable { get; set; } = false;
         public int MaxLength { get; set; } = 100;
 
-        public static Config ReadConfig()
+        public static async Task<Config> ReadConfig()
         {
-            return FromFile<Config>("logger-appsettings.json") ?? new Config();
+            return await FromFile<Config>("logger-appsettings.json") ?? new Config();
         }
 
-        public void SaveConfig()
+        public async Task SaveConfig()
         {
-            Config config = ReadConfig();
+            Config config = await ReadConfig();
             config.Enable = Enable;
 
-            ToFile(config, "logger-appsettings.json");
+            await ToFile(config, "logger-appsettings.json");
         }
     }
 

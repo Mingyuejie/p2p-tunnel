@@ -2,9 +2,8 @@
 using client.service.tcpforward.client;
 using common;
 using common.extends;
+using server;
 using server.achieves.IOCP;
-using server.model;
-using server.packet;
 using server.plugins.register.caching;
 using System;
 using System.Collections.Concurrent;
@@ -14,7 +13,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace client.service.tcpforward
 {
@@ -31,13 +29,11 @@ namespace client.service.tcpforward
         public SimplePushSubHandler<ListeningChangeModel> OnListeningChange { get; } = new SimplePushSubHandler<ListeningChangeModel>();
 
         private readonly IClientInfoCaching clientInfoCaching;
-        private readonly TcpForwardSettingModel tcpForwardSettingModel;
-        private long requestId = 0;
+        private NumberSpace requestIdNs = new NumberSpace(0);
 
         public TcpForwardServer(IClientInfoCaching clientInfoCaching, TcpForwardSettingModel tcpForwardSettingModel)
         {
             this.clientInfoCaching = clientInfoCaching;
-            this.tcpForwardSettingModel = tcpForwardSettingModel;
 
             m_numConnections = tcpForwardSettingModel.NumConnections;
             m_receiveBufferSize = tcpForwardSettingModel.ReceiveBufferSize;
@@ -130,13 +126,11 @@ namespace client.service.tcpforward
         }
         private void ProcessAccept(SocketAsyncEventArgs e)
         {
-            _ = Interlocked.Increment(ref requestId);
-
-            var serverToken = (AsyncUserToken)e.UserToken;
+            AsyncUserToken serverToken = (AsyncUserToken)e.UserToken;
             SocketAsyncEventArgs readEventArgs = m_readWritePool.Pop();
-            var token = ((AsyncUserToken)readEventArgs.UserToken);
+            AsyncUserToken token = ((AsyncUserToken)readEventArgs.UserToken);
             token.SourceSocket = e.AcceptSocket;
-            token.RequestId = requestId;
+            token.RequestId = requestIdNs.Get();
             token.TargetPort = serverToken.TargetPort;
             token.AliveType = serverToken.AliveType;
             token.TargetIp = serverToken.TargetIp;
@@ -233,8 +227,8 @@ namespace client.service.tcpforward
             m_maxNumberAcceptedClients.Release();
 
 
-            Socket socket = GetSocket(token);
-            OnRequest.Push(new TcpForwardRequestModel
+            IConnection connection = GetSocket(token);
+            OnRequest.PushAsync(new TcpForwardRequestModel
             {
                 Msg = new TcpForwardModel
                 {
@@ -245,49 +239,49 @@ namespace client.service.tcpforward
                     AliveType = token.AliveType,
                     TargetIp = token.TargetIp
                 },
-                Socket = socket
-            });
+                Connection = connection
+            }).Wait();
         }
 
         private void Receive(SocketAsyncEventArgs e, byte[] data)
         {
-            var userToken = (AsyncUserToken)e.UserToken;
-            Socket socket = GetSocket(userToken);
+            AsyncUserToken token = (AsyncUserToken)e.UserToken;
+            IConnection connection = GetSocket(token);
 
             //userToken.SourceSocket.Send(GetData("response text"));
-            OnRequest.Push(new TcpForwardRequestModel
+            OnRequest.PushAsync(new TcpForwardRequestModel
             {
                 Msg = new TcpForwardModel
                 {
-                    RequestId = userToken.RequestId,
+                    RequestId = token.RequestId,
                     Buffer = data,
                     Type = TcpForwardType.REQUEST,
-                    TargetPort = userToken.TargetPort,
-                    AliveType = userToken.AliveType,
-                    TargetIp = userToken.TargetIp,
-                    FromID = userToken.TargetClient.Id
+                    TargetPort = token.TargetPort,
+                    AliveType = token.AliveType,
+                    TargetIp = token.TargetIp,
+                    FromID = token.TargetClient.Id
                 },
-                Socket = socket
-            });
+                Connection = connection
+            }).Wait();
         }
 
-        private Socket GetSocket(AsyncUserToken token)
+        private IConnection GetSocket(AsyncUserToken token)
         {
-            Socket socket = null;
+            IConnection connection = null;
             if (token.TargetClient != null)
             {
-                socket = token.TargetClient.Socket;
-                if (socket == null || !socket.Connected || token.TargetClient.Name != token.TargetClient.Name)
+                connection = token.TargetClient.TcpConnection;
+                if (connection == null || !connection.Connected || token.TargetClient.Name != token.TargetClient.Name)
                 {
                     var clientinfo = clientInfoCaching.All().FirstOrDefault(c => c.Name == token.TargetClient.Name);
                     if (clientinfo != null)
                     {
                         token.TargetClient = clientinfo;
-                        socket = token.TargetClient.Socket;
+                        connection = token.TargetClient.TcpConnection;
                     }
                 }
             }
-            return socket;
+            return connection;
         }
 
         public void Response(TcpForwardModel model)
@@ -355,7 +349,7 @@ namespace client.service.tcpforward
     {
         public ClientInfo TargetClient { get; set; }
         public List<byte> CacheBuffer { get; set; } = new List<byte>();
-        public long RequestId { get; set; }
+        public ulong RequestId { get; set; }
         public int SourcePort { get; set; } = 0;
         public Socket SourceSocket { get; set; }
         public byte[] BufferSize { get; set; }
@@ -371,23 +365,23 @@ namespace client.service.tcpforward
 
     public class TcpForwardRequestModel
     {
-        public Socket Socket { get; set; }
+        public IConnection Connection { get; set; }
         public TcpForwardModel Msg { get; set; }
     }
 
     public class ClientCacheModel
     {
-        private static ConcurrentDictionary<long, AsyncUserToken> clients = new();
+        private static ConcurrentDictionary<ulong, AsyncUserToken> clients = new();
 
         public int SourcePort { get; set; } = 0;
         public Socket Socket { get; set; }
-        public long RequestId { get; set; }
+        public ulong RequestId { get; set; }
 
         public MyStopwatch Watch { get; set; }
 
         public NetworkStream Stream { get; set; }
 
-        public static IEnumerable<long> Ids()
+        public static IEnumerable<ulong> Ids()
         {
             return clients.Keys;
         }
@@ -397,17 +391,17 @@ namespace client.service.tcpforward
             return clients.TryAdd(model.RequestId, model);
         }
 
-        public static bool Contains(long id)
+        public static bool Contains(ulong id)
         {
             return clients.ContainsKey(id);
         }
 
-        public static bool Get(long id, out AsyncUserToken c)
+        public static bool Get(ulong id, out AsyncUserToken c)
         {
             return clients.TryGetValue(id, out c);
         }
 
-        public static void Remove(long id)
+        public static void Remove(ulong id)
         {
             if (clients.TryRemove(id, out AsyncUserToken c))
             {
@@ -416,7 +410,7 @@ namespace client.service.tcpforward
         }
         public static void Clear(int sourcePort)
         {
-            IEnumerable<long> requestIds = clients.Where(c => c.Value.SourcePort == sourcePort).Select(c => c.Key);
+            IEnumerable<ulong> requestIds = clients.Where(c => c.Value.SourcePort == sourcePort).Select(c => c.Key);
             foreach (var requestId in requestIds)
             {
                 Remove(requestId);

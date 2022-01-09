@@ -1,6 +1,8 @@
-﻿using common.extends;
+﻿using client.plugins.serverPlugins.clients;
+using common.extends;
 using server.model;
 using server.plugin;
+using server.plugins.register.caching;
 
 namespace client.service.plugins.serverPlugins.heart
 {
@@ -9,21 +11,13 @@ namespace client.service.plugins.serverPlugins.heart
     /// </summary>
     public class HeartPlugin : IPlugin
     {
-        private readonly HeartMessageHelper heartEventHandles;
-        public HeartPlugin(HeartMessageHelper heartEventHandles)
+        public HeartPlugin()
         {
-            this.heartEventHandles = heartEventHandles;
         }
 
-        public void Excute(PluginParamWrap model)
+        public bool Execute(PluginParamWrap param)
         {
-
-            HeartModel data = model.Wrap.Memory.DeBytes<HeartModel>();
-            heartEventHandles.OnHeart.Push(new OnHeartEventArg
-            {
-                Packet = model,
-                Data = data
-            });
+            return true;
         }
     }
 }

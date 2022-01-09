@@ -1,6 +1,7 @@
 ﻿using common;
 using MessagePack;
 using ProtoBuf;
+using server;
 using server.model;
 using System;
 using System.Collections.Generic;
@@ -13,19 +14,18 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
 {
     public interface IPunchHoleUdp
     {
-        public void SendStep1(ConnectParams param);
+        public Task<ConnectResultModel> Send(ConnectParams param);
         public SimplePushSubHandler<OnStep1EventArg> OnStep1Handler { get; }
-        public void OnStep1(OnStep1EventArg arg);
+        public Task OnStep1(OnStep1EventArg arg);
 
-        public void SendStep2(SendStep2EventArg arg);
         public SimplePushSubHandler<OnStep2EventArg> OnStep2Handler { get; }
-        public void OnStep2(OnStep2EventArg e);
+        public Task OnStep2(OnStep2EventArg e);
 
-        public void SendStep3(SendStep3EventArg arg);
+        public SimplePushSubHandler<OnStep2FailEventArg> OnStep2FailHandler { get; }
+        public void OnStep2Fail(OnStep2FailEventArg e);
+
         public SimplePushSubHandler<OnStep3EventArg> OnStep3Handler { get; }
-        public void OnStep3(OnStep3EventArg e);
-
-        public void SendStep4(SendStep4EventArg arg);
+        public Task OnStep3(OnStep3EventArg e);
 
         public SimplePushSubHandler<OnStep4EventArg> OnStep4Handler { get; }
         public void OnStep4(OnStep4EventArg arg);
@@ -43,60 +43,52 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
     public class OnStep1EventArg : EventArgs
     {
         public PluginParamWrap Packet { get; set; }
+        public PunchHoleModel RawData { get; set; }
         public PunchHoleNotifyModel Data { get; set; }
     }
 
     public class OnStep2EventArg : EventArgs
     {
         public PluginParamWrap Packet { get; set; }
+        public PunchHoleModel RawData { get; set; }
+        public PunchHoleNotifyModel Data { get; set; }
+    }
+    public class OnStep2FailEventArg : EventArgs
+    {
+        public PluginParamWrap Packet { get; set; }
+        public PunchHoleModel RawData { get; set; }
         public PunchHoleNotifyModel Data { get; set; }
     }
 
     public class SendStep2EventArg : EventArgs
     {
-        /// <summary>
-        /// 目标地址
-        /// </summary>
-        public IPEndPoint Address { get; set; }
-        /// <summary>
-        /// 我的id
-        /// </summary>
-        public long ToId { get; set; }
+        public IConnection Connection { get; set; }
+        public ulong ToId { get; set; }
     }
 
     public class SendStep3EventArg : EventArgs
     {
-        /// <summary>
-        /// 目标地址
-        /// </summary>
-        public IPEndPoint Address { get; set; }
-        /// <summary>
-        /// 我的id
-        /// </summary>
-        public long Id { get; set; }
+        public IConnection Connection { get; set; }
+        public ulong Id { get; set; }
     }
 
     public class OnStep3EventArg : EventArgs
     {
         public PluginParamWrap Packet { get; set; }
+        public PunchHoleModel RawData { get; set; }
         public Step3Model Data { get; set; }
     }
 
     public class SendStep4EventArg : EventArgs
     {
-        /// <summary>
-        /// 目标地址
-        /// </summary>
-        public IPEndPoint Address { get; set; }
-        /// <summary>
-        /// 我的id
-        /// </summary>
-        public long Id { get; set; }
+        public IConnection Connection { get; set; }
+        public ulong Id { get; set; }
     }
 
     public class OnStep4EventArg : EventArgs
     {
         public PluginParamWrap Packet { get; set; }
+        public PunchHoleModel RawData { get; set; }
         public Step4Model Data { get; set; }
     }
 
@@ -105,21 +97,22 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
 
     public class ConnectParams
     {
-        public long Id { get; set; } = 0;
-        public int TryTimes { get; set; } = 10;
+        public ulong Id { get; set; } = 0;
+        public int TryTimes { get; set; } = 5;
         public string Name { get; set; } = string.Empty;
-        public int Timeout { get; set; } = 5 * 1000;
-        public Action<OnStep4EventArg> Callback { get; set; } = null;
-        public Action<ConnectFailModel> FailCallback { get; set; } = null;
     }
 
     public class ConnectCache
     {
         public long Time { get; set; } = 0;
-        public int TryTimes { get; set; } = 10;
-        public int Timeout { get; set; } = 5 * 1000;
-        public Action<OnStep4EventArg> Callback { get; set; } = null;
-        public Action<ConnectFailModel> FailCallback { get; set; } = null;
+        public int TryTimes { get; set; } = 5;
+        public TaskCompletionSource<ConnectResultModel> Tcs { get; set; }
+    }
+
+    public class ConnectResultModel
+    {
+        public bool State { get; set; }
+        public object Result { get; set; }
     }
 
     public class ConnectFailModel
@@ -133,70 +126,66 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         ERROR, TIMEOUT
     }
 
-    public enum PunchHoleUdpSteps : short
+    public enum PunchHoleUdpSteps : byte
     {
         STEP_1 = 1,
         STEP_2 = 2,
         STEP_2_1 = 3,
-        STEP_3 = 4,
-        STEP_4 = 5,
+        STEP_2_Fail = 4,
+        STEP_3 = 5,
+        STEP_4 = 6,
     }
 
     [ProtoContract, MessagePackObject]
     public class Step1Model : IPunchHoleMessageBase
     {
-        /// <summary>
-        /// 我的id
-        /// </summary>
-        [ProtoMember(1),Key(1)]
-        public long FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true), Key(2)]
+        [ProtoMember(1, IsRequired = true), Key(1)]
         public PunchHoleTypes PunchType { get; } = PunchHoleTypes.UDP;
 
-        [ProtoMember(3, IsRequired = true), Key(3)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.NOTIFY;
 
-        [ProtoMember(4), Key(4)]
-        public short PunchStep { get; } = (short)PunchHoleUdpSteps.STEP_1;
+        [ProtoMember(3), Key(3)]
+        public byte PunchStep { get; } = (byte)PunchHoleUdpSteps.STEP_1;
     }
 
     [ProtoContract, MessagePackObject]
     public class Step2Model : IPunchHoleMessageBase
     {
-        /// <summary>
-        /// 我的id
-        /// </summary>
-        [ProtoMember(1),Key(1)]
-        public long FromId { get; set; } = 0;
-
-        [ProtoMember(2, IsRequired = true), Key(2)]
+        [ProtoMember(1, IsRequired = true), Key(1)]
         public PunchHoleTypes PunchType { get; } = PunchHoleTypes.UDP;
 
-        [ProtoMember(3, IsRequired = true), Key(3)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.NOTIFY;
 
-        [ProtoMember(4), Key(4)]
-        public short PunchStep { get; } = (short)PunchHoleUdpSteps.STEP_2;
+        [ProtoMember(3), Key(3)]
+        public byte PunchStep { get; } = (byte)PunchHoleUdpSteps.STEP_2;
     }
 
     [ProtoContract, MessagePackObject]
     public class Step21Model : IPunchHoleMessageBase
     {
-        /// <summary>
-        /// 我的id
-        /// </summary>
-        [ProtoMember(1),Key(1)]
-        public long FromId { get; set; } = 0;
-
-        [ProtoMember(2, IsRequired = true), Key(2)]
+        [ProtoMember(1, IsRequired = true), Key(1)]
         public PunchHoleTypes PunchType { get; } = PunchHoleTypes.UDP;
 
-        [ProtoMember(3, IsRequired = true), Key(3)]
+        [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.NOTIFY;
 
-        [ProtoMember(4), Key(4)]
-        public short PunchStep { get; } = (short)PunchHoleUdpSteps.STEP_2_1;
+        [ProtoMember(3), Key(3)]
+        public byte PunchStep { get; } = (byte)PunchHoleUdpSteps.STEP_2_1;
+    }
+    [ProtoContract, MessagePackObject]
+    public class Step2FailModel : IPunchHoleMessageBase
+    {
+        [ProtoMember(1, IsRequired = true), Key(1)]
+        public PunchHoleTypes PunchType { get; } = PunchHoleTypes.UDP;
+
+        [ProtoMember(2, IsRequired = true), Key(2)]
+        public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.NOTIFY;
+
+        [ProtoMember(3), Key(3)]
+        public byte PunchStep { get; } = (byte)PunchHoleUdpSteps.STEP_2_Fail;
     }
 
     [ProtoContract, MessagePackObject]
@@ -205,8 +194,8 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         /// <summary>
         /// 我的id
         /// </summary>
-        [ProtoMember(1),Key(1)]
-        public long FromId { get; set; } = 0;
+        [ProtoMember(1), Key(1)]
+        public ulong FromId { get; set; } = 0;
 
         [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchHoleTypes PunchType { get; } = PunchHoleTypes.UDP;
@@ -215,7 +204,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
         [ProtoMember(4), Key(4)]
-        public short PunchStep { get; } = (short)PunchHoleUdpSteps.STEP_3;
+        public byte PunchStep { get; } = (byte)PunchHoleUdpSteps.STEP_3;
     }
 
     [ProtoContract, MessagePackObject]
@@ -224,8 +213,8 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         /// <summary>
         /// 我的id
         /// </summary>
-        [ProtoMember(1),Key(1)]
-        public long FromId { get; set; } = 0;
+        [ProtoMember(1), Key(1)]
+        public ulong FromId { get; set; } = 0;
 
         [ProtoMember(2, IsRequired = true), Key(2)]
         public PunchHoleTypes PunchType { get; } = PunchHoleTypes.UDP;
@@ -234,6 +223,6 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
         [ProtoMember(4), Key(4)]
-        public short PunchStep { get; } = (short)PunchHoleUdpSteps.STEP_4;
+        public byte PunchStep { get; } = (byte)PunchHoleUdpSteps.STEP_4;
     }
 }

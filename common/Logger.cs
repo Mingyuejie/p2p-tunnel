@@ -72,6 +72,7 @@ namespace common
         {
             queue.Enqueue(new LoggerModel { Type = LoggerTypes.DEBUG, Content = ex + "" });
         }
+
         public void Info(string content, params object[] args)
         {
             if (args != null && args.Length > 0)
@@ -80,6 +81,7 @@ namespace common
             }
             queue.Enqueue(new LoggerModel { Type = LoggerTypes.INFO, Content = content });
         }
+
         public void Warning(string content, params object[] args)
         {
             if (args != null && args.Length > 0)
@@ -88,15 +90,36 @@ namespace common
             }
             queue.Enqueue(new LoggerModel { Type = LoggerTypes.WARNING, Content = content });
         }
+        public void Warning(Exception ex)
+        {
+            queue.Enqueue(new LoggerModel { Type = LoggerTypes.WARNING, Content = ex + "" });
+        }
+
         public void Error(string content, params object[] args)
         {
             if (args != null && args.Length > 0)
             {
                 content = string.Format(content, args);
             }
-            queue.Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = content});
+            queue.Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = content });
         }
         public void Error(Exception ex)
+        {
+            queue.Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = ex + "" });
+        }
+
+        [Conditional("DEBUG")]
+        public void DebugError(string content, params object[] args)
+        {
+            if (args != null && args.Length > 0)
+            {
+                content = string.Format(content, args);
+            }
+            queue.Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = content });
+        }
+
+        [Conditional("DEBUG")]
+        public void DebugError(Exception ex)
         {
             queue.Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = ex + "" });
         }

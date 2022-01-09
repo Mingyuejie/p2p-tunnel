@@ -17,69 +17,49 @@ namespace server.service.plugins
             this.serverPluginHelper = serverPluginHelper;
         }
 
-        public bool Excute(PluginParamWrap data)
+        public bool Execute(PluginParamWrap data)
         {
             PunchHoleModel model = data.Wrap.Memory.DeBytes<PunchHoleModel>();
 
-            if (!clientRegisterCache.Verify(model.Id, data)) return false;
-
             //A已注册
-            RegisterCacheModel source = clientRegisterCache.Get(model.Id);
-            if (source == null) return false;
+            if (!clientRegisterCache.Get(data.Connection.ConnectId, out RegisterCacheModel source))
+            {
+                return false;
+            }
             //B已注册
-            RegisterCacheModel target = clientRegisterCache.Get(model.ToId);
-            if (target == null) return false;
+            if (!clientRegisterCache.Get(model.ToId, out RegisterCacheModel target))
+            {
+                return false;
+            }
 
             //是否在同一个组
-            if (source.GroupId != target.GroupId) return false;
+            if (source.GroupId != target.GroupId)
+            {
+                return false;
+            }
 
             if (model.PunchForwardType == PunchForwardTypes.NOTIFY)
             {
                 model.Data = new PunchHoleNotifyModel
                 {
-                    Ip = data.ServerType == ServerType.UDP
-                    ? source.Address.Address.ToString()
-                    : IPEndPoint.Parse(source.TcpSocket.RemoteEndPoint.ToString()).Address.ToString(),
-                    Id = source.Id,
+                    Ip = source.UdpConnection.UdpAddress.Address.ToString(),
                     Name = source.Name,
-                    Port = source.Address.Port,
-                    TcpPort = source.TcpPort,
+                    Port = source.UdpConnection.UdpAddress.Port,
+                    TcpPort = (source.TcpConnection.TcpSocket.RemoteEndPoint as IPEndPoint).Port,
                     LocalIps = source.LocalIps,
                     LocalTcpPort = source.LocalTcpPort,
                     LocalUdpPort = source.LocalUdpPort,
                 }.ToBytes();
             }
-            switch (data.ServerType)
+
+            model.FromId = data.Connection.ConnectId;
+            serverPluginHelper.SendOnly(new MessageRequestParamsWrap<PunchHoleModel>
             {
-                case ServerType.TCP:
-                    {
-                        serverPluginHelper.SendOnlyTcp(new SendMessageWrap<PunchHoleModel>
-                        {
-                            Address = target.Address,
-                            TcpCoket = target.TcpSocket,
-                            Data = model,
-                            Code = ServerMessageResponeCodes.OK,
-                            Path = data.Wrap.Path,
-                            RequestId = data.Wrap.RequestId
-                        });
-                    }
-                    break;
-                case ServerType.UDP:
-                    {
-                        serverPluginHelper.SendOnly(new SendMessageWrap<PunchHoleModel>
-                        {
-                            Address = target.Address,
-                            TcpCoket = target.TcpSocket,
-                            Data = model,
-                            Code = ServerMessageResponeCodes.OK,
-                            Path = data.Wrap.Path,
-                            RequestId = data.Wrap.RequestId
-                        });
-                    }
-                    break;
-                default:
-                    break;
-            }
+                Connection = data.Connection.ServerType == ServerType.UDP ? target.UdpConnection : target.TcpConnection,
+                Data = model,
+                Path = data.Wrap.Path,
+                RequestId = data.Wrap.RequestId
+            });
 
             return true;
         }

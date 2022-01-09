@@ -35,25 +35,14 @@ namespace server.service.plugins
             this.clientRegisterCache = clientRegisterCache;
         }
 
-        public bool Register(PluginParamWrap data)
+        public ServerTcpForwardRegisterResponseCode Register(PluginParamWrap data)
         {
             if (!config.tcpForward)
             {
-                data.SetCode(ServerMessageResponeCodes.ACCESS, "服务端未开启TCP转发");
-                return false;
+                return ServerTcpForwardRegisterResponseCode.DISABLED;
             }
             ServerTcpForwardRegisterModel foreards = data.Wrap.Memory.DeBytes<ServerTcpForwardRegisterModel>();
-            if (!clientRegisterCache.Verify(foreards.Id, data))
-            {
-                data.SetCode(ServerMessageResponeCodes.ACCESS, "认证失败");
-                return false;
-            }
-            RegisterCacheModel source = clientRegisterCache.Get(foreards.Id);
-            if (source == null)
-            {
-                data.SetCode(ServerMessageResponeCodes.ACCESS, "未注册");
-                return false;
-            }
+            clientRegisterCache.Get(data.Connection.ConnectId, out RegisterCacheModel source);
 
             try
             {
@@ -85,19 +74,19 @@ namespace server.service.plugins
             }
             catch (Exception ex)
             {
-                Logger.Instance.Error(ex + "");
-                data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, ex.Message);
+                Logger.Instance.Error(ex);
+                return ServerTcpForwardRegisterResponseCode.ERROR;
             }
-            return true;
+            return ServerTcpForwardRegisterResponseCode.OK;
         }
-        public bool UnRegister(PluginParamWrap data)
+        public ServerTcpForwardRegisterResponseCode UnRegister(PluginParamWrap data)
         {
             tcpForwardServer.StopAll();
-            return true;
+            return ServerTcpForwardRegisterResponseCode.OK;
         }
         public void Response(PluginParamWrap data)
         {
-            var model = data.Wrap.Memory.DeBytes<ServerTcpForwardModel>();
+            ServerTcpForwardModel model = data.Wrap.Memory.DeBytes<ServerTcpForwardModel>();
             if (model.Type == ServerTcpForwardType.RESPONSE)
             {
                 tcpForwardServer.Response(model);
@@ -108,7 +97,6 @@ namespace server.service.plugins
             }
         }
     }
-
 
     public static class ServiceCollectionExtends
     {
@@ -136,7 +124,7 @@ namespace server.service.plugins
 
         private readonly ServerPluginHelper serverPluginHelper;
         private readonly IClientRegisterCaching clientRegisterCache;
-        private long requestId = 0;
+        private NumberSpace requestIdNs = new NumberSpace(0);
 
         public TcpForwardServer(ServerPluginHelper serverPluginHelper, IClientRegisterCaching clientRegisterCache)
         {
@@ -242,13 +230,11 @@ namespace server.service.plugins
         }
         private void ProcessAccept(SocketAsyncEventArgs e)
         {
-            _ = Interlocked.Increment(ref requestId);
-
-            var serverToken = (AsyncUserToken)e.UserToken;
+            AsyncUserToken serverToken = (AsyncUserToken)e.UserToken;
             SocketAsyncEventArgs readEventArgs = m_readWritePool.Pop();
-            var token = ((AsyncUserToken)readEventArgs.UserToken);
+            AsyncUserToken token = ((AsyncUserToken)readEventArgs.UserToken);
             token.SourceSocket = e.AcceptSocket;
-            token.RequestId = requestId;
+            token.RequestId = requestIdNs.Get();
             token.TargetPort = serverToken.TargetPort;
             token.AliveType = serverToken.AliveType;
             token.TargetIp = serverToken.TargetIp;
@@ -315,14 +301,12 @@ namespace server.service.plugins
 
             if (token.TargetPort != 0)
             {
-                var registerInfo = clientRegisterCache.Get(token.TargetClientId);
-                SendMessageWrap<ServerTcpForwardModel> model = new SendMessageWrap<ServerTcpForwardModel>
+                clientRegisterCache.Get(token.TargetClientId,out RegisterCacheModel registerInfo);
+                serverPluginHelper.SendOnly(new MessageRequestParamsWrap<ServerTcpForwardModel>
                 {
-                    Code = ServerMessageResponeCodes.OK,
-                    Path = "ServerTcpForward/excute",
+                    Path = "ServerTcpForward/Execute",
                     RequestId = token.RequestId,
-                    TcpCoket = registerInfo?.TcpSocket,
-                    Type = ServerMessageTypes.REQUEST,
+                    Connection = registerInfo?.TcpConnection,
                     Data = new ServerTcpForwardModel
                     {
                         RequestId = token.RequestId,
@@ -332,8 +316,7 @@ namespace server.service.plugins
                         AliveType = token.AliveType,
                         TargetIp = token.TargetIp
                     },
-                };
-                serverPluginHelper.SendOnlyTcp(model);
+                });
             }
         }
 
@@ -373,14 +356,12 @@ namespace server.service.plugins
                 }
             }
 
-            var registerInfo = clientRegisterCache.Get(token.TargetClientId);
-            SendMessageWrap<ServerTcpForwardModel> model = new SendMessageWrap<ServerTcpForwardModel>
+            clientRegisterCache.Get(token.TargetClientId, out RegisterCacheModel client);
+            MessageRequestParamsWrap<ServerTcpForwardModel> model = new MessageRequestParamsWrap<ServerTcpForwardModel>
             {
-                Code = ServerMessageResponeCodes.OK,
-                Path = "ServerTcpForward/excute",
+                Path = "ServerTcpForward/Execute",
                 RequestId = token.RequestId,
-                TcpCoket = registerInfo?.TcpSocket,
-                Type = ServerMessageTypes.REQUEST,
+                Connection = client.TcpConnection,
                 Data = new ServerTcpForwardModel
                 {
                     RequestId = token.RequestId,
@@ -401,7 +382,7 @@ namespace server.service.plugins
                 Fail(model.Data, "未选择转发对象，或者未与转发对象建立连接1");
                 return;
             }
-            serverPluginHelper.SendOnlyTcp(model);
+            serverPluginHelper.SendOnly(model);
         }
 
         public void Response(ServerTcpForwardModel model)
@@ -498,29 +479,29 @@ namespace server.service.plugins
     {
         public Dictionary<string, ServerTcpForwardWebItem> WebForwards { get; set; } = new Dictionary<string, ServerTcpForwardWebItem>();
         public List<byte> CacheBuffer { get; set; } = new List<byte>();
-        public long RequestId { get; set; }
+        public ulong RequestId { get; set; }
         public int SourcePort { get; set; } = 0;
         public Socket SourceSocket { get; set; }
         public byte[] BufferSize { get; set; }
         public string TargetIp { get; set; } = string.Empty;
         public int TargetPort { get; set; } = 0;
-        public long TargetClientId { get; set; }
+        public ulong TargetClientId { get; set; }
         public ServerTcpForwardAliveTypes AliveType { get; set; } = ServerTcpForwardAliveTypes.WEB;
     }
 
     public class ClientCacheModel
     {
-        private static ConcurrentDictionary<long, AsyncUserToken> clients = new();
+        private static ConcurrentDictionary<ulong, AsyncUserToken> clients = new();
 
         public int SourcePort { get; set; } = 0;
         public Socket Socket { get; set; }
-        public long RequestId { get; set; }
+        public ulong RequestId { get; set; }
 
         public MyStopwatch Watch { get; set; }
 
         public NetworkStream Stream { get; set; }
 
-        public static IEnumerable<long> Ids()
+        public static IEnumerable<ulong> Ids()
         {
             return clients.Keys;
         }
@@ -530,17 +511,17 @@ namespace server.service.plugins
             return clients.TryAdd(model.RequestId, model);
         }
 
-        public static bool Contains(long id)
+        public static bool Contains(ulong id)
         {
             return clients.ContainsKey(id);
         }
 
-        public static bool Get(long id, out AsyncUserToken c)
+        public static bool Get(ulong id, out AsyncUserToken c)
         {
             return clients.TryGetValue(id, out c);
         }
 
-        public static void Remove(long id)
+        public static void Remove(ulong id)
         {
             if (clients.TryRemove(id, out AsyncUserToken c))
             {
@@ -549,7 +530,7 @@ namespace server.service.plugins
         }
         public static void Clear(int sourcePort)
         {
-            IEnumerable<long> requestIds = clients.Where(c => c.Value.SourcePort == sourcePort).Select(c => c.Key);
+            IEnumerable<ulong> requestIds = clients.Where(c => c.Value.SourcePort == sourcePort).Select(c => c.Key);
             foreach (var requestId in requestIds)
             {
                 Remove(requestId);

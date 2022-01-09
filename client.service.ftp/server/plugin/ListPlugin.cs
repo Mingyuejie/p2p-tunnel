@@ -1,12 +1,8 @@
 ﻿using client.service.ftp.plugin;
 using client.service.ftp.protocol;
+using common;
 using common.extends;
-using ProtoBuf;
-using server.model;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+using System.Threading.Tasks;
 
 namespace client.service.ftp.server.plugin
 {
@@ -20,10 +16,11 @@ namespace client.service.ftp.server.plugin
         }
         public FtpCommand Cmd => FtpCommand.LIST;
 
-        public object Excute(FtpPluginParamWrap data)
+        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
         {
-            FtpListCommand cmd = data.Data.DeBytes<FtpListCommand>();
-            return ftpServer.GetFiles(cmd);
+            await Task.Yield();
+
+            return new FtpResultModel { Data = ftpServer.GetFiles(arg.Data.DeBytes<FtpListCommand>(), arg) };
         }
     }
 }

@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace client.service.ftp.client.plugin
 {
@@ -20,20 +21,22 @@ namespace client.service.ftp.client.plugin
             this.ftpClient = ftpClient;
         }
 
-        public object Excute(FtpPluginParamWrap arg)
+        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
         {
+            await Task.Yield();
+
             FtpCreateCommand cmd = arg.Data.DeBytes<FtpCreateCommand>();
 
             if (string.IsNullOrWhiteSpace(cmd.Path))
             {
-                arg.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, "目录不可为空");
+                return new FtpResultModel { Code = FtpResultModel.FtpResultCodes.PATH_REQUIRED };
             }
             else
             {
                 ftpClient.Create(cmd.Path);
             }
 
-            return true;
+            return new FtpResultModel();
         }
     }
 }

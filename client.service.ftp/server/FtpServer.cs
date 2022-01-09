@@ -3,8 +3,9 @@ using client.plugins.serverPlugins.clients;
 using client.service.ftp.plugin;
 using client.service.ftp.protocol;
 using common;
-using common.extends;
+using MessagePack;
 using Microsoft.Extensions.DependencyInjection;
+using ProtoBuf;
 using server.model;
 using server.plugin;
 using server.plugins.register.caching;
@@ -13,8 +14,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Sockets;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace client.service.ftp.server
 {
@@ -22,7 +23,7 @@ namespace client.service.ftp.server
     {
         public Dictionary<FtpCommand, IFtpServerPlugin> Plugins { get; } = new Dictionary<FtpCommand, IFtpServerPlugin>();
 
-        protected override string SocketPath => "ftpclient/excute";
+        protected override string SocketPath => "ftpclient/Execute";
         protected override string RootPath { get { return config.ServerRoot; } }
 
         private readonly ServiceProvider serviceProvider;
@@ -32,7 +33,7 @@ namespace client.service.ftp.server
         {
             this.serviceProvider = serviceProvider;
 
-            clientInfoCaching.OnTcpOffline.Sub((client) =>
+            clientInfoCaching.OnOffline.Sub((client) =>
             {
                 currentPaths.TryRemove(client.Id, out _);
             });
@@ -40,10 +41,10 @@ namespace client.service.ftp.server
 
         public void LoadPlugins(Assembly[] assemblys)
         {
-            var types = assemblys
+            IEnumerable<Type> types = assemblys
                .SelectMany(c => c.GetTypes())
                .Where(c => c.GetInterfaces().Contains(typeof(IFtpServerPlugin)));
-            foreach (var item in types)
+            foreach (Type item in types)
             {
                 IFtpServerPlugin obj = (IFtpServerPlugin)serviceProvider.GetService(item);
                 if (!Plugins.ContainsKey(obj.Cmd))
@@ -53,9 +54,9 @@ namespace client.service.ftp.server
             }
         }
 
-        public FileInfo[] GetFiles(FtpListCommand cmd)
+        public FileInfo[] GetFiles(FtpListCommand cmd, FtpPluginParamWrap wrap)
         {
-            DirectoryInfo dirInfo = JoinPath(cmd);
+            DirectoryInfo dirInfo = JoinPath(cmd, wrap.Client.Id);
             return dirInfo.GetDirectories()
                 .Where(c => (c.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
                 .Select(c => new FileInfo
@@ -78,27 +79,27 @@ namespace client.service.ftp.server
                 Type = FileType.File,
             })).ToArray();
         }
-        public List<string> Create(FtpCreateCommand cmd)
+        public List<string> Create(FtpCreateCommand cmd, FtpPluginParamWrap wrap)
         {
-            return Create(GetCurrentPath(cmd.SessionId), cmd.Path);
+            return Create(GetCurrentPath(wrap.Client.Id), cmd.Path);
         }
-        public List<string> Delete(FtpDelCommand cmd)
+        public List<string> Delete(FtpDelCommand cmd, FtpPluginParamWrap wrap)
         {
-            return Delete(GetCurrentPath(cmd.SessionId), cmd.Path);
+            return Delete(GetCurrentPath(wrap.Client.Id), cmd.Path);
         }
-        public void OnFile(FtpFileCommand cmd, FtpPluginParamWrap wrap)
+        public async Task OnFile(FtpFileCommand cmd, FtpPluginParamWrap wrap)
         {
-            OnFile(GetCurrentPath(cmd.SessionId), cmd, wrap.Client);
+            await OnFile(GetCurrentPath(wrap.Client.Id), cmd, wrap);
         }
         public IEnumerable<string> Upload(FtpDownloadCommand cmd, FtpPluginParamWrap wrap)
         {
-            string[] paths = cmd.Path.Split(',');
-            string currentPath = GetCurrentPath(cmd.SessionId);
+            string[] paths = cmd.Path.Split(Helper.SeparatorChar);
+            string currentPath = GetCurrentPath(wrap.Client.Id);
             IEnumerable<string> accessPaths = paths.Where(c => Path.Combine(currentPath, c).StartsWith(config.ServerRoot));
             IEnumerable<string> notAccessPaths = paths.Except(accessPaths);
             if (accessPaths.Any())
             {
-                Upload(currentPath, string.Join(',', accessPaths), wrap.Client);
+                Upload(currentPath, string.Join(Helper.SeparatorChar, accessPaths), wrap.Client).Wait();
             }
             if (notAccessPaths.Any())
             {
@@ -108,24 +109,24 @@ namespace client.service.ftp.server
             return Array.Empty<string>();
         }
 
-        private ConcurrentDictionary<long, string> currentPaths = new ConcurrentDictionary<long, string>();
-        private string GetCurrentPath(long sessionId)
+        private ConcurrentDictionary<ulong, string> currentPaths = new ConcurrentDictionary<ulong, string>();
+        private string GetCurrentPath(ulong clientId)
         {
-            currentPaths.TryGetValue(sessionId, out string path);
+            currentPaths.TryGetValue(clientId, out string path);
             if (string.IsNullOrWhiteSpace(path))
             {
                 path = config.ServerRoot;
-                SetCurrentPath(path, sessionId);
+                SetCurrentPath(path, clientId);
             }
             return path;
         }
-        private void SetCurrentPath(string path, long sessionId)
+        private void SetCurrentPath(string path, ulong clientId)
         {
-            currentPaths.AddOrUpdate(sessionId, path, (a, b) => path);
+            currentPaths.AddOrUpdate(clientId, path, (a, b) => path);
         }
-        private DirectoryInfo JoinPath(FtpListCommand cmd)
+        private DirectoryInfo JoinPath(FtpListCommand cmd, ulong clientId)
         {
-            string currentPath = GetCurrentPath(cmd.SessionId);
+            string currentPath = GetCurrentPath(clientId);
 
             DirectoryInfo dirInfo = new DirectoryInfo(currentPath);
             if (!string.IsNullOrWhiteSpace(cmd.Path))
@@ -137,7 +138,7 @@ namespace client.service.ftp.server
             {
                 dirInfo = new DirectoryInfo(RootPath);
             }
-            SetCurrentPath(dirInfo.FullName, cmd.SessionId);
+            SetCurrentPath(dirInfo.FullName, clientId);
 
             return dirInfo;
         }
@@ -156,46 +157,45 @@ namespace client.service.ftp.server
             this.clientInfoCaching = clientInfoCaching;
         }
 
-        public object Excute(PluginParamWrap data)
+        public async Task<byte[]> Execute(PluginParamWrap data)
         {
             if (!config.Enable)
             {
-                data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, "服务未启用");
+                return new FtpResultModel
+                {
+                    Code = FtpResultModel.FtpResultCodes.DISABLE
+                }.ToBytes();
             }
             else
             {
                 FtpCommandBase cmd = ftpServer.ReadAttribute(data.Wrap.Memory);
                 FtpPluginParamWrap wrap = new FtpPluginParamWrap
                 {
-                    Code = data.Code,
                     Packet = data.Packet,
-                    ServerType = data.ServerType,
-                    SourcePoint = data.SourcePoint,
-                    TcpSocket = data.TcpSocket,
+                    Connection = data.Connection,
                     Wrap = data.Wrap,
                     Data = cmd.Data
                 };
-                wrap.SetErrorMessage(data.ErrorMessage);
-                if (clientInfoCaching.Get(cmd.SessionId, out ClientInfo client))
+                if (clientInfoCaching.Get(data.Connection.ConnectId, out ClientInfo client))
                 {
                     wrap.Client = client;
-                }
-                if (wrap.Client == null)
-                {
-                    data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, $"未找到来源客户端信息");
-                }
-                else
-                {
                     if (ftpServer.Plugins.ContainsKey(cmd.Cmd))
                     {
                         try
                         {
-                            return ftpServer.Plugins[cmd.Cmd].Excute(wrap);
+                            FtpResultModel res = await ftpServer.Plugins[cmd.Cmd].Execute(wrap);
+                            if (res != null)
+                            {
+                                return res.ToBytes();
+                            }
                         }
                         catch (Exception ex)
                         {
-                            Logger.Instance.Error(ex + "");
-                            data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, ex.Message);
+                            Logger.Instance.Error(ex);
+                            return new FtpResultModel
+                            {
+                                Code = FtpResultModel.FtpResultCodes.UNKNOW
+                            }.ToBytes();
                         }
                     }
                 }
@@ -204,4 +204,6 @@ namespace client.service.ftp.server
             return null;
         }
     }
+
+
 }

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: xr
- * @LastEditTime: 2021-12-21 22:00:05
+ * @LastEditTime: 2022-01-09 15:31:53
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -46,26 +46,29 @@
             <router-link :to="{name:'About'}">说明文档</router-link>
         </div>
         <div class="meta">
-            <a href="javascript:;" :class="{active:websocketState.connected}">{{connectStr}}<i class="el-icon-refresh"></i></a>
+            <a href="javascript:;" @click="editWsUrl" title="点击修改" :class="{active:websocketState.connected}">{{wsUrl}} {{connectStr}}<i class="el-icon-refresh"></i></a>
             <Theme></Theme>
         </div>
     </div>
 </template>
 <script>
-import { computed, toRefs } from '@vue/reactivity';
+import { computed, ref, toRefs } from '@vue/reactivity';
+import { onMounted } from '@vue/runtime-core'
 import { injectRegister } from '../states/register'
 import { injectWebsocket } from '../states/websocket'
 import { injectTcpForward } from '../states/tcpForward'
 import { injectFileserver } from '../states/fileserver'
+import { initWebsocket } from '../apis/request'
 import Theme from './Theme.vue'
 import AuthItem from './auth/AuthItem.vue';
 import { useRoute } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
 export default {
     components: { Theme, AuthItem },
     setup () {
         const registerState = injectRegister();
         const websocketState = injectWebsocket();
-        const connectStr = computed(() => ['未连接', '已连接'][Number(websocketState.connected)]);
+        const connectStr = computed(() => `${['未连接', '已连接'][Number(websocketState.connected)]}`);
 
         const tcpForwardState = injectTcpForward();
         const tcpForwardConnected = computed(() => tcpForwardState.connected);
@@ -85,18 +88,32 @@ export default {
             { name: 'PluginTcpForward', text: 'TCP转发', plugin: 'TcpForwardPlugin' },
             { name: 'PluginAlbum', text: '图片相册', plugin: 'AlbumSettingPlugin' },
             { name: 'PluginFtp', text: '文件服务', plugin: 'FtpPlugin' },
-            { name: 'PluginFtp', text: '远程命令', plugin: 'CmdsPlugin' },
+            { name: 'PluginCmd', text: '远程命令', plugin: 'CmdsPlugin' },
             { name: 'PluginUPNP', text: 'UPNP映射', plugin: 'UpnpPlugin' },
             { name: 'PluginDdns', text: '域名解析', plugin: 'DdnsPlugin' },
             { name: 'PluginWakeUp', text: '幻数据包', plugin: 'WakeUpPlugin' },
             { name: 'PluginLogger', text: '日志信息', plugin: 'LoggerPlugin' }
         ];
 
+        const editWsUrl = () => {
+            ElMessageBox.prompt('修改连接地址', '修改连接地址', {
+                inputValue: wsUrl.value
+            }).then(({ value }) => {
+                localStorage.setItem('wsurl', value);
+                wsUrl.value = value;
+                initWebsocket(wsUrl.value);
+            })
+        }
+        const wsUrl = ref(localStorage.getItem('wsurl') || 'ws://127.0.0.1:59411');
+        onMounted(() => {
+            initWebsocket(wsUrl.value);
+        });
 
         return {
             ...toRefs(registerState),
             websocketState, connectStr, tcpForwardConnected, fileServerStarted,
-            routeName, menus
+            routeName, menus,
+            wsUrl, editWsUrl
         }
     }
 }

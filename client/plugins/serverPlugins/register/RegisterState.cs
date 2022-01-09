@@ -2,6 +2,7 @@
 using common.extends;
 using MessagePack;
 using ProtoBuf;
+using server;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,11 +21,11 @@ namespace client.plugins.serverPlugins.register
         /// <summary>
         /// TCP连接对象
         /// </summary>
-        public Socket TcpSocket { get; set; }
+        public IConnection TcpConnection { get; set; }
         /// <summary>
-        /// UDP地址
+        /// UDP连接对象
         /// </summary>
-        public IPEndPoint UdpAddress { get; set; }
+        public IConnection UdpConnection { get; set; }
         /// <summary>
         /// 远程信息
         /// </summary>
@@ -34,32 +35,68 @@ namespace client.plugins.serverPlugins.register
         /// </summary>
         public LocalInfo LocalInfo { get; set; } = new LocalInfo();
 
-        public long UdpAddressId { get; set; } = 0;
-        public long TcpAddressId { get; set; } = 0;
+        public SimplePushSubHandler<bool> OnRegisterStateChange { get; } = new SimplePushSubHandler<bool>();
+
+        private ulong connectid = 0;
+        public ulong ConnectId
+        {
+            get
+            {
+                return connectid;
+            }
+            set
+            {
+                connectid = value;
+                RemoteInfo.ConnectId = connectid;
+
+                if (connectid == 0)
+                {
+                    if (TcpConnection != null)
+                    {
+                        TcpConnection.Disponse();
+                    }
+                    TcpConnection = null;
+                    if (UdpConnection != null)
+                    {
+                        UdpConnection.Disponse();
+                    }
+                    UdpConnection = null;
+                }
+                else
+                {
+                    UdpConnection.ConnectId = connectid;
+                    TcpConnection.ConnectId = connectid;
+                }
+            }
+        }
 
         public void Offline()
         {
             LocalInfo.IsConnecting = false;
             LocalInfo.Connected = false;
             LocalInfo.TcpConnected = false;
+
             RemoteInfo.Ip = string.Empty;
-            RemoteInfo.ConnectId = 0;
             RemoteInfo.TcpPort = 0;
+
+            ConnectId = 0;
+
+            OnRegisterStateChange.Push(false);
+
         }
-        public void Online(long id,string ip,int tcpPort)
+        public void Online(ulong id, string ip, int tcpPort)
         {
             LocalInfo.IsConnecting = false;
-            RemoteInfo.Ip = ip;
-            RemoteInfo.ConnectId = id;
             LocalInfo.Connected = true;
             LocalInfo.TcpConnected = true;
+
+            RemoteInfo.Ip = ip;
             RemoteInfo.TcpPort = tcpPort;
 
-            UdpAddressId = UdpAddress.ToInt64();
-            TcpAddressId = (TcpSocket.RemoteEndPoint as IPEndPoint).ToInt64();
+            ConnectId = id;
+
+            OnRegisterStateChange.Push(true);
         }
-
-
     }
 
     /// <summary>
@@ -82,7 +119,7 @@ namespace client.plugins.serverPlugins.register
         /// 客户端连接ID
         /// </summary>
         [ProtoMember(3), Key(3)]
-        public long ConnectId { get; set; } = 0;
+        public ulong ConnectId { get; set; } = 0;
     }
 
     /// <summary>

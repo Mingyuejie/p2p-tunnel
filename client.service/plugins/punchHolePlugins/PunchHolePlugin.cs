@@ -1,5 +1,4 @@
 ﻿using client.service.plugins.punchHolePlugins.plugins.tcp;
-using client.service.plugins.punchHolePlugins.plugins.tcp.nutssa;
 using client.service.plugins.punchHolePlugins.plugins.tcp.nutssb;
 using client.service.plugins.punchHolePlugins.plugins.udp;
 using common.extends;
@@ -8,14 +7,12 @@ using ProtoBuf;
 using server.model;
 using server.plugin;
 using System;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 
 namespace client.service.plugins.punchHolePlugins
 {
-    /// <summary>
-    /// p2p消息总线
-    /// </summary>
     public class PunchHolePlugin : IPlugin
     {
         private readonly PunchHoleEventHandles punchHoldEventHandles;
@@ -25,26 +22,15 @@ namespace client.service.plugins.punchHolePlugins
             this.punchHoldEventHandles = punchHoldEventHandles;
         }
 
-        public void Excute(PluginParamWrap data)
+        public void Execute(PluginParamWrap data)
         {
             PunchHoleModel model = data.Wrap.Memory.DeBytes<PunchHoleModel>();
 
-            if (data.ServerType == ServerType.TCP)
+            punchHoldEventHandles.OnPunchHole(new OnPunchHoleArg
             {
-                punchHoldEventHandles.OnPunchHoleTcp(new OnPunchHoleTcpArg
-                {
-                    Data = model,
-                    Packet = data
-                });
-            }
-            else
-            {
-                punchHoldEventHandles.OnPunchHole(new OnPunchHoleTcpArg
-                {
-                    Data = model,
-                    Packet = data
-                });
-            }
+                Data = model,
+                Packet = data
+            });
         }
     }
 
@@ -59,43 +45,37 @@ namespace client.service.plugins.punchHolePlugins
 
         public PunchHoleTypes Type => PunchHoleTypes.REVERSE;
 
-        public void Excute(OnPunchHoleTcpArg arg)
+        public void Execute(OnPunchHoleArg arg)
         {
             punchHoldEventHandles.OnReverse.Push(arg);
         }
     }
 
-
-    /// <summary>
-    /// 打洞插件
-    /// </summary>
     public interface IPunchHolePlugin
     {
         PunchHoleTypes Type { get; }
-
-        void Excute(OnPunchHoleTcpArg arg);
+        void Execute(OnPunchHoleArg arg);
     }
 
-    /// <summary>
-    /// 打洞类型
-    /// </summary>
     [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
     public enum PunchHoleTypes
     {
-        UDP, // UDP打洞
-        TCP_NUTSSA, //IP欺骗
-        TCP_NUTSSB, //端口复用打洞
-        REVERSE, //反向链接
+        [Description("UDP打洞")]
+        UDP,
+        [Description("IP欺骗打洞")]
+        TCP_NUTSSA,
+        [Description("端口复用打洞")]
+        TCP_NUTSSB,
+        [Description("反向链接")]
+        REVERSE,
     }
-    /// <summary>
-    /// 打洞消息
-    /// </summary>
+
     public interface IPunchHoleMessageBase
     {
         PunchHoleTypes PunchType { get; }
         public PunchForwardTypes PunchForwardType { get; }
-        public short PunchStep { get; }
+        public byte PunchStep { get; }
     }
 
     public static class ServiceCollectionExtends
@@ -106,9 +86,6 @@ namespace client.service.plugins.punchHolePlugins
 
             obj.AddSingleton<PunchHoleEventHandles>();
             obj.AddSingleton<IPunchHoleUdp, PunchHoleUdpEventHandles>();
-            //IP欺骗 
-            //obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssAEventHandles>();
-            //端口复用
             obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssBEventHandles>();
             return obj;
         }
@@ -116,7 +93,7 @@ namespace client.service.plugins.punchHolePlugins
         {
             var types = assemblys.SelectMany(c => c.GetTypes())
                  .Where(c => c.GetInterfaces().Contains(typeof(IPunchHolePlugin)));
-            foreach (var item in types)
+            foreach (Type item in types)
             {
                 obj.AddSingleton(item);
             }

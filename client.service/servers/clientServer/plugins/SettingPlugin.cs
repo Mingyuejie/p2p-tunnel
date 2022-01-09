@@ -16,45 +16,45 @@ namespace client.service.servers.clientServer.plugins
             this.clientServer = clientServer;
         }
 
-        public IEnumerable<SettingPluginInfo> List(ClientServicePluginExcuteWrap arg)
+        public IEnumerable<SettingPluginInfo> List(ClientServicePluginExecuteWrap arg)
         {
             return clientServer.GetSettingPlugins();
         }
 
-        public IEnumerable<string> Plugins(ClientServicePluginExcuteWrap arg)
+        public IEnumerable<string> Plugins(ClientServicePluginExecuteWrap arg)
         {
             return clientServer.GetPlugins();
         }
 
-        public bool Enable(ClientServicePluginExcuteWrap arg)
+        public async Task<bool> Enable(ClientServicePluginExecuteWrap arg)
         {
             EnableParam model = arg.Content.DeJson<EnableParam>();
             var plugin = clientServer.GetSettingPlugin(model.ClassName);
             if (plugin != null)
             {
-                return plugin.SwitchEnable(model.Enable);
+                return await plugin.SwitchEnable(model.Enable);
             }
             return false;
         }
 
-        public object Load(ClientServicePluginExcuteWrap arg)
+        public async Task<object> Load(ClientServicePluginExecuteWrap arg)
         {
             SaveParam model = arg.Content.DeJson<SaveParam>();
             var plugin = clientServer.GetSettingPlugin(model.ClassName);
             if (plugin != null)
             {
-                return plugin.LoadSetting();
+                return await plugin.LoadSetting();
             }
             return new { };
         }
 
-        public void Save(ClientServicePluginExcuteWrap arg)
+        public async Task Save(ClientServicePluginExecuteWrap arg)
         {
             SaveParam model = arg.Content.DeJson<SaveParam>();
             var plugin = clientServer.GetSettingPlugin(model.ClassName);
             if (plugin != null)
             {
-                string msg = plugin.SaveSetting(model.Content);
+                string msg = await plugin.SaveSetting(model.Content);
                 if (!string.IsNullOrWhiteSpace(msg))
                 {
                     arg.SetCode(-1, msg);

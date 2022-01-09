@@ -65,7 +65,7 @@ namespace client.service.upnp
             this.upnpHelper = upnpHelper;
         }
 
-        public string[] Devices(ClientServicePluginExcuteWrap arg)
+        public string[] Devices(ClientServicePluginExecuteWrap arg)
         {
             try
             {
@@ -78,7 +78,7 @@ namespace client.service.upnp
             }
         }
 
-        public MappingModel[] Mappings(ClientServicePluginExcuteWrap arg)
+        public MappingModel[] Mappings(ClientServicePluginExecuteWrap arg)
         {
             RequestModel model = arg.Content.DeJson<RequestModel>();
             try
@@ -101,7 +101,7 @@ namespace client.service.upnp
             }
         }
 
-        public void Add(ClientServicePluginExcuteWrap arg)
+        public void Add(ClientServicePluginExecuteWrap arg)
         {
             MappingModel model = arg.Content.DeJson<MappingModel>();
             try
@@ -115,7 +115,7 @@ namespace client.service.upnp
             }
         }
 
-        public void Del(ClientServicePluginExcuteWrap arg)
+        public void Del(ClientServicePluginExecuteWrap arg)
         {
             RequestModel model = arg.Content.DeJson<RequestModel>();
             try

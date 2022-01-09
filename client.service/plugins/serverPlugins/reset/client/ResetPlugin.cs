@@ -1,8 +1,7 @@
 ﻿using client.plugins.serverPlugins.clients;
 using client.servers.clientServer;
-using client.service.plugins.serverPlugins.clients;
-using client.service.servers.clientServer;
 using common.extends;
+using server.plugins.register.caching;
 using System.Threading.Tasks;
 
 namespace client.service.plugins.serverPlugins.reset.client
@@ -10,26 +9,23 @@ namespace client.service.plugins.serverPlugins.reset.client
     public class ResetPlugin : IClientServicePlugin
     {
         private readonly ResetMessageHelper resetEventHandles;
-        private readonly ClientsHelper clientsHelper;
-        public ResetPlugin(ClientsHelper clientsHelper, ResetMessageHelper resetEventHandles)
+        private readonly IClientInfoCaching clientInfoCaching;
+
+        public ResetPlugin(IClientInfoCaching clientInfoCaching, ResetMessageHelper resetEventHandles)
         {
-            this.clientsHelper = clientsHelper;
+            this.clientInfoCaching = clientInfoCaching;
             this.resetEventHandles = resetEventHandles;
         }
 
-        public async Task<bool> Reset(ClientServicePluginExcuteWrap arg)
+        public async Task<bool> Reset(ClientServicePluginExecuteWrap arg)
         {
             ResetModel model = arg.Content.DeJson<ResetModel>();
 
             if (model.ID > 0)
             {
-                if (clientsHelper.Get(model.ID, out ClientInfo client))
+                if (clientInfoCaching.Get(model.ID, out ClientInfo client))
                 {
-                    if (client != null)
-                    {
-                        await resetEventHandles.SendResetMessage(client.Socket, model.ID);
-                        return true;
-                    }
+                    return (await resetEventHandles.SendResetMessage(client.TcpConnection, model.ID)).Code == server.model.MessageResponeCode.OK;
                 }
             }
             return false;
@@ -38,6 +34,6 @@ namespace client.service.plugins.serverPlugins.reset.client
 
     public class ResetModel
     {
-        public long ID { get; set; } = 0;
+        public ulong ID { get; set; } = 0;
     }
 }

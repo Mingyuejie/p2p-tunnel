@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace client.service.ftp.server.plugin
 {
@@ -21,23 +22,25 @@ namespace client.service.ftp.server.plugin
         }
         public FtpCommand Cmd => FtpCommand.DELETE;
 
-        public object Excute(FtpPluginParamWrap arg)
+        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
         {
+            await Task.Yield();
+
             FtpDelCommand cmd = arg.Data.DeBytes<FtpDelCommand>();
 
             if (string.IsNullOrWhiteSpace(cmd.Path))
             {
-                arg.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, "目录不可为空");
+                return new FtpResultModel { Code = FtpResultModel.FtpResultCodes.PATH_REQUIRED };
             }
             else
             {
-                List<string> errs = ftpServer.Delete(cmd);
+                List<string> errs = ftpServer.Delete(cmd, arg);
                 if (errs.Any())
                 {
-                    arg.SetCode(ServerMessageResponeCodes.ACCESS, string.Join(",", errs));
+                    return new FtpResultModel { Code = FtpResultModel.FtpResultCodes.UNKNOW,Data = string.Join(",", errs) };
                 }
             }
-            return true;
+            return new FtpResultModel();
         }
     }
 }

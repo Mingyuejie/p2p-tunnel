@@ -9,6 +9,7 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using static server.model.RegisterResultModel;
 
 namespace client.service.plugins.serverPlugins.register
 {
@@ -16,24 +17,12 @@ namespace client.service.plugins.serverPlugins.register
     {
         private readonly IServerRequest serverRequest;
         private readonly RegisterState registerState;
-        private readonly IUdpServer udpServer;
-        private readonly ITcpServer tcpServer;
 
-        public RegisterMessageHelper(IServerRequest serverRequest, RegisterState registerState, IUdpServer udpServer, ITcpServer tcpServer)
+        public RegisterMessageHelper(IServerRequest serverRequest, RegisterState registerState)
         {
             this.serverRequest = serverRequest;
             this.registerState = registerState;
-            this.udpServer = udpServer;
-            this.tcpServer = tcpServer;
-
-            AppDomain.CurrentDomain.ProcessExit += (s, e) => _ = SendExitMessage();
-            Console.CancelKeyPress += (s, e) => _ = SendExitMessage();
         }
-
-        /// <summary>
-        /// 注册Tcp状态发生变化
-        /// </summary>
-        public SimplePushSubHandler<RegisterEventArg> OnRegisterStateChange { get; } = new SimplePushSubHandler<RegisterEventArg>();
 
         /// <summary>
         /// 发送退出消息
@@ -41,37 +30,24 @@ namespace client.service.plugins.serverPlugins.register
         /// <param name="arg"></param>
         public async Task SendExitMessage()
         {
-            await serverRequest.SendReplyTcp(new SendTcpEventArg<ExitModel>
+            MessageRequestResponeWrap res = await serverRequest.SendReply(new SendEventArg<ExitModel>
             {
-                Socket = registerState.TcpSocket,
-                Data = new ExitModel
-                {
-                    Id = registerState.RemoteInfo.ConnectId,
-                },
-                Path = "exit/excute"
+                Connection = registerState.TcpConnection,
+                Data = new ExitModel { },
+                Path = "exit/Execute"
             });
-
-            udpServer.Stop();
-            tcpServer.Stop();
-
-            OnRegisterStateChange.Push(new RegisterEventArg
-            {
-                State = false
-            });
-
-            Helper.FlushMemory();
         }
 
         /// <summary>
         /// 发送注册消息
         /// </summary>
         /// <param name="arg"></param>
-        public async Task<RegisterResultModel> SendRegisterMessage(RegisterParams param)
+        public async Task<RegisterResult> SendRegisterMessage(RegisterParams param)
         {
-            ServerMessageResponeWrap result = await serverRequest.SendReply(new SendEventArg<RegisterModel>
+            MessageRequestResponeWrap result = await serverRequest.SendReply(new SendEventArg<RegisterModel>
             {
-                Address = registerState.UdpAddress,
-                Path = "register/excute",
+                Connection = registerState.UdpConnection,
+                Path = "register/Execute",
                 Data = new RegisterModel
                 {
                     Name = param.ClientName,
@@ -81,19 +57,24 @@ namespace client.service.plugins.serverPlugins.register
                     LocalTcpPort = param.LocalTcpPort,
                     LocalUdpPort = param.LocalUdpPort,
 
-                }
+                },
+                Timeout = param.Timeout,
             });
-            if (result.Code != ServerMessageResponeCodes.OK)
+            if (result.Code != MessageResponeCode.OK)
             {
-                return new RegisterResultModel { Code = -1, Msg = result.ErrorMsg };
+                return new RegisterResult { NetState = result };
             }
 
             RegisterResultModel res = result.Data.DeBytes<RegisterResultModel>();
-
-            ServerMessageResponeWrap tcpResult = await serverRequest.SendReplyTcp(new SendTcpEventArg<RegisterModel>
+            if (res.Code != RegisterResultCodes.OK)
             {
-                Socket = registerState.TcpSocket,
-                Path = "register/excute",
+                return new RegisterResult { NetState = result, Data = res };
+            }
+
+            MessageRequestResponeWrap tcpResult = await serverRequest.SendReply(new SendEventArg<RegisterModel>
+            {
+                Connection = registerState.TcpConnection,
+                Path = "register/Execute",
                 Data = new RegisterModel
                 {
                     Id = res.Id,
@@ -102,35 +83,33 @@ namespace client.service.plugins.serverPlugins.register
                     Mac = param.Mac,
                     LocalTcpPort = param.LocalTcpPort,
                     LocalUdpPort = param.LocalUdpPort
-                }
+                },
+                Timeout = param.Timeout,
             });
-            if (tcpResult.Code != ServerMessageResponeCodes.OK)
-            {
-                return new RegisterResultModel { Code = -1, Msg = tcpResult.ErrorMsg };
-            }
-            OnRegisterStateChange.Push(new RegisterEventArg
-            {
-                State = true,
-                Id = res.Id,
-                ClientName = param.ClientName,
-                Ip = res.Ip,
-            });
-            return tcpResult.Data.DeBytes<RegisterResultModel>();
 
+            if (tcpResult.Code != MessageResponeCode.OK)
+            {
+                return new RegisterResult { NetState = tcpResult };
+            }
+
+            RegisterResultModel tcpRes = tcpResult.Data.DeBytes<RegisterResultModel>();
+            return new RegisterResult { NetState = tcpResult, Data = tcpRes };
         }
 
+        /// <summary>
+        /// 发送通知消息，通知服务器，告诉所有客户端，有新客户端上线了，发送一下客户端列表
+        /// </summary>
+        /// <returns></returns>
+        public async Task<bool> SendNotifyMessage()
+        {
+            return await serverRequest.SendOnly(new SendEventArg<RegisterNotifyModel>
+            {
+                Connection = registerState.TcpConnection,
+                Data = new RegisterNotifyModel { },
+                Path = "register/notify"
+            });
+        }
     }
-
-    #region 注册model
-
-    public class RegisterEventArg : EventArgs
-    {
-        public string Ip { get; set; }
-        public long Id { get; set; }
-        public string ClientName { get; set; }
-        public bool State { get; set; }
-    }
-    #endregion
 
     public class RegisterParams
     {
@@ -142,5 +121,11 @@ namespace client.service.plugins.serverPlugins.register
         public int LocalUdpPort { get; set; } = 0;
         public int LocalTcpPort { get; set; } = 0;
 
+    }
+
+    public class RegisterResult
+    {
+        public MessageRequestResponeWrap NetState { get; set; }
+        public RegisterResultModel Data { get; set; }
     }
 }

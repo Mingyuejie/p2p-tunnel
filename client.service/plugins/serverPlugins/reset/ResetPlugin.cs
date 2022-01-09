@@ -1,6 +1,7 @@
 ﻿using client.service.plugins.serverPlugins.register;
 using server.model;
 using server.plugin;
+using System.Threading.Tasks;
 
 namespace client.service.plugins.serverPlugins.reset
 {
@@ -12,9 +13,9 @@ namespace client.service.plugins.serverPlugins.reset
             this.registerHelper = registerHelper;
         }
 
-        public void Excute(PluginParamWrap data)
+        public async Task Execute(PluginParamWrap data)
         {
-            registerHelper.Start().Wait();
+            await registerHelper.Register();
         }
     }
 }

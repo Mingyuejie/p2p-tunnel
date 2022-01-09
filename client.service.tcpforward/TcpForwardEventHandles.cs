@@ -1,35 +1,37 @@
 ﻿using client.plugins.serverPlugins;
 using common;
+using server;
 using server.model;
 using System;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace client.service.tcpforward
 {
     public class TcpForwardEventHandles
     {
-        private readonly IServerRequest  serverRequest;
+        private readonly IServerRequest serverRequest;
         public TcpForwardEventHandles(IServerRequest serverRequest)
         {
             this.serverRequest = serverRequest;
         }
 
         #region TCP转发
-        
-        public void SendTcpForward(SendTcpForwardEventArg arg)
+
+        public async Task SendTcpForward(SendTcpForwardEventArg arg)
         {
-            serverRequest.SendOnlyTcp(new SendTcpEventArg<TcpForwardModel>
+            await serverRequest.SendOnly(new SendEventArg<TcpForwardModel>
             {
-                Path = "TcpForward/excute",
-                Socket = arg.Socket,
+                Path = "TcpForward/Execute",
+                Connection = arg.Connection,
                 Data = arg.Data
             });
         }
 
         public SimplePushSubHandler<OnTcpForwardEventArg> OnTcpForwardHandler { get; } = new SimplePushSubHandler<OnTcpForwardEventArg>();
-        public void OnTcpForward(OnTcpForwardEventArg arg)
+        public async Task OnTcpForward(OnTcpForwardEventArg arg)
         {
-            OnTcpForwardHandler.Push(arg);
+            await OnTcpForwardHandler.PushAsync(arg);
         }
 
         #endregion
@@ -39,7 +41,7 @@ namespace client.service.tcpforward
 
     public class SendTcpForwardEventArg : EventArgs
     {
-        public Socket Socket { get; set; }
+        public IConnection Connection { get; set; }
         public TcpForwardModel Data { get; set; }
     }
 

@@ -1,20 +1,18 @@
 /*
  * @Author: snltty
  * @Date: 2021-08-19 23:04:50
- * @LastEditors: snltty
- * @LastEditTime: 2021-11-09 21:06:10
+ * @LastEditors: xr
+ * @LastEditTime: 2022-01-08 17:30:28
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\apis\request.js
  */
 import { ElMessage } from 'element-plus'
 
-let requestId = 0;
-let ws = null;
+let requestId = 0, ws = null, connected = false, wsUrl = '';
 //请求缓存，等待回调
 const requests = {};
 const queues = [];
-let connected = false;
 
 const sendQueueMsg = () => {
     if (queues.length > 0 && connected) {
@@ -59,11 +57,11 @@ export const subWebsocketState = (callback) => {
 //消息处理
 const onWebsocketOpen = () => {
     connected = true;
-    pushListener.push(websocketStateChangeKey, true);
+    pushListener.push(websocketStateChangeKey, connected);
 }
-const onWebsocketClose = () => {
+const onWebsocketClose = (e) => {
     connected = false;
-    pushListener.push(websocketStateChangeKey, false);
+    pushListener.push(websocketStateChangeKey, connected);
     initWebsocket();
 }
 
@@ -91,13 +89,16 @@ const onWebsocketMsg = (msg) => {
         }
     }
 }
-const initWebsocket = () => {
-    ws = new WebSocket('ws://127.0.0.1:59410');
+export const initWebsocket = (url = wsUrl) => {
+    if (ws != null) {
+        ws.close();
+    }
+    wsUrl = url;
+    ws = new WebSocket(wsUrl);
     ws.onopen = onWebsocketOpen;
     ws.onclose = onWebsocketClose
     ws.onmessage = onWebsocketMsg
 }
-initWebsocket();
 
 //发送消息
 export const sendWebsocketMsg = (path, msg = {}) => {

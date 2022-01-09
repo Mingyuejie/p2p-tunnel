@@ -6,6 +6,7 @@ using client.service.servers.clientServer;
 using common.extends;
 using server.plugins.register.caching;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace client.service.plugins.serverPlugins.clients.client
 {
@@ -27,33 +28,33 @@ namespace client.service.plugins.serverPlugins.clients.client
         }
 
 
-        public IEnumerable<ClientInfo> List(ClientServicePluginExcuteWrap arg)
+        public IEnumerable<ClientInfo> List(ClientServicePluginExecuteWrap arg)
         {
             return clientInfoCaching.All();
         }
 
-        public void Connect(ClientServicePluginExcuteWrap arg)
+        public void Connect(ClientServicePluginExecuteWrap arg)
         {
             ConnectModel model = arg.Content.DeJson<ConnectModel>();
             clientsHelper.ConnectClient(model.ID);
         }
 
-        public void Stop(ClientServicePluginExcuteWrap arg)
+        public void Stop(ClientServicePluginExecuteWrap arg)
         {
             ConnectModel model = arg.Content.DeJson<ConnectModel>();
             punchHoleTcp.SendStep2Stop(model.ID);
         }
 
-        public void Offline(ClientServicePluginExcuteWrap arg)
+        public void Offline(ClientServicePluginExecuteWrap arg)
         {
             ConnectModel model = arg.Content.DeJson<ConnectModel>();
-            clientsHelper.OfflineClient(model.ID);
+            clientInfoCaching.Offline(model.ID);
         }
 
-        public void ConnectReverse(ClientServicePluginExcuteWrap arg)
+        public async Task ConnectReverse(ClientServicePluginExecuteWrap arg)
         {
             ConnectModel model = arg.Content.DeJson<ConnectModel>();
-            punchHoldEventHandles.SendReverse(model.ID);
+            await punchHoldEventHandles.SendReverse(model.ID);
         }
     }
 
@@ -74,6 +75,6 @@ namespace client.service.plugins.serverPlugins.clients.client
 
     public class ConnectModel
     {
-        public long ID { get; set; } = 0;
+        public ulong ID { get; set; } = 0;
     }
 }

@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace client.service.ftp.client.plugin
 {
@@ -21,13 +22,15 @@ namespace client.service.ftp.client.plugin
             this.ftpClient = ftpClient;
         }
 
-        public object Excute(FtpPluginParamWrap arg)
+        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
         {
+            await Task.Yield();
+
             FtpCanceledCommand cmd = arg.Data.DeBytes<FtpCanceledCommand>();
 
-            ftpClient.OnFileUploadCanceled(cmd);
+            ftpClient.OnFileUploadCanceled(cmd, arg);
 
-            return true;
+            return new FtpResultModel();
         }
     }
 }

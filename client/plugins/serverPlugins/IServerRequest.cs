@@ -9,35 +9,18 @@ namespace client.plugins.serverPlugins
     public interface IServerRequest
     {
 
-        Task<ServerMessageResponeWrap> SendReply<T>(SendEventArg<T> arg);
-        Task<ServerMessageResponeWrap> SendReply(SendEventArg<byte[]> arg);
-        bool SendOnly<T>(SendEventArg<T> arg);
-        bool SendOnly(SendEventArg<byte[]> arg);
-
-        Task<ServerMessageResponeWrap> SendReplyTcp<T>(SendTcpEventArg<T> arg);
-        Task<ServerMessageResponeWrap> SendReplyTcp(SendTcpEventArg<byte[]> arg);
-        bool SendOnlyTcp<T>(SendTcpEventArg<T> arg);
-        bool SendOnlyTcp(SendTcpEventArg<byte[]> arg);
+        Task<MessageRequestResponeWrap> SendReply<T>(SendEventArg<T> arg);
+        Task<MessageRequestResponeWrap> SendReply(SendEventArg<byte[]> arg);
+        Task<bool> SendOnly<T>(SendEventArg<T> arg);
+        Task<bool> SendOnly(SendEventArg<byte[]> arg);
     }
-
 
 
     public class SendEventArg<T>
     {
-        public IPEndPoint Address { get; set; }
+        public IConnection Connection { get; set; }
         public T Data { get; set; }
         public string Path { get; set; } = string.Empty;
         public int Timeout { get; set; } = 0;
-        public long Id { get; set; } = 0;
-        public long ToId { get; set; } = 0;
-    }
-    public class SendTcpEventArg<T>
-    {
-        public Socket Socket { get; set; }
-        public T Data { get; set; }
-        public string Path { get; set; } = string.Empty;
-        public int Timeout { get; set; } = 0;
-        public long Id { get; set; } = 0;
-        public long ToId { get; set; } = 0;
     }
 }

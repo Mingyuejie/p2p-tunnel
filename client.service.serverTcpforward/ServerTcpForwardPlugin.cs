@@ -5,6 +5,7 @@ using common.extends;
 using Microsoft.Extensions.DependencyInjection;
 using server.model;
 using server.plugin;
+using System.Threading.Tasks;
 
 namespace client.service.serverTcpforward
 {
@@ -19,10 +20,10 @@ namespace client.service.serverTcpforward
             this.serverTcpForwardHelper = serverTcpForwardHelper;
         }
 
-        public void Excute(PluginParamWrap data)
+        public async Task Execute(PluginParamWrap data)
         {
             ServerTcpForwardModel model = data.Wrap.Memory.DeBytes<ServerTcpForwardModel>();
-            serverTcpForwardHelper.Request(model);
+            await serverTcpForwardHelper.Request(model);
         }
     }
 
@@ -31,7 +32,7 @@ namespace client.service.serverTcpforward
     {
         public static ServiceCollection AddServerTcpForwardPlugin(this ServiceCollection obj)
         {
-            ServerTcpForwardRegisterConfig config = ServerTcpForwardRegisterConfig.ReadConfig();
+            ServerTcpForwardRegisterConfig config = ServerTcpForwardRegisterConfig.ReadConfig().Result;
             obj.AddSingleton((e) => config);
             obj.AddSingleton<ServerTcpForwardHelper>();
 
@@ -49,11 +50,8 @@ namespace client.service.serverTcpforward
                 {
                     Helper.SetTimeout(() =>
                     {
-                        serverTcpForwardHelper.UnRegister();
-                        Helper.SetTimeout(() =>
-                        {
-                            serverTcpForwardHelper.Register();
-                        }, 1000);
+                        serverTcpForwardHelper.UnRegister().Wait();
+                        serverTcpForwardHelper.Register().Wait();
                     }, 1000);
                 }
 
@@ -83,37 +81,37 @@ namespace client.service.serverTcpforward
 
         public bool Enable => serverTcpForwardRegisterConfig.Enable;
 
-        public object LoadSetting()
+        public async Task<object> LoadSetting()
         {
-            return serverTcpForwardRegisterConfig;
+            return await Task.FromResult(serverTcpForwardRegisterConfig);
         }
 
-        public string SaveSetting(string jsonStr)
+        public async Task<string> SaveSetting(string jsonStr)
         {
             ServerTcpForwardRegisterConfig _config = jsonStr.DeJson<ServerTcpForwardRegisterConfig>();
 
             serverTcpForwardRegisterConfig.Enable = _config.Enable;
             serverTcpForwardRegisterConfig.Web = _config.Web;
             serverTcpForwardRegisterConfig.Tunnel = _config.Tunnel;
-            serverTcpForwardRegisterConfig.SaveConfig();
+            await serverTcpForwardRegisterConfig.SaveConfig();
 
-            serverTcpForwardHelper.UnRegister();
-            var res = serverTcpForwardHelper.Register();
-            if (res.Code != ServerMessageResponeCodes.OK)
+            serverTcpForwardHelper.UnRegister().Wait();
+            var res = serverTcpForwardHelper.Register().Result;
+            if (res.Code != MessageResponeCode.OK)
             {
-                return res.ErrorMsg;
+                return res.Code.GetDesc((byte)res.Code);
             }
 
             return string.Empty;
         }
 
-        public bool SwitchEnable(bool enable)
+        public async Task<bool> SwitchEnable(bool enable)
         {
             serverTcpForwardRegisterConfig.Enable = enable;
-            serverTcpForwardRegisterConfig.SaveConfig();
+            await serverTcpForwardRegisterConfig.SaveConfig();
 
-            serverTcpForwardHelper.UnRegister();
-            serverTcpForwardHelper.Register();
+            serverTcpForwardHelper.UnRegister().Wait();
+            serverTcpForwardHelper.Register().Wait();
 
             return true;
         }

@@ -98,7 +98,7 @@ namespace common.extends
 
         public static int[] ToIntArray(this string input)
         {
-            return Array.ConvertAll(input.Split(','), c => int.Parse(c));
+            return Array.ConvertAll(input.Split(Helper.SeparatorChar), c => int.Parse(c));
         }
     }
 }

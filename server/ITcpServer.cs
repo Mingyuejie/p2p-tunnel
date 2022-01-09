@@ -14,6 +14,6 @@ namespace server
         public void BindAccept(int port, IPAddress ip);
         public void BindReceive(Socket socket, Action<SocketError> errorCallback = null);
 
-        public bool Send(byte[] data, Socket socket);
+        public IConnection CreateConnection(Socket socket);
     }
 }

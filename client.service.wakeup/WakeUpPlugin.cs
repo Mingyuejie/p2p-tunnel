@@ -20,7 +20,7 @@ namespace client.service.wakeup
         }
 
 
-        public void WakeUp(ClientServicePluginExcuteWrap arg)
+        public void WakeUp(ClientServicePluginExecuteWrap arg)
         {
             WakeUpModel model = arg.Content.DeJson<WakeUpModel>();
 
@@ -31,8 +31,8 @@ namespace client.service.wakeup
                     if (client != null)
                     {
                         model.Mac = client.Mac;
-                        model.Ip = client.Address.Address.ToString();
-                        model.Port = client.Address.Port;
+                        model.Ip = client.UdpConnection.UdpAddress.Address.ToString();
+                        model.Port = client.UdpConnection.UdpAddress.Port;
 
                     }
                 }
@@ -72,7 +72,7 @@ namespace client.service.wakeup
 
     public class WakeUpModel
     {
-        public long ID { get; set; } = 0;
+        public ulong ID { get; set; } = 0;
         public string Ip { get; set; } = string.Empty;
         public string Mac { get; set; } = string.Empty;
         public int Port { get; set; } = 0;

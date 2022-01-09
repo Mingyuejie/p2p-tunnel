@@ -174,9 +174,9 @@ namespace server.achieves.IOCP
                     OnPacket.Push(new ServerDataWrap<TcpPacket[]>
                     {
                         Data = bytesArray,
-                        Address = token.Socket.RemoteEndPoint as IPEndPoint,
-                        ServerType = ServerType.TCP,
-                        Socket = token.Socket
+                       // Address = token.Socket.RemoteEndPoint as IPEndPoint,
+                       // ServerType = ServerType.TCP,
+                       // Socket = token.Socket
                     });
                 }
 
@@ -237,6 +237,11 @@ namespace server.achieves.IOCP
                 }
             }
             return false;
+        }
+
+        public IConnection CreateConnection(Socket socket)
+        {
+            throw new NotImplementedException();
         }
     }
 

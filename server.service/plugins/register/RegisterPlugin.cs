@@ -5,6 +5,7 @@ using server.plugin;
 using server.service.plugins.register.caching;
 using System;
 using System.Net;
+using System.Threading.Tasks;
 
 namespace server.service.plugins.register
 {
@@ -16,22 +17,21 @@ namespace server.service.plugins.register
             this.clientRegisterCache = clientRegisterCache;
         }
 
-        public RegisterResultModel Excute(PluginParamWrap data)
+        public async Task<RegisterResultModel> Execute(PluginParamWrap data)
         {
+            await Task.Yield();
             try
             {
                 RegisterModel model = data.Wrap.Memory.DeBytes<RegisterModel>();
-                if (data.ServerType == ServerType.UDP)
+                if (data.Connection.ServerType == ServerType.UDP)
                 {
                     if (clientRegisterCache.GetBySameGroup(model.GroupId, model.Name) == null)
                     {
                         RegisterCacheModel add = new()
                         {
-                            Address = data.SourcePoint,
+                            UdpConnection = data.Connection,
                             Name = model.Name,
                             LastTime = Helper.GetTimeStamp(),
-                            TcpSocket = null,
-                            TcpPort = 0,
                             OriginGroupId = model.GroupId,
                             LocalIps = model.LocalIps,
                             Mac = model.Mac,
@@ -42,62 +42,73 @@ namespace server.service.plugins.register
                         clientRegisterCache.Add(add);
                         string origingid = add.OriginGroupId;
                         add.OriginGroupId = string.Empty;
+                        data.Connection.ConnectId = add.Id;
 
                         return new RegisterResultModel
                         {
                             Id = add.Id,
-                            Ip = data.SourcePoint.Address.ToString(),
-                            Port = data.SourcePoint.Port,
+                            Ip = data.Connection.UdpAddress.Address.ToString(),
+                            Port = data.Connection.UdpAddress.Port,
                             TcpPort = 0,
-                            GroupId = origingid,
-                            Mac = add.Mac,
-                            LocalUdpPort = model.LocalUdpPort,
-                            LocalTcpPort = model.LocalTcpPort,
+                            GroupId = origingid
                         };
                     }
                     else
                     {
-                        data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, "组中已存在同名客户端");
+                        return new RegisterResultModel
+                        {
+                            Code = RegisterResultModel.RegisterResultCodes.SAME_NAMES
+                        };
                     }
                 }
-                else if (data.ServerType == ServerType.TCP)
+                else if (data.Connection.ServerType == ServerType.TCP)
                 {
-                    var endpoint = IPEndPoint.Parse(data.TcpSocket.RemoteEndPoint.ToString());
-                    var client = clientRegisterCache.Get(model.Id);
-                    if (client == null || !endpoint.Address.Equals(client.Address.Address))
+                    IPEndPoint endpoint = data.Connection.TcpSocket.RemoteEndPoint as IPEndPoint;
+                    if (!clientRegisterCache.Get(model.Id, out RegisterCacheModel client) || !endpoint.Address.Equals(client.UdpConnection.UdpAddress.Address))
                     {
-                        data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, "TCP注册失败");
+                        return new RegisterResultModel
+                        {
+                            Code = RegisterResultModel.RegisterResultCodes.VERIFY
+                        };
                     }
                     else
                     {
+                        data.Connection.ConnectId = client.Id;
                         clientRegisterCache.UpdateTcpInfo(new RegisterCacheUpdateModel
                         {
                             Id = client.Id,
-                            TcpSocket = data.TcpSocket,
-                            TcpPort = endpoint.Port,
+                            TcpConnection = data.Connection,
                             GroupId = model.GroupId
                         });
                         return new RegisterResultModel
                         {
                             Id = model.Id,
-                            Ip = data.SourcePoint.Address.ToString(),
-                            Port = data.SourcePoint.Port,
+                            Ip = client.UdpConnection.UdpAddress.Address.ToString(),
+                            Port = client.UdpConnection.UdpAddress.Port,
                             TcpPort = endpoint.Port,
-                            GroupId = model.GroupId,
-                            Mac = model.Mac,
-                            LocalUdpPort = model.LocalUdpPort,
-                            LocalTcpPort = model.LocalTcpPort,
+                            GroupId = model.GroupId
                         };
                     }
                 }
             }
             catch (Exception ex)
             {
-                Logger.Instance.Debug(ex + "");
-                data.SetCode(ServerMessageResponeCodes.BAD_GATEWAY, ex.Message);
+                Logger.Instance.Error(ex);
+                return new RegisterResultModel
+                {
+                    Code = RegisterResultModel.RegisterResultCodes.UNKNOW
+                };
             }
 
-            return null;
+            return new RegisterResultModel
+            {
+                Code = RegisterResultModel.RegisterResultCodes.UNKNOW
+            };
+        }
+
+        public void Notify(PluginParamWrap data)
+        {
+            clientRegisterCache.Notify(data.Connection);
         }
     }
 }

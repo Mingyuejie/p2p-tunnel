@@ -1,9 +1,11 @@
 ﻿using client.plugins.serverPlugins;
 using common;
+using server;
 using server.model;
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace client.service.plugins.serverPlugins.heart
 {
@@ -18,40 +20,16 @@ namespace client.service.plugins.serverPlugins.heart
         /// 发送心跳消息
         /// </summary>
         /// <param name="arg"></param>
-        public void SendHeartMessage(long ConnectId, IPEndPoint address)
+        public async Task<MessageRequestResponeWrap> SendHeartMessage(IConnection connection)
         {
             SendEventArg<HeartModel> arg = new SendEventArg<HeartModel>
             {
-                Address = address,
-                Path = "heart/excute",
-                Data = new HeartModel
-                {
-                    SourceId = ConnectId
-                }
+                Connection = connection,
+                Path = "heart/Execute",
+                Data = new HeartModel{}
             };
-            serverRequest.SendOnly(arg);
+            return await serverRequest.SendReply(arg);
         }
-        /// <summary>
-        /// 发送TCP心跳消息
-        /// </summary>
-        /// <param name="arg"></param>
-        public void SendTcpHeartMessage(long ConnectId, Socket socket)
-        {
-            SendTcpEventArg<HeartModel> arg = new SendTcpEventArg<HeartModel>
-            {
-                Socket = socket,
-                Path = "heart/excute",
-                Data = new HeartModel
-                {
-                    SourceId = ConnectId
-                },
-                Timeout = 500
-            };
-            serverRequest.SendOnlyTcp(arg);
-        }
-
-
-        public SimplePushSubHandler<OnHeartEventArg> OnHeart { get; } = new SimplePushSubHandler<OnHeartEventArg>();
     }
 
     public class OnHeartEventArg : EventArgs

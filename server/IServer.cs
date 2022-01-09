@@ -14,11 +14,9 @@ namespace server
         public SimplePushSubHandler<ServerDataWrap<T>> OnPacket { get; }
     }
 
-    public struct ServerDataWrap<T>
+    public class ServerDataWrap<T>
     {
         public T Data;
-        public Socket Socket;
-        public IPEndPoint Address;
-        public ServerType ServerType;
+        public IConnection Connection;
     }
 }

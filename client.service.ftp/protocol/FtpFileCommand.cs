@@ -11,12 +11,10 @@ namespace client.service.ftp.protocol
         [ProtoMember(1, IsRequired = true), Key(1)]
         public FtpCommand Cmd { get; } = FtpCommand.FILE;
         [ProtoMember(2), Key(2)]
-        public long SessionId { get; set; }
-        [ProtoMember(3), Key(3)]
         public long Size { get; set; }
+        [ProtoMember(3), Key(3)]
+        public ulong Md5 { get; set; }
         [ProtoMember(4), Key(4)]
-        public long Md5 { get; set; }
-        [ProtoMember(5), Key(5)]
         public string Name { get; set; }
 
         [ProtoIgnore, IgnoreMember]
@@ -29,8 +27,6 @@ namespace client.service.ftp.protocol
         {
             byte cmdByte = (byte)Cmd;
 
-            byte[] sessionIdByte = BitConverter.GetBytes(SessionId);
-
             byte[] sizeByte = BitConverter.GetBytes(Size);
 
             byte[] md5Byte = BitConverter.GetBytes(Md5);
@@ -40,7 +36,6 @@ namespace client.service.ftp.protocol
 
             MetaData = new byte[
                 1 +
-                sessionIdByte.Length +
                 sizeByte.Length +
                 md5Byte.Length +
                 name.Length + nameLength.Length
@@ -48,9 +43,6 @@ namespace client.service.ftp.protocol
 
             int index = 1;
             MetaData[0] = cmdByte;
-
-            Array.Copy(sessionIdByte, 0, MetaData, index, sessionIdByte.Length);
-            index += sessionIdByte.Length;
 
             Array.Copy(sizeByte, 0, MetaData, index, sizeByte.Length);
             index += sizeByte.Length;
@@ -64,8 +56,6 @@ namespace client.service.ftp.protocol
             index += name.Length;
 
             return MetaData;
-            //Array.Copy(Data, 0, MetaData, index, Data.Length);
-            //index += Data.Length;
         }
         public byte[] WriteData(byte[] data)
         {
@@ -78,13 +68,10 @@ namespace client.service.ftp.protocol
         {
             int index = 1;
 
-            SessionId = BitConverter.ToInt64(memory.Span.Slice(index, 8));
-            index += 8;
-
             Size = BitConverter.ToInt64(memory.Span.Slice(index, 8));
             index += 8;
 
-            Md5 = BitConverter.ToInt64(memory.Span.Slice(index, 8));
+            Md5 = BitConverter.ToUInt64(memory.Span.Slice(index, 8));
             index += 8;
 
             int nameLength = BitConverter.ToInt32(memory.Span.Slice(index, 4));
@@ -103,9 +90,7 @@ namespace client.service.ftp.protocol
         [ProtoMember(1, IsRequired = true), Key(1)]
         public FtpCommand Cmd { get; } = FtpCommand.FILE_END;
         [ProtoMember(2), Key(2)]
-        public long SessionId { get; set; }
-        [ProtoMember(3), Key(3)]
-        public long Md5 { get; set; }
+        public ulong Md5 { get; set; }
     }
 
     [ProtoContract, MessagePackObject]
@@ -114,10 +99,8 @@ namespace client.service.ftp.protocol
         [ProtoMember(1, IsRequired = true), Key(1)]
         public FtpCommand Cmd { get; } = FtpCommand.FILE_ERROR;
         [ProtoMember(2), Key(2)]
-        public long SessionId { get; set; }
+        public ulong Md5 { get; set; }
         [ProtoMember(3), Key(3)]
-        public long Md5 { get; set; }
-        [ProtoMember(4), Key(4)]
         public string Msg { get; set; }
     }
 }

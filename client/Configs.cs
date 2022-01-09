@@ -5,6 +5,7 @@ using ProtoBuf;
 using System.IO;
 using System.Net;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace client
 {
@@ -35,14 +36,14 @@ namespace client
         public FileServerConfig FileServer { get; set; } = new FileServerConfig();
 
 
-        public static Config ReadConfig()
+        public static async Task<Config> ReadConfig()
         {
-            return FromFile<Config>("appsettings.json") ?? new Config();
+            return await FromFile<Config>("appsettings.json") ?? new Config();
         }
 
-        public void SaveConfig()
+        public async Task SaveConfig()
         {
-            Config config = ReadConfig();
+            Config config = await ReadConfig();
 
             config.Web = Web;
             config.Client = Client;
@@ -50,7 +51,7 @@ namespace client
             config.FileServer = FileServer;
             config.Websocket = Websocket;
 
-            ToFile(config, "appsettings.json");
+            await ToFile(config, "appsettings.json");
         }
     }
 
@@ -133,6 +134,15 @@ namespace client
             get
             {
                 return UseIpv6 ? IPAddress.IPv6Any : IPAddress.Any;
+            }
+        }
+
+        [JsonIgnore, ProtoIgnore, IgnoreMember]
+        public IPAddress LoopbackIp
+        {
+            get
+            {
+                return UseIpv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback;
             }
         }
     }

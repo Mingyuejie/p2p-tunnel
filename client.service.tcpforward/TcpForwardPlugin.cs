@@ -3,6 +3,7 @@ using common.extends;
 using Microsoft.Extensions.DependencyInjection;
 using server.model;
 using server.plugin;
+using System.Threading.Tasks;
 
 namespace client.service.tcpforward
 {
@@ -14,13 +15,12 @@ namespace client.service.tcpforward
             this.tcpForwardEventHandles = tcpForwardEventHandles;
         }
 
-        public void Excute(PluginParamWrap arg)
+        public async Task Execute(PluginParamWrap arg)
         {
-            TcpForwardModel data = arg.Wrap.Memory.DeBytes<TcpForwardModel>();
-            tcpForwardEventHandles.OnTcpForward(new OnTcpForwardEventArg
+            await tcpForwardEventHandles.OnTcpForward(new OnTcpForwardEventArg
             {
                 Packet = arg,
-                Data = data,
+                Data = arg.Wrap.Memory.DeBytes<TcpForwardModel>(),
             });
         }
     }
@@ -29,7 +29,7 @@ namespace client.service.tcpforward
     {
         public static ServiceCollection AddTcpForwardPlugin(this ServiceCollection obj)
         {
-            TcpForwardSettingModel config = TcpForwardSettingModel.ReadConfig();
+            TcpForwardSettingModel config = TcpForwardSettingModel.ReadConfig().Result;
             obj.AddSingleton((e) => config);
 
             obj.AddSingleton<ITcpForwardServer, TcpForwardServer>();

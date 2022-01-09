@@ -1,6 +1,7 @@
 ﻿using client.plugins.serverPlugins;
 using client.plugins.serverPlugins.clients;
 using client.servers.clientServer;
+using common;
 using common.extends;
 using MessagePack;
 using ProtoBuf;
@@ -15,6 +16,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace client.service.cmd
 {
@@ -27,25 +29,25 @@ namespace client.service.cmd
             this.serverRequest = serverRequest;
             this.clientInfoCaching = clientInfoCaching;
         }
-        public CmdResultModel Excute(ClientServicePluginExcuteWrap arg)
+        public async Task<CmdResultModel> Execute(ClientServicePluginExecuteWrap arg)
         {
             RemoteCmdModel model = arg.Content.DeJson<RemoteCmdModel>();
-            if (clientInfoCaching.Get(model.Id, out ClientInfo client) && client != null && client.TcpConnected)
+            if (clientInfoCaching.Get(model.Id, out ClientInfo client))
             {
-                var res = serverRequest.SendReplyTcp(new SendTcpEventArg<CmdModel>
+                var res = await serverRequest.SendReply(new SendEventArg<CmdModel>
                 {
-                    Path = "cmd/excute",
-                    Socket = client.Socket,
+                    Path = "cmd/Execute",
+                    Connection = client.TcpConnection,
                     Timeout = 0,
-                    Data = new CmdModel { SessionId = model.Id, Cmd = model.Cmd }
-                }).Result;
-                if (res.Code == ServerMessageResponeCodes.OK)
+                    Data = new CmdModel { Cmd = model.Cmd }
+                });
+                if (res.Code == MessageResponeCode.OK)
                 {
                     return res.Data.DeBytes<CmdResultModel>();
                 }
-                return new CmdResultModel { Err = res.ErrorMsg };
+                return new CmdResultModel { ErrorMsg = res.Code.ToString() };
             }
-            return ExcuteCmd(model.Id, model.Cmd);
+            return ExecuteCmd(model.Id, model.Cmd);
         }
     }
 
@@ -66,24 +68,24 @@ namespace client.service.cmd
 
         public bool Enable => config.Enable;
 
-        public object LoadSetting()
+        public async Task<object> LoadSetting()
         {
-            return config;
+            return  await Task.FromResult(config);
         }
 
-        public string SaveSetting(string jsonStr)
+        public async Task<string> SaveSetting(string jsonStr)
         {
             Config _config = jsonStr.DeJson<Config>();
             config.Password = _config.Password;
             config.Enable = _config.Enable;
-            config.SaveConfig();
+            await config.SaveConfig();
             return string.Empty;
         }
 
-        public bool SwitchEnable(bool enable)
+        public async Task<bool> SwitchEnable(bool enable)
         {
             config.Enable = enable;
-            config.SaveConfig();
+            await config.SaveConfig();
             return true;
         }
     }
@@ -94,32 +96,32 @@ namespace client.service.cmd
         {
             this.config = config;
         }
-        public CmdResultModel Excute(PluginParamWrap arg)
+        public CmdResultModel Execute(PluginParamWrap arg)
         {
             CmdModel cmd = arg.Wrap.Memory.DeBytes<CmdModel>();
             if (!config.Enable)
             {
-                return new CmdResultModel { Err = "远程命令服务未开启" };
+                return new CmdResultModel { ErrorMsg = "远程命令服务未开启" };
             }
-            return ExcuteCmd(cmd.SessionId, cmd.Cmd);
+            return ExecuteCmd(arg.Connection.ConnectId, cmd.Cmd);
         }
 
 
     }
     public class CmdBase
     {
-        public ConcurrentDictionary<long, string> dirs { get; } = new();
+        public ConcurrentDictionary<ulong, string> dirs { get; } = new();
 
         public CmdBase(IClientInfoCaching clientInfoCaching)
         {
             //掉线的，删掉目录缓存
-            clientInfoCaching.OnTcpOffline.Sub((client) =>
+            clientInfoCaching.OnOffline.Sub((client) =>
             {
                 dirs.TryRemove(client.Id, out _);
             });
         }
 
-        protected CmdResultModel ExcuteCmd(long id, string cmd)
+        protected CmdResultModel ExecuteCmd(ulong id, string cmd)
         {
             if (string.IsNullOrWhiteSpace(cmd))
             {
@@ -127,8 +129,7 @@ namespace client.service.cmd
             }
 
             //获取当前目录，每个人的都存一份
-            dirs.TryGetValue(id, out string workDir);
-            if (string.IsNullOrWhiteSpace(workDir))
+            if (!dirs.TryGetValue(id, out string workDir))
             {
                 workDir = Directory.GetCurrentDirectory();
                 dirs.TryAdd(id, workDir);
@@ -180,12 +181,12 @@ namespace client.service.cmd
 
             return new CmdResultModel
             {
-                Err = error,
+                ErrorMsg = error,
                 Res = res
             };
         }
 
-        private string cd(long id, string path)
+        private string cd(ulong id, string path)
         {
             dirs.TryGetValue(id, out string workDir);
             if (!string.IsNullOrWhiteSpace(path))
@@ -223,25 +224,22 @@ namespace client.service.cmd
 
     public class RemoteCmdModel
     {
-        public long Id { get; set; }
+        public ulong Id { get; set; }
         public string Cmd { get; set; }
     }
     [ProtoContract, MessagePackObject]
     public class CmdModel
     {
-        [ProtoMember(1),Key(1)]
+        [ProtoMember(1), Key(1)]
         public string Cmd { get; set; }
-
-        [ProtoMember(2),Key(2)]
-        public long SessionId { get; set; }
     }
     [ProtoContract, MessagePackObject]
     public class CmdResultModel
     {
-        [ProtoMember(1),Key(1)]
+        [ProtoMember(1), Key(1)]
         public string Res { get; set; }
 
-        [ProtoMember(2),Key(2)]
-        public string Err { get; set; }
+        [ProtoMember(2), Key(2)]
+        public string ErrorMsg { get; set; }
     }
 }

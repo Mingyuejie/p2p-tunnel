@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace client.service.cmd
 {
@@ -13,7 +14,7 @@ namespace client.service.cmd
     {
         public static ServiceCollection AddCmdPlugin(this ServiceCollection obj)
         {
-            Config config = Config.ReadConfig();
+            Config config = Config.ReadConfig().Result;
             obj.AddSingleton((e) => config);
 
             return obj;
@@ -41,18 +42,18 @@ namespace client.service.cmd
         public string Password { get; set; } = string.Empty;
         public bool Enable { get; set; } = false;
 
-        public static Config ReadConfig()
+        public static async Task<Config> ReadConfig()
         {
-            return FromFile<Config>("cmd-appsettings.json") ?? new Config();
+            return await FromFile<Config>("cmd-appsettings.json") ?? new Config();
         }
 
-        public void SaveConfig()
+        public async Task SaveConfig()
         {
-            Config config = ReadConfig();
+            Config config = await ReadConfig();
             config.Password = Password;
             config.Enable = Enable;
 
-            ToFile(config, "cmd-appsettings.json");
+            await ToFile(config, "cmd-appsettings.json");
         }
     }
 }

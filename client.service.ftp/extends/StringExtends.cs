@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualBasic.FileIO;
+﻿using common;
+using Microsoft.VisualBasic.FileIO;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,7 +16,7 @@ namespace client.service.ftp.extends
             List<string> errs = new List<string>();
             if (!string.IsNullOrWhiteSpace(dir))
             {
-                foreach (var item in dir.Split(','))
+                foreach (var item in dir.Split(Helper.SeparatorChar))
                 {
                     if (!string.IsNullOrWhiteSpace(item))
                     {
@@ -39,7 +40,7 @@ namespace client.service.ftp.extends
             List<string> errs = new List<string>();
             if (!string.IsNullOrWhiteSpace(dir))
             {
-                foreach (var item in dir.Split(','))
+                foreach (string item in dir.Split(Helper.SeparatorChar))
                 {
                     if (!string.IsNullOrWhiteSpace(item))
                     {
@@ -65,28 +66,32 @@ namespace client.service.ftp.extends
         {
             if (Directory.Exists(path))
             {
-                var dirs = new DirectoryInfo(path).GetDirectories();
-                foreach (var item in dirs)
+                DirectoryInfo[] dirs = new DirectoryInfo(path).GetDirectories();
+                foreach (DirectoryInfo item in dirs)
                 {
                     Clear(item.FullName);
                 }
 
-                var files = new DirectoryInfo(path).GetFiles();
-                foreach (var item in files)
+                System.IO.FileInfo[] files = new DirectoryInfo(path).GetFiles();
+                foreach (System.IO.FileInfo item in files)
                 {
-                    try
-                    {
-                        FileSystem.DeleteFile(item.FullName, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
-                    }
-                    catch (Exception)
-                    {
-
-                        File.Delete(item.FullName);
-                    }
+                    item.FullName.DeleteDirectory();
                 }
+                path.DeleteDirectory();
+            }
+            else if (File.Exists(path))
+            {
+                path.DeleteFile();
+            }
+        }
+
+        private static void DeleteDirectory(this string path)
+        {
+            if (!string.IsNullOrWhiteSpace(path))
+            {
                 try
                 {
-                    FileSystem.DeleteDirectory(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                    FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
                 }
                 catch (Exception)
                 {
@@ -94,7 +99,11 @@ namespace client.service.ftp.extends
                     Directory.Delete(path);
                 }
             }
-            else if (File.Exists(path))
+        }
+
+        private static void DeleteFile(this string path)
+        {
+            if (!string.IsNullOrWhiteSpace(path))
             {
                 try
                 {

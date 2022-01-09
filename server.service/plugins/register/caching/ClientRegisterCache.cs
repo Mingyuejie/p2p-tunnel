@@ -13,10 +13,10 @@ namespace server.service.plugins.register.caching
 {
     public class ClientRegisterCaching : IClientRegisterCaching
     {
-        private readonly ConcurrentDictionary<long, RegisterCacheModel> cache = new();
-        private static long Id = 0;
+        private readonly ConcurrentDictionary<ulong, RegisterCacheModel> cache = new();
+        private NumberSpace idNs = new NumberSpace(0);
 
-        public SimplePushSubHandler<string> OnChanged => new SimplePushSubHandler<string>();
+        public SimplePushSubHandler<string> OnChanged { get; } = new SimplePushSubHandler<string>();
 
         public ClientRegisterCaching()
         {
@@ -30,7 +30,7 @@ namespace server.service.plugins.register.caching
                     {
                         if (time - item.LastTime > 60 * 1000)
                         {
-                            _ = cache.TryRemove(item.Id, out _);
+                            cache.TryRemove(item.Id, out _);
                         }
                     }
                     await Task.Delay(100);
@@ -38,10 +38,9 @@ namespace server.service.plugins.register.caching
             });
         }
 
-        public RegisterCacheModel Get(long id)
+        public bool Get(ulong id, out RegisterCacheModel client)
         {
-            _ = cache.TryGetValue(id, out RegisterCacheModel toReg);
-            return toReg;
+            return cache.TryGetValue(id, out client);
         }
 
         public RegisterCacheModel GetBySameGroup(string groupid, string name)
@@ -54,12 +53,11 @@ namespace server.service.plugins.register.caching
             return cache.Values.ToList();
         }
 
-        public long Add(RegisterCacheModel model)
+        public ulong Add(RegisterCacheModel model)
         {
             if (model.Id == 0)
             {
-                Interlocked.Increment(ref Id);
-                model.Id = Id;
+                model.Id = idNs.Get();
             }
             if (string.IsNullOrWhiteSpace(model.OriginGroupId))
             {
@@ -67,58 +65,41 @@ namespace server.service.plugins.register.caching
             }
 
             model.GroupId = model.OriginGroupId.Md5();
-            _ = cache.AddOrUpdate(model.Id, model, (a, b) => model);
+            cache.AddOrUpdate(model.Id, model, (a, b) => model);
             return model.Id;
         }
 
         public bool UpdateTcpInfo(RegisterCacheUpdateModel model)
         {
-            RegisterCacheModel data = Get(model.Id);
-            if (data != null && model.GroupId.Md5() == data.GroupId)
+            if (Get(model.Id, out RegisterCacheModel client) && model.GroupId.Md5() == client.GroupId)
             {
-                data.LastTime = Helper.GetTimeStamp();
-                data.TcpSocket = model.TcpSocket;
-                data.TcpPort = model.TcpPort;
-                OnChanged.Push(data.GroupId);
+                client.LastTime = Helper.GetTimeStamp();
+                client.TcpConnection = model.TcpConnection;
                 return true;
             }
             return false;
         }
 
-        public void Remove(long id)
+        public void Remove(ulong id)
         {
-            if (cache.TryRemove(id, out RegisterCacheModel model))
+            cache.TryRemove(id, out _);
+        }
+
+        public void UpdateTime(ulong id)
+        {
+            if (Get(id, out RegisterCacheModel client))
             {
-                OnChanged.Push(model.GroupId);
+                client.LastTime = Helper.GetTimeStamp();
             }
         }
 
-        public void UpdateTime(long id)
+        public bool Notify(IConnection connection)
         {
-            RegisterCacheModel model = Get(id);
-            if (model != null)
+            if (Get(connection.ConnectId, out RegisterCacheModel client))
             {
-                model.LastTime = Helper.GetTimeStamp();
-            }
-        }
-
-        public bool Verify(long id, PluginParamWrap data)
-        {
-            RegisterCacheModel model = Get(id);
-            if (model != null)
-            {
-                switch (data.ServerType)
-                {
-                    case ServerType.TCP:
-                        return model.TcpSocket.RemoteEndPoint.ToString() == data.TcpSocket.RemoteEndPoint.ToString();
-                    case ServerType.UDP:
-                        return model.Address.Address.Equals(data.SourcePoint.Address);
-                    default:
-                        break;
-                }
+                OnChanged.Push(client.GroupId);
             }
             return false;
         }
-
     }
 }

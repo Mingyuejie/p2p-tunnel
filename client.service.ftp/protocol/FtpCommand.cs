@@ -1,6 +1,7 @@
 ﻿using MessagePack;
 using ProtoBuf;
 using System;
+using System.ComponentModel;
 
 namespace client.service.ftp.protocol
 {
@@ -15,14 +16,23 @@ namespace client.service.ftp.protocol
     [Flags]
     public enum FtpCommand : byte
     {
+        [Description("列表")]
         LIST = 0,
+        [Description("删除")]
         DELETE = 1,
+        [Description("创建")]
         CREATE = 2,
+        [Description("下载")]
         DOWNLOAD = 3,
+        [Description("传送文件")]
         FILE = 4,
+        [Description("传送文件结束")]
         FILE_END = 5,
+        [Description("传送文件取消")]
         FILE_CANCEL = 6,
+        [Description("传送文件已取消")]
         FILE_CANCELED = 7,
+        [Description("传送文件错误")]
         FILE_ERROR = 8,
     }
 
@@ -30,7 +40,6 @@ namespace client.service.ftp.protocol
     public interface IFtpCommandBase
     {
         public FtpCommand Cmd { get; }
-        public long SessionId { get; set; }
     }
 
     [ProtoContract, MessagePackObject]
@@ -40,9 +49,6 @@ namespace client.service.ftp.protocol
         public FtpCommand Cmd { get; set; }
 
         [ProtoMember(2), Key(2)]
-        public long SessionId { get; set; }
-
-        [ProtoMember(3), Key(3)]
         public ReadOnlyMemory<byte> Data { get; set; }
     }
 

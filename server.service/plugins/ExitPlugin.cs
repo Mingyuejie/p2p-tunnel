@@ -3,12 +3,10 @@ using server.model;
 using server.models;
 using server.plugin;
 using server.service.plugins.register.caching;
+using System;
 
 namespace server.service.plugins
 {
-    /// <summary>
-    /// 退出插件
-    /// </summary>
     public class ExitPlugin : IPlugin
     {
         private readonly IClientRegisterCaching clientRegisterCache;
@@ -17,14 +15,9 @@ namespace server.service.plugins
             this.clientRegisterCache = clientRegisterCache;
         }
 
-        public bool Excute(PluginParamWrap data)
+        public bool Execute(PluginParamWrap data)
         {
-            ExitModel model = data.Wrap.Memory.DeBytes<ExitModel>();
-
-            if (!clientRegisterCache.Verify(model.Id, data)) return false;
-
-            clientRegisterCache.Remove(model.Id);
-
+            clientRegisterCache.Remove(data.Connection.ConnectId);
             return true;
         }
     }

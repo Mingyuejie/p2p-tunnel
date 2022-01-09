@@ -11,6 +11,6 @@ namespace server
 {
     public interface IUdpServer : IServer<UdpPacket>
     {
-        public bool Send(byte[] data, IPEndPoint address);
+        public IConnection CreateConnection(IPEndPoint address);
     }
 }

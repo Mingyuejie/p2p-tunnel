@@ -2,6 +2,7 @@
 using ProtoBuf;
 using server.packet;
 using System;
+using System.ComponentModel;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -9,51 +10,105 @@ using System.Text;
 
 namespace server.model
 {
-    [ProtoContract, MessagePackObject]
-    public class ServerMessageWrap
+    public class MessageRequestWrap
     {
-        [ProtoMember(1), Key(1)]
         public string Path { get; set; } = string.Empty;
-        [ProtoMember(2), Key(2)]
-        public long RequestId { get; set; } = 0;
-
+        public ulong RequestId { get; set; } = 0;
         /// <summary>
-        /// 写入数据用这个
+        /// 发送数据
         /// </summary>
-        [ProtoMember(3), Key(3)]
         public byte[] Content { get; set; } = Array.Empty<byte>();
-
-        [ProtoMember(4, IsRequired = true), Key(4)]
-        public ServerMessageTypes Type { get; set; } = ServerMessageTypes.REQUEST;
-        [ProtoMember(5, IsRequired = true), Key(5)]
-        public ServerMessageResponeCodes Code { get; set; } = ServerMessageResponeCodes.OK;
-        [ProtoMember(6), Key(6)]
-        public string Msg { get; set; } = string.Empty;
         /// <summary>
-        /// 读取数据用这个
+        /// 接收数据
         /// </summary>
-        [IgnoreMember, ProtoIgnore]
         public ReadOnlyMemory<byte> Memory { get; set; } = Array.Empty<byte>();
 
+
+        /// <summary>
+        /// 转包
+        /// </summary>
+        /// <returns></returns>
         public byte[] ToArray()
         {
-            byte typeByte = (byte)Type;
+            byte typeByte = (byte)MessageType.REQUEST;
             byte[] requestIdByte = BitConverter.GetBytes(RequestId);
-
-            byte[] codeByte = BitConverter.GetBytes((int)Code);
-
-            byte[] msg = Encoding.UTF8.GetBytes(Msg);
-            byte[] msgLength = BitConverter.GetBytes(msg.Length);
 
             byte[] pathByte = Encoding.ASCII.GetBytes(Path);
             byte[] pathLengthByte = BitConverter.GetBytes(pathByte.Length);
 
             byte[] res = new byte[
-                1 + 
-                requestIdByte.Length + 
-                codeByte.Length +
-                msgLength.Length + msg.Length +
+                1 +
+                requestIdByte.Length +
                 pathByte.Length + pathLengthByte.Length +
+                Content.Length
+            ];
+
+            int index = 1;
+            res[0] = typeByte;
+
+            Array.Copy(requestIdByte, 0, res, index, requestIdByte.Length);
+            index += requestIdByte.Length;
+
+            Array.Copy(pathLengthByte, 0, res, index, pathLengthByte.Length);
+            index += pathLengthByte.Length;
+            Array.Copy(pathByte, 0, res, index, pathByte.Length);
+            index += pathByte.Length;
+
+            Array.Copy(Content, 0, res, index, Content.Length);
+            index += Content.Length;
+
+            return res;
+        }
+        /// <summary>
+        /// 解包
+        /// </summary>
+        /// <param name="bytes"></param>
+        public void FromArray(byte[] bytes)
+        {
+            Span<byte> span = bytes.AsSpan();
+            int index = 1;
+
+            RequestId = BitConverter.ToUInt64(span.Slice(index, 8));
+            index += 8;
+
+            int pathLength = BitConverter.ToInt32(span.Slice(index, 4));
+            index += 4;
+            Path = Encoding.ASCII.GetString(span.Slice(index, pathLength));
+            index += pathLength;
+
+            Memory = new ReadOnlyMemory<byte>(bytes, index, span.Length - index);
+        }
+    }
+
+    public class MessageResponseWrap
+    {
+        public MessageResponeCode Code { get; set; } = MessageResponeCode.OK;
+        public ulong RequestId { get; set; } = 0;
+        /// <summary>
+        /// 发送数据
+        /// </summary>
+        public byte[] Content { get; set; } = Array.Empty<byte>();
+        /// <summary>
+        /// 接收数据
+        /// </summary>
+        public ReadOnlyMemory<byte> Memory { get; set; } = Array.Empty<byte>();
+
+
+        /// <summary>
+        /// 转包
+        /// </summary>
+        /// <returns></returns>
+        public byte[] ToArray()
+        {
+            byte typeByte = (byte)MessageType.RESPONSE;
+            byte[] requestIdByte = BitConverter.GetBytes(RequestId);
+            short code = (short)Code;
+            byte[] codeByte = BitConverter.GetBytes(code);
+
+            byte[] res = new byte[
+                1 +
+                requestIdByte.Length +
+                codeByte.Length +
                 Content.Length
             ];
 
@@ -66,141 +121,81 @@ namespace server.model
             Array.Copy(codeByte, 0, res, index, codeByte.Length);
             index += codeByte.Length;
 
-            Array.Copy(msgLength, 0, res, index, msgLength.Length);
-            index += 4;
-            Array.Copy(msg, 0, res, index, msg.Length);
-            index += msg.Length;
-
-            Array.Copy(pathLengthByte, 0, res, index, pathLengthByte.Length);
-            index += pathLengthByte.Length;
-            Array.Copy(pathByte, 0, res, index, pathByte.Length);
-            index += pathByte.Length;
-
             Array.Copy(Content, 0, res, index, Content.Length);
             index += Content.Length;
             return res;
         }
+        /// <summary>
+        /// 解包
+        /// </summary>
+        /// <param name="bytes"></param>
         public void FromArray(byte[] bytes)
         {
-            var span = bytes.AsSpan();
-
-            Type = (ServerMessageTypes)span[0];
+            Span<byte> span = bytes.AsSpan();
             int index = 1;
 
-            RequestId = BitConverter.ToInt64(span.Slice(index, 8));
+            RequestId = BitConverter.ToUInt64(span.Slice(index, 8));
             index += 8;
 
-            Code = (ServerMessageResponeCodes)BitConverter.ToInt32(span.Slice(index, 4));
-            index += 4;
-
-            int msgLength = BitConverter.ToInt32(span.Slice(index, 4));
-            index += 4;
-            if (msgLength > 0)
-            {
-                Msg = Encoding.UTF8.GetString(span.Slice(index, msgLength));
-                index += msgLength;
-            }
-
-            int pathLength = BitConverter.ToInt32(span.Slice(index, 4));
-            index += 4;
-            Path = Encoding.ASCII.GetString(span.Slice(index, pathLength));
-            index += pathLength;
+            Code = (MessageResponeCode)BitConverter.ToInt16(span.Slice(index, 2));
+            index += 2;
 
             Memory = new ReadOnlyMemory<byte>(bytes, index, span.Length - index);
         }
     }
 
-    public class ServerMessageResponeWrap
+    [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
+    [Flags]
+    public enum MessageResponeCode : byte
     {
-        public ServerMessageResponeCodes Code { get; set; } = ServerMessageResponeCodes.OK;
-        public string ErrorMsg { get; set; } = string.Empty;
-        public ReadOnlyMemory<byte> Data { get; set; } = Array.Empty<byte>();
+        [Description("成功")]
+        OK = 0,
+        [Description("网络未连接")]
+        NOT_CONNECT = 1,
+        [Description("网络资源未找到")]
+        NOT_FOUND = 2,
+        [Description("网络超时")]
+        TIMEOUT = 3,
+        [Description("程序错误")]
+        ERROR = 4,
     }
 
     [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
-    public enum ServerMessageResponeCodes : int
+    public enum MessageType : byte
     {
-        OK = 200,
-        ACCESS = 403,
-        NOT_FOUND = 404,
-        TIMEOUT = 408,
-        BAD_GATEWAY = 502,
-    }
-
-    [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
-    [Flags]
-    public enum ServerMessageTypes : byte
-    {
-        REQUEST = 0, RESPONSE = 1
+        [Description("请求")]
+        REQUEST = 0,
+        [Description("回复")]
+        RESPONSE = 1
     }
 
     public class PluginParamWrap
     {
-        /// <summary>
-        /// 来源地址
-        /// </summary>
-        public IPEndPoint SourcePoint { get; set; }
-
-        /// <summary>
-        /// 发送数据
-        /// </summary>
         public IPacket Packet { get; set; }
 
-        /// <summary>
-        /// 服务类型
-        /// </summary>
-        public ServerType ServerType { get; set; }
+        public IConnection Connection { get; set; }
 
-        /// <summary>
-        /// 消息对象
-        /// </summary>
-        public Socket TcpSocket { get; set; }
+        public MessageRequestWrap Wrap { get; set; }
 
-        public ServerMessageWrap Wrap { get; set; }
-
-        public ServerMessageResponeCodes Code { get; set; } = ServerMessageResponeCodes.OK;
-        public string ErrorMessage { get; private set; } = string.Empty;
-        public void SetCode(ServerMessageResponeCodes code, string errormsg = "")
-        {
-            Code = code;
-            ErrorMessage = errormsg;
-        }
-        public void SetErrorMessage(string msg)
-        {
-            ErrorMessage = msg;
-        }
+        public MessageResponeCode Code { get; set; } = MessageResponeCode.OK;
     }
 
-    public class SendMessageWrap<T>
+    public class MessageRequestParamsWrap<T>
     {
-        /// <summary>
-        /// 目标地址
-        /// </summary>
-        public IPEndPoint Address { get; set; } = null;
-
-        /// <summary>
-        /// 目标对象
-        /// </summary>
-        public Socket TcpCoket { get; set; } = null;
-
-        /// <summary>
-        /// 发送数据
-        /// </summary>
-        public T Data { get; set; } = default;
-        public string Msg { get; set; } = string.Empty;
-
-        /// <summary>
-        /// 超时时间，毫秒 0无限 -1一直超时 最小500
-        /// </summary>
-        public int Timeout { get; set; } = 15000;
+        public IConnection Connection { get; set; }
 
         public string Path { get; set; } = string.Empty;
+        public T Data { get; set; } = default;
 
-        public ServerMessageTypes Type { get; set; } = ServerMessageTypes.REQUEST;
-
-        public long RequestId { get; set; } = 0;
-
-        public ServerMessageResponeCodes Code { get; set; } = ServerMessageResponeCodes.OK;
+        public ulong RequestId { get; set; } = 0;
+        public int Timeout { get; set; } = 15000;
+    }
+    public class MessageResponseParamsWrap
+    {
+        public IConnection Connection { get; set; }
+        public byte[] Data { get; set; } = Array.Empty<byte>();
+        public ulong RequestId { get; set; } = 0;
+        public MessageResponeCode Code { get; set; } = MessageResponeCode.OK;
     }
 }

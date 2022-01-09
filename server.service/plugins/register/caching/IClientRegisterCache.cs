@@ -9,13 +9,13 @@ namespace server.service.plugins.register.caching
     {
         public SimplePushSubHandler<string> OnChanged { get; }
 
-        public RegisterCacheModel Get(long id);
+        public bool Get(ulong id,out RegisterCacheModel client);
         public RegisterCacheModel GetBySameGroup(string groupid, string name);
         public List<RegisterCacheModel> GetAll();
-        public long Add(RegisterCacheModel model);
+        public ulong Add(RegisterCacheModel model);
         public bool UpdateTcpInfo(RegisterCacheUpdateModel model);
-        public void Remove(long id);
-        public void UpdateTime(long id);
-        public bool Verify(long id, PluginParamWrap data);
+        public void Remove(ulong id);
+        public void UpdateTime(ulong id);
+        public bool Notify(IConnection connection);
     }
 }

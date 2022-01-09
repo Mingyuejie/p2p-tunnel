@@ -8,8 +8,6 @@ namespace server.models
     public class ExitModel
     {
         public ExitModel() { }
-        [ProtoMember(1),Key(1)]
-        public long Id { get; set; } = 0;
 
     }
 }

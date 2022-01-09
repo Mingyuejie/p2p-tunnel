@@ -119,9 +119,9 @@ namespace client.service.servers.clientServer
                 };
                 socket.OnMessage = message =>
                 {
-                    Task.Run(() =>
+                    Task.Run(async () =>
                     {
-                        OnMessage(socket, message);
+                        await OnMessage(socket, message);
                     });
                 };
             });
@@ -129,7 +129,7 @@ namespace client.service.servers.clientServer
             Logger.Instance.Info("本地服务已启动...");
         }
 
-        private void OnMessage(IWebSocketConnection socket, string message)
+        private async Task OnMessage(IWebSocketConnection socket, string message)
         {
             ClientServiceMessageWrap model = message.DeJson<ClientServiceMessageWrap>();
             model.Path = model.Path.ToLower();
@@ -138,7 +138,7 @@ namespace client.service.servers.clientServer
                 PluginPathCacheInfo plugin = plugins[model.Path];
                 try
                 {
-                    ClientServicePluginExcuteWrap param = new ClientServicePluginExcuteWrap
+                    ClientServicePluginExecuteWrap param = new ClientServicePluginExecuteWrap
                     {
                         Socket = socket,
                         RequestId = model.RequestId,
@@ -152,7 +152,7 @@ namespace client.service.servers.clientServer
                     {
                         if (plugin.IsTask)
                         {
-                            resultAsync.Wait();
+                            await (resultAsync as Task);
                             if (plugin.IsTaskResult)
                             {
                                 resultObject = resultAsync.Result;
@@ -163,7 +163,7 @@ namespace client.service.servers.clientServer
                             resultObject = resultAsync;
                         }
                     }
-                    param.Socket.Send(new ClientServiceMessageResponseWrap
+                    await param.Socket.Send(new ClientServiceMessageResponseWrap
                     {
                         Content = param.Code == 0 ? resultObject : param.ErrorMessage,
                         RequestId = param.RequestId,
@@ -173,8 +173,8 @@ namespace client.service.servers.clientServer
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.Error(ex + "");
-                    socket.Send(new ClientServiceMessageResponseWrap
+                    Logger.Instance.Error(ex);
+                    await socket.Send(new ClientServiceMessageResponseWrap
                     {
                         Content = ex.Message,
                         RequestId = model.RequestId,

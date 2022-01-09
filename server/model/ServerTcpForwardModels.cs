@@ -2,10 +2,7 @@
 using ProtoBuf;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+using System.ComponentModel;
 
 namespace server.model
 {
@@ -16,10 +13,19 @@ namespace server.model
         public ServerForwardWebModel[] Web { get; set; } = Array.Empty<ServerForwardWebModel>();
         [ProtoMember(2), Key(2)]
         public ServerTcpForwardTunnelModel[] Tunnel { get; set; } = Array.Empty<ServerTcpForwardTunnelModel>();
-
-        [ProtoMember(3), Key(3), JsonIgnore]
-        public long Id { get; set; } = 0;
     }
+    [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
+    [Flags]
+    public enum ServerTcpForwardRegisterResponseCode : byte
+    {
+        [Description("成功")]
+        OK,
+        [Description("已禁用")]
+        DISABLED,
+        [Description("出错了")]
+        ERROR
+    }
+
     [ProtoContract, MessagePackObject]
     public class ServerForwardWebModel
     {
@@ -53,7 +59,7 @@ namespace server.model
         public ServerTcpForwardModel() { }
 
         [ProtoMember(1), Key(1)]
-        public long RequestId { get; set; } = 0;
+        public ulong RequestId { get; set; } = 0;
 
         [ProtoMember(2), Key(2)]
         public byte[] Buffer { get; set; } = new byte[0];
@@ -76,17 +82,27 @@ namespace server.model
 
     [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
-    public enum ServerTcpForwardAliveTypes : int
+    public enum ServerTcpForwardAliveTypes : byte
     {
+        [Description("长链接")]
         TUNNEL,
-        //短连接
+        [Description("短链接")]
         WEB
     }
 
     [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
-    public enum ServerTcpForwardType
+    public enum ServerTcpForwardType : byte
     {
-        REQUEST, RESPONSE, FAIL, RESPONSE_END,CLOSE
+        [Description("请求")]
+        REQUEST,
+        [Description("回复")]
+        RESPONSE,
+        [Description("失败")]
+        FAIL,
+        [Description("关闭")]
+        CLOSE
     }
+
+
 }

@@ -2,6 +2,7 @@
 using common.extends;
 using MessagePack;
 using ProtoBuf;
+using server;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -26,105 +27,67 @@ namespace client.plugins.serverPlugins.clients
         public bool TcpConnected { get; set; } = false;
 
         [ProtoIgnore, JsonIgnore, IgnoreMember]
-        public Socket Socket { get; set; } = null;
+        public IConnection TcpConnection { get; set; } = null;
 
         [ProtoIgnore, JsonIgnore, IgnoreMember]
-        public IPEndPoint Address { get; set; } = null;
+        public IConnection UdpConnection { get; set; } = null;
+
         [ProtoMember(5), Key(5)]
-        public int Port { get; set; } = 0;
-        [ProtoMember(6), Key(6)]
-        public int TcpPort { get; set; } = 0;
-        [ProtoMember(7), Key(7)]
         public string Name { get; set; } = string.Empty;
-        [ProtoMember(8), Key(8)]
+        [ProtoMember(6), Key(6)]
         public string Mac { get; set; } = string.Empty;
-        [ProtoMember(9), Key(9)]
+        [ProtoMember(7), Key(7)]
         public string Ip { get; set; } = string.Empty;
-        [ProtoMember(10), Key(10)]
-        public long Id { get; set; } = 0;
-        [ProtoMember(11), Key(11)]
-        public long LastTime { get; set; } = 0;
-        [ProtoMember(12), Key(12)]
-        public long TcpLastTime { get; set; } = 0;
-
-        [ProtoMember(13), Key(13)]
-        public long SelfId { get; set; } = 0;
-
-        public bool IsNeedHeart()
-        {
-            return (LastTime == 0 || Helper.GetTimeStamp() - LastTime > 5000);
-        }
-        public bool IsNeedTcpHeart()
-        {
-            return (TcpLastTime == 0 || Helper.GetTimeStamp() - TcpLastTime > 5000);
-        }
-
-        public bool IsTimeout()
-        {
-            return (LastTime > 0 && Helper.GetTimeStamp() - LastTime > 20000);
-        }
-
-        public bool IsTcpTimeout()
-        {
-            return (TcpLastTime > 0 && Helper.GetTimeStamp() - TcpLastTime > 20000);
-        }
-
-        public void UpdateLastTime()
-        {
-            if (Connected)
-            {
-                LastTime = Helper.GetTimeStamp();
-            }
-            
-        }
-
-        public void UpdateTcpLastTime()
-        {
-            if (TcpConnected)
-            {
-                TcpLastTime = Helper.GetTimeStamp();
-            }
-        }
+        [ProtoMember(8), Key(8)]
+        public ulong Id { get; set; } = 0;
 
         public void Offline()
         {
             Connecting = false;
             Connected = false;
-            LastTime = 0;
-        }
-        public void Online(IPEndPoint address)
-        {
-            Connected = true;
-            LastTime = Helper.GetTimeStamp();
-            Address = address;
-            Connecting = false;
-            UdpAddressId = address.ToInt64();
+            UdpConnection = null;
         }
         public void OfflineTcp()
         {
             TcpConnecting = false;
             TcpConnected = false;
-            TcpLastTime = 0;
-            if (Socket != null)
+            if (TcpConnection != null)
             {
-                Socket.SafeClose();
+                TcpConnection.TcpSocket.SafeClose();
+            }
+            TcpConnection = null;
+        }
+
+        public void Offline(IConnection connection)
+        {
+            if (connection.ServerType == server.model.ServerType.UDP)
+            {
+                Offline();
+            }
+            else
+            {
+                OfflineTcp();
             }
         }
-        public void OnlineTcp(Socket socket)
+
+
+        public void Online(IConnection connection)
         {
-            var ip = socket.RemoteEndPoint as IPEndPoint;
-            TcpConnected = true;
-            TcpConnecting = false;
-            TcpLastTime = Helper.GetTimeStamp();
-            Socket = socket;
-            Ip = ip.Address.ToString();
-            TcpAddressId = ip.ToInt64();
+            if (connection.ServerType == server.model.ServerType.UDP)
+            {
+                Connected = true;
+                UdpConnection = connection;
+                Connecting = false;
+                Ip = connection.UdpAddress.Address.ToString();
+            }
+            else
+            {
+                TcpConnected = true;
+                TcpConnecting = false;
+                TcpConnection = connection;
+                Ip = connection.TcpAddress.Address.ToString();
+            }
         }
 
-
-        [ProtoIgnore, JsonIgnore, IgnoreMember]
-        public long UdpAddressId { get; set; } = 0;
-        [ProtoIgnore, JsonIgnore, IgnoreMember]
-        public long TcpAddressId { get; set; } = 0;
     }
 }

@@ -35,7 +35,7 @@ namespace client.service.ddns.client
             Loop();
         }
 
-        public IEnumerable<PlatformInfo> Platforms(ClientServicePluginExcuteWrap arg)
+        public IEnumerable<PlatformInfo> Platforms(ClientServicePluginExecuteWrap arg)
         {
             return config.Platforms.Select(c => new PlatformInfo
             {
@@ -47,7 +47,7 @@ namespace client.service.ddns.client
                 })
             });
         }
-        public DescribeDomains Domains(ClientServicePluginExcuteWrap arg)
+        public DescribeDomains Domains(ClientServicePluginExecuteWrap arg)
         {
             ParamBasePageInfo model = arg.Content.DeJson<ParamBasePageInfo>();
             return plugins[model.Platform].DescribeDomains(new DescribeDomainsParam
@@ -56,7 +56,7 @@ namespace client.service.ddns.client
                 PageNumber = model.PageNumber
             }, model.Group);
         }
-        public bool AddDomain(ClientServicePluginExcuteWrap arg)
+        public bool AddDomain(ClientServicePluginExecuteWrap arg)
         {
             try
             {
@@ -69,13 +69,13 @@ namespace client.service.ddns.client
             }
             return false;
         }
-        public bool DelDomain(ClientServicePluginExcuteWrap arg)
+        public bool DelDomain(ClientServicePluginExecuteWrap arg)
         {
             ParamBaseInfo model = arg.Content.DeJson<ParamBaseInfo>();
             return plugins[model.Platform].DeleteDomain(model.Group, model.Domain);
         }
 
-        public DescribeDomainRecord GetRecords(ClientServicePluginExcuteWrap arg)
+        public DescribeDomainRecord GetRecords(ClientServicePluginExecuteWrap arg)
         {
             ParamBasePageInfo model = arg.Content.DeJson<ParamBasePageInfo>();
             return plugins[model.Platform].DescribeDomainRecords(new DescribeDomainRecordsModel
@@ -85,7 +85,7 @@ namespace client.service.ddns.client
                 PageNumber = model.PageNumber,
             }, model.Group);
         }
-        public bool SetRecordStatus(ClientServicePluginExcuteWrap arg)
+        public bool SetRecordStatus(ClientServicePluginExecuteWrap arg)
         {
             SetRecordStatusModel model = arg.Content.DeJson<SetRecordStatusModel>();
             return plugins[model.Platform].SwitchDomainRecordStatus(new SetDomainRecordStatusModel
@@ -95,7 +95,7 @@ namespace client.service.ddns.client
                 Domain = model.Domain
             }, model.Group);
         }
-        public bool DelRecord(ClientServicePluginExcuteWrap arg)
+        public bool DelRecord(ClientServicePluginExecuteWrap arg)
         {
             DelRecordModel model = arg.Content.DeJson<DelRecordModel>();
             return plugins[model.Platform].DeleteDomainRecord(new DeleteDomainRecordModel
@@ -104,7 +104,7 @@ namespace client.service.ddns.client
                 Domain = model.Domain
             }, model.Group);
         }
-        public bool RemarkRecord(ClientServicePluginExcuteWrap arg)
+        public bool RemarkRecord(ClientServicePluginExecuteWrap arg)
         {
             RemarkRecordModel model = arg.Content.DeJson<RemarkRecordModel>();
             return plugins[model.Platform].UpdateDomainRecordRemark(new UpdateDomainRecordRemarkModel
@@ -114,16 +114,16 @@ namespace client.service.ddns.client
                 Domain = model.Domain
             }, model.Group);
         }
-        public List<string> GetRecordTypes(ClientServicePluginExcuteWrap arg)
+        public List<string> GetRecordTypes(ClientServicePluginExecuteWrap arg)
         {
             return typeof(RecordType).GetFields().Where(c => c.FieldType.IsEnum).Select(c => c.Name).ToList();
         }
-        public IEnumerable<DescribeSupportLine> GetRecordLines(ClientServicePluginExcuteWrap arg)
+        public IEnumerable<DescribeSupportLine> GetRecordLines(ClientServicePluginExecuteWrap arg)
         {
             GetRecordLinesModel model = arg.Content.DeJson<GetRecordLinesModel>();
             return plugins[model.Platform].DescribeSupportLines(model.Group, model.Domain);
         }
-        public bool AddRecord(ClientServicePluginExcuteWrap arg)
+        public bool AddRecord(ClientServicePluginExecuteWrap arg)
         {
             try
             {
@@ -162,7 +162,7 @@ namespace client.service.ddns.client
             }
             return false;
         }
-        public bool SwitchRecord(ClientServicePluginExcuteWrap arg)
+        public async Task<bool> SwitchRecord(ClientServicePluginExecuteWrap arg)
         {
             RecordSwitchModel model = arg.Content.DeJson<RecordSwitchModel>();
             var group = config.Platforms.FirstOrDefault(c => c.Name == model.Platform).Groups.FirstOrDefault(c => c.Name == model.Group);
@@ -177,7 +177,7 @@ namespace client.service.ddns.client
                 group.Records.Remove(record);
             }
             group.Records = group.Records.Distinct().ToList();
-            config.SaveConfig();
+            await config.SaveConfig();
             return true;
         }
 
@@ -347,24 +347,24 @@ namespace client.service.ddns.client
 
         public bool Enable => config.Enable;
 
-        public object LoadSetting()
+        public async Task<object> LoadSetting()
         {
-            return config;
+            return await Task.FromResult(config);
         }
 
-        public string SaveSetting(string jsonStr)
+        public async Task<string> SaveSetting(string jsonStr)
         {
             Config _config = jsonStr.DeJson<Config>();
             config.Enable = _config.Enable;
             config.Interval = _config.Interval;
             config.Platforms = _config.Platforms;
-            config.SaveConfig();
+            await config.SaveConfig();
             return string.Empty;
         }
 
-        public bool SwitchEnable(bool enable)
+        public async Task<bool> SwitchEnable(bool enable)
         {
-            return true;
+            return await Task.FromResult(true);
         }
     }
 }

@@ -26,46 +26,34 @@ namespace client.service.serverTcpforward
             this.serverTcpForwardRegisterConfig = serverTcpForwardRegisterConfig;
         }
 
-        public ServerMessageResponeWrap Register()
+        public async Task<MessageRequestResponeWrap> Register()
         {
-            var res = serverRequest.SendReplyTcp(new SendTcpEventArg<ServerTcpForwardRegisterModel>
+            return await serverRequest.SendReply(new SendEventArg<ServerTcpForwardRegisterModel>
             {
                 Data = new ServerTcpForwardRegisterModel
                 {
-                    Id = registerstate.RemoteInfo.ConnectId,
                     Web = serverTcpForwardRegisterConfig.Web,
                     Tunnel = serverTcpForwardRegisterConfig.Tunnel
                 },
-                Socket = registerstate.TcpSocket,
+                Connection = registerstate.TcpConnection,
                 Path = "ServerTcpForward/register"
-            }).Result;
-            if (res.Code == ServerMessageResponeCodes.OK)
-            {
-                Logger.Instance.Info("已注册服务器TCP转发");
-            }
-            else
-            {
-                Logger.Instance.Error($"服务器TCP转发注册失败:{res.ErrorMsg}");
-            }
-            return res;
+            });
         }
-        public ServerMessageResponeWrap UnRegister()
+        public async Task<MessageRequestResponeWrap> UnRegister()
         {
-            var res = serverRequest.SendReplyTcp(new SendTcpEventArg<ServerTcpForwardRegisterModel>
+            return await serverRequest.SendReply(new SendEventArg<ServerTcpForwardRegisterModel>
             {
                 Data = new ServerTcpForwardRegisterModel
                 {
-                    Id = registerstate.RemoteInfo.ConnectId,
                     Web = serverTcpForwardRegisterConfig.Web,
                     Tunnel = serverTcpForwardRegisterConfig.Tunnel
                 },
-                Socket = registerstate.TcpSocket,
+                Connection = registerstate.TcpConnection,
                 Path = "ServerTcpForward/unregister"
-            }).Result;
-            return res;
+            });
         }
 
-        public void Request(ServerTcpForwardModel data)
+        public async Task Request(ServerTcpForwardModel data)
         {
             if (data.Type == ServerTcpForwardType.CLOSE)
             {
@@ -75,7 +63,7 @@ namespace client.service.serverTcpforward
 
             if (!serverTcpForwardRegisterConfig.Enable)
             {
-                serverRequest.SendOnlyTcp(new SendTcpEventArg<ServerTcpForwardModel>
+                await serverRequest.SendOnly(new SendEventArg<ServerTcpForwardModel>
                 {
                     Data = new ServerTcpForwardModel
                     {
@@ -84,7 +72,7 @@ namespace client.service.serverTcpforward
                         Buffer = Encoding.UTF8.GetBytes("客户端未开启插件"),
                         AliveType = data.AliveType
                     },
-                    Socket = registerstate.TcpSocket,
+                    Connection = registerstate.TcpConnection,
                     Path = "ServerTcpForward/response"
                 });
                 return;
@@ -104,7 +92,7 @@ namespace client.service.serverTcpforward
                         TargetPort = data.TargetPort,
                         AliveType = data.AliveType,
                         TargetIp = data.TargetIp,
-                        SourceSocket = registerstate.TcpSocket
+                        SourceSocket = registerstate.TcpConnection.TcpSocket
                     };
 
                     IPEndPoint dnsEndPoint = new(Helper.GetDomainIp(data.TargetIp), data.TargetPort);
@@ -127,16 +115,16 @@ namespace client.service.serverTcpforward
             catch (Exception ex)
             {
                 ClientModel.Remove(data.RequestId);
-                serverRequest.SendOnlyTcp(new SendTcpEventArg<ServerTcpForwardModel>
+                await serverRequest.SendOnly(new SendEventArg<ServerTcpForwardModel>
                 {
                     Data = new ServerTcpForwardModel
                     {
                         RequestId = data.RequestId,
                         Type = ServerTcpForwardType.FAIL,
-                        Buffer = Encoding.UTF8.GetBytes(ex + ""),
+                        Buffer = Encoding.UTF8.GetBytes(ex.ToString()),
                         AliveType = data.AliveType
                     },
-                    Socket = registerstate.TcpSocket,
+                    Connection = registerstate.TcpConnection,
                     Path = "ServerTcpForward/response"
                 });
             }
@@ -144,7 +132,7 @@ namespace client.service.serverTcpforward
 
         private void BindReceive(ClientModel client)
         {
-            _ = Task.Run(() =>
+            Task.Run(async () =>
             {
                 while (client.Stream.CanRead && ClientModel.Contains(client.RequestId))
                 {
@@ -153,7 +141,7 @@ namespace client.service.serverTcpforward
                         var bytes = client.Stream.ReceiveAll();
                         if (bytes.Length > 0)
                         {
-                            Receive(client, bytes);
+                            await Receive(client, bytes);
                         }
                         else
                         {
@@ -169,9 +157,9 @@ namespace client.service.serverTcpforward
             });
         }
 
-        private void Receive(ClientModel client, byte[] data)
+        private async Task Receive(ClientModel client, byte[] data)
         {
-            serverRequest.SendOnlyTcp(new SendTcpEventArg<ServerTcpForwardModel>
+            await serverRequest.SendOnly(new SendEventArg<ServerTcpForwardModel>
             {
                 Data = new ServerTcpForwardModel
                 {
@@ -182,7 +170,7 @@ namespace client.service.serverTcpforward
                     AliveType = client.AliveType,
                     TargetIp = client.TargetIp
                 },
-                Socket = registerstate.TcpSocket,
+                Connection = registerstate.TcpConnection,
                 Path = "ServerTcpForward/response"
             });
         }
@@ -196,7 +184,7 @@ namespace client.service.serverTcpforward
 
     public class ClientModel
     {
-        public long RequestId { get; set; }
+        public ulong RequestId { get; set; }
         public int SourcePort { get; set; } = 0;
         public Socket SourceSocket { get; set; }
         public Socket TargetSocket { get; set; }
@@ -206,24 +194,24 @@ namespace client.service.serverTcpforward
         public ServerTcpForwardAliveTypes AliveType { get; set; } = ServerTcpForwardAliveTypes.WEB;
         public NetworkStream Stream { get; set; }
 
-        private readonly static ConcurrentDictionary<long, ClientModel> clients = new();
+        private readonly static ConcurrentDictionary<ulong, ClientModel> clients = new();
 
         public static bool Add(ClientModel model)
         {
             return clients.TryAdd(model.RequestId, model);
         }
 
-        public static bool Contains(long id)
+        public static bool Contains(ulong id)
         {
             return clients.ContainsKey(id);
         }
 
-        public static bool Get(long id, out ClientModel c)
+        public static bool Get(ulong id, out ClientModel c)
         {
             return clients.TryGetValue(id, out c);
         }
 
-        public static void Remove(long id)
+        public static void Remove(ulong id)
         {
             if (clients.TryRemove(id, out ClientModel c))
             {
@@ -244,7 +232,7 @@ namespace client.service.serverTcpforward
 
         public static void Clear(int sourcePort)
         {
-            IEnumerable<long> requestIds = clients.Where(c => c.Value.SourcePort == sourcePort).Select(c => c.Key);
+            IEnumerable<ulong> requestIds = clients.Where(c => c.Value.SourcePort == sourcePort).Select(c => c.Key);
             foreach (var requestId in requestIds)
             {
                 Remove(requestId);

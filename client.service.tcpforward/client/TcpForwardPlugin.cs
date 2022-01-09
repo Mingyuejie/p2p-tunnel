@@ -3,6 +3,7 @@ using common.extends;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace client.service.tcpforward.client
 {
@@ -24,19 +25,19 @@ namespace client.service.tcpforward.client
 
         public bool Enable => tcpForwardSettingModel.Enable;
 
-        public object LoadSetting()
+        public async Task<object> LoadSetting()
         {
-            return tcpForwardSettingModel;
+            return await Task.FromResult(tcpForwardSettingModel);
         }
 
-        public string SaveSetting(string jsonStr)
+        public async Task<string> SaveSetting(string jsonStr)
         {
             TcpForwardSettingModel model = jsonStr.DeJson<TcpForwardSettingModel>();
-            model.SaveConfig();
+            await model.SaveConfig();
             return string.Empty;
         }
 
-        public void Add(ClientServicePluginExcuteWrap arg)
+        public void Add(ClientServicePluginExecuteWrap arg)
         {
             ForwardSettingModel model = arg.Content.DeJson<ForwardSettingModel>();
             TcpForwardRecordBaseModel fmodel = model.Content.DeJson<TcpForwardRecordBaseModel>();
@@ -58,7 +59,7 @@ namespace client.service.tcpforward.client
 
         }
 
-        public void Del(ClientServicePluginExcuteWrap arg)
+        public void Del(ClientServicePluginExecuteWrap arg)
         {
             ForwardSettingModel model = arg.Content.DeJson<ForwardSettingModel>();
             string errmsg = tcpForwardHelper.Del(model.ID);
@@ -68,12 +69,12 @@ namespace client.service.tcpforward.client
             }
         }
 
-        public List<TcpForwardRecordBaseModel> List(ClientServicePluginExcuteWrap arg)
+        public List<TcpForwardRecordBaseModel> List(ClientServicePluginExecuteWrap arg)
         {
             return tcpForwardHelper.Mappings;
         }
 
-        public void Start(ClientServicePluginExcuteWrap arg)
+        public void Start(ClientServicePluginExecuteWrap arg)
         {
             ForwardSettingModel model = arg.Content.DeJson<ForwardSettingModel>();
             string errmsg = tcpForwardHelper.Start(model.ID);
@@ -83,16 +84,16 @@ namespace client.service.tcpforward.client
             }
         }
 
-        public void Stop(ClientServicePluginExcuteWrap arg)
+        public void Stop(ClientServicePluginExecuteWrap arg)
         {
             ForwardSettingModel model = arg.Content.DeJson<ForwardSettingModel>();
             tcpForwardHelper.Stop(model.ID);
         }
 
-        public bool SwitchEnable(bool enable)
+        public async Task<bool> SwitchEnable(bool enable)
         {
             tcpForwardSettingModel.Enable = enable;
-            tcpForwardSettingModel.SaveConfig();
+            await tcpForwardSettingModel.SaveConfig();
             return true;
         }
     }
@@ -126,14 +127,14 @@ namespace client.service.tcpforward.client
         public int ReceiveBufferSize { get; set; } = 1024;
         public int NumConnections { get; set; } = 3000;
 
-        public static TcpForwardSettingModel ReadConfig()
+        public static async Task<TcpForwardSettingModel> ReadConfig()
         {
-            return FromFile<TcpForwardSettingModel>("tcpforward-appsettings.json") ?? new TcpForwardSettingModel();
+            return await FromFile<TcpForwardSettingModel>("tcpforward-appsettings.json") ?? new TcpForwardSettingModel();
         }
 
-        public void SaveConfig()
+        public async Task SaveConfig()
         {
-            TcpForwardSettingModel config = ReadConfig();
+            TcpForwardSettingModel config = await ReadConfig();
 
             config.PortBlackList = PortBlackList;
             config.PortWhiteList = PortWhiteList;
@@ -141,7 +142,7 @@ namespace client.service.tcpforward.client
             config.ReceiveBufferSize = ReceiveBufferSize;
             config.NumConnections = NumConnections;
 
-            ToFile(config,"tcpforward-appsettings.json");
+            await ToFile(config, "tcpforward-appsettings.json");
         }
     }
 }

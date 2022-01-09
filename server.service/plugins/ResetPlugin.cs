@@ -2,6 +2,7 @@
 using server.model;
 using server.plugin;
 using server.service.plugins.register.caching;
+using System.Threading.Tasks;
 
 namespace server.service.plugins
 {
@@ -15,54 +16,31 @@ namespace server.service.plugins
             this.serverPluginHelper = serverPluginHelper;
         }
 
-        public bool Excute(PluginParamWrap data)
+        public async Task<bool> Execute(PluginParamWrap data)
         {
             ResetModel model = data.Wrap.Memory.DeBytes<ResetModel>();
 
-            if (!clientRegisterCache.Verify(model.Id, data)) return false;
-
             //A已注册
-            RegisterCacheModel source = clientRegisterCache.Get(model.Id);
-            if (source != null)
+            if (clientRegisterCache.Get(data.Connection.ConnectId, out RegisterCacheModel source))
             {
                 //B已注册
-                RegisterCacheModel target = clientRegisterCache.Get(model.ToId);
-                if (target != null)
+                if (clientRegisterCache.Get(model.ToId, out RegisterCacheModel target))
                 {
                     //是否在同一个组
-                    if (source.GroupId != target.GroupId)
+                    if (source.GroupId == target.GroupId)
                     {
-                        return false;
-                    }
-
-                    if (data.ServerType == ServerType.UDP)
-                    {
-                        serverPluginHelper.SendOnly(new SendMessageWrap<object>
+                        return (await serverPluginHelper.SendReply(new MessageRequestParamsWrap<ResetModel>
                         {
-                            Address = target.Address,
-                            TcpCoket = null,
+                            Connection = data.Connection.ServerType == ServerType.UDP ? target.UdpConnection : target.TcpConnection,
                             Data = model,
                             Path = data.Wrap.Path,
-                            RequestId = data.Wrap.RequestId,
-                            Code = ServerMessageResponeCodes.OK
-                        });
-                    }
-                    else if (data.ServerType == ServerType.TCP)
-                    {
-                        serverPluginHelper.SendOnlyTcp(new SendMessageWrap<object>
-                        {
-                            Address = target.Address,
-                            TcpCoket = target.TcpSocket,
-                            Data = model,
-                            Path = data.Wrap.Path,
-                            RequestId = data.Wrap.RequestId,
-                            Code = ServerMessageResponeCodes.OK
-                        });
+                            RequestId = data.Wrap.RequestId
+                        })).Code == MessageResponeCode.OK;
                     }
                 }
             }
 
-            return true;
+            return false;
         }
     }
 }

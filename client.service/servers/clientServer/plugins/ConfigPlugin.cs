@@ -15,7 +15,7 @@ namespace client.service.servers.clientServer.plugins
             this.config = config;
         }
 
-        public void Update(ClientServicePluginExcuteWrap arg)
+        public void Update(ClientServicePluginExecuteWrap arg)
         {
             SettingModel model = arg.Content.DeJson<SettingModel>();
 

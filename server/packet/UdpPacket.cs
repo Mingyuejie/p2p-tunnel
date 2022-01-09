@@ -12,23 +12,16 @@ namespace server.packet
 
     /// <summary>
     /// 自定义UDP数据包
-    /// 包的数据顺序
-    /// int type
-    /// string sequence
-    /// int index
-    /// int total
-    /// short ttl
-    /// byte[] 数据
     /// </summary>
     public class UdpPacket : IPacket
     {
-        private static readonly ConcurrentDictionary<long, ConcurrentDictionary<long, PacketCacheModel>> packetChunkCache = new();
+        private static readonly ConcurrentDictionary<long, ConcurrentDictionary<ulong, PacketCacheModel>> packetChunkCache = new();
+        private static NumberSpace udpSequenceNumberSpace = new NumberSpace(0);
+        private static int chunkLength = 1400;
 
-        public long Sequence { get; set; }
+        public ulong Sequence { get; set; }
         public int Total { get; set; }
         public int Index { get; set; }
-        public short Ttl { get; set; }
-        public long Id { get; set; } = 0;
         public byte[] Chunk { get; set; }
 
 
@@ -36,14 +29,12 @@ namespace server.packet
         {
 
         }
-        public UdpPacket(long sequence, int total, int index, byte[] chunk, short ttl, long id = 0) : this()
+        public UdpPacket(ulong sequence, int total, int index, byte[] chunk) : this()
         {
             Sequence = sequence;
             Total = total;
             Index = index;
             Chunk = chunk;
-            Ttl = ttl;
-            Id = id;
         }
 
         public byte[] ToArray()
@@ -51,10 +42,8 @@ namespace server.packet
             byte[] sequenceArray = BitConverter.GetBytes(Sequence);
             byte[] indexArray = BitConverter.GetBytes(Index);
             byte[] totalArray = BitConverter.GetBytes(Total);
-            byte[] ttlArray = BitConverter.GetBytes(Ttl);
-            byte[] idArray = BitConverter.GetBytes(Id);
 
-            byte[] dist = new byte[Chunk.Length + indexArray.Length + sequenceArray.Length + totalArray.Length+ ttlArray.Length+ idArray.Length];
+            byte[] dist = new byte[Chunk.Length + indexArray.Length + sequenceArray.Length + totalArray.Length];
 
             int distIndex = 0;
 
@@ -68,12 +57,6 @@ namespace server.packet
             Array.Copy(totalArray, 0, dist, distIndex, totalArray.Length);
             distIndex += totalArray.Length;
 
-            Array.Copy(ttlArray, 0, dist, distIndex, ttlArray.Length);
-            distIndex += ttlArray.Length;
-
-            Array.Copy(idArray, 0, dist, distIndex, idArray.Length);
-            distIndex += idArray.Length;
-
             Array.Copy(Chunk, 0, dist, distIndex, Chunk.Length);
 
             return dist;
@@ -85,17 +68,11 @@ namespace server.packet
             return FromArray(ip.ToInt64(), array);
         }
 
-        /// <summary>
-        /// byte[]  转为包结构  可能为null，做好判断
-        /// </summary>
-        /// <param name="ip"></param>
-        /// <param name="array"></param>
-        /// <returns></returns>
         public static UdpPacket FromArray(long ip, byte[] array)
         {
             int skipIndex = 0;
 
-            long sequence = BitConverter.ToInt64(array.Skip(skipIndex).Take(8).ToArray());
+            ulong sequence = BitConverter.ToUInt64(array.Skip(skipIndex).Take(8).ToArray());
             skipIndex += 8;
 
             int index = BitConverter.ToInt32(array.Skip(skipIndex).Take(4).ToArray());
@@ -104,27 +81,20 @@ namespace server.packet
             int total = BitConverter.ToInt32(array.Skip(skipIndex).Take(4).ToArray());
             skipIndex += 4;
 
-            short ttl = BitConverter.ToInt16(array.Skip(skipIndex).Take(2).ToArray());
-            skipIndex += 2;
-
-            long id = BitConverter.ToInt16(array.Skip(skipIndex).Take(8).ToArray());
-            skipIndex += 8;
-
             byte[] chunk = array.Skip(skipIndex).ToArray();
-
             if (total == 1)
             {
-                return new UdpPacket(sequence, total, index, chunk,  ttl, id);
+                return new UdpPacket(sequence, total, index, chunk);
             }
 
             //ip 分类
-            _ = packetChunkCache.TryGetValue(ip, out ConcurrentDictionary<long, PacketCacheModel> ipPackets);
+            packetChunkCache.TryGetValue(ip, out ConcurrentDictionary<ulong, PacketCacheModel> ipPackets);
             if (ipPackets == null)
             {
-                ipPackets = new ConcurrentDictionary<long, PacketCacheModel>();
+                ipPackets = new ConcurrentDictionary<ulong, PacketCacheModel>();
             }
             //ip下的序号
-            _ = ipPackets.TryGetValue(sequence, out PacketCacheModel packets);
+            ipPackets.TryGetValue(sequence, out PacketCacheModel packets);
             if (packets == null)
             {
                 packets = new PacketCacheModel();
@@ -134,7 +104,7 @@ namespace server.packet
 
             if (packets.Buffers.Count == total)
             {
-                _ = ipPackets.Remove(sequence, out _);
+                ipPackets.Remove(sequence, out _);
                 if (ipPackets.Values.Count <= 0)
                 {
                     packetChunkCache.TryRemove(ip, out _);
@@ -151,31 +121,66 @@ namespace server.packet
                     distIndex += item.Buffers.Length;
                 }
                 packets.Buffers.Clear();
-                return new UdpPacket(sequence, total, index, dist, ttl, id);
+                return new UdpPacket(sequence, total, index, dist);
             }
             else
             {
-                _ = ipPackets.AddOrUpdate(sequence, packets, (k, v) => packets);
+                ipPackets.AddOrUpdate(sequence, packets, (k, v) => packets);
 
                 long time = Helper.GetTimeStamp();
-                foreach (KeyValuePair<long, ConcurrentDictionary<long, PacketCacheModel>> item in packetChunkCache)
+                foreach (KeyValuePair<long, ConcurrentDictionary<ulong, PacketCacheModel>> item in packetChunkCache)
                 {
-                    foreach (KeyValuePair<long, PacketCacheModel> item1 in item.Value)
+                    foreach (KeyValuePair<ulong, PacketCacheModel> item1 in item.Value)
                     {
                         if (time - item1.Value.Time > 100)
                         {
-                            _ = item.Value.TryRemove(item1.Key, out _);
+                            item.Value.TryRemove(item1.Key, out _);
                         }
                     }
 
                     if (item.Value.Count == 0)
                     {
-                        _ = packetChunkCache.TryRemove(item.Key, out _);
+                        packetChunkCache.TryRemove(item.Key, out _);
                     }
                 }
             }
 
             return null;
+        }
+
+        public static IEnumerable<UdpPacket> Split(byte[] datagram)
+        {
+            if (datagram == null)
+            {
+                throw new ArgumentNullException("datagram");
+            }
+
+            List<UdpPacket> packets = new();
+            ulong sequence = udpSequenceNumberSpace.Get();
+
+            int chunks = datagram.Length / chunkLength;
+            int remainder = datagram.Length % chunkLength;
+            int total = chunks;
+            if (remainder > 0)
+            {
+                total++;
+            }
+
+            for (int i = 1; i <= chunks; i++)
+            {
+                byte[] chunk = new byte[chunkLength];
+                Buffer.BlockCopy(datagram, (i - 1) * chunkLength, chunk, 0, chunkLength);
+                packets.Add(new UdpPacket(sequence, total, i, chunk));
+            }
+            if (remainder > 0)
+            {
+                int length = datagram.Length - (chunkLength * chunks);
+                byte[] chunk = new byte[length];
+                Buffer.BlockCopy(datagram, chunkLength * chunks, chunk, 0, length);
+                packets.Add(new UdpPacket(sequence, total, total, chunk));
+            }
+
+            return packets;
         }
     }
 

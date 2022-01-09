@@ -12,22 +12,17 @@ namespace server.plugins.register.caching
     public interface IClientInfoCaching
     {
         public SimplePushSubHandler<ClientInfo> OnOffline { get; }
-        public SimplePushSubHandler<ClientInfo> OnTcpOffline { get; }
-
-        public void UpdateLastTime(long id);
-        public void UpdateTcpLastTime(long id);
         public bool Add(ClientInfo client);
-        public bool Get(long id, out ClientInfo client);
+        public bool Get(ulong id, out ClientInfo client);
         public ClientInfo GetByName(string name);
         public IEnumerable<ClientInfo> All();
-        public IEnumerable<long> AllIds();
-        public void Offline(long id);
-        public void Online(long id, IPEndPoint address);
-        public void OfflineTcp(long id);
-        public void OnlineTcp(long id, Socket socket);
-        public void OfflineBoth(long id);
-        public void Remove(long id);
-        public void MsgTime(long address,long time);
-        public void MsgTcpTime(long address, long time);
+        public IEnumerable<ulong> AllIds();
+        public void Connecting(ulong id,bool val, IConnection connection);
+        public void Offline(ulong id);
+        public void Offline(ulong id, IConnection connection);
+        public void Offline(IConnection connection);
+        public void Online(IConnection connection);
+        public void Online(ulong id, IConnection connection);
+        public void Remove(ulong id);
     }
 }

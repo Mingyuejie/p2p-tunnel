@@ -11,12 +11,12 @@ namespace client.service.ftp.plugin
     public interface IFtpServerPlugin
     {
         public FtpCommand Cmd { get; }
-        public object Excute(FtpPluginParamWrap data);
+        public Task<FtpResultModel> Execute(FtpPluginParamWrap data);
     }
 
     public interface IFtpClientPlugin
     {
         public FtpCommand Cmd { get; }
-        public object Excute(FtpPluginParamWrap data);
+        public Task<FtpResultModel> Execute(FtpPluginParamWrap data);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using client.plugins.serverPlugins.clients;
 using common;
 using common.extends;
+using server;
 using server.model;
 using server.plugins.register.caching;
 using System;
@@ -16,33 +17,16 @@ namespace client.service.plugins.serverPlugins.clients
 {
     public class ClientInfoCache : IClientInfoCaching
     {
-        private readonly static ConcurrentDictionary<long, ClientInfo> clients = new ConcurrentDictionary<long, ClientInfo>();
+        private readonly static ConcurrentDictionary<ulong, ClientInfo> clients = new ConcurrentDictionary<ulong, ClientInfo>();
 
         public SimplePushSubHandler<ClientInfo> OnOffline { get; } = new SimplePushSubHandler<ClientInfo>();
-        public SimplePushSubHandler<ClientInfo> OnTcpOffline { get; } = new SimplePushSubHandler<ClientInfo>();
-
-        public void UpdateLastTime(long id)
-        {
-            if (clients.TryGetValue(id, out ClientInfo client))
-            {
-                client.UpdateLastTime();
-            }
-        }
-
-        public void UpdateTcpLastTime(long id)
-        {
-            if (clients.TryGetValue(id, out ClientInfo client))
-            {
-                client.UpdateTcpLastTime();
-            }
-        }
 
         public bool Add(ClientInfo client)
         {
             return clients.TryAdd(client.Id, client);
         }
 
-        public bool Get(long id, out ClientInfo client)
+        public bool Get(ulong id, out ClientInfo client)
         {
             return clients.TryGetValue(id, out client);
         }
@@ -57,98 +41,72 @@ namespace client.service.plugins.serverPlugins.clients
             return clients.Values;
         }
 
-        public IEnumerable<long> AllIds()
+        public IEnumerable<ulong> AllIds()
         {
             return clients.Keys;
         }
 
-        public void Offline(long id)
+        public void Connecting(ulong id, bool val, IConnection connection)
         {
             if (clients.TryGetValue(id, out ClientInfo client))
             {
-                msgTimeUdp.TryRemove(client.UdpAddressId, out _);
+                if(connection.ServerType == ServerType.UDP)
+                {
+                    client.Connecting = val;
+                }
+                else
+                {
+                    client.TcpConnecting = val;
+                }
+            }
+        }
+
+        public void Offline(ulong id)
+        {
+            if (clients.TryGetValue(id, out ClientInfo client))
+            {
                 client.Offline();
+                client.OfflineTcp();
                 OnOffline.Push(client);
             }
         }
-        public void Online(long id, IPEndPoint address)
+
+        public void Offline(ulong id, IConnection connection)
         {
             if (clients.TryGetValue(id, out ClientInfo client))
             {
-                client.Online(address);
+                client.Offline(connection);
+                OnOffline.Push(client);
+            }
+        }
+        public void Offline(IConnection connection)
+        {
+            if (clients.TryGetValue(connection.ConnectId, out ClientInfo client))
+            {
+                client.Online(connection);
             }
         }
 
-        public void OfflineTcp(long id)
-        {
-            if (clients.TryGetValue(id, out ClientInfo client))
-            {
-                msgTimeTcp.TryRemove(client.TcpAddressId, out _);
-                client.OfflineTcp();
-                OnTcpOffline.Push(client);
-            }
-        }
-        public void OnlineTcp(long id, Socket socket)
-        {
-            if (clients.TryGetValue(id, out ClientInfo client))
-            {
-                client.OnlineTcp(socket);
-            }
-        }
-
-        public void OfflineBoth(long id)
-        {
-            if (clients.TryGetValue(id, out ClientInfo client))
-            {
-                msgTimeUdp.TryRemove(client.UdpAddressId, out _);
-                msgTimeTcp.TryRemove(client.TcpAddressId, out _);
-                client.Offline();
-                client.OfflineTcp();
-                OnTcpOffline.Push(client);
-            }
-        }
-
-        public void Remove(long id)
+        public void Remove(ulong id)
         {
             clients.TryRemove(id, out _);
         }
 
-
-        private readonly static ConcurrentDictionary<long, ClientInfo> msgTimeUdp = new ConcurrentDictionary<long, ClientInfo>();
-        private readonly static ConcurrentDictionary<long, ClientInfo> msgTimeTcp = new ConcurrentDictionary<long, ClientInfo>();
-
-        public void MsgTime(long address, long time)
+        public void Online(IConnection connection)
         {
-            if (msgTimeUdp.TryGetValue(address, out ClientInfo client))
+            if (clients.TryGetValue(connection.ConnectId, out ClientInfo client))
             {
-                client.LastTime = time;
+                client.Online(connection);
             }
-            else
+        }
+        public void Online(ulong id, IConnection connection)
+        {
+            if (clients.TryGetValue(id, out ClientInfo client))
             {
-                client = All().FirstOrDefault(c => c.UdpAddressId == address);
-                if (client != null)
-                {
-                    client.LastTime = time;
-                    msgTimeUdp.TryAdd(address, client);
-                }
+                connection.ConnectId = id;
+                client.Online(connection);
             }
         }
 
-        public void MsgTcpTime(long address, long time)
-        {
-            if (msgTimeTcp.TryGetValue(address, out ClientInfo client))
-            {
-                client.TcpLastTime = time;
-            }
-            else
-            {
-                client = All().FirstOrDefault(c => c.TcpAddressId == address);
-                if (client != null)
-                {
-                    client.TcpLastTime = time;
-                    msgTimeTcp.TryAdd(address, client);
-                }
-            }
-        }
     }
 }

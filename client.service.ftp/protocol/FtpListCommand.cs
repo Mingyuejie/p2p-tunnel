@@ -14,8 +14,6 @@ namespace client.service.ftp.protocol
         [ProtoMember(1, IsRequired = true),Key(1)]
         public FtpCommand Cmd { get; } = FtpCommand.LIST;
         [ProtoMember(2), Key(2)]
-        public long SessionId { get; set; }
-        [ProtoMember(3), Key(3)]
         public string Path { get; set; }
     }
 }

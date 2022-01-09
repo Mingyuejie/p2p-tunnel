@@ -28,8 +28,7 @@ namespace server.service
 
         public static ServiceProvider UseTcpServer(this ServiceProvider obj)
         {
-            var tcpserver = obj.GetService<ITcpServer>();
-            tcpserver.Start(obj.GetService<Config>().Tcp);
+            obj.GetService<ITcpServer>().Start(obj.GetService<Config>().Tcp);
             Logger.Instance.Info("TCP服务已开启");
 
             return obj;
@@ -47,9 +46,10 @@ namespace server.service
             obj.AddSingleton<IClientRegisterCaching, ClientRegisterCaching>();
             obj.AddSingleton<ServerPluginHelper>();
 
-            var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(c => c.GetTypes())
+            IEnumerable<Type> types = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(c => c.GetTypes())
                  .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
-            foreach (var item in types)
+            foreach (Type item in types)
             {
                 obj.AddSingleton(item);
             }
@@ -60,9 +60,10 @@ namespace server.service
         public static ServiceProvider UsePlugin(this ServiceProvider obj)
         {
             ServerPluginHelper serverPluginHelper = obj.GetService<ServerPluginHelper>();
-            var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(c => c.GetTypes())
+            IEnumerable<Type> types = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(c => c.GetTypes())
                  .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
-            foreach (var item in types)
+            foreach (Type item in types)
             {
                 serverPluginHelper.LoadPlugin(item, obj.GetService(item));
             }
@@ -79,15 +80,15 @@ namespace server.service
 
             clientRegisterCache.OnChanged.Sub((string group) =>
             {
-                List<ClientsClientModel> clients = clientRegisterCache.GetAll().Where(c => c.GroupId == group).Select(c => new ClientsClientModel
+                List<ClientsClientModel> clients = clientRegisterCache.GetAll().Where(c => c.GroupId == group && c.TcpConnection != null).Select(c => new ClientsClientModel
                 {
-                    Address = c.Address.Address.ToString(),
-                    EndPoint = c.Address,
-                    TcpSocket = c.TcpSocket,
+                    Address = c.UdpConnection.UdpAddress.Address.ToString(),
+                    TcpConnection = c.TcpConnection,
+                    UdpConnection = c.UdpConnection,
                     Id = c.Id,
                     Name = c.Name,
-                    Port = c.Address.Port,
-                    TcpPort = c.TcpPort,
+                    Port = c.UdpConnection.UdpAddress.Port,
+                    TcpPort = (c.TcpConnection.TcpSocket.RemoteEndPoint as IPEndPoint).Port,
                     Mac = c.Mac
                 }).ToList();
                 if (clients.Any())
@@ -98,12 +99,11 @@ namespace server.service
                     }.ToBytes();
                     foreach (ClientsClientModel client in clients)
                     {
-                        serverPluginHelper.SendOnlyTcp(new SendMessageWrap<byte[]>
+                        serverPluginHelper.SendOnly(new MessageRequestParamsWrap<byte[]>
                         {
-                            Address = client.EndPoint,
-                            TcpCoket = client.TcpSocket,
+                            Connection = client.TcpConnection,
                             Data = bytes,
-                            Path = "clients/excute"
+                            Path = "clients/Execute"
                         });
                     }
                 }

@@ -5,6 +5,7 @@ using ProtoBuf;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace client.servers.clientServer
 {
@@ -18,25 +19,25 @@ namespace client.servers.clientServer
         string Author { get; }
         string Desc { get; }
         bool Enable { get; }
-        bool SwitchEnable(bool enable);
-        object LoadSetting();
-        string SaveSetting(string jsonStr);
+        Task<bool> SwitchEnable(bool enable);
+        Task<object> LoadSetting();
+        Task<string> SaveSetting(string jsonStr);
     }
 
     public class SettingModelBase
     {
-        protected static T FromFile<T>(string fileName)
+        protected static async Task<T> FromFile<T>(string fileName)
         {
             if (File.Exists(fileName))
             {
-                return File.ReadAllText(fileName).DeJson<T>();
+                return (await File.ReadAllTextAsync(fileName)).DeJson<T>();
             }
             return default;
         }
 
-        protected void ToFile<T>(T obj, string fileName)
+        protected async Task ToFile<T>(T obj, string fileName)
         {
-            File.WriteAllText(fileName, obj.ToJson(), System.Text.Encoding.UTF8);
+            await File.WriteAllTextAsync(fileName, obj.ToJson(), System.Text.Encoding.UTF8);
         }
     }
 
@@ -61,7 +62,7 @@ namespace client.servers.clientServer
         public string Content { get; set; } = string.Empty;
     }
 
-    public class ClientServicePluginExcuteWrap
+    public class ClientServicePluginExecuteWrap
     {
         public IWebSocketConnection Socket { get; set; }
         public long RequestId { get; set; } = 0;
@@ -80,6 +81,7 @@ namespace client.servers.clientServer
         }
         public void SetErrorMessage(string msg)
         {
+            Code = -1;
             ErrorMessage = msg;
         }
     }

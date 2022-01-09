@@ -16,7 +16,7 @@ namespace client.service.plugins.serverPlugins.clients
             this.clientsMessageHelper = clientsMessageHelper;
         }
 
-        public void Excute(PluginParamWrap model)
+        public void Execute(PluginParamWrap model)
         {
             ClientsModel res = model.Wrap.Memory.DeBytes<ClientsModel>();
             clientsMessageHelper.OnServerClientsData.Push(new OnServerSendClientsEventArg

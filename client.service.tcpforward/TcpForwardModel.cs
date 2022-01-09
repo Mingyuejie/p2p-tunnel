@@ -2,6 +2,7 @@
 using MessagePack;
 using ProtoBuf;
 using System;
+using System.ComponentModel;
 
 namespace client.service.tcpforward
 {
@@ -11,10 +12,10 @@ namespace client.service.tcpforward
         public TcpForwardModel() { }
 
         [ProtoMember(1),Key(1)]
-        public long RequestId { get; set; } = 0;
+        public ulong RequestId { get; set; } = 0;
 
         [ProtoMember(2), Key(2)]
-        public byte[] Buffer { get; set; } = new byte[0];
+        public byte[] Buffer { get; set; } = Array.Empty<byte>();
 
         [ProtoMember(3, IsRequired = true), Key(3)]
         public TcpForwardType Type { get; set; } = TcpForwardType.REQUEST;
@@ -32,15 +33,22 @@ namespace client.service.tcpforward
         public byte Compress { get; set; } = 0;
 
         [ProtoMember(8), Key(8)]
-        public long FromID { get; set; } = 0;
+        public ulong FromID { get; set; } = 0;
     }
 
 
     [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
-    public enum TcpForwardType
+    public enum TcpForwardType:byte
     {
-        REQUEST, RESPONSE, FAIL, RESPONSE_END,CLOSE
+        [Description("请求")]
+        REQUEST,
+        [Description("回复")]
+        RESPONSE,
+        [Description("失败")]
+        FAIL,
+        [Description("关闭")]
+        CLOSE
     }
 
     [ProtoContract, MessagePackObject]
@@ -81,11 +89,11 @@ namespace client.service.tcpforward
 
     [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
-    public enum TcpForwardAliveTypes : int
+    public enum TcpForwardAliveTypes : byte
     {
-        //长连接
+        [Description("长连接")]
         TUNNEL,
-        //短连接
+        [Description("短连接")]
         WEB
     }
 }

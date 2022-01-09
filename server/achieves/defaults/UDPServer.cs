@@ -1,7 +1,9 @@
 ﻿using common;
+using common.extends;
 using server.model;
 using server.packet;
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -18,92 +20,95 @@ namespace server.achieves.defaults
         }
 
         private UdpClient UdpcRecv { get; set; } = null;
-        private CancellationTokenSource cancellationTokenSource;
+        private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         public SimplePushSubHandler<ServerDataWrap<UdpPacket>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<UdpPacket>>();
-
-        private bool Running
-        {
-            get
-            {
-                return cancellationTokenSource != null && !cancellationTokenSource.IsCancellationRequested;
-            }
-        }
+        private static ConcurrentDictionary<long, IConnection> clients = new ConcurrentDictionary<long, IConnection>();
 
         public void Start(int port, IPAddress ip = null)
         {
-            if (!Running)
+            if (UdpcRecv != null)
             {
-                cancellationTokenSource = new CancellationTokenSource();
-                UdpcRecv = new UdpClient(new IPEndPoint(ip ?? IPAddress.Any, port));
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    const uint IOC_IN = 0x80000000;
-                    int IOC_VENDOR = 0x18000000;
-                    int SIO_UDP_CONNRESET = (int)(IOC_IN | IOC_VENDOR | 12);
-                    UdpcRecv.Client.IOControl(SIO_UDP_CONNRESET, new byte[] { Convert.ToByte(false) }, null);
-                }
-
-                IAsyncResult res = UdpcRecv.BeginReceive(Receive, null);
+                return;
             }
-        }
 
-        private void Receive(IAsyncResult result)
-        {
-            try
+            cancellationTokenSource = new CancellationTokenSource();
+            UdpcRecv = new UdpClient(new IPEndPoint(ip ?? IPAddress.Any, port));
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                if(UdpcRecv != null)
-                {
-                    IPEndPoint ipepClient = null;
-                    byte[] bytRecv = UdpcRecv.EndReceive(result, ref ipepClient);
-                    result.AsyncWaitHandle.Close();
+                const uint IOC_IN = 0x80000000;
+                int IOC_VENDOR = 0x18000000;
+                int SIO_UDP_CONNRESET = (int)(IOC_IN | IOC_VENDOR | 12);
+                UdpcRecv.Client.IOControl(SIO_UDP_CONNRESET, new byte[] { Convert.ToByte(false) }, null);
+            }
 
-                    UdpPacket packet = UdpPacket.FromArray(ipepClient, bytRecv);
-                    if (packet != null)
+            Task.Run(async () =>
+            {
+                while (true)
+                {
+                    try
                     {
-                        OnPacket.Push(new ServerDataWrap<UdpPacket>
+                        var result = await UdpcRecv.ReceiveAsync();
+                        long id = result.RemoteEndPoint.ToInt64();
+                        if (!clients.TryGetValue(id, out IConnection connection))
                         {
-                            Data = packet,
-                            Address = ipepClient,
-                            ServerType = ServerType.UDP,
-                            Socket = null
-                        });
+                            connection = CreateConnection(result.RemoteEndPoint);
+                            clients.TryAdd(id, connection);
+                        }
+                        UdpPacket packet = UdpPacket.FromArray(id, result.Buffer);
+                        if (packet != null)
+                        {
+                            await OnPacket.PushAsync(new ServerDataWrap<UdpPacket>
+                            {
+                                Data = packet,
+                                Connection = connection
+                            });
+                        }
                     }
-                    IAsyncResult res = UdpcRecv.BeginReceive(Receive, null);
+                    catch (Exception)
+                    {
+                        Stop();
+                        break;
+                    }
+
+                    if (cancellationTokenSource.IsCancellationRequested)
+                    {
+                        Stop();
+                        break;
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.Error(ex);
-            }
+            }, cancellationTokenSource.Token);
         }
 
         public void Stop()
         {
-            cancellationTokenSource?.Cancel();
+            if (!cancellationTokenSource.IsCancellationRequested)
+            {
+                cancellationTokenSource.Cancel();
+            }
             if (UdpcRecv != null)
             {
                 UdpcRecv.Close();
                 UdpcRecv.Dispose();
                 UdpcRecv = null;
             }
+
+            foreach (IConnection item in clients.Values)
+            {
+                item.Disponse();
+            }
+            clients.Clear();
         }
 
-        public bool Send(byte[] data, IPEndPoint address)
+        public IConnection CreateConnection(IPEndPoint address)
         {
-            if (UdpcRecv != null && address != null)
+            return new Connection
             {
-                try
-                {
-                    _ = UdpcRecv.Send(data, data.Length, address);
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    Logger.Instance.Debug(ex + "");
-                }
-            }
-            return false;
+                ServerType = ServerType.UDP,
+                UdpAddress = address,
+                UdpAddress64 = address.ToInt64(),
+                UdpcRecv = UdpcRecv
+            };
         }
     }
 }

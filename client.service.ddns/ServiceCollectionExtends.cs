@@ -18,7 +18,7 @@ namespace client.service.ddns
     {
         public static ServiceCollection AddDdnsPlugin(this ServiceCollection obj)
         {
-            Config config = Config.ReadConfig();
+            Config config = Config.ReadConfig().Result;
             obj.AddSingleton((e) => config);
 
             obj.AddDdnsPlugin(AppDomain.CurrentDomain.GetAssemblies());
@@ -51,19 +51,19 @@ namespace client.service.ddns
         public int Interval { get; set; } = 100;
         public PlatformInfo[] Platforms { get; set; } = Array.Empty<PlatformInfo>();
 
-        public static Config ReadConfig()
+        public static async Task<Config> ReadConfig()
         {
-            return FromFile<Config>("ddns-appsettings.json") ?? new Config();
+            return await FromFile<Config>("ddns-appsettings.json") ?? new Config();
         }
 
-        public void SaveConfig()
+        public async Task SaveConfig()
         {
-            Config config = ReadConfig();
+            Config config = await ReadConfig();
             config.Platforms = Platforms;
             config.Enable = Enable;
             config.Interval = Interval;
 
-            ToFile(config, "ddns-appsettings.json");
+            await ToFile(config, "ddns-appsettings.json");
         }
     }
 

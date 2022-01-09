@@ -1,9 +1,11 @@
 ﻿using client.servers.clientServer;
 using client.service.serverTcpforward;
 using common.extends;
+using server.model;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace client.service.tcpforward.client
 {
@@ -15,14 +17,15 @@ namespace client.service.tcpforward.client
             this.serverTcpForwardHelper = serverTcpForwardHelper;
         }
 
-        public void Register(ClientServicePluginExcuteWrap arg)
+        public async Task<bool> Register(ClientServicePluginExecuteWrap arg)
         {
-            var res = serverTcpForwardHelper.Register();
-
-            if (res.Code != server.model.ServerMessageResponeCodes.OK)
+            MessageRequestResponeWrap res = await serverTcpForwardHelper.Register();
+            ServerTcpForwardRegisterResponseCode code = res.Data.DeBytes<ServerTcpForwardRegisterResponseCode>();
+            if(code != ServerTcpForwardRegisterResponseCode.OK)
             {
-                arg.SetCode(-1, res.ErrorMsg);
+                arg.SetErrorMessage(code.GetDesc((byte)code));
             }
+            return true;
         }
     }
 }

@@ -1,9 +1,11 @@
 ﻿using client.service.ftp.plugin;
 using client.service.ftp.protocol;
+using common;
 using common.extends;
 using server.model;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace client.service.ftp.server.plugin
 {
@@ -17,16 +19,18 @@ namespace client.service.ftp.server.plugin
             this.ftpServer = ftpServer;
         }
 
-        public object Excute(FtpPluginParamWrap arg)
+        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
         {
+            await Task.Yield();
+
             FtpDownloadCommand cmd = arg.Data.DeBytes<FtpDownloadCommand>();
 
             IEnumerable<string> error = ftpServer.Upload(cmd, arg);
             if (error.Any())
             {
-                arg.SetCode(ServerMessageResponeCodes.ACCESS, $" {string.Join(',', error)}");
+                return new FtpResultModel { Code = FtpResultModel.FtpResultCodes.UNKNOW, Data = $"{string.Join(Helper.SeparatorChar, error)}" };
             }
-            return true;
+            return new FtpResultModel();
         }
     }
 }

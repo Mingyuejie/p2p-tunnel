@@ -1,5 +1,6 @@
 ﻿using common;
 using common.extends;
+using server;
 using server.extends;
 using server.model;
 using server.packet;
@@ -19,13 +20,12 @@ namespace server
     public class ServerPluginHelper
     {
         private readonly Dictionary<string, PluginPathCacheInfo> plugins = new();
-        private long requestId = 0;
-        private ConcurrentDictionary<long, SendCacheModel> sends = new ConcurrentDictionary<long, SendCacheModel>();
+        private NumberSpace requestIdNumberSpace = new NumberSpace(0);
+        private ConcurrentDictionary<ulong, SendCacheModel> sends = new ConcurrentDictionary<ulong, SendCacheModel>();
 
         private readonly ITcpServer tcpserver;
         private readonly IUdpServer udpserver;
 
-        private long sequence = 0;
         private long lastTime = Helper.GetTimeStamp();
 
         public ServerPluginHelper(IUdpServer udpserver, ITcpServer tcpserver)
@@ -33,19 +33,20 @@ namespace server
             this.tcpserver = tcpserver;
             this.udpserver = udpserver;
 
-            this.tcpserver.OnPacket.Sub((wrap) =>
+            this.tcpserver.OnPacket.SubAsync(async (wrap) =>
             {
                 for (int i = 0, len = wrap.Data.Length; i < len; i++)
                 {
-                    InputData(wrap.Data[i], wrap);
+                    await InputData(wrap.Data[i], wrap);
                 }
             });
-            this.udpserver.OnPacket.Sub((wrap) =>
+            this.udpserver.OnPacket.SubAsync(async (wrap) =>
             {
-                InputData(wrap.Data, wrap);
+                wrap.Connection.UpdateTime(lastTime);
+                await InputData(wrap.Data, wrap);
             });
 
-            _ = Task.Factory.StartNew(async () =>
+            Task.Factory.StartNew(async () =>
             {
                 while (true)
                 {
@@ -55,12 +56,11 @@ namespace server
                         {
                             if (item.Timeout > 0 && lastTime - item.Time > item.Timeout)
                             {
-                                if (sends.TryRemove(item.RequestId, out SendCacheModel cache) && cache != null)
+                                if (sends.TryRemove(item.RequestId, out SendCacheModel cache))
                                 {
-                                    cache.Tcs?.SetResult(new ServerMessageResponeWrap
+                                    cache.Tcs.SetResult(new MessageRequestResponeWrap
                                     {
-                                        Code = ServerMessageResponeCodes.TIMEOUT,
-                                        ErrorMsg = "请求超时"
+                                        Code = MessageResponeCode.TIMEOUT
                                     });
                                 }
                             }
@@ -98,410 +98,244 @@ namespace server
             }
         }
 
-        public long NewRequestId()
+        private TaskCompletionSource<MessageRequestResponeWrap> NewReply(ulong requestId, int timeout = 15000)
         {
-            Interlocked.Increment(ref requestId);
-            return requestId;
-        }
-        public TaskCompletionSource<ServerMessageResponeWrap> NewReply(long requestId, int timeout = 15000)
-        {
-            var tcs = new TaskCompletionSource<ServerMessageResponeWrap>();
+            TaskCompletionSource<MessageRequestResponeWrap> tcs = new TaskCompletionSource<MessageRequestResponeWrap>();
+            if (timeout == 0)
+            {
+                timeout = 15000;
+            }
             sends.TryAdd(requestId, new SendCacheModel { Tcs = tcs, RequestId = requestId, Timeout = timeout });
             return tcs;
         }
-        public void RemoveReply(long requestId)
-        {
-            sends.TryRemove(requestId, out _);
-        }
 
-        public async Task<ServerMessageResponeWrap> SendReplyTcp<T>(SendMessageWrap<T> msg)
+        public async Task<MessageRequestResponeWrap> SendReply<T>(MessageRequestParamsWrap<T> msg)
         {
             if (msg.RequestId == 0)
             {
-                msg.RequestId = NewRequestId();
+                msg.RequestId = requestIdNumberSpace.Get();
             }
-            TaskCompletionSource<ServerMessageResponeWrap> tcs = NewReply(msg.RequestId, msg.Timeout);
-            if (!SendOnlyTcp(msg))
+            TaskCompletionSource<MessageRequestResponeWrap> tcs = NewReply(msg.RequestId, msg.Timeout);
+            if (!await SendOnly(msg))
             {
-                RemoveReply(msg.RequestId);
-                tcs.SetResult(new ServerMessageResponeWrap { Code = ServerMessageResponeCodes.BAD_GATEWAY, ErrorMsg = "未运行" });
+                sends.TryRemove(msg.RequestId, out _);
+                tcs.SetResult(new MessageRequestResponeWrap { Code = MessageResponeCode.NOT_CONNECT });
             }
             return await tcs.Task;
         }
-        public async Task<ServerMessageResponeWrap> SendReplyTcp(SendMessageWrap<byte[]> msg)
+        public async Task<MessageRequestResponeWrap> SendReply(MessageRequestParamsWrap<byte[]> msg)
         {
             if (msg.RequestId == 0)
             {
-                msg.RequestId = NewRequestId();
+                msg.RequestId = requestIdNumberSpace.Get();
             }
-            TaskCompletionSource<ServerMessageResponeWrap> tcs = NewReply(msg.RequestId, msg.Timeout);
-            if (!SendOnlyTcp(msg))
+            TaskCompletionSource<MessageRequestResponeWrap> tcs = NewReply(msg.RequestId, msg.Timeout);
+            if (!await SendOnly(msg))
             {
-                RemoveReply(msg.RequestId);
-                tcs.SetResult(new ServerMessageResponeWrap { Code = ServerMessageResponeCodes.BAD_GATEWAY, ErrorMsg = "未运行" });
+                sends.TryRemove(msg.RequestId, out _);
+                tcs.SetResult(new MessageRequestResponeWrap { Code = MessageResponeCode.NOT_CONNECT });
             }
             return await tcs.Task;
         }
-        public bool SendOnlyTcp<T>(SendMessageWrap<T> msg)
+        public async Task<bool> SendOnly<T>(MessageRequestParamsWrap<T> msg)
         {
-            if (msg.TcpCoket != null)
+            try
             {
-                try
+                if (msg.RequestId == 0)
                 {
-                    if (msg.RequestId == 0)
-                    {
-                        msg.RequestId = NewRequestId();
-                    }
+                    msg.RequestId = requestIdNumberSpace.Get();
+                }
+                if (msg.Connection == null)
+                {
+                    return false;
+                }
 
-                    ServerMessageWrap wrap = new ServerMessageWrap
-                    {
-                        RequestId = msg.RequestId,
-                        Content = msg.Data.ToBytes(),
-                        Path = msg.Path,
-                        Type = msg.Type,
-                        Code = msg.Code,
-                        Msg = msg.Msg
-                    };
-                    bool res = tcpserver.Send(TcpPacket.ToArray(wrap.ToArray()), msg.TcpCoket);
-                    if (res)
-                    {
-                        OnSendData.Push(new OnDataParam { Address = (msg.TcpCoket.RemoteEndPoint as IPEndPoint).ToInt64(), ServerType = ServerType.TCP, Time = lastTime });
-                    }
-                    return res;
-                }
-                catch (Exception ex)
+                MessageRequestWrap wrap = new MessageRequestWrap
                 {
-                    Logger.Instance.Debug(ex + "");
+                    RequestId = msg.RequestId,
+                    Content = msg.Data.ToBytes(),
+                    Path = msg.Path
+                };
+                bool res = await msg.Connection.Send(wrap.ToArray());
+                if (res && msg.Connection.ServerType == ServerType.UDP)
+                {
+                    msg.Connection.UpdateTime(lastTime);
                 }
+                return res;
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.Error(ex);
             }
             return false;
         }
-        public bool SendOnlyTcp(SendMessageWrap<byte[]> msg)
+        public async Task<bool> SendOnly(MessageRequestParamsWrap<byte[]> msg)
         {
-            if (msg.TcpCoket != null)
+            try
             {
-                try
+                if (msg.RequestId == 0)
                 {
-                    if (msg.RequestId == 0)
-                    {
-                        msg.RequestId = NewRequestId();
-                    }
+                    msg.RequestId = requestIdNumberSpace.Get();
+                }
+                if (msg.Connection == null)
+                {
+                    return false;
+                }
+                MessageRequestWrap wrap = new MessageRequestWrap
+                {
+                    RequestId = msg.RequestId,
+                    Content = msg.Data,
+                    Path = msg.Path
+                };
 
-                    ServerMessageWrap wrap = new ServerMessageWrap
-                    {
-                        RequestId = msg.RequestId,
-                        Content = msg.Data,
-                        Path = msg.Path,
-                        Type = msg.Type,
-                        Code = msg.Code,
-                        Msg = msg.Msg
-                    };
-                    bool res = tcpserver.Send(TcpPacket.ToArray(wrap.ToArray()), msg.TcpCoket);
-                    if (res)
-                    {
-                        OnSendData.Push(new OnDataParam { Address = (msg.TcpCoket.RemoteEndPoint as IPEndPoint).ToInt64(), ServerType = ServerType.TCP, Time = lastTime });
-                    }
-                    
-                    return res;
-                }
-                catch (Exception ex)
+                bool res = await msg.Connection.Send(wrap.ToArray());
+                if (res && msg.Connection.ServerType == ServerType.UDP)
                 {
-                    Logger.Instance.Debug(ex + "");
+                    msg.Connection.UpdateTime(lastTime);
                 }
+                return res;
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.Error(ex);
             }
             return false;
         }
 
-        public async Task<ServerMessageResponeWrap> SendReply<T>(SendMessageWrap<T> msg)
+        public async Task InputData<T>(IPacket packet, ServerDataWrap<T> param)
         {
-            if (msg.RequestId == 0)
+            MessageType type = (MessageType)packet.Chunk[0];
+
+            if (type == MessageType.RESPONSE)
             {
-                msg.RequestId = NewRequestId();
-            }
-            TaskCompletionSource<ServerMessageResponeWrap> tcs = NewReply(msg.RequestId);
-            if (!SendOnly(msg))
-            {
-                RemoveReply(msg.RequestId);
-                tcs.SetResult(new ServerMessageResponeWrap { Code = ServerMessageResponeCodes.BAD_GATEWAY, ErrorMsg = "未运行" });
-            }
-            return await tcs.Task;
-        }
-        public async Task<ServerMessageResponeWrap> SendReply(SendMessageWrap<byte[]> msg)
-        {
-            if (msg.RequestId == 0)
-            {
-                msg.RequestId = NewRequestId();
-            }
-            TaskCompletionSource<ServerMessageResponeWrap> tcs = NewReply(msg.RequestId);
-            if (!SendOnly(msg))
-            {
-                RemoveReply(msg.RequestId);
-                tcs.SetResult(new ServerMessageResponeWrap { Code = ServerMessageResponeCodes.BAD_GATEWAY, ErrorMsg = "未运行" });
-            }
-            return await tcs.Task;
-        }
-        public bool SendOnly<T>(SendMessageWrap<T> msg)
-        {
-            if (msg.Address != null)
-            {
-                try
+                MessageResponseWrap wrap = new MessageResponseWrap();
+                wrap.FromArray(packet.Chunk);
+                if (sends.TryRemove(wrap.RequestId, out SendCacheModel send))
                 {
-                    if (msg.RequestId == 0)
-                    {
-                        msg.RequestId = NewRequestId();
-                    }
-                    ServerMessageWrap wrap = new ServerMessageWrap
-                    {
-                        RequestId = msg.RequestId,
-                        Content = msg.Data.ToBytes(),
-                        Path = msg.Path,
-                        Code = msg.Code,
-                        Type = msg.Type,
-                        Msg = msg.Msg
-                    };
-
-                    _ = Interlocked.Increment(ref sequence);
-                    IEnumerable<UdpPacket> udpPackets = wrap.ToArray().Split(sequence);
-
-                    bool res = true;
-                    foreach (UdpPacket udpPacket in udpPackets)
-                    {
-                        byte[] udpPacketDatagram = udpPacket.ToArray();
-                        res = udpserver.Send(udpPacketDatagram, msg.Address);
-                        if (!res)
-                        {
-                            break;
-                        }
-                    }
-                    if (res)
-                    {
-                        OnSendData.Push(new OnDataParam { Address = msg.Address.ToInt64(), ServerType = ServerType.UDP, Time = lastTime });
-                    }
-                    return res;
-                }
-                catch (Exception ex)
-                {
-                    Logger.Instance.Debug(ex);
-                }
-            }
-            return false;
-        }
-        public bool SendOnly(SendMessageWrap<byte[]> msg)
-        {
-            if (msg.Address != null)
-            {
-                try
-                {
-                    if (msg.RequestId == 0)
-                    {
-                        msg.RequestId = NewRequestId();
-                    }
-                    ServerMessageWrap wrap = new ServerMessageWrap
-                    {
-                        RequestId = msg.RequestId,
-                        Content = msg.Data,
-                        Path = msg.Path,
-                        Code = msg.Code,
-                        Type = msg.Type,
-                        Msg = msg.Msg
-                    };
-
-                    _ = Interlocked.Increment(ref sequence);
-                    IEnumerable<UdpPacket> udpPackets = wrap.ToArray().Split(sequence);
-
-                    bool res = true;
-                    foreach (UdpPacket udpPacket in udpPackets)
-                    {
-                        byte[] udpPacketDatagram = udpPacket.ToArray();
-                        res = udpserver.Send(udpPacketDatagram, msg.Address);
-                        if (!res)
-                        {
-                            break;
-                        }
-                    }
-                    if (res)
-                    {
-                        OnSendData.Push(new OnDataParam { Address = msg.Address.ToInt64(), ServerType = ServerType.UDP, Time = lastTime });
-                    }
-                    return res;
-                }
-                catch (Exception ex)
-                {
-                    Logger.Instance.Debug(ex);
-                }
-            }
-            return false;
-        }
-
-        private void ReplayData<T>(SendMessageWrap<T> data, ServerType serverType)
-        {
-            if (serverType == ServerType.TCP)
-            {
-                SendOnlyTcp(data);
-            }
-            else
-            {
-                SendOnly(data);
-            }
-        }
-        private void ReplayData(SendMessageWrap<byte[]> data, ServerType serverType)
-        {
-            if (serverType == ServerType.TCP)
-            {
-                SendOnlyTcp(data);
-            }
-            else
-            {
-                SendOnly(data);
-            }
-        }
-
-
-        public SimplePushSubHandler<OnDataParam> OnInputData { get; } = new SimplePushSubHandler<OnDataParam>();
-        public SimplePushSubHandler<OnDataParam> OnSendData { get; } = new SimplePushSubHandler<OnDataParam>();
-        public void InputData<T>(IPacket packet, ServerDataWrap<T> param)
-        {
-            OnInputData.Push(new OnDataParam
-            {
-                Address = param.Address.ToInt64(),
-                ServerType = param.ServerType,
-                Time = lastTime
-            });
-
-            ServerMessageWrap wrap = new ServerMessageWrap();
-            wrap.FromArray(packet.Chunk);
-
-            if (wrap.Type == ServerMessageTypes.RESPONSE)
-            {
-                if (sends.TryRemove(wrap.RequestId, out SendCacheModel send) && send != null)
-                {
-                    send.Tcs.SetResult(new ServerMessageResponeWrap { Code = wrap.Code, ErrorMsg = wrap.Msg, Data = wrap.Memory });
+                    send.Tcs.SetResult(new MessageRequestResponeWrap { Code = wrap.Code, Data = wrap.Memory });
                 }
             }
             else
             {
+                MessageRequestWrap wrap = new MessageRequestWrap();
+                wrap.FromArray(packet.Chunk);
                 try
                 {
                     wrap.Path = wrap.Path.ToLower();
                     if (plugins.ContainsKey(wrap.Path))
                     {
-                        var plugin = plugins[wrap.Path];
-                        PluginParamWrap excute = new PluginParamWrap
+                        PluginPathCacheInfo plugin = plugins[wrap.Path];
+                        PluginParamWrap execute = new PluginParamWrap
                         {
-                            TcpSocket = param.Socket,
+                            Connection = param.Connection,
                             Packet = packet,
-                            ServerType = param.ServerType,
-                            SourcePoint = param.Address,
                             Wrap = wrap
                         };
 
-                        dynamic resultAsync = plugin.Method.Invoke(plugin.Target, new object[] { excute });
-                        if (excute.Code == ServerMessageResponeCodes.OK)
+                        dynamic resultAsync = plugin.Method.Invoke(plugin.Target, new object[] { execute });
+                        if (!plugin.IsVoid)
                         {
-                            if (!plugin.IsVoid && resultAsync != null)
+                            object resultObject = null;
+                            if (plugin.IsTask)
                             {
-                                object resultObject = null;
-                                if (plugin.IsTask)
+                                await (resultAsync as Task);
+                                if (plugin.IsTaskResult)
                                 {
-                                    resultAsync.Wait();
-                                    if (plugin.IsTaskResult)
+                                    resultObject = resultAsync.Result;
+                                }
+                            }
+                            else
+                            {
+                                resultObject = resultAsync;
+                            }
+                            if (resultObject != null)
+                            {
+                                if (resultObject is byte[])
+                                {
+                                    await SendReponseOnly(new MessageResponseParamsWrap
                                     {
-                                        resultObject = resultAsync.Result;
-                                    }
+                                        Connection = param.Connection,
+                                        Data = resultObject as byte[],
+                                        RequestId = wrap.RequestId
+                                    });
                                 }
                                 else
                                 {
-                                    resultObject = resultAsync;
-                                }
-                                if (resultObject != null)
-                                {
-                                    if (resultObject is byte[])
+                                    await SendReponseOnly(new MessageResponseParamsWrap
                                     {
-                                        ReplayData(new SendMessageWrap<byte[]>
-                                        {
-                                            TcpCoket = param.Socket,
-                                            Address = param.Address,
-                                            Code = excute.Code,
-                                            Data = resultObject as byte[],
-                                            RequestId = wrap.RequestId,
-                                            Path = wrap.Path,
-                                            Type = ServerMessageTypes.RESPONSE
-                                        }, param.ServerType);
-                                    }
-                                    else
-                                    {
-                                        ReplayData(new SendMessageWrap<object>
-                                        {
-                                            TcpCoket = param.Socket,
-                                            Address = param.Address,
-                                            Code = excute.Code,
-                                            Data = resultObject,
-                                            RequestId = wrap.RequestId,
-                                            Path = wrap.Path,
-                                            Type = ServerMessageTypes.RESPONSE
-                                        }, param.ServerType);
-                                    }
+                                        Connection = param.Connection,
+                                        Data = resultObject.ToBytes(),
+                                        RequestId = wrap.RequestId
+                                    });
                                 }
                             }
-                        }
-                        else
-                        {
-                            ReplayData(new SendMessageWrap<object>
+                            else
                             {
-                                TcpCoket = param.Socket,
-                                Address = param.Address,
-                                Code = excute.Code,
-                                Msg = excute.ErrorMessage,
-                                RequestId = wrap.RequestId,
-                                Path = wrap.Path,
-                                Type = ServerMessageTypes.RESPONSE
-                            }, param.ServerType);
+                                await SendReponseOnly(new MessageResponseParamsWrap
+                                {
+                                    Connection = param.Connection,
+                                    Data = Array.Empty<byte>(),
+                                    RequestId = wrap.RequestId
+                                });
+                            }
                         }
                     }
                     else
                     {
-                        ReplayData(new SendMessageWrap<object>
+                        Logger.Instance.Error($"{wrap.Path} fot found");
+                        await SendReponseOnly(new MessageResponseParamsWrap
                         {
-                            TcpCoket = param.Socket,
-                            Address = param.Address,
-                            Code = ServerMessageResponeCodes.BAD_GATEWAY,
-                            Msg = "没找到对应的插件执行你的操作",
+                            Connection = param.Connection,
                             RequestId = wrap.RequestId,
-                            Path = wrap.Path,
-                            Type = ServerMessageTypes.RESPONSE
-                        }, param.ServerType);
+                            Code = MessageResponeCode.NOT_FOUND
+                        });
                     }
                 }
                 catch (Exception ex)
                 {
                     Logger.Instance.Error(ex);
-                    ReplayData(new SendMessageWrap<object>
+                    await SendReponseOnly(new MessageResponseParamsWrap
                     {
-                        TcpCoket = param.Socket,
-                        Address = param.Address,
-                        Code = ServerMessageResponeCodes.BAD_GATEWAY,
-                        Msg = ex.Message,
+                        Connection = param.Connection,
                         RequestId = wrap.RequestId,
-                        Path = wrap.Path,
-                        Type = ServerMessageTypes.RESPONSE
-                    }, param.ServerType);
+                        Code = MessageResponeCode.ERROR
+                    });
                 }
+            }
+        }
+
+        private async Task SendReponseOnly(MessageResponseParamsWrap msg)
+        {
+            try
+            {
+                MessageResponseWrap wrap = new MessageResponseWrap
+                {
+                    RequestId = msg.RequestId,
+                    Content = msg.Data,
+                    Code = msg.Code
+                };
+
+                await msg.Connection.Send(wrap.ToArray());
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.Debug(ex);
             }
         }
     }
 }
 
-public class OnDataParam
+public class MessageRequestResponeWrap
 {
-    public long Address { get; set; }
-    public long Time { get; set; }
-    public ServerType ServerType { get; set; }
+    public MessageResponeCode Code { get; set; } = MessageResponeCode.OK;
+    public ReadOnlyMemory<byte> Data { get; set; } = Array.Empty<byte>();
 }
+
 public class SendCacheModel
 {
-    public TaskCompletionSource<ServerMessageResponeWrap> Tcs { get; set; }
+    public TaskCompletionSource<MessageRequestResponeWrap> Tcs { get; set; }
     public long Time { get; set; } = Helper.GetTimeStamp();
-    public long RequestId { get; set; } = 0;
+    public ulong RequestId { get; set; } = 0;
     public int Timeout { get; set; } = 15000;
 }
 

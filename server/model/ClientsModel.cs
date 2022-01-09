@@ -30,7 +30,7 @@ namespace server.model
         public string Name { get; set; } = string.Empty;
 
         [ProtoMember(4), Key(4)]
-        public long Id { get; set; } = 0;
+        public ulong Id { get; set; } = 0;
 
         [ProtoMember(5), Key(5)]
         public int TcpPort { get; set; } = 0;
@@ -39,9 +39,12 @@ namespace server.model
         public string Mac { get; set; } = string.Empty;
 
         [ProtoIgnore, IgnoreMember]
-        public Socket TcpSocket { get; set; }
+        public IConnection TcpConnection { get; set; } = null;
 
         [ProtoIgnore, IgnoreMember]
-        public IPEndPoint EndPoint { get; set; }
+        public IConnection UdpConnection { get; set; } = null;
+
+
+
     }
 }

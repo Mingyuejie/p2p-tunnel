@@ -6,11 +6,13 @@ using common;
 using common.extends;
 using MessagePack;
 using ProtoBuf;
+using server;
 using server.model;
 using server.plugins.register.caching;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -29,7 +31,7 @@ namespace client.service.ftp
         protected virtual string SocketPath { get; set; }
         protected virtual string RootPath { get; set; }
 
-        private long fileId = 0;
+        private NumberSpace fileIdNs = new NumberSpace(0);
 
         protected readonly IServerRequest serverRequest;
         protected readonly Config config;
@@ -39,7 +41,7 @@ namespace client.service.ftp
             this.serverRequest = serverRequest;
             this.config = config;
             this.clientInfoCaching = clientInfoCaching;
-            clientInfoCaching.OnTcpOffline.Sub((client) =>
+            clientInfoCaching.OnOffline.Sub((client) =>
             {
                 Downloads.Clear(client.Id);
                 Uploads.Clear(client.Id);
@@ -56,27 +58,27 @@ namespace client.service.ftp
         {
             return path.ClearDir(currentPath, RootPath);
         }
-        protected void Upload(string currentPath, string path, ClientInfo client)
+        protected async Task Upload(string currentPath, string path, ClientInfo client)
         {
-            Task.Run(() =>
+            await Task.Run(async () =>
             {
-                foreach (var item in path.Split(','))
+                foreach (string item in path.Split(Helper.SeparatorChar))
                 {
                     if (!string.IsNullOrWhiteSpace(item))
                     {
-                        var filepath = Path.Combine(currentPath, item);
+                        string filepath = Path.Combine(currentPath, item);
                         if (Directory.Exists(filepath))
                         {
                             List<FileUploadInfo> files = new();
                             GetFiles(files, new DirectoryInfo(filepath));
 
-                            var paths = files.Where(c => c.Type == FileType.Folder)
-                                .Select(c => c.Path.Replace(currentPath, "").TrimStart(Path.DirectorySeparatorChar));
+                            IEnumerable<string> paths = files.Where(c => c.Type == FileType.Folder)
+                                .Select(c => c.Path.Replace(currentPath, String.Empty).TrimStart(Path.DirectorySeparatorChar));
                             if (paths.Any())
                             {
-                                RemoteCreate(string.Join(",", paths), client).Wait();
+                                await RemoteCreate(string.Join(Helper.SeparatorString, paths), client);
                             }
-                            foreach (var file in files.Where(c => c.Type == FileType.File))
+                            foreach (FileUploadInfo file in files.Where(c => c.Type == FileType.File))
                             {
                                 AppendUpload(file.Path, currentPath, client);
                             }
@@ -100,16 +102,15 @@ namespace client.service.ftp
                     return;
                 }
 
-                Interlocked.Increment(ref fileId);
                 var save = new FileSaveInfo
                 {
                     FileName = file.FullName,
                     IndexLength = 0,
                     TotalLength = file.Length,
-                    Md5 = fileId,
+                    Md5 = fileIdNs.Get(),
                     ClientId = client.Id,
                     State = UploadState.Wait,
-                    CacheFileName = file.FullName.Replace(currentPath, "").TrimStart(Path.DirectorySeparatorChar)
+                    CacheFileName = file.FullName.Replace(currentPath, String.Empty).TrimStart(Path.DirectorySeparatorChar)
                 };
                 Uploads.Add(save);
             }
@@ -126,7 +127,6 @@ namespace client.service.ftp
 
             FtpFileCommand cmd = new FtpFileCommand
             {
-                SessionId = client.SelfId,
                 Md5 = save.Md5,
                 Size = save.TotalLength,
                 Name = save.CacheFileName
@@ -153,7 +153,7 @@ namespace client.service.ftp
                             }
 
                             byte[] data = new byte[packSize];
-                            fs.Read(data, 0, packSize);
+                            await fs.ReadAsync(data, 0, packSize);
                             save.DataQueue.Enqueue(new FileSaveInfo.QueueModel
                             {
                                 Data = cmd.WriteData(data),
@@ -204,7 +204,7 @@ namespace client.service.ftp
                         {
                             save.DataQueue.TryDequeue(out FileSaveInfo.QueueModel model);
 
-                            if (!SendOnlyTcp(model.Data, client.Socket, cmd.Cmd, cmd.SessionId))
+                            if (!await SendOnlyTcp(model.Data, client.TcpConnection, cmd.Cmd))
                             {
                                 save.State = UploadState.Error;
                             }
@@ -212,7 +212,7 @@ namespace client.service.ftp
                         }
                         else
                         {
-                           await Task.Delay(1);
+                            await Task.Delay(1);
                         }
                     }
                 }
@@ -225,11 +225,11 @@ namespace client.service.ftp
             }, save.Token.Token);
         }
 
-        protected void OnFile(string currentPath, FtpFileCommand cmd, ClientInfo client)
+        protected async Task OnFile(string currentPath, FtpFileCommand cmd, FtpPluginParamWrap wrap)
         {
             try
             {
-                FileSaveInfo fs = Downloads.Get(cmd.SessionId, cmd.Md5);
+                FileSaveInfo fs = Downloads.Get(wrap.Client.Id, cmd.Md5);
                 if (fs == null)
                 {
                     fs = new FileSaveInfo
@@ -239,7 +239,7 @@ namespace client.service.ftp
                         TotalLength = cmd.Size,
                         FileName = Path.Combine(currentPath, cmd.Name),
                         CacheFileName = Path.Combine(currentPath, $"{cmd.Md5}.downloading"),
-                        ClientId = client.Id,
+                        ClientId = wrap.Client.Id,
                         Md5 = cmd.Md5,
                         State = UploadState.Wait
                     };
@@ -263,123 +263,89 @@ namespace client.service.ftp
                     fs.Stream.Seek(0, SeekOrigin.Begin);
                 }
 
-                fs.Stream.Write(cmd.ReadData.Span);
+                await fs.Stream.WriteAsync(cmd.ReadData, fs.Token.Token);
                 fs.IndexLength += cmd.ReadData.Length;
 
                 if (fs.IndexLength >= cmd.Size)
                 {
-                    SendOnlyTcp(new FtpFileEndCommand { SessionId = client.SelfId, Md5 = cmd.Md5 }, client.Id);
-                    Downloads.Remove(cmd.SessionId, cmd.Md5);
+                    await SendOnlyTcp(new FtpFileEndCommand { Md5 = cmd.Md5 }, wrap.Client);
+                    Downloads.Remove(wrap.Client.Id, cmd.Md5);
                     File.Move(fs.CacheFileName, fs.FileName, true);
                 }
             }
             catch (Exception ex)
             {
-                SendOnlyTcp(new FtpFileErrorCommand { SessionId = client.SelfId, Md5 = cmd.Md5, Msg = ex.Message }, client.Id);
-                Downloads.Remove(cmd.SessionId, cmd.Md5, true);
-                Logger.Instance.Error($"{ex}");
+                await SendOnlyTcp(new FtpFileErrorCommand { Md5 = cmd.Md5, Msg = ex.Message }, wrap.Client);
+                Downloads.Remove(wrap.Client.Id, cmd.Md5, true);
+                Logger.Instance.Error(ex);
             }
         }
-        public void OnFileEnd(FtpFileEndCommand cmd)
+        public void OnFileEnd(FtpFileEndCommand cmd, FtpPluginParamWrap wrap)
         {
-            Uploads.Remove(cmd.SessionId, cmd.Md5);
+            Uploads.Remove(wrap.Client.Id, cmd.Md5);
         }
-        public void OnFileError(FtpFileErrorCommand cmd)
+        public void OnFileError(FtpFileErrorCommand cmd, FtpPluginParamWrap wrap)
         {
-            Uploads.Remove(cmd.SessionId, cmd.Md5);
+            Uploads.Remove(wrap.Client.Id, cmd.Md5);
         }
-        public void OnFileUploadCancel(FtpCancelCommand cmd)
+        public async Task OnFileUploadCancel(FtpCancelCommand cmd, FtpPluginParamWrap wrap)
         {
-            Uploads.Remove(cmd.SessionId, cmd.Md5);
-            clientInfoCaching.Get(cmd.SessionId, out ClientInfo client);
-            if (client != null)
-            {
-                SendOnlyTcp(new FtpCanceledCommand { SessionId = client.SelfId, Md5 = cmd.Md5 }, client.Id);
-            };
+            await OnFileUploadCancel(cmd, wrap.Client);
         }
-        public void OnFileUploadCanceled(FtpCanceledCommand cmd)
+        public async Task OnFileUploadCancel(FtpCancelCommand cmd, ClientInfo client)
         {
-            Downloads.Remove(cmd.SessionId, cmd.Md5, true);
+            Uploads.Remove(client.Id, cmd.Md5);
+            await SendOnlyTcp(new FtpCanceledCommand { Md5 = cmd.Md5 }, client);
         }
 
-        public async Task<CommonTaskResponseModel<bool>> RemoteCreate(string path, ClientInfo client)
+        public void OnFileUploadCanceled(FtpCanceledCommand cmd, FtpPluginParamWrap wrap)
         {
-            CommonTaskResponseModel<bool> res = new CommonTaskResponseModel<bool> { Data = true };
-            var response = await SendReplyTcp(new FtpCreateCommand { SessionId = client.SelfId, Path = path }, client.Id);
-            if (response.Code != ServerMessageResponeCodes.OK)
-            {
-                res.ErrorMsg = response.ErrorMsg;
-                res.Data = false;
-            }
-            return res;
-        }
-        public async Task<CommonTaskResponseModel<bool>> RemoteCancel(long md5, ClientInfo client)
-        {
-            CommonTaskResponseModel<bool> res = new CommonTaskResponseModel<bool> { Data = true };
-            var response = await SendReplyTcp(new FtpCancelCommand { SessionId = client.SelfId, Md5 = md5 }, client.Id);
-            if (response.Code != ServerMessageResponeCodes.OK)
-            {
-                res.ErrorMsg = response.ErrorMsg;
-                res.Data = false;
-            }
-            return res;
-        }
-        public async Task<CommonTaskResponseModel<bool>> RemoteDelete(string path, ClientInfo client)
-        {
-            CommonTaskResponseModel<bool> res = new CommonTaskResponseModel<bool> { Data = true };
-            var response = await SendReplyTcp(new FtpDelCommand { SessionId = client.SelfId, Path = path }, client.Id);
-            if (response.Code != ServerMessageResponeCodes.OK)
-            {
-                res.ErrorMsg = response.ErrorMsg;
-                res.Data = false;
-            }
-            return res;
+            Downloads.Remove(wrap.Client.Id, cmd.Md5, true);
         }
 
-        protected bool SendOnlyTcp<T>(T data, long clientId)
+        public async Task<FtpResultModel> RemoteCreate(string path, ClientInfo client)
         {
-            clientInfoCaching.Get(clientId, out ClientInfo client);
-            if (client != null)
-            {
-                return SendOnlyTcp(data, client.Socket);
-            }
-            return false;
+            MessageRequestResponeWrap resp = await SendReplyTcp(new FtpCreateCommand { Path = path }, client);
+            return FtpResultModel.FromBytes(resp.Data);
         }
-        protected bool SendOnlyTcp<T>(T data, Socket socket)
+        public async Task<FtpResultModel> RemoteCancel(ulong md5, ClientInfo client)
         {
-            if (socket != null)
-            {
-                IFtpCommandBase _base = (IFtpCommandBase)data;
-                bool res = SendOnlyTcp(data.ToBytes(), socket, _base.Cmd, _base.SessionId);
-                return res;
-            }
-            return false;
+            MessageRequestResponeWrap resp = await SendReplyTcp(new FtpCancelCommand { Md5 = md5 }, client);
+            return FtpResultModel.FromBytes(resp.Data);
         }
-        protected bool SendOnlyTcp(byte[] data, Socket socket, FtpCommand cmd, long sessionid)
+        public async Task<FtpResultModel> RemoteDelete(string path, ClientInfo client)
         {
-            if (socket != null)
-            {
-                var res = serverRequest.SendOnlyTcp(new SendTcpEventArg<byte[]>
-                {
-                    Data = AddAttributes(data, cmd, sessionid),
-                    Path = SocketPath,
-                    Socket = socket
-                });
+            MessageRequestResponeWrap resp = await SendReplyTcp(new FtpDelCommand { Path = path }, client);
+            return FtpResultModel.FromBytes(resp.Data);
 
-                return res;
-            }
-            return false;
         }
-        protected async Task<ServerMessageResponeWrap> SendReplyTcp<T>(T data, long clientId)
-        {
-            clientInfoCaching.Get(clientId, out ClientInfo client);
 
+        protected async Task<bool> SendOnlyTcp<T>(T data, ClientInfo client)
+        {
+            return await SendOnlyTcp(data, client.TcpConnection);
+        }
+        protected async Task<bool> SendOnlyTcp<T>(T data, IConnection connection)
+        {
             IFtpCommandBase _base = (IFtpCommandBase)data;
-            return await serverRequest.SendReplyTcp(new SendTcpEventArg<byte[]>
+            return await SendOnlyTcp(data.ToBytes(), connection, _base.Cmd);
+        }
+        protected async Task<bool> SendOnlyTcp(byte[] data, IConnection connection, FtpCommand cmd)
+        {
+            return await serverRequest.SendOnly(new SendEventArg<byte[]>
             {
-                Data = AddAttributes(data.ToBytes(), _base.Cmd, _base.SessionId),
+                Data = AddAttributes(data, cmd),
                 Path = SocketPath,
-                Socket = client?.Socket ?? null
+                Connection = connection
+            });
+        }
+        protected async Task<MessageRequestResponeWrap> SendReplyTcp<T>(T data, ClientInfo client)
+        {
+            IFtpCommandBase _base = (IFtpCommandBase)data;
+            return await serverRequest.SendReply(new SendEventArg<byte[]>
+            {
+                Data = AddAttributes(data.ToBytes(), _base.Cmd),
+                Path = SocketPath,
+                Connection = client.TcpConnection
             });
         }
 
@@ -438,21 +404,14 @@ namespace client.service.ftp
             }, TaskCreationOptions.LongRunning);
         }
 
-        protected byte[] AddAttributes(byte[] bytes, FtpCommand cmd, long sessionid)
+        protected byte[] AddAttributes(byte[] bytes, FtpCommand cmd)
         {
             byte cmdByte = (byte)cmd;
-            byte[] sessionidBytes = BitConverter.GetBytes(sessionid);
 
-            byte[] res = new byte[1 + sessionidBytes.Length + bytes.Length];
+            byte[] res = new byte[1 + bytes.Length];
 
             res[0] = cmdByte;
-            int index = 1;
-
-            Array.Copy(sessionidBytes, 0, res, index, sessionidBytes.Length);
-            index += sessionidBytes.Length;
-
-            Array.Copy(bytes, 0, res, index, bytes.Length);
-            index += bytes.Length;
+            Array.Copy(bytes, 0, res, 1, bytes.Length);
 
             return res;
         }
@@ -462,12 +421,7 @@ namespace client.service.ftp
             {
                 Cmd = (FtpCommand)bytes.Span[0]
             };
-            int index = 1;
-
-            cmdBase.SessionId = BitConverter.ToInt64(bytes.Span.Slice(index, 8));
-            index += 8;
-
-            cmdBase.Data = bytes.Slice(index, bytes.Length - index);
+            cmdBase.Data = bytes.Slice(1, bytes.Length - 1);
 
             return cmdBase;
         }
@@ -477,7 +431,10 @@ namespace client.service.ftp
     [Flags]
     public enum FileType : byte
     {
-        Folder = 0, File = 1
+        [Description("文件夹")]
+        Folder = 0,
+        [Description("文件")]
+        File = 1
     }
 
     [ProtoContract, MessagePackObject]
@@ -507,7 +464,14 @@ namespace client.service.ftp
     [Flags]
     public enum UploadState : byte
     {
-        Wait = 0, Uploading = 1, Canceled = 2, Error = 3
+        [Description("等待中")]
+        Wait = 0,
+        [Description("上传中")]
+        Uploading = 1,
+        [Description("已取消")]
+        Canceled = 2,
+        [Description("出错")]
+        Error = 3
     }
 
     public class FileSaveInfo
@@ -515,8 +479,8 @@ namespace client.service.ftp
         [JsonIgnore]
         public FileStream Stream { get; set; }
         [JsonIgnore]
-        public long ClientId { get; set; }
-        public long Md5 { get; set; }
+        public ulong ClientId { get; set; }
+        public ulong Md5 { get; set; }
         public long TotalLength { get; set; }
         public long IndexLength { get; set; } = 0;
         public string FileName { get; set; } = string.Empty;
@@ -576,7 +540,6 @@ namespace client.service.ftp
             return true;
         }
 
-
         public class QueueModel
         {
             public byte[] Data { get; set; }
@@ -586,11 +549,11 @@ namespace client.service.ftp
 
     public class FileSaveManager
     {
-        public ConcurrentDictionary<long, ConcurrentDictionary<long, FileSaveInfo>> Caches { get; } = new();
+        public ConcurrentDictionary<ulong, ConcurrentDictionary<ulong, FileSaveInfo>> Caches { get; } = new();
 
-        public FileSaveInfo Get(long clientId, long md5)
+        public FileSaveInfo Get(ulong clientId, ulong md5)
         {
-            Caches.TryGetValue(clientId, out ConcurrentDictionary<long, FileSaveInfo> ipDic);
+            Caches.TryGetValue(clientId, out ConcurrentDictionary<ulong, FileSaveInfo> ipDic);
             if (ipDic != null)
             {
                 ipDic.TryGetValue(md5, out FileSaveInfo fs);
@@ -601,54 +564,51 @@ namespace client.service.ftp
 
         public void Add(FileSaveInfo info)
         {
-            Caches.TryGetValue(info.ClientId, out ConcurrentDictionary<long, FileSaveInfo> ipDic);
+            Caches.TryGetValue(info.ClientId, out ConcurrentDictionary<ulong, FileSaveInfo> ipDic);
             if (ipDic == null)
             {
-                ipDic = new ConcurrentDictionary<long, FileSaveInfo>();
+                ipDic = new ConcurrentDictionary<ulong, FileSaveInfo>();
                 Caches.TryAdd(info.ClientId, ipDic);
             }
             info.Token = new CancellationTokenSource();
             ipDic.AddOrUpdate(info.Md5, info, (a, b) => info);
         }
 
-        public bool Contains(long clientId, string fileFullName)
+        public bool Contains(ulong clientId, string fileFullName)
         {
-            Caches.TryGetValue(clientId, out ConcurrentDictionary<long, FileSaveInfo> ipDic);
-            if (ipDic != null)
+            if (Caches.TryGetValue(clientId, out ConcurrentDictionary<ulong, FileSaveInfo> ipDic))
             {
                 return ipDic.Values.FirstOrDefault(c => c.FileName == fileFullName) != null;
             }
             return false;
         }
 
-        public void SetState(long clientId, long md5, UploadState state)
+        public void SetState(ulong clientId, ulong md5, UploadState state)
         {
-            Caches.TryGetValue(clientId, out ConcurrentDictionary<long, FileSaveInfo> ipDic);
-            if (ipDic != null)
+            if (Caches.TryGetValue(clientId, out ConcurrentDictionary<ulong, FileSaveInfo> ipDic))
             {
-                ipDic.TryGetValue(md5, out FileSaveInfo save);
-                if (save != null)
-                    save.State = state;
-            }
-        }
-
-        public void Remove(long clientId, long md5, bool deleteFile = false)
-        {
-            Caches.TryGetValue(clientId, out ConcurrentDictionary<long, FileSaveInfo> ipDic);
-            if (ipDic != null)
-            {
-                ipDic.TryRemove(md5, out FileSaveInfo save);
-                if (save != null)
+                if (ipDic.TryGetValue(md5, out FileSaveInfo save))
                 {
-                    save.Disponse(deleteFile);
+                    save.State = state;
                 }
             }
         }
 
-        public void Clear(long clientId)
+        public void Remove(ulong clientId, ulong md5, bool deleteFile = false)
         {
-            Caches.TryRemove(clientId, out ConcurrentDictionary<long, FileSaveInfo> ipDic);
-            if (ipDic != null)
+            if (Caches.TryGetValue(clientId, out ConcurrentDictionary<ulong, FileSaveInfo> ipDic))
+            {
+                if (ipDic.TryRemove(md5, out FileSaveInfo save))
+                {
+                    save.Disponse(deleteFile);
+                    save.Token.Cancel();
+                }
+            }
+        }
+
+        public void Clear(ulong clientId)
+        {
+            if (Caches.TryRemove(clientId, out ConcurrentDictionary<ulong, FileSaveInfo> ipDic))
             {
                 foreach (var item in ipDic.Values)
                 {
@@ -664,5 +624,59 @@ namespace client.service.ftp
     {
         public ClientInfo Client { get; set; }
         public ReadOnlyMemory<byte> Data { get; set; }
+    }
+
+    [ProtoContract, MessagePackObject]
+    public class FtpResultModel
+    {
+        [ProtoMember(1, IsRequired = true), Key(1)]
+        public FtpResultCodes Code { get; set; } = FtpResultCodes.OK;
+
+        /// <summary>
+        /// 写数据
+        /// </summary>
+        [ProtoMember(2, IsRequired = true), Key(2)]
+        public object Data { get; set; } = Array.Empty<byte>();
+
+        /// <summary>
+        /// 读数据
+        /// </summary>
+        [ProtoIgnore, IgnoreMember]
+        public ReadOnlyMemory<byte> ReadData { get; set; }
+
+
+        [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
+        [Flags]
+        public enum FtpResultCodes : byte
+        {
+            [Description("成功")]
+            OK = 0,
+            [Description("禁用了")]
+            DISABLE = 1,
+            [Description("目录不可空")]
+            PATH_REQUIRED = 2,
+            [Description("出错了")]
+            UNKNOW = 255
+        }
+
+        public byte[] ToBytes()
+        {
+            byte[] dataBytes = Data is byte[]? Data as byte[] : Data.ToBytes();
+
+            byte[] result = new byte[1 + dataBytes.Length];
+            result[0] = (byte)Code;
+            Array.Copy(dataBytes, 0, result, 1, dataBytes.Length);
+
+            return result;
+        }
+
+        public static FtpResultModel FromBytes(ReadOnlyMemory<byte> bytes)
+        {
+            return new FtpResultModel
+            {
+                Code = (FtpResultCodes)bytes.Span[0],
+                ReadData = bytes.Slice(1, bytes.Length - 1)
+            };
+        }
     }
 }

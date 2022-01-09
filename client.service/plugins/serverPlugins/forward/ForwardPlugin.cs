@@ -17,7 +17,7 @@ namespace client.service.plugins.serverPlugins.forward
             this.serverPluginHelper = serverPluginHelper;
         }
 
-        public void Excute(PluginParamWrap data)
+        public void Execute(PluginParamWrap data)
         {
             ForwardModel model = data.Wrap.Memory.DeBytes<ForwardModel>();
 
@@ -25,9 +25,7 @@ namespace client.service.plugins.serverPlugins.forward
             packet.Chunk = model.Data;
             serverPluginHelper.InputData(packet, new ServerDataWrap<IPacket>
             {
-                Address = data.SourcePoint,
-                ServerType = data.ServerType,
-                Socket = data.TcpSocket,
+                Connection = data.Connection,
                 Data = packet
             });
 

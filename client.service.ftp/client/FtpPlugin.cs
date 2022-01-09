@@ -3,6 +3,7 @@ using client.servers.clientServer;
 using client.service.ftp.server.plugin;
 using common;
 using common.extends;
+using server.model;
 using server.plugins.register.caching;
 using System;
 using System.Collections.Generic;
@@ -24,11 +25,11 @@ namespace client.service.ftp.client
             this.config = config;
         }
 
-        public SpecialFolderInfo LocalSpecialList(ClientServicePluginExcuteWrap arg)
+        public SpecialFolderInfo LocalSpecialList(ClientServicePluginExecuteWrap arg)
         {
             return ftpClient.GetSpecialFolders();
         }
-        public object LocalList(ClientServicePluginExcuteWrap arg)
+        public object LocalList(ClientServicePluginExecuteWrap arg)
         {
             var list = ftpClient.LocalList(arg.Content);
             return new
@@ -37,94 +38,92 @@ namespace client.service.ftp.client
                 Data = list
             };
         }
-        public void SetLocalPath(ClientServicePluginExcuteWrap arg)
+        public void SetLocalPath(ClientServicePluginExecuteWrap arg)
         {
             ftpClient.SetCurrentPath(arg.Content);
         }
-        public void LocalCreate(ClientServicePluginExcuteWrap arg)
+        public void LocalCreate(ClientServicePluginExecuteWrap arg)
         {
             ftpClient.Create(arg.Content);
         }
-        public void LocalDelete(ClientServicePluginExcuteWrap arg)
+        public void LocalDelete(ClientServicePluginExecuteWrap arg)
         {
             ftpClient.Delete(arg.Content);
         }
-        public void LocalCancel(ClientServicePluginExcuteWrap arg)
+        public async Task LocalCancel(ClientServicePluginExecuteWrap arg)
         {
             RemoteCancelModel model = arg.Content.DeJson<RemoteCancelModel>();
-            ftpClient.OnFileUploadCancel(new protocol.FtpCancelCommand { Md5 = model.Md5, SessionId = model.Id });
+            if (clientInfoCaching.Get(model.Id, out ClientInfo client))
+            {
+                await ftpClient.OnFileUploadCancel(new protocol.FtpCancelCommand { Md5 = model.Md5 }, client);
+            }
         }
 
-        public bool RemoteCancel(ClientServicePluginExcuteWrap arg)
+        public async Task<bool> RemoteCancel(ClientServicePluginExecuteWrap arg)
         {
             RemoteCancelModel model = arg.Content.DeJson<RemoteCancelModel>();
-            if (clientInfoCaching.Get(model.Id, out ClientInfo client) && client != null && client.TcpConnected)
+            if (clientInfoCaching.Get(model.Id, out ClientInfo client))
             {
-                return ftpClient.RemoteCancel(model.Md5, client).Result.Data;
+                var res = await ftpClient.RemoteCancel(model.Md5, client);
+                if (res.Code != FtpResultModel.FtpResultCodes.OK)
+                {
+                    arg.SetErrorMessage(res.Code.GetDesc((byte)res.Code));
+                }
             }
             return false;
 
         }
-        public async Task<FileInfo[]> RemoteList(ClientServicePluginExcuteWrap arg)
+        public async Task<FileInfo[]> RemoteList(ClientServicePluginExecuteWrap arg)
         {
             RemoteListModel model = arg.Content.DeJson<RemoteListModel>();
-            if (clientInfoCaching.Get(model.Id, out ClientInfo client) && client != null && client.TcpConnected)
+            if (clientInfoCaching.Get(model.Id, out ClientInfo client))
             {
-                var res = await ftpClient.RemoteList(model.Path, client);
-                if (string.IsNullOrWhiteSpace(res.ErrorMsg))
-                {
-                    return res.Data;
-                }
-                else
-                {
-                    arg.SetCode(-1, res.ErrorMsg);
-                }
+                return await ftpClient.RemoteList(model.Path, client);
             }
             return Array.Empty<FileInfo>();
         }
-        public async Task Download(ClientServicePluginExcuteWrap arg)
+        public async Task<bool> Download(ClientServicePluginExecuteWrap arg)
         {
             RemoteDownloadModel model = arg.Content.DeJson<RemoteDownloadModel>();
-            if (clientInfoCaching.Get(model.Id, out ClientInfo client) && client != null && client.TcpConnected)
+            if (clientInfoCaching.Get(model.Id, out ClientInfo client))
             {
-                var res = await ftpClient.Download(model.Path, client);
-                if (!res.Data)
-                {
-                    arg.SetCode(-1, res.ErrorMsg);
-                }
+                return await ftpClient.Download(model.Path, client);
             }
+            return false;
         }
-        public void Upload(ClientServicePluginExcuteWrap arg)
+        public async Task Upload(ClientServicePluginExecuteWrap arg)
         {
             RemoteUploadModel model = arg.Content.DeJson<RemoteUploadModel>();
-            if (clientInfoCaching.Get(model.Id, out ClientInfo client) && client != null && client.TcpConnected)
+            if (clientInfoCaching.Get(model.Id, out ClientInfo client))
             {
-                ftpClient.Upload(model.Path, client);
+                await ftpClient.Upload(model.Path, client);
             }
         }
-        public async Task RemoteDelete(ClientServicePluginExcuteWrap arg)
+        public async Task<bool> RemoteDelete(ClientServicePluginExecuteWrap arg)
         {
             RemoteDeleteModel model = arg.Content.DeJson<RemoteDeleteModel>();
-            if (clientInfoCaching.Get(model.Id, out ClientInfo client) && client != null && client.TcpConnected)
+            if (clientInfoCaching.Get(model.Id, out ClientInfo client))
             {
                 var res = await ftpClient.RemoteDelete(model.Path, client);
-                if (!res.Data)
+                if (res.Code != FtpResultModel.FtpResultCodes.OK)
                 {
-                    arg.SetCode(-1, res.ErrorMsg);
+                    arg.SetErrorMessage(res.Code.GetDesc((byte)res.Code));
                 }
             }
+            return false;
         }
-        public async Task RemoteCreate(ClientServicePluginExcuteWrap arg)
+        public async Task<bool> RemoteCreate(ClientServicePluginExecuteWrap arg)
         {
             RemoteDeleteModel model = arg.Content.DeJson<RemoteDeleteModel>();
-            if (clientInfoCaching.Get(model.Id, out ClientInfo client) && client != null && client.TcpConnected)
+            if (clientInfoCaching.Get(model.Id, out ClientInfo client))
             {
                 var res = await ftpClient.RemoteCreate(model.Path, client);
-                if (!res.Data)
+                if (res.Code != FtpResultModel.FtpResultCodes.OK)
                 {
-                    arg.SetCode(-1, res.ErrorMsg);
+                    arg.SetErrorMessage(res.Code.GetDesc((byte)res.Code));
                 }
             }
+            return false;
         }
     }
 
@@ -141,17 +140,13 @@ namespace client.service.ftp.client
     }
     public class RemoteCancelModel
     {
-        public long Id { get; set; }
-        public long Md5 { get; set; }
+        public ulong Id { get; set; }
+        public ulong Md5 { get; set; }
     }
     public class RemoteListModel
     {
-        public long Id { get; set; }
+        public ulong Id { get; set; }
         public string Path { get; set; }
-    }
-    public class RemoteSessionModel
-    {
-        public long Id { get; set; }
     }
 
     public class FtpSettingPlugin : IClientServiceSettingPlugin
@@ -170,12 +165,12 @@ namespace client.service.ftp.client
 
         public bool Enable => config.Enable;
 
-        public object LoadSetting()
+        public async Task<object> LoadSetting()
         {
-            return config;
+            return await Task.FromResult(config);
         }
 
-        public string SaveSetting(string jsonStr)
+        public async Task<string> SaveSetting(string jsonStr)
         {
             Config _config = jsonStr.DeJson<Config>();
 
@@ -184,15 +179,15 @@ namespace client.service.ftp.client
             config.ServerCurrentPath = config.ServerRoot;
             config.Enable = _config.Enable;
             config.UploadNum = _config.UploadNum;
-            config.SaveConfig();
+            await config.SaveConfig();
 
             return string.Empty;
         }
 
-        public bool SwitchEnable(bool enable)
+        public async Task<bool> SwitchEnable(bool enable)
         {
             config.Enable = enable;
-            config.SaveConfig();
+            await config.SaveConfig();
             return true;
         }
     }
