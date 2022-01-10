@@ -95,17 +95,6 @@ namespace server
             }
         }
 
-        private TaskCompletionSource<MessageRequestResponeWrap> NewReply(ulong requestId, int timeout = 15000)
-        {
-            TaskCompletionSource<MessageRequestResponeWrap> tcs = new TaskCompletionSource<MessageRequestResponeWrap>();
-            if (timeout == 0)
-            {
-                timeout = 15000;
-            }
-            sends.TryAdd(requestId, new SendCacheModel { Tcs = tcs, RequestId = requestId, Timeout = timeout });
-            return tcs;
-        }
-
         public async Task<MessageRequestResponeWrap> SendReply<T>(MessageRequestParamsWrap<T> msg)
         {
             if (msg.RequestId == 0)
@@ -153,38 +142,6 @@ namespace server
                     Content = msg.Data.ToBytes(),
                     Path = msg.Path
                 };
-                bool res = await msg.Connection.Send(wrap.ToArray());
-                if (res && msg.Connection.ServerType == ServerType.UDP)
-                {
-                    msg.Connection.UpdateTime(lastTime);
-                }
-                return res;
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.Error(ex);
-            }
-            return false;
-        }
-        public async Task<bool> SendOnly(MessageRequestParamsWrap<byte[]> msg)
-        {
-            try
-            {
-                if (msg.RequestId == 0)
-                {
-                    msg.RequestId = requestIdNumberSpace.Get();
-                }
-                if (msg.Connection == null)
-                {
-                    return false;
-                }
-                MessageRequestWrap wrap = new MessageRequestWrap
-                {
-                    RequestId = msg.RequestId,
-                    Content = msg.Data,
-                    Path = msg.Path
-                };
-
                 bool res = await msg.Connection.Send(wrap.ToArray());
                 if (res && msg.Connection.ServerType == ServerType.UDP)
                 {
@@ -301,6 +258,16 @@ namespace server
             }
         }
 
+        private TaskCompletionSource<MessageRequestResponeWrap> NewReply(ulong requestId, int timeout = 15000)
+        {
+            TaskCompletionSource<MessageRequestResponeWrap> tcs = new TaskCompletionSource<MessageRequestResponeWrap>();
+            if (timeout == 0)
+            {
+                timeout = 15000;
+            }
+            sends.TryAdd(requestId, new SendCacheModel { Tcs = tcs, RequestId = requestId, Timeout = timeout });
+            return tcs;
+        }
         private async Task SendReponseOnly(MessageResponseParamsWrap msg)
         {
             try
