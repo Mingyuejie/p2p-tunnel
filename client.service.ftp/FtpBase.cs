@@ -203,7 +203,6 @@ namespace client.service.ftp
                         if (!save.DataQueue.IsEmpty)
                         {
                             save.DataQueue.TryDequeue(out FileSaveInfo.QueueModel model);
-
                             if (!await SendOnlyTcp(model.Data, client.TcpConnection, cmd.Cmd))
                             {
                                 save.State = UploadState.Error;

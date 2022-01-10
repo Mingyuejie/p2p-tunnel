@@ -393,7 +393,7 @@
     "Microsoft.CSharp/4.5.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-kaj6Wb4qoMuH3HySFJhxwQfe8R/sJsNJnANrvv8WdFPMoNbKY5htfNscv+LHCu5ipz+49m2e+WQXpLXr9XYemQ==",
+      "sha512": "sha512-Jlj/cWzFZLdjLvUqsTBwq4HFmOQ6n0Z0D1JyHXhGUfr3/AgDIIV9u3QsEHxxvVHXku4Zdi9CDWVAA9KWi60pAg==",
       "path": "microsoft.csharp/4.5.0",
       "hashPath": "microsoft.csharp.4.5.0.nupkg.sha512"
     },
