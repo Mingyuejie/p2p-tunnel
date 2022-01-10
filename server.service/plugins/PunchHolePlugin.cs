@@ -3,6 +3,7 @@ using server.model;
 using server.plugin;
 using server.service.plugins.register.caching;
 using System.Net;
+using System.Threading.Tasks;
 
 namespace server.service.plugins
 {
@@ -17,7 +18,7 @@ namespace server.service.plugins
             this.serverPluginHelper = serverPluginHelper;
         }
 
-        public bool Execute(PluginParamWrap data)
+        public async Task<bool> Execute(PluginParamWrap data)
         {
             PunchHoleModel model = data.Wrap.Memory.DeBytes<PunchHoleModel>();
 
@@ -53,15 +54,13 @@ namespace server.service.plugins
             }
 
             model.FromId = data.Connection.ConnectId;
-            serverPluginHelper.SendOnly(new MessageRequestParamsWrap<PunchHoleModel>
+            return await serverPluginHelper.SendOnly(new MessageRequestParamsWrap<PunchHoleModel>
             {
                 Connection = data.Connection.ServerType == ServerType.UDP ? target.UdpConnection : target.TcpConnection,
                 Data = model,
                 Path = data.Wrap.Path,
                 RequestId = data.Wrap.RequestId
             });
-
-            return true;
         }
     }
 }

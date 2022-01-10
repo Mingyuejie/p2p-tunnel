@@ -30,5 +30,6 @@ namespace server.service.plugins.register.caching
         public ulong Id { get; set; } = 0;
         public IConnection TcpConnection { get; set; } = null;
         public string GroupId { get; set; } = string.Empty;
+        public int LocalTcpPort { get; set; } = 0;
     }
 }

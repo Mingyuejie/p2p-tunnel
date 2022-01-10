@@ -15,7 +15,6 @@ namespace server.service.plugins.register.caching
         public ulong Add(RegisterCacheModel model);
         public bool UpdateTcpInfo(RegisterCacheUpdateModel model);
         public void Remove(ulong id);
-        public void UpdateTime(ulong id);
         public bool Notify(IConnection connection);
     }
 }

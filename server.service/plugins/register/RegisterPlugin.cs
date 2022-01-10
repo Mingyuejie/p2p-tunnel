@@ -31,7 +31,6 @@ namespace server.service.plugins.register
                         {
                             UdpConnection = data.Connection,
                             Name = model.Name,
-                            LastTime = Helper.GetTimeStamp(),
                             OriginGroupId = model.GroupId,
                             LocalIps = model.LocalIps,
                             Mac = model.Mac,
@@ -78,7 +77,8 @@ namespace server.service.plugins.register
                         {
                             Id = client.Id,
                             TcpConnection = data.Connection,
-                            GroupId = model.GroupId
+                            GroupId = model.GroupId,
+                            LocalTcpPort = model.LocalTcpPort,
                         });
                         return new RegisterResultModel
                         {

@@ -25,12 +25,11 @@ namespace server.service.plugins.register.caching
                 while (true)
                 {
                     long time = Helper.GetTimeStamp();
-
                     foreach (RegisterCacheModel item in cache.Values)
                     {
-                        if (time - item.LastTime > 60 * 1000)
+                        if (time - item.UdpConnection.UdpLastTime > 60 * 1000)
                         {
-                            cache.TryRemove(item.Id, out _);
+                            Remove(item.Id);
                         }
                     }
                     await Task.Delay(100);
@@ -73,8 +72,8 @@ namespace server.service.plugins.register.caching
         {
             if (Get(model.Id, out RegisterCacheModel client) && model.GroupId.Md5() == client.GroupId)
             {
-                client.LastTime = Helper.GetTimeStamp();
                 client.TcpConnection = model.TcpConnection;
+                client.LocalTcpPort = model.LocalTcpPort;
                 return true;
             }
             return false;
@@ -82,14 +81,9 @@ namespace server.service.plugins.register.caching
 
         public void Remove(ulong id)
         {
-            cache.TryRemove(id, out _);
-        }
-
-        public void UpdateTime(ulong id)
-        {
-            if (Get(id, out RegisterCacheModel client))
+            if (cache.TryRemove(id, out RegisterCacheModel client))
             {
-                client.LastTime = Helper.GetTimeStamp();
+                OnChanged.Push(client.GroupId);
             }
         }
 

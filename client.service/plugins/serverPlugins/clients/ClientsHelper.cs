@@ -151,6 +151,8 @@ namespace client.service.plugins.serverPlugins.clients
                     return;
                 }
 
+                //Logger.Instance.Info(JsonConvert.SerializeObject(e.Data.Clients));
+
                 IEnumerable<ulong> remoteIds = e.Data.Clients.Select(c => c.Id);
                 //下线了的
                 IEnumerable<ulong> offlines = clientInfoCaching.AllIds().Except(remoteIds).Where(c => c != registerState.ConnectId);
