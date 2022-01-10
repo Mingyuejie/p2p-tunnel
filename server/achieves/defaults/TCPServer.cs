@@ -4,6 +4,7 @@ using server.extends;
 using server.model;
 using server.packet;
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,8 +18,9 @@ namespace server.achieves.defaults
     public class TCPServer : ITcpServer
     {
         private Socket socket;
-        public SimplePushSubHandler<ServerDataWrap<TcpPacket[]>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<TcpPacket[]>>();
+        public SimplePushSubHandler<ServerDataWrap> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap>();
         private CancellationTokenSource cancellationTokenSource;
+        ArrayPool<byte> arrayPool = ArrayPool<byte>.Shared;
 
         public void Start(int port, IPAddress ip = null)
         {
@@ -82,17 +84,31 @@ namespace server.achieves.defaults
                     try
                     {
                         int length = await model.Socket.ReceiveAsync(model.Buffer, SocketFlags.None);
-                        if (length > 0)
-                        {
-                            model.CacheBuffer.AddRange(model.Buffer.AsSpan().Slice(0, length).ToArray());
-                            TcpPacket[] bytesArray = TcpPacket.FromArray(model.CacheBuffer).ToArray();
-                            await Receive(model, bytesArray);
-                        }
-                        else
+                        if (length == 0)
                         {
                             model.Clear();
                             break;
                         }
+                        model.CacheBuffer.AddRange(model.Buffer.AsSpan().Slice(0, length).ToArray());
+
+                        do
+                        {
+                            int packageLen = BitConverter.ToInt32(model.CacheBuffer.GetRange(0, 4).ToArray());
+                            if (packageLen > model.CacheBuffer.Count - 4)
+                            {
+                                break;
+                            }
+
+                            byte[] rev = model.CacheBuffer.GetRange(4, packageLen).ToArray();
+
+                            await OnPacket.PushAsync(new ServerDataWrap
+                            {
+                                Data = rev,
+                                Connection = model.Connection
+                            });
+
+                            model.CacheBuffer.RemoveRange(0, packageLen + 4);
+                        } while (model.CacheBuffer.Count > 4);
                     }
                     catch (SocketException ex)
                     {
@@ -113,18 +129,6 @@ namespace server.achieves.defaults
                     }
                 }
             }, cancellationTokenSource.Token);
-        }
-
-        private async Task Receive(ReceiveModel model, TcpPacket[] bytesArray)
-        {
-            if (bytesArray.Length > 0)
-            {
-                await OnPacket.PushAsync(new ServerDataWrap<TcpPacket[]>
-                {
-                    Data = bytesArray,
-                    Connection = model.Connection
-                });
-            }
         }
 
         public void Stop()
@@ -173,5 +177,83 @@ namespace server.achieves.defaults
     public class ServerModel
     {
         public Socket Socket { get; set; }
+    }
+
+    public class ReceiveBuffer
+    {
+        private byte[] items { get; set; } = Array.Empty<byte>();
+        private int size;
+        public int Size
+        {
+            get
+            {
+                return size;
+            }
+            private set
+            {
+                if (value == 0)
+                {
+                    Array.Clear(items, 0, size);
+                    items = Array.Empty<byte>();
+
+                }
+                else if (value > items.Length)
+                {
+                    byte[] newItems = new byte[value];
+                    Array.Copy(items, newItems, items.Length);
+                    items = newItems;
+                }
+            }
+        }
+
+        public byte this[int index]
+        {
+            get
+            {
+                if (index < size)
+                {
+                    return items[index];
+                }
+                throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public Memory<byte> Memory
+        {
+            get
+            {
+                return items.AsMemory(0, size);
+            }
+        }
+
+        public void AddRange(byte[] data)
+        {
+            BeResize(data.Length);
+            Array.Copy(data, 0, items, size, data.Length);
+            size += data.Length;
+        }
+
+        public void Clear(bool clearData = false)
+        {
+            size = 0;
+            if (clearData)
+            {
+                Size = 0;
+            }
+        }
+
+        private void BeResize(int length)
+        {
+            int _size = size + length;
+            if (size + length > items.Length)
+            {
+                int newsize = items.Length * 2;
+                if (newsize < _size)
+                {
+                    newsize = _size;
+                }
+                Size = newsize;
+            }
+        }
     }
 }

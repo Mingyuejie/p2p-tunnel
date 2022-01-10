@@ -41,30 +41,5 @@ namespace server.packet
 
             return result;
         }
-
-        /// <summary>
-        /// byte[]  转为包结构
-        /// </summary>
-        /// <param name="ip"></param>
-        /// <param name="array"></param>
-        /// <returns></returns>
-        public static List<TcpPacket> FromArray(List<byte> buffer)
-        {
-            List<TcpPacket> result = new List<TcpPacket>();
-            do
-            {
-                int packageLen = BitConverter.ToInt32(buffer.GetRange(0, 4).ToArray());
-                if (packageLen > buffer.Count - 4)
-                {
-                    break;
-                }
-
-                byte[] rev = buffer.GetRange(4, packageLen).ToArray();
-                buffer.RemoveRange(0, packageLen + 4);
-                result.Add(new TcpPacket(rev));
-            } while (buffer.Count > 4);
-
-            return result;
-        }
     }
 }

@@ -171,7 +171,6 @@ namespace client.service.ftp.server
                 FtpCommandBase cmd = ftpServer.ReadAttribute(data.Wrap.Memory);
                 FtpPluginParamWrap wrap = new FtpPluginParamWrap
                 {
-                    Packet = data.Packet,
                     Connection = data.Connection,
                     Wrap = data.Wrap,
                     Data = cmd.Data

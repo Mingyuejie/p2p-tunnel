@@ -63,12 +63,12 @@ namespace server.packet
         }
 
 
-        public static UdpPacket FromArray(IPEndPoint ip, byte[] array)
+        public static byte[] FromArray(IPEndPoint ip, byte[] array)
         {
             return FromArray(ip.ToInt64(), array);
         }
 
-        public static UdpPacket FromArray(long ip, byte[] array)
+        public static byte[] FromArray(long ip, byte[] array)
         {
             int skipIndex = 0;
 
@@ -84,7 +84,7 @@ namespace server.packet
             byte[] chunk = array.Skip(skipIndex).ToArray();
             if (total == 1)
             {
-                return new UdpPacket(sequence, total, index, chunk);
+                return chunk;
             }
 
             //ip 分类
@@ -121,7 +121,7 @@ namespace server.packet
                     distIndex += item.Buffers.Length;
                 }
                 packets.Buffers.Clear();
-                return new UdpPacket(sequence, total, index, dist);
+                return dist;
             }
             else
             {

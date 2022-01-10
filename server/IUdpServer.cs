@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace server
 {
-    public interface IUdpServer : IServer<UdpPacket>
+    public interface IUdpServer : IServer
     {
         public IConnection CreateConnection(IPEndPoint address);
     }

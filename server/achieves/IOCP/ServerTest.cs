@@ -24,7 +24,7 @@ namespace server.achieves.IOCP
         SocketAsyncEventArgsPool m_readWritePool;
         Semaphore m_maxNumberAcceptedClients;
 
-        public SimplePushSubHandler<ServerDataWrap<TcpPacket[]>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<TcpPacket[]>>();
+        public SimplePushSubHandler<ServerDataWrap> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap>();
 
         public ServerTest()
         {
@@ -160,25 +160,25 @@ namespace server.achieves.IOCP
                     e.SetBuffer(e.MemoryBuffer);
                 }
 
-                token.CacheBuffer.AddRange(e.Buffer.AsSpan().Slice(e.Offset, e.BytesTransferred).ToArray());
-                if (token.Socket.Available > 0)
-                {
-                    var bytes = new byte[token.Socket.Available];
-                    token.Socket.Receive(bytes);
-                    token.CacheBuffer.AddRange(bytes);
-                }
+                //token.CacheBuffer.AddRange(e.Buffer.AsSpan().Slice(e.Offset, e.BytesTransferred).ToArray());
+                //if (token.Socket.Available > 0)
+                //{
+                //    var bytes = new byte[token.Socket.Available];
+                //    token.Socket.Receive(bytes);
+                //    token.CacheBuffer.AddRange(bytes);
+                //}
 
-                TcpPacket[] bytesArray = TcpPacket.FromArray(token.CacheBuffer).ToArray();
-                if (bytesArray.Length > 0)
-                {
-                    OnPacket.Push(new ServerDataWrap<TcpPacket[]>
-                    {
-                        Data = bytesArray,
-                       // Address = token.Socket.RemoteEndPoint as IPEndPoint,
-                       // ServerType = ServerType.TCP,
-                       // Socket = token.Socket
-                    });
-                }
+                //TcpPacket[] bytesArray = TcpPacket.FromArray(token.CacheBuffer).ToArray();
+                //if (bytesArray.Length > 0)
+                //{
+                //    OnPacket.Push(new ServerDataWrap<TcpPacket[]>
+                //    {
+                //        Data = bytesArray,
+                //       // Address = token.Socket.RemoteEndPoint as IPEndPoint,
+                //       // ServerType = ServerType.TCP,
+                //       // Socket = token.Socket
+                //    });
+                //}
 
 
 

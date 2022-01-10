@@ -35,15 +35,12 @@ namespace server
 
             this.tcpserver.OnPacket.SubAsync(async (wrap) =>
             {
-                for (int i = 0, len = wrap.Data.Length; i < len; i++)
-                {
-                    await InputData(wrap.Data[i], wrap);
-                }
+                await InputData(wrap);
             });
             this.udpserver.OnPacket.SubAsync(async (wrap) =>
             {
                 wrap.Connection.UpdateTime(lastTime);
-                await InputData(wrap.Data, wrap);
+                await InputData(wrap);
             });
 
             Task.Factory.StartNew(async () =>
@@ -202,14 +199,15 @@ namespace server
             return false;
         }
 
-        public async Task InputData<T>(IPacket packet, ServerDataWrap<T> param)
+        public async Task InputData(ServerDataWrap param)
         {
-            MessageType type = (MessageType)packet.Chunk[0];
+
+            MessageType type = (MessageType)param.Data.Span[0];
 
             if (type == MessageType.RESPONSE)
             {
                 MessageResponseWrap wrap = new MessageResponseWrap();
-                wrap.FromArray(packet.Chunk);
+                wrap.FromArray(param.Data);
                 if (sends.TryRemove(wrap.RequestId, out SendCacheModel send))
                 {
                     send.Tcs.SetResult(new MessageRequestResponeWrap { Code = wrap.Code, Data = wrap.Memory });
@@ -218,7 +216,7 @@ namespace server
             else
             {
                 MessageRequestWrap wrap = new MessageRequestWrap();
-                wrap.FromArray(packet.Chunk);
+                wrap.FromArray(param.Data);
                 try
                 {
                     wrap.Path = wrap.Path.ToLower();
@@ -228,7 +226,6 @@ namespace server
                         PluginParamWrap execute = new PluginParamWrap
                         {
                             Connection = param.Connection,
-                            Packet = packet,
                             Wrap = wrap
                         };
 

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace server
 {
-    public interface ITcpServer : IServer<TcpPacket[]>
+    public interface ITcpServer : IServer
     {
         public void BindAccept(int port, IPAddress ip);
         public void BindReceive(Socket socket, Action<SocketError> errorCallback = null);

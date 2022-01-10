@@ -63,9 +63,9 @@ namespace server.model
         /// 解包
         /// </summary>
         /// <param name="bytes"></param>
-        public void FromArray(byte[] bytes)
+        public void FromArray(Memory<byte> bytes)
         {
-            Span<byte> span = bytes.AsSpan();
+            Span<byte> span = bytes.Span;
             int index = 1;
 
             RequestId = BitConverter.ToUInt64(span.Slice(index, 8));
@@ -76,7 +76,7 @@ namespace server.model
             Path = Encoding.ASCII.GetString(span.Slice(index, pathLength));
             index += pathLength;
 
-            Memory = new ReadOnlyMemory<byte>(bytes, index, span.Length - index);
+            Memory = bytes.Slice(index, span.Length - index);
         }
     }
 
@@ -129,9 +129,9 @@ namespace server.model
         /// 解包
         /// </summary>
         /// <param name="bytes"></param>
-        public void FromArray(byte[] bytes)
+        public void FromArray(Memory<byte> bytes)
         {
-            Span<byte> span = bytes.AsSpan();
+            Span<byte> span = bytes.Span;
             int index = 1;
 
             RequestId = BitConverter.ToUInt64(span.Slice(index, 8));
@@ -140,7 +140,7 @@ namespace server.model
             Code = (MessageResponeCode)BitConverter.ToInt16(span.Slice(index, 2));
             index += 2;
 
-            Memory = new ReadOnlyMemory<byte>(bytes, index, span.Length - index);
+            Memory = bytes.Slice(index, span.Length - index);
         }
     }
 
@@ -172,8 +172,6 @@ namespace server.model
 
     public class PluginParamWrap
     {
-        public IPacket Packet { get; set; }
-
         public IConnection Connection { get; set; }
 
         public MessageRequestWrap Wrap { get; set; }

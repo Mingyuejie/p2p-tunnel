@@ -1,22 +1,23 @@
 ﻿using common;
 using server.model;
+using System;
 using System.Net;
 using System.Net.Sockets;
 
 namespace server
 {
-    public interface IServer<T>
+    public interface IServer
     {
         public void Start(int port, IPAddress ip = null);
 
         public void Stop();
 
-        public SimplePushSubHandler<ServerDataWrap<T>> OnPacket { get; }
+        public SimplePushSubHandler<ServerDataWrap> OnPacket { get; }
     }
 
-    public class ServerDataWrap<T>
+    public class ServerDataWrap
     {
-        public T Data;
+        public Memory<byte> Data;
         public IConnection Connection;
     }
 }

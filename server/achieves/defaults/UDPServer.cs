@@ -20,8 +20,7 @@ namespace server.achieves.defaults
         }
 
         private UdpClient UdpcRecv { get; set; } = null;
-        private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-        public SimplePushSubHandler<ServerDataWrap<UdpPacket>> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap<UdpPacket>>();
+        public SimplePushSubHandler<ServerDataWrap> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap>();
         private static ConcurrentDictionary<long, IConnection> clients = new ConcurrentDictionary<long, IConnection>();
 
         public void Start(int port, IPAddress ip = null)
@@ -31,7 +30,6 @@ namespace server.achieves.defaults
                 return;
             }
 
-            cancellationTokenSource = new CancellationTokenSource();
             UdpcRecv = new UdpClient(new IPEndPoint(ip ?? IPAddress.Any, port));
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -55,10 +53,10 @@ namespace server.achieves.defaults
                             connection = CreateConnection(result.RemoteEndPoint);
                             clients.TryAdd(id, connection);
                         }
-                        UdpPacket packet = UdpPacket.FromArray(id, result.Buffer);
+                        byte[] packet = UdpPacket.FromArray(id, result.Buffer);
                         if (packet != null)
                         {
-                            await OnPacket.PushAsync(new ServerDataWrap<UdpPacket>
+                            await OnPacket.PushAsync(new ServerDataWrap
                             {
                                 Data = packet,
                                 Connection = connection
@@ -71,21 +69,17 @@ namespace server.achieves.defaults
                         break;
                     }
 
-                    if (cancellationTokenSource.IsCancellationRequested)
+                    if (UdpcRecv == null)
                     {
                         Stop();
                         break;
                     }
                 }
-            }, cancellationTokenSource.Token);
+            });
         }
 
         public void Stop()
         {
-            if (!cancellationTokenSource.IsCancellationRequested)
-            {
-                cancellationTokenSource.Cancel();
-            }
             if (UdpcRecv != null)
             {
                 UdpcRecv.Close();

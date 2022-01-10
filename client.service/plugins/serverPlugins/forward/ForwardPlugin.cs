@@ -3,6 +3,8 @@ using server;
 using server.model;
 using server.packet;
 using server.plugin;
+using System;
+using System.Threading.Tasks;
 
 namespace client.service.plugins.serverPlugins.forward
 {
@@ -17,16 +19,13 @@ namespace client.service.plugins.serverPlugins.forward
             this.serverPluginHelper = serverPluginHelper;
         }
 
-        public void Execute(PluginParamWrap data)
+        public async Task Execute(PluginParamWrap data)
         {
             ForwardModel model = data.Wrap.Memory.DeBytes<ForwardModel>();
-
-            IPacket packet = data.Packet;
-            packet.Chunk = model.Data;
-            serverPluginHelper.InputData(packet, new ServerDataWrap<IPacket>
+            await serverPluginHelper.InputData(new ServerDataWrap
             {
                 Connection = data.Connection,
-                Data = packet
+                Data = model.Data
             });
 
         }
