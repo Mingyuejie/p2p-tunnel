@@ -141,7 +141,7 @@ namespace client.service.ftp
                 try
                 {
                     cmd.ToBytes();
-                    using FileStream fs = new FileStream(save.FileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    using FileStream fs = new FileStream(save.FileName, FileMode.Open, FileAccess.Read, FileShare.Read);
                     int index = 0;
                     while (index < packCount)
                     {
@@ -174,7 +174,7 @@ namespace client.service.ftp
                     if (lastPackSize > 0)
                     {
                         byte[] data = new byte[lastPackSize];
-                        fs.Read(data, 0, lastPackSize);
+                        await fs.ReadAsync(data, 0, lastPackSize);
                         save.DataQueue.Enqueue(new FileSaveInfo.QueueModel
                         {
                             Data = cmd.WriteData(data),
@@ -256,7 +256,7 @@ namespace client.service.ftp
                 if (fs.Stream == null)
                 {
                     fs.CacheFileName.TryDeleteFile();
-                    fs.Stream = new FileStream(fs.CacheFileName, FileMode.Create & FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                    fs.Stream = new FileStream(fs.CacheFileName, FileMode.Create & FileMode.Append, FileAccess.Write, FileShare.Read);
                     fs.Stream.Seek(cmd.Size - 1, SeekOrigin.Begin);
                     fs.Stream.WriteByte(new byte());
                     fs.Stream.Seek(0, SeekOrigin.Begin);
