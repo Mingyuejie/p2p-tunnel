@@ -96,8 +96,6 @@ namespace client.service.ftp
         public bool Enable { get; set; } = false;
         public int UploadNum { get; set; } = 10;
 
-
-
         public static async Task<Config> ReadConfig()
         {
             return await FromFile<Config>("ftp-appsettings.json") ?? new Config();

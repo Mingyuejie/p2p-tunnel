@@ -316,7 +316,6 @@ namespace client.service.ftp
         {
             MessageRequestResponeWrap resp = await SendReplyTcp(new FtpDelCommand { Path = path }, client);
             return FtpResultModel.FromBytes(resp.Data);
-
         }
 
         protected async Task<bool> SendOnlyTcp<T>(T data, ClientInfo client)
