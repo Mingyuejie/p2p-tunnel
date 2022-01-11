@@ -134,10 +134,9 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                             targetSocket.SafeClose();
                             break;
                         }
-
                         Logger.Instance.Debug($"{ip.Item1}:{ip.Item2} 连接成功");
                         targetSocket.EndConnect(result);
-                        tcpServer.BindReceive(targetSocket);
+                        tcpServer.BindReceive(targetSocket, bufferSize: config.Client.TcpBufferSize);
 
                         await punchHoldEventHandles.Send(new SendPunchHoleArg<Step3Model>
                         {

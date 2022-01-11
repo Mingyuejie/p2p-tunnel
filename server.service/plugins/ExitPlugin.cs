@@ -4,6 +4,7 @@ using server.models;
 using server.plugin;
 using server.service.plugins.register.caching;
 using System;
+using System.Threading.Tasks;
 
 namespace server.service.plugins
 {
@@ -15,10 +16,9 @@ namespace server.service.plugins
             this.clientRegisterCache = clientRegisterCache;
         }
 
-        public bool Execute(PluginParamWrap data)
+        public async Task<bool> Execute(PluginParamWrap data)
         {
-            clientRegisterCache.Remove(data.Connection.ConnectId);
-            return true;
+            return await clientRegisterCache.Remove(data.Connection.ConnectId);
         }
     }
 }

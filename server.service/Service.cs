@@ -28,7 +28,11 @@ namespace server.service
 
         public static ServiceProvider UseTcpServer(this ServiceProvider obj)
         {
-            obj.GetService<ITcpServer>().Start(obj.GetService<Config>().Tcp);
+            var config = obj.GetService<Config>();
+            var server = obj.GetService<ITcpServer>();
+            server.SetBufferSize(config.TcpBufferSize);
+            server.Start(config.Tcp, ip: IPAddress.Any);
+
             Logger.Instance.Info("TCP服务已开启");
 
             return obj;
@@ -36,6 +40,7 @@ namespace server.service
         public static ServiceProvider UseUdpServer(this ServiceProvider obj)
         {
             obj.GetService<IUdpServer>().Start(obj.GetService<Config>().Udp);
+
             Logger.Instance.Info("UDP服务已开启");
 
             return obj;
@@ -78,7 +83,7 @@ namespace server.service
             IClientRegisterCaching clientRegisterCache = obj.GetService<IClientRegisterCaching>();
             ServerPluginHelper serverPluginHelper = obj.GetService<ServerPluginHelper>();
 
-            clientRegisterCache.OnChanged.Sub((string group) =>
+            clientRegisterCache.OnChanged.SubAsync(async (string group) =>
             {
                 List<ClientsClientModel> clients = clientRegisterCache.GetAll().Where(c => c.GroupId == group && c.TcpConnection != null).Select(c => new ClientsClientModel
                 {
@@ -99,7 +104,7 @@ namespace server.service
                     }.ToBytes();
                     foreach (ClientsClientModel client in clients)
                     {
-                        serverPluginHelper.SendOnly(new MessageRequestParamsWrap<byte[]>
+                        await serverPluginHelper.SendOnly(new MessageRequestParamsWrap<byte[]>
                         {
                             Connection = client.TcpConnection,
                             Data = bytes,

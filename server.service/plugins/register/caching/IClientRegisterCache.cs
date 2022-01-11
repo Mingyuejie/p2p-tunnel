@@ -2,6 +2,7 @@
 using server.model;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace server.service.plugins.register.caching
 {
@@ -14,7 +15,7 @@ namespace server.service.plugins.register.caching
         public List<RegisterCacheModel> GetAll();
         public ulong Add(RegisterCacheModel model);
         public bool UpdateTcpInfo(RegisterCacheUpdateModel model);
-        public void Remove(ulong id);
-        public bool Notify(IConnection connection);
+        public Task<bool> Remove(ulong id);
+        public Task<bool> Notify(IConnection connection);
     }
 }

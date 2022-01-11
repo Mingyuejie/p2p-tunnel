@@ -89,6 +89,7 @@ namespace client.service.plugins.serverPlugins.register
                 registerState.UdpConnection = udpServer.CreateConnection(new IPEndPoint(serverAddress, config.Server.Port));
 
                 //TCP 本地开始监听
+                tcpServer.SetBufferSize(config.Client.TcpBufferSize);
                 tcpServer.Start(registerState.LocalInfo.TcpPort, config.Client.BindIp);
                 //TCP 连接服务器
                 IPEndPoint bindEndpoint = new IPEndPoint(config.Client.BindIp, registerState.LocalInfo.TcpPort);
@@ -104,7 +105,7 @@ namespace client.service.plugins.serverPlugins.register
                 tcpServer.BindReceive(tcpSocket, async (socketError) =>
                 {
                     await AutoReg();
-                });
+                }, config.Client.TcpBufferSize);
                 registerState.TcpConnection = tcpServer.CreateConnection(tcpSocket);
 
 

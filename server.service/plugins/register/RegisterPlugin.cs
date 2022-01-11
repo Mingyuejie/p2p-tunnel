@@ -106,9 +106,9 @@ namespace server.service.plugins.register
             };
         }
 
-        public void Notify(PluginParamWrap data)
+        public async Task Notify(PluginParamWrap data)
         {
-            clientRegisterCache.Notify(data.Connection);
+            await clientRegisterCache.Notify(data.Connection);
         }
     }
 }

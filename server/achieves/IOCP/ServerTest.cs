@@ -128,7 +128,7 @@ namespace server.achieves.IOCP
             }
         }
 
-        public void BindReceive(Socket socket, Action<SocketError> errorCallback = null)
+        public void BindReceive(Socket socket, Action<SocketError> errorCallback = null, int bufferSize = 8192)
         {
             long id = (socket.LocalEndPoint as IPEndPoint).ToInt64();
             servers.AddOrUpdate(id, socket, (a, b) => socket);
@@ -242,6 +242,10 @@ namespace server.achieves.IOCP
         public IConnection CreateConnection(Socket socket)
         {
             throw new NotImplementedException();
+        }
+
+        public void SetBufferSize(int bufferSize = 8192)
+        {
         }
     }
 

@@ -128,6 +128,10 @@ namespace client
         [ProtoMember(5), Key(5)]
         public bool UseIpv6 { get; set; } = false;
 
+        [ProtoMember(6), Key(6)]
+        public int TcpBufferSize { get; set; } = 128 * 1024;
+
+
         [JsonIgnore, ProtoIgnore, IgnoreMember]
         public IPAddress BindIp
         {

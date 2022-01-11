@@ -20,8 +20,12 @@ namespace server.achieves.defaults
         private Socket socket;
         public SimplePushSubHandler<ServerDataWrap> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap>();
         private CancellationTokenSource cancellationTokenSource;
-        ArrayPool<byte> arrayPool = ArrayPool<byte>.Shared;
+        private int bufferSize = 8 * 1024;
 
+        public void SetBufferSize(int bufferSize = 8192)
+        {
+            this.bufferSize = bufferSize;
+        }
         public void Start(int port, IPAddress ip = null)
         {
             if (socket != null)
@@ -47,7 +51,7 @@ namespace server.achieves.defaults
                     try
                     {
                         Socket client = await socket.AcceptAsync();
-                        BindReceive(client);
+                        BindReceive(client, bufferSize: bufferSize);
                     }
                     catch (SocketException)
                     {
@@ -68,13 +72,13 @@ namespace server.achieves.defaults
             }, cancellationTokenSource.Token);
         }
 
-        public void BindReceive(Socket socket, Action<SocketError> errorCallback = null)
+        public void BindReceive(Socket socket, Action<SocketError> errorCallback = null, int bufferSize = 8 * 1024)
         {
             ReceiveModel model = new ReceiveModel
             {
                 ErrorCallback = errorCallback,
                 Connection = CreateConnection(socket),
-                Buffer = new byte[8 * 1024],
+                Buffer = new byte[bufferSize],
                 Socket = socket
             };
             Task.Run(async () =>
@@ -148,6 +152,8 @@ namespace server.achieves.defaults
                 TcpAddress = (socket.RemoteEndPoint as IPEndPoint)
             };
         }
+
+
     }
 
     public class ReceiveModel

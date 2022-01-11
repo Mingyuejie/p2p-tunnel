@@ -29,7 +29,7 @@ namespace server.service.plugins.register.caching
                     {
                         if (time - item.UdpConnection.UdpLastTime > 60 * 1000)
                         {
-                            Remove(item.Id);
+                            await Remove(item.Id);
                         }
                     }
                     await Task.Delay(100);
@@ -79,19 +79,21 @@ namespace server.service.plugins.register.caching
             return false;
         }
 
-        public void Remove(ulong id)
+        public async Task<bool> Remove(ulong id)
         {
             if (cache.TryRemove(id, out RegisterCacheModel client))
             {
-                OnChanged.Push(client.GroupId);
+                await OnChanged.PushAsync(client.GroupId);
+                return true;
             }
+            return false;
         }
 
-        public bool Notify(IConnection connection)
+        public async Task<bool> Notify(IConnection connection)
         {
             if (Get(connection.ConnectId, out RegisterCacheModel client))
             {
-                OnChanged.Push(client.GroupId);
+                await OnChanged.PushAsync(client.GroupId);
             }
             return false;
         }
