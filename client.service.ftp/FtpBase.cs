@@ -203,7 +203,7 @@ namespace client.service.ftp
                         if (!save.DataQueue.IsEmpty)
                         {
                             save.DataQueue.TryDequeue(out FileSaveInfo.QueueModel model);
-                            if (!await SendOnlyTcp(model.Data, client.TcpConnection, cmd.Cmd))
+                            if (!await SendOnlyTcp(model.Data, client.TcpConnection))
                             {
                                 save.State = UploadState.Error;
                             }
@@ -318,30 +318,28 @@ namespace client.service.ftp
             return FtpResultModel.FromBytes(resp.Data);
         }
 
-        protected async Task<bool> SendOnlyTcp<T>(T data, ClientInfo client)
+        protected async Task<bool> SendOnlyTcp(IFtpCommandBase data, ClientInfo client)
         {
             return await SendOnlyTcp(data, client.TcpConnection);
         }
-        protected async Task<bool> SendOnlyTcp<T>(T data, IConnection connection)
+        protected async Task<bool> SendOnlyTcp(IFtpCommandBase data, IConnection connection)
         {
-            IFtpCommandBase _base = (IFtpCommandBase)data;
-            return await SendOnlyTcp(data.ToBytes(), connection, _base.Cmd);
+            return await SendOnlyTcp(data.ToBytes(), connection);
         }
-        protected async Task<bool> SendOnlyTcp(byte[] data, IConnection connection, FtpCommand cmd)
+        protected async Task<bool> SendOnlyTcp(byte[] data, IConnection connection)
         {
             return await serverRequest.SendOnly(new SendEventArg<byte[]>
             {
-                Data = AddAttributes(data, cmd),
+                Data = data,
                 Path = SocketPath,
                 Connection = connection
             });
         }
-        protected async Task<MessageRequestResponeWrap> SendReplyTcp<T>(T data, ClientInfo client)
+        protected async Task<MessageRequestResponeWrap> SendReplyTcp(IFtpCommandBase data, ClientInfo client)
         {
-            IFtpCommandBase _base = (IFtpCommandBase)data;
             return await serverRequest.SendReply(new SendEventArg<byte[]>
             {
-                Data = AddAttributes(data.ToBytes(), _base.Cmd),
+                Data = data.ToBytes(),
                 Path = SocketPath,
                 Connection = client.TcpConnection
             });
@@ -402,27 +400,6 @@ namespace client.service.ftp
             }, TaskCreationOptions.LongRunning);
         }
 
-        protected byte[] AddAttributes(byte[] bytes, FtpCommand cmd)
-        {
-            byte cmdByte = (byte)cmd;
-
-            byte[] res = new byte[1 + bytes.Length];
-
-            res[0] = cmdByte;
-            Array.Copy(bytes, 0, res, 1, bytes.Length);
-
-            return res;
-        }
-        public FtpCommandBase ReadAttribute(ReadOnlyMemory<byte> bytes)
-        {
-            FtpCommandBase cmdBase = new FtpCommandBase
-            {
-                Cmd = (FtpCommand)bytes.Span[0]
-            };
-            cmdBase.Data = bytes.Slice(1, bytes.Length - 1);
-
-            return cmdBase;
-        }
     }
 
     [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]

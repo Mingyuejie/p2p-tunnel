@@ -40,16 +40,9 @@ namespace client.service.ftp.protocol
     public interface IFtpCommandBase
     {
         public FtpCommand Cmd { get; }
+
+        public byte[] ToBytes();
+
+        public void DeBytes(ReadOnlyMemory<byte> bytes);
     }
-
-    [ProtoContract, MessagePackObject]
-    public class FtpCommandBase : IFtpCommandBase
-    {
-        [ProtoMember(1, IsRequired = true), Key(1)]
-        public FtpCommand Cmd { get; set; }
-
-        [ProtoMember(2), Key(2)]
-        public ReadOnlyMemory<byte> Data { get; set; }
-    }
-
 }

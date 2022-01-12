@@ -168,21 +168,21 @@ namespace client.service.ftp.server
             }
             else
             {
-                FtpCommandBase cmd = ftpServer.ReadAttribute(data.Wrap.Memory);
+                FtpCommand cmd = (FtpCommand)data.Wrap.Memory.Span[0];
                 FtpPluginParamWrap wrap = new FtpPluginParamWrap
                 {
                     Connection = data.Connection,
                     Wrap = data.Wrap,
-                    Data = cmd.Data
+                    Data = data.Wrap.Memory
                 };
                 if (clientInfoCaching.Get(data.Connection.ConnectId, out ClientInfo client))
                 {
                     wrap.Client = client;
-                    if (ftpServer.Plugins.ContainsKey(cmd.Cmd))
+                    if (ftpServer.Plugins.ContainsKey(cmd))
                     {
                         try
                         {
-                            FtpResultModel res = await ftpServer.Plugins[cmd.Cmd].Execute(wrap);
+                            FtpResultModel res = await ftpServer.Plugins[cmd].Execute(wrap);
                             if (res != null)
                             {
                                 return res.ToBytes();

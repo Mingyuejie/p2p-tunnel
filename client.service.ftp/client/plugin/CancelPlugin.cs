@@ -26,7 +26,8 @@ namespace client.service.ftp.client.plugin
         {
             await Task.Yield();
 
-            FtpCanceledCommand cmd = arg.Data.DeBytes<FtpCanceledCommand>();
+            FtpCanceledCommand cmd = new FtpCanceledCommand();
+            cmd.DeBytes(arg.Data);
 
             ftpClient.OnFileUploadCanceled(cmd, arg);
 

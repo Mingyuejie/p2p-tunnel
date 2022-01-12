@@ -17,7 +17,7 @@ namespace client.service.ftp.client.plugin
         public async Task<FtpResultModel> Execute(FtpPluginParamWrap data)
         {
             FtpFileCommand cmd = new FtpFileCommand();
-            cmd.FromBytes(data.Data);
+            cmd.DeBytes(data.Data);
             await ftpClient.OnFile(cmd, data);
             return null;
         }
@@ -35,7 +35,8 @@ namespace client.service.ftp.client.plugin
         public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
         {
             await Task.Yield();
-            FtpFileEndCommand cmd = arg.Data.DeBytes<FtpFileEndCommand>();
+            FtpFileEndCommand cmd = new FtpFileEndCommand();
+            cmd.DeBytes(arg.Data);
             ftpClient.OnFileEnd(cmd, arg);
             return null;
         }

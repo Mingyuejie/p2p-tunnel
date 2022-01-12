@@ -2,6 +2,7 @@
 using client.service.ftp.protocol;
 using common;
 using common.extends;
+using System;
 using System.Threading.Tasks;
 
 namespace client.service.ftp.server.plugin
@@ -20,7 +21,9 @@ namespace client.service.ftp.server.plugin
         {
             await Task.Yield();
 
-            return new FtpResultModel { Data = ftpServer.GetFiles(arg.Data.DeBytes<FtpListCommand>(), arg) };
+            FtpListCommand cmd = new FtpListCommand();
+            cmd.DeBytes(arg.Data);
+            return new FtpResultModel { Data = ftpServer.GetFiles(cmd, arg) };
         }
     }
 }

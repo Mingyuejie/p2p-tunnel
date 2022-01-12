@@ -24,7 +24,9 @@ namespace client.service.ftp.server.plugin
 
         public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
         {
-            await ftpServer.OnFileUploadCancel(arg.Data.DeBytes<FtpCancelCommand>(), arg);
+            FtpCancelCommand cmd = new FtpCancelCommand();
+            cmd.DeBytes(arg.Data);
+            await ftpServer.OnFileUploadCancel(cmd, arg);
             return new FtpResultModel();
         }
     }
@@ -42,7 +44,9 @@ namespace client.service.ftp.server.plugin
         public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
         {
             await Task.Yield();
-            ftpServer.OnFileUploadCanceled(arg.Data.DeBytes<FtpCanceledCommand>(), arg);
+            FtpCanceledCommand cmd = new FtpCanceledCommand();
+            cmd.DeBytes(arg.Data);
+            ftpServer.OnFileUploadCanceled(cmd, arg);
             return new FtpResultModel();
         }
     }

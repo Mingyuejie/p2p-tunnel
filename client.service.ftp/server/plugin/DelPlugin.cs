@@ -26,7 +26,8 @@ namespace client.service.ftp.server.plugin
         {
             await Task.Yield();
 
-            FtpDelCommand cmd = arg.Data.DeBytes<FtpDelCommand>();
+            FtpDelCommand cmd = new FtpDelCommand();
+            cmd.DeBytes(arg.Data);
 
             if (string.IsNullOrWhiteSpace(cmd.Path))
             {
@@ -37,7 +38,7 @@ namespace client.service.ftp.server.plugin
                 List<string> errs = ftpServer.Delete(cmd, arg);
                 if (errs.Any())
                 {
-                    return new FtpResultModel { Code = FtpResultModel.FtpResultCodes.UNKNOW,Data = string.Join(",", errs) };
+                    return new FtpResultModel { Code = FtpResultModel.FtpResultCodes.UNKNOW, Data = string.Join(",", errs) };
                 }
             }
             return new FtpResultModel();

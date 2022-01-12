@@ -202,21 +202,21 @@ namespace client.service.ftp.client
 
         public async Task<byte[]> Execute(PluginParamWrap data)
         {
-            FtpCommandBase cmd = ftpClient.ReadAttribute(data.Wrap.Memory);
+            FtpCommand cmd = (FtpCommand)data.Wrap.Memory.Span[0];
             FtpPluginParamWrap wrap = new FtpPluginParamWrap
             {
                 Connection = data.Connection,
                 Wrap = data.Wrap,
-                Data = cmd.Data
+                Data = data.Wrap.Memory
             };
             if (clientInfoCaching.Get(data.Connection.ConnectId, out ClientInfo client))
             {
                 wrap.Client = client;
-                if (ftpClient.Plugins.ContainsKey(cmd.Cmd))
+                if (ftpClient.Plugins.ContainsKey(cmd))
                 {
                     try
                     {
-                        FtpResultModel res = await ftpClient.Plugins[cmd.Cmd].Execute(wrap);
+                        FtpResultModel res = await ftpClient.Plugins[cmd].Execute(wrap);
                         if (res != null)
                         {
                             return res.ToBytes();

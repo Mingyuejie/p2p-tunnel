@@ -25,7 +25,8 @@ namespace client.service.ftp.client.plugin
         {
             await Task.Yield();
 
-            FtpCreateCommand cmd = arg.Data.DeBytes<FtpCreateCommand>();
+            FtpCreateCommand cmd = new FtpCreateCommand();
+            cmd.DeBytes(arg.Data);
 
             if (string.IsNullOrWhiteSpace(cmd.Path))
             {
