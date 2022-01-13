@@ -95,6 +95,9 @@ namespace client.service.ftp
 
         public bool Enable { get; set; } = false;
         public int UploadNum { get; set; } = 10;
+        public int ReadWriteBufferSize { get; set; } = 10*1024*1024;
+        public int SendPacketSize { get; set; } = 32*1024;
+        
 
         public static async Task<Config> ReadConfig()
         {
@@ -109,6 +112,8 @@ namespace client.service.ftp
             config.Password = Password;
             config.Enable = Enable;
             config.UploadNum = UploadNum;
+            config.ReadWriteBufferSize = ReadWriteBufferSize;
+            config.SendPacketSize = SendPacketSize;
 
             await ToFile(config, "ftp-appsettings.json");
         }

@@ -2,5 +2,7 @@
   "ServerRoot": "",
   "Password": "000000",
   "Enable": false,
-  "UploadNum": 10
+  "UploadNum": 10,
+  "ReadWriteBufferSize": 10485760,
+  "SendPacketSize": 32768
 }

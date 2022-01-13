@@ -132,7 +132,7 @@ namespace client.service.ftp
                 Name = save.CacheFileName
             };
             save.State = UploadState.Uploading;
-            int packSize = 32 * 1024; //每个包大小
+            int packSize = config.SendPacketSize; //每个包大小
             int packCount = (int)(save.TotalLength / packSize);
             int lastPackSize = (int)(save.TotalLength - (packCount * packSize));
 
@@ -141,31 +141,25 @@ namespace client.service.ftp
                 try
                 {
                     cmd.ToBytes();
-                    using FileStream fs = new FileStream(save.FileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    using FileStream fs = new FileStream(save.FileName, FileMode.Open, FileAccess.Read, FileShare.Read, config.ReadWriteBufferSize, true);
+
                     int index = 0;
                     while (index < packCount)
                     {
-                        if (save.DataQueue.Count < 2000)
+                        if (!save.Check())
                         {
-                            if (!save.Check())
-                            {
-                                return;
-                            }
-
-                            byte[] data = new byte[packSize];
-                            await fs.ReadAsync(data, 0, packSize);
-                            save.DataQueue.Enqueue(new FileSaveInfo.QueueModel
-                            {
-                                Data = cmd.WriteData(data),
-                                Length = data.Length
-                            });
-
-                            index++;
+                            return;
                         }
-                        else
+
+                        byte[] data = new byte[packSize];
+                        await fs.ReadAsync(data, 0, packSize);
+                        if (!await SendOnlyTcp(cmd.WriteData(data), client.TcpConnection))
                         {
-                            await Task.Delay(1);
+                            save.State = UploadState.Error;
                         }
+                        save.IndexLength += data.Length;
+
+                        index++;
                     }
                     if (!save.Check())
                     {
@@ -175,51 +169,17 @@ namespace client.service.ftp
                     {
                         byte[] data = new byte[lastPackSize];
                         await fs.ReadAsync(data, 0, lastPackSize);
-                        save.DataQueue.Enqueue(new FileSaveInfo.QueueModel
+                        if (!await SendOnlyTcp(cmd.WriteData(data), client.TcpConnection))
                         {
-                            Data = cmd.WriteData(data),
-                            Length = data.Length
-                        });
+                            save.State = UploadState.Error;
+                        }
+                        save.IndexLength += data.Length;
                     }
                 }
                 catch (Exception ex)
                 {
                     Logger.Instance.Debug(ex);
                     save.Disponse();
-                }
-            }, save.Token.Token);
-
-            Task.Run(async () =>
-            {
-                try
-                {
-                    while (true)
-                    {
-                        if (!save.Check())
-                        {
-                            break;
-                        }
-
-                        if (!save.DataQueue.IsEmpty)
-                        {
-                            save.DataQueue.TryDequeue(out FileSaveInfo.QueueModel model);
-                            if (!await SendOnlyTcp(model.Data, client.TcpConnection))
-                            {
-                                save.State = UploadState.Error;
-                            }
-                            save.IndexLength += model.Length;
-                        }
-                        else
-                        {
-                            await Task.Delay(1);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    save.Disponse();
-                    save.State = UploadState.Error;
-                    Logger.Instance.Error($" Upload {ex}");
                 }
             }, save.Token.Token);
         }
@@ -256,7 +216,7 @@ namespace client.service.ftp
                 if (fs.Stream == null)
                 {
                     fs.CacheFileName.TryDeleteFile();
-                    fs.Stream = new FileStream(fs.CacheFileName, FileMode.Create & FileMode.Append, FileAccess.Write, FileShare.Read);
+                    fs.Stream = new FileStream(fs.CacheFileName, FileMode.Create & FileMode.Append, FileAccess.Write, FileShare.Read, config.ReadWriteBufferSize, true);
                     fs.Stream.Seek(cmd.Size - 1, SeekOrigin.Begin);
                     fs.Stream.WriteByte(new byte());
                     fs.Stream.Seek(0, SeekOrigin.Begin);
@@ -470,9 +430,6 @@ namespace client.service.ftp
         public long Speed { get; set; } = 0;
         public UploadState State { get; set; } = UploadState.Wait;
 
-        [JsonIgnore]
-        public ConcurrentQueue<QueueModel> DataQueue = new ConcurrentQueue<QueueModel>();
-
         public void Disponse(bool deleteFile = false)
         {
             if (Token != null)
@@ -485,7 +442,6 @@ namespace client.service.ftp
                 Stream.Dispose();
             }
             Stream = null;
-            DataQueue.Clear();
 
             if (deleteFile)
             {
