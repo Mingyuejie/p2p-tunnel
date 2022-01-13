@@ -19,7 +19,6 @@ namespace common.extends
             return str.Substring(start, maxLength);
         }
 
-
         public static string Md5(this string input)
         {
             MD5CryptoServiceProvider md5Hasher = new();

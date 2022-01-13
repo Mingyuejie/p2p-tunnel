@@ -8,7 +8,7 @@ namespace server.service.plugins.register.caching
 {
     public interface IClientRegisterCaching
     {
-        public SimplePushSubHandler<string> OnChanged { get; }
+        public SimpleSubPushHandler<string> OnChanged { get; }
 
         public bool Get(ulong id,out RegisterCacheModel client);
         public RegisterCacheModel GetBySameGroup(string groupid, string name);

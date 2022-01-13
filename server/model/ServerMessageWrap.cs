@@ -1,11 +1,6 @@
-﻿using MessagePack;
-using ProtoBuf;
-using server.packet;
+﻿using ProtoBuf;
 using System;
 using System.ComponentModel;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
 using System.Text;
 
 namespace server.model
@@ -28,7 +23,7 @@ namespace server.model
         /// 转包
         /// </summary>
         /// <returns></returns>
-        public byte[] ToArray()
+        public byte[] ToArray(ServerType type)
         {
             byte typeByte = (byte)MessageType.REQUEST;
             byte[] requestIdByte = BitConverter.GetBytes(RequestId);
@@ -36,15 +31,25 @@ namespace server.model
             byte[] pathByte = Encoding.ASCII.GetBytes(Path);
             byte[] pathLengthByte = BitConverter.GetBytes(pathByte.Length);
 
-            byte[] res = new byte[
-                1 +
-                requestIdByte.Length +
-                pathByte.Length + pathLengthByte.Length +
-                Content.Length
-            ];
+            int packLength = 1 + requestIdByte.Length + pathByte.Length + pathLengthByte.Length + Content.Length;
+            int payloadLength = packLength;
+            if (type == ServerType.TCP)
+            {
+                packLength += 4;
+            }
 
-            int index = 1;
-            res[0] = typeByte;
+            byte[] res = new byte[packLength];
+            int index = 0;
+
+            if (type == ServerType.TCP)
+            {
+                byte[] payloadLengthByte = BitConverter.GetBytes(payloadLength);
+                Array.Copy(payloadLengthByte, 0, res, index, payloadLengthByte.Length);
+                index += payloadLengthByte.Length;
+            }
+
+            res[index] = typeByte;
+            index += 1;
 
             Array.Copy(requestIdByte, 0, res, index, requestIdByte.Length);
             index += requestIdByte.Length;
@@ -98,22 +103,32 @@ namespace server.model
         /// 转包
         /// </summary>
         /// <returns></returns>
-        public byte[] ToArray()
+        public byte[] ToArray(ServerType type)
         {
             byte typeByte = (byte)MessageType.RESPONSE;
             byte[] requestIdByte = BitConverter.GetBytes(RequestId);
             short code = (short)Code;
             byte[] codeByte = BitConverter.GetBytes(code);
 
-            byte[] res = new byte[
-                1 +
-                requestIdByte.Length +
-                codeByte.Length +
-                Content.Length
-            ];
+            int packetLength = 1 + requestIdByte.Length + codeByte.Length + Content.Length;
+            int payloadLength = packetLength;
+            if (type == ServerType.TCP)
+            {
+                packetLength += 4;
+            }
 
-            int index = 1;
-            res[0] = typeByte;
+            byte[] res = new byte[packetLength];
+            int index = 0;
+
+            if (type == ServerType.TCP)
+            {
+                byte[] payloadLengthByte = BitConverter.GetBytes(payloadLength);
+                Array.Copy(payloadLengthByte, 0, res, index, payloadLengthByte.Length);
+                index += payloadLengthByte.Length;
+            }
+
+            res[index] = typeByte;
+            index += 1;
 
             Array.Copy(requestIdByte, 0, res, index, requestIdByte.Length);
             index += requestIdByte.Length;

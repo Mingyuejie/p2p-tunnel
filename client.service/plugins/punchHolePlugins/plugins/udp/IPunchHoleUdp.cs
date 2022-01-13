@@ -15,19 +15,19 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
     public interface IPunchHoleUdp
     {
         public Task<ConnectResultModel> Send(ConnectParams param);
-        public SimplePushSubHandler<OnStep1EventArg> OnStep1Handler { get; }
+        public SimpleSubPushHandler<OnStep1EventArg> OnStep1Handler { get; }
         public Task OnStep1(OnStep1EventArg arg);
 
-        public SimplePushSubHandler<OnStep2EventArg> OnStep2Handler { get; }
+        public SimpleSubPushHandler<OnStep2EventArg> OnStep2Handler { get; }
         public Task OnStep2(OnStep2EventArg e);
 
-        public SimplePushSubHandler<OnStep2FailEventArg> OnStep2FailHandler { get; }
+        public SimpleSubPushHandler<OnStep2FailEventArg> OnStep2FailHandler { get; }
         public void OnStep2Fail(OnStep2FailEventArg e);
 
-        public SimplePushSubHandler<OnStep3EventArg> OnStep3Handler { get; }
+        public SimpleSubPushHandler<OnStep3EventArg> OnStep3Handler { get; }
         public Task OnStep3(OnStep3EventArg e);
 
-        public SimplePushSubHandler<OnStep4EventArg> OnStep4Handler { get; }
+        public SimpleSubPushHandler<OnStep4EventArg> OnStep4Handler { get; }
         public void OnStep4(OnStep4EventArg arg);
     }
 

@@ -82,25 +82,5 @@ namespace common.extends
                 }
             }
         }
-
-        /// <summary>
-        /// Swifter.Json
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
-        //public static string ToJsonSwifter(this object obj)
-        //{
-        //    return Swifter.Json.JsonFormatter.SerializeObject(obj);
-        //}
-        /// <summary>
-        /// Swifter.Json
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        //public static T DeJsonSwifter<T>(this string json)
-        //{
-        //    return Swifter.Json.JsonFormatter.DeserializeObject<T>(json);
-        //}
     }
 }

@@ -25,8 +25,8 @@ namespace client.service.tcpforward
         SocketAsyncEventArgsPool m_readWritePool;
         Semaphore m_maxNumberAcceptedClients;
 
-        public SimplePushSubHandler<TcpForwardRequestModel> OnRequest { get; } = new SimplePushSubHandler<TcpForwardRequestModel>();
-        public SimplePushSubHandler<ListeningChangeModel> OnListeningChange { get; } = new SimplePushSubHandler<ListeningChangeModel>();
+        public SimpleSubPushHandler<TcpForwardRequestModel> OnRequest { get; } = new SimpleSubPushHandler<TcpForwardRequestModel>();
+        public SimpleSubPushHandler<ListeningChangeModel> OnListeningChange { get; } = new SimpleSubPushHandler<ListeningChangeModel>();
 
         private readonly IClientInfoCaching clientInfoCaching;
         private NumberSpace requestIdNs = new NumberSpace(0);
@@ -377,7 +377,7 @@ namespace client.service.tcpforward
         public Socket Socket { get; set; }
         public ulong RequestId { get; set; }
 
-        public MyStopwatch Watch { get; set; }
+        public ConditionStopwatch Watch { get; set; }
 
         public NetworkStream Stream { get; set; }
 

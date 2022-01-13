@@ -1,18 +1,11 @@
 ﻿using common;
 using common.extends;
-using server;
-using server.extends;
 using server.model;
-using server.packet;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Net;
 using System.Reflection;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace server
@@ -26,7 +19,7 @@ namespace server
         private readonly ITcpServer tcpserver;
         private readonly IUdpServer udpserver;
 
-        private long lastTime = Helper.GetTimeStamp();
+        private long lastTime = DateTimeHelper.GetTimeStamp();
 
         public ServerPluginHelper(IUdpServer udpserver, ITcpServer tcpserver)
         {
@@ -63,7 +56,7 @@ namespace server
                             }
                         }
                     }
-                    lastTime = Helper.GetTimeStamp();
+                    lastTime = DateTimeHelper.GetTimeStamp();
                     await Task.Delay(1);
                 }
 
@@ -142,7 +135,7 @@ namespace server
                     Content = msg.Data.ToBytes(),
                     Path = msg.Path
                 };
-                bool res = await msg.Connection.Send(wrap.ToArray());
+                bool res = await msg.Connection.Send(wrap.ToArray(msg.Connection.ServerType));
                 if (res && msg.Connection.ServerType == ServerType.UDP)
                 {
                     msg.Connection.UpdateTime(lastTime);
@@ -279,7 +272,11 @@ namespace server
                     Code = msg.Code
                 };
 
-                await msg.Connection.Send(wrap.ToArray());
+                bool res = await msg.Connection.Send(wrap.ToArray(msg.Connection.ServerType));
+                if (res && msg.Connection.ServerType == ServerType.UDP)
+                {
+                    msg.Connection.UpdateTime(lastTime);
+                }
             }
             catch (Exception ex)
             {
@@ -298,7 +295,7 @@ public class MessageRequestResponeWrap
 public class SendCacheModel
 {
     public TaskCompletionSource<MessageRequestResponeWrap> Tcs { get; set; }
-    public long Time { get; set; } = Helper.GetTimeStamp();
+    public long Time { get; set; } = DateTimeHelper.GetTimeStamp();
     public ulong RequestId { get; set; } = 0;
     public int Timeout { get; set; } = 15000;
 }

@@ -68,7 +68,7 @@ namespace client.service.plugins.serverPlugins.register
             udpServer.Stop();
             tcpServer.Stop();
             registerState.Offline();
-            Helper.FlushMemory();
+            GCHelper.FlushMemory();
         }
 
         public async Task<CommonTaskResponseModel<bool>> Register()
@@ -78,10 +78,10 @@ namespace client.service.plugins.serverPlugins.register
 
             try
             {
-                IPAddress serverAddress = Helper.GetDomainIp(config.Server.Ip);
+                IPAddress serverAddress = NetworkHelper.GetDomainIp(config.Server.Ip);
                 registerState.LocalInfo.IsConnecting = true;
-                registerState.LocalInfo.Port = Helper.GetRandomPort();
-                registerState.LocalInfo.TcpPort = Helper.GetRandomPort(new List<int> { registerState.LocalInfo.Port });
+                registerState.LocalInfo.Port = NetworkHelper.GetRandomPort();
+                registerState.LocalInfo.TcpPort = NetworkHelper.GetRandomPort(new List<int> { registerState.LocalInfo.Port });
                 registerState.LocalInfo.Mac = string.Empty;
 
                 //UDP 开始监听
@@ -100,7 +100,7 @@ namespace client.service.plugins.serverPlugins.register
                 registerState.LocalInfo.LocalIp = (tcpSocket.LocalEndPoint as IPEndPoint).Address.ToString();
                 if (config.Client.UseMac)
                 {
-                    registerState.LocalInfo.Mac = Helper.GetMacAddress(registerState.LocalInfo.LocalIp);
+                    registerState.LocalInfo.Mac = NetworkHelper.GetMacAddress(registerState.LocalInfo.LocalIp);
                 }
                 tcpServer.BindReceive(tcpSocket, async (socketError) =>
                 {
@@ -168,7 +168,7 @@ namespace client.service.plugins.serverPlugins.register
                 {
                     if (registerState.UdpConnection != null)
                     {
-                        long time = Helper.GetTimeStamp();
+                        long time = DateTimeHelper.GetTimeStamp();
                         if (registerState.UdpConnection.IsTimeout(time))
                         {
                             await AutoReg();

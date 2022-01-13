@@ -95,7 +95,7 @@ namespace client.service.serverTcpforward
                         SourceSocket = registerstate.TcpConnection.TcpSocket
                     };
 
-                    IPEndPoint dnsEndPoint = new(Helper.GetDomainIp(data.TargetIp), data.TargetPort);
+                    IPEndPoint dnsEndPoint = new(NetworkHelper .GetDomainIp(data.TargetIp), data.TargetPort);
                     socket.Connect(dnsEndPoint);
                     ClientModel.Add(client);
                     client.Stream = new NetworkStream(client.TargetSocket, false);

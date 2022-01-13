@@ -35,7 +35,7 @@ namespace client.plugins.serverPlugins.register
         /// </summary>
         public LocalInfo LocalInfo { get; set; } = new LocalInfo();
 
-        public SimplePushSubHandler<bool> OnRegisterStateChange { get; } = new SimplePushSubHandler<bool>();
+        public SimpleSubPushHandler<bool> OnRegisterStateChange { get; } = new SimpleSubPushHandler<bool>();
 
         private ulong connectid = 0;
         public ulong ConnectId
@@ -164,7 +164,7 @@ namespace client.plugins.serverPlugins.register
         public bool Connected { get; set; } = false;
 
 
-        public SimplePushSubHandler<bool> TcpConnectedSub { get; } = new SimplePushSubHandler<bool>();
+        public SimpleSubPushHandler<bool> TcpConnectedSub { get; } = new SimpleSubPushHandler<bool>();
 
         private bool tcpConnected = false;
         /// <summary>

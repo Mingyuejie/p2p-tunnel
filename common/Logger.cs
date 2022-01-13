@@ -14,7 +14,7 @@ namespace common
         private readonly ConcurrentQueue<LoggerModel> queue = new ConcurrentQueue<LoggerModel>();
         public int Count => queue.Count;
 
-        public SimplePushSubHandler<LoggerModel> OnLogger { get; } = new SimplePushSubHandler<LoggerModel>();
+        public SimpleSubPushHandler<LoggerModel> OnLogger { get; } = new SimpleSubPushHandler<LoggerModel>();
         private Logger()
         {
             OnLogger.Sub((model) =>
@@ -47,8 +47,7 @@ namespace common
                 {
                     if (Count > 0)
                     {
-                        LoggerModel model = Dequeue();
-                        if (model != null)
+                        if (Dequeue(out LoggerModel model))
                         {
                             OnLogger.Push(model);
                         }
@@ -65,12 +64,12 @@ namespace common
             {
                 content = string.Format(content, args);
             }
-            queue.Enqueue(new LoggerModel { Type = LoggerTypes.DEBUG, Content = content });
+            Enqueue(new LoggerModel { Type = LoggerTypes.DEBUG, Content = content });
         }
         [Conditional("DEBUG")]
         public void Debug(Exception ex)
         {
-            queue.Enqueue(new LoggerModel { Type = LoggerTypes.DEBUG, Content = ex + "" });
+            Enqueue(new LoggerModel { Type = LoggerTypes.DEBUG, Content = ex + "" });
         }
 
         public void Info(string content, params object[] args)
@@ -79,7 +78,7 @@ namespace common
             {
                 content = string.Format(content, args);
             }
-            queue.Enqueue(new LoggerModel { Type = LoggerTypes.INFO, Content = content });
+            Enqueue(new LoggerModel { Type = LoggerTypes.INFO, Content = content });
         }
 
         public void Warning(string content, params object[] args)
@@ -88,11 +87,11 @@ namespace common
             {
                 content = string.Format(content, args);
             }
-            queue.Enqueue(new LoggerModel { Type = LoggerTypes.WARNING, Content = content });
+            Enqueue(new LoggerModel { Type = LoggerTypes.WARNING, Content = content });
         }
         public void Warning(Exception ex)
         {
-            queue.Enqueue(new LoggerModel { Type = LoggerTypes.WARNING, Content = ex + "" });
+            Enqueue(new LoggerModel { Type = LoggerTypes.WARNING, Content = ex + "" });
         }
 
         public void Error(string content, params object[] args)
@@ -101,11 +100,11 @@ namespace common
             {
                 content = string.Format(content, args);
             }
-            queue.Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = content });
+            Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = content });
         }
         public void Error(Exception ex)
         {
-            queue.Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = ex + "" });
+            Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = ex + "" });
         }
 
         [Conditional("DEBUG")]
@@ -115,23 +114,22 @@ namespace common
             {
                 content = string.Format(content, args);
             }
-            queue.Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = content });
+            Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = content });
         }
 
         [Conditional("DEBUG")]
         public void DebugError(Exception ex)
         {
-            queue.Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = ex + "" });
+            Enqueue(new LoggerModel { Type = LoggerTypes.ERROR, Content = ex + "" });
         }
 
         public void Enqueue(LoggerModel model)
         {
             queue.Enqueue(model);
         }
-        public LoggerModel Dequeue()
+        public bool Dequeue(out LoggerModel model)
         {
-            _ = queue.TryDequeue(out LoggerModel model);
-            return model;
+            return queue.TryDequeue(out model);
         }
     }
 

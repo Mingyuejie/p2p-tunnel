@@ -14,7 +14,7 @@ namespace client.service.tcpforward
         public void Fail(TcpForwardModel failModel, string body = "");
         public void Stop(int sourcePort);
 
-        public SimplePushSubHandler<TcpForwardRequestModel> OnRequest { get; }
-        public SimplePushSubHandler<ListeningChangeModel> OnListeningChange { get; }
+        public SimpleSubPushHandler<TcpForwardRequestModel> OnRequest { get; }
+        public SimpleSubPushHandler<ListeningChangeModel> OnListeningChange { get; }
     }
 }

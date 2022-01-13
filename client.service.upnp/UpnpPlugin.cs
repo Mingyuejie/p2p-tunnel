@@ -45,7 +45,7 @@ namespace client.service.upnp
                 }
                 finally
                 {
-                    Helper.SetTimeout(() =>
+                    TimerIntervalHelper.SetTimeout(() =>
                     {
                         NatUtility.StopDiscovery();
                     }, 5000);

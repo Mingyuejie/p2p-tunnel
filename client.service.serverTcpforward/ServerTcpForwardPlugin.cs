@@ -48,7 +48,7 @@ namespace client.service.serverTcpforward
             {
                 if (connected && config.AutoReg)
                 {
-                    Helper.SetTimeout(() =>
+                    TimerIntervalHelper.SetTimeout(() =>
                     {
                         serverTcpForwardHelper.UnRegister().Wait();
                         serverTcpForwardHelper.Register().Wait();

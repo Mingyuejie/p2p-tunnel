@@ -1,14 +1,11 @@
 ﻿using common;
 using common.extends;
 using server.model;
-using server.packet;
 using System;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace server.achieves.defaults
@@ -20,7 +17,7 @@ namespace server.achieves.defaults
         }
 
         private UdpClient UdpcRecv { get; set; } = null;
-        public SimplePushSubHandler<ServerDataWrap> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap>();
+        public SimpleSubPushHandler<ServerDataWrap> OnPacket { get; } = new SimpleSubPushHandler<ServerDataWrap>();
         private static ConcurrentDictionary<long, IConnection> clients = new ConcurrentDictionary<long, IConnection>();
 
         public void Start(int port, IPAddress ip = null)
@@ -53,12 +50,11 @@ namespace server.achieves.defaults
                             connection = CreateConnection(result.RemoteEndPoint);
                             clients.TryAdd(id, connection);
                         }
-                        byte[] packet = UdpPacket.FromArray(id, result.Buffer);
-                        if (packet != null)
+                        if(result.Buffer.Length > 0)
                         {
                             await OnPacket.PushAsync(new ServerDataWrap
                             {
-                                Data = packet,
+                                Data = result.Buffer,
                                 Connection = connection
                             });
                         }

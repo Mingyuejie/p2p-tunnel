@@ -19,7 +19,7 @@ namespace client.service.plugins.serverPlugins.clients
     {
         private readonly static ConcurrentDictionary<ulong, ClientInfo> clients = new ConcurrentDictionary<ulong, ClientInfo>();
 
-        public SimplePushSubHandler<ClientInfo> OnOffline { get; } = new SimplePushSubHandler<ClientInfo>();
+        public SimpleSubPushHandler<ClientInfo> OnOffline { get; } = new SimpleSubPushHandler<ClientInfo>();
 
         public bool Add(ClientInfo client)
         {

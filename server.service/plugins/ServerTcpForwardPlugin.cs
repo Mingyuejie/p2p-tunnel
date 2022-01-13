@@ -497,7 +497,7 @@ namespace server.service.plugins
         public Socket Socket { get; set; }
         public ulong RequestId { get; set; }
 
-        public MyStopwatch Watch { get; set; }
+        public ConditionStopwatch Watch { get; set; }
 
         public NetworkStream Stream { get; set; }
 

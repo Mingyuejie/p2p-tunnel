@@ -174,7 +174,7 @@ namespace client.service.tcpforward
                         SourceConnection = arg.Packet.Connection,
                         FromId = arg.Data.FromID
                     };
-                    IPEndPoint dnsEndPoint = new(Helper.GetDomainIp(arg.Data.TargetIp), arg.Data.TargetPort);
+                    IPEndPoint dnsEndPoint = new(NetworkHelper.GetDomainIp(arg.Data.TargetIp), arg.Data.TargetPort);
                     socket.BeginConnect(dnsEndPoint, Connect, new ConnectState
                     {
                         Client = client,

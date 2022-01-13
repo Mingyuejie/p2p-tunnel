@@ -10,7 +10,7 @@ namespace client.service.plugins.serverPlugins.clients
         {
         }
 
-        public SimplePushSubHandler<OnServerSendClientsEventArg> OnServerClientsData { get; } = new SimplePushSubHandler<OnServerSendClientsEventArg>();
+        public SimpleSubPushHandler<OnServerSendClientsEventArg> OnServerClientsData { get; } = new SimpleSubPushHandler<OnServerSendClientsEventArg>();
 
     }
 

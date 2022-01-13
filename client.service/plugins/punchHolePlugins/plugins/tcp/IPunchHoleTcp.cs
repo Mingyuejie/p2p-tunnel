@@ -17,25 +17,25 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp
     {
         public Task<ConnectResultModel> Send(ConnectTcpParams param);
 
-        public SimplePushSubHandler<OnStep1EventArg> OnStep1Handler { get; }
+        public SimpleSubPushHandler<OnStep1EventArg> OnStep1Handler { get; }
         public Task OnStep1(OnStep1EventArg e);
 
-        public SimplePushSubHandler<OnStep2EventArg> OnStep2Handler { get; }
+        public SimpleSubPushHandler<OnStep2EventArg> OnStep2Handler { get; }
         public Task OnStep2(OnStep2EventArg e);
 
-        public SimplePushSubHandler<OnStep2RetryEventArg> OnStep2RetryHandler { get; }
+        public SimpleSubPushHandler<OnStep2RetryEventArg> OnStep2RetryHandler { get; }
         public Task OnStep2Retry(OnStep2RetryEventArg e);
 
-        public SimplePushSubHandler<OnStep2FailEventArg> OnStep2FailHandler { get; }
+        public SimpleSubPushHandler<OnStep2FailEventArg> OnStep2FailHandler { get; }
         public Task OnStep2Fail(OnStep2FailEventArg arg);
 
         public Task SendStep2Stop(ulong toid);
         public Task OnStep2Stop(OnStep2StopEventArg e);
 
-        public SimplePushSubHandler<OnStep3EventArg> OnStep3Handler { get; }
+        public SimpleSubPushHandler<OnStep3EventArg> OnStep3Handler { get; }
         public Task OnStep3(OnStep3EventArg arg);
 
-        public SimplePushSubHandler<OnStep4EventArg> OnStep4Handler { get; }
+        public SimpleSubPushHandler<OnStep4EventArg> OnStep4Handler { get; }
         public Task OnStep4(OnStep4EventArg arg);
     }
 

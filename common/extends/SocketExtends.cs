@@ -52,7 +52,6 @@ namespace common.extends
             }
         }
 
-
         public static void Reuse(this Socket socket,bool reuse = true)
         {
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, reuse);
@@ -62,7 +61,6 @@ namespace common.extends
             socket.Reuse(true);
             socket.Bind(ip);
         }
-
 
         /// <summary>
         /// 

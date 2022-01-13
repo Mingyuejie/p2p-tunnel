@@ -11,7 +11,7 @@ namespace server.plugins.register.caching
     /// </summary>
     public interface IClientInfoCaching
     {
-        public SimplePushSubHandler<ClientInfo> OnOffline { get; }
+        public SimpleSubPushHandler<ClientInfo> OnOffline { get; }
         public bool Add(ClientInfo client);
         public bool Get(ulong id, out ClientInfo client);
         public ClientInfo GetByName(string name);

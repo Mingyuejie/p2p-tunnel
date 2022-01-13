@@ -28,7 +28,7 @@ namespace client.service.tcpforward
             });
         }
 
-        public SimplePushSubHandler<OnTcpForwardEventArg> OnTcpForwardHandler { get; } = new SimplePushSubHandler<OnTcpForwardEventArg>();
+        public SimpleSubPushHandler<OnTcpForwardEventArg> OnTcpForwardHandler { get; } = new SimpleSubPushHandler<OnTcpForwardEventArg>();
         public async Task OnTcpForward(OnTcpForwardEventArg arg)
         {
             await OnTcpForwardHandler.PushAsync(arg);

@@ -1,12 +1,9 @@
 ﻿using common;
 using common.extends;
 using server.model;
-using server.packet;
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace server
@@ -55,7 +52,7 @@ namespace server
         public UdpClient UdpcRecv { get; set; }
         public IPEndPoint UdpAddress { get; set; }
         public long UdpAddress64 { get; set; }
-        public long UdpLastTime { get; set; } = Helper.GetTimeStamp();
+        public long UdpLastTime { get; set; } = DateTimeHelper.GetTimeStamp();
 
         public Socket TcpSocket { get; set; }
         public IPEndPoint TcpAddress { get; set; }
@@ -77,7 +74,7 @@ namespace server
             {
                 try
                 {
-                    await TcpSocket.SendAsync(TcpPacket.ToArray(data), SocketFlags.None);
+                    await TcpSocket.SendAsync(data, SocketFlags.None);
                     return true;
                 }
                 catch (Exception ex)
@@ -94,12 +91,7 @@ namespace server
             {
                 try
                 {
-                    IEnumerable<UdpPacket> udpPackets = UdpPacket.Split(data);
-                    foreach (UdpPacket udpPacket in udpPackets)
-                    {
-                        byte[] udpPacketDatagram = udpPacket.ToArray();
-                        await UdpcRecv.SendAsync(udpPacketDatagram, udpPacketDatagram.Length, UdpAddress);
-                    }
+                    await UdpcRecv.SendAsync(data, data.Length, UdpAddress);
                     return true;
                 }
                 catch (Exception ex)
@@ -141,12 +133,6 @@ namespace server
             UdpAddress64 = 0;
             UdpcRecv = null;
             UdpLastTime = 0;
-        }
-
-        class SendState
-        {
-            public TaskCompletionSource<bool> Tcs { get; set; }
-            public Socket Socket { get; set; }
         }
     }
 }

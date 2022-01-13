@@ -12,7 +12,7 @@ namespace server
 
         public void Stop();
 
-        public SimplePushSubHandler<ServerDataWrap> OnPacket { get; }
+        public SimpleSubPushHandler<ServerDataWrap> OnPacket { get; }
     }
 
     public class ServerDataWrap

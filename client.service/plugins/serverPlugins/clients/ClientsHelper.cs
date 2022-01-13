@@ -58,7 +58,7 @@ namespace client.service.plugins.serverPlugins.clients
             Heart();
             Task.Run(() =>
             {
-                registerState.LocalInfo.RouteLevel = Helper.GetRouteLevel();
+                registerState.LocalInfo.RouteLevel = NetworkHelper.GetRouteLevel();
             });
         }
 
@@ -200,7 +200,7 @@ namespace client.service.plugins.serverPlugins.clients
             {
                 while (true)
                 {
-                    long time = Helper.GetTimeStamp();
+                    long time = DateTimeHelper.GetTimeStamp();
 
                     foreach (ClientInfo client in clientInfoCaching.All())
                     {

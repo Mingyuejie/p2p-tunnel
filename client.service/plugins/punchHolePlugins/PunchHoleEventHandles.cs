@@ -86,7 +86,7 @@ namespace client.service.plugins.punchHolePlugins
             });
         }
 
-        public SimplePushSubHandler<OnPunchHoleArg> OnReverse { get; } = new SimplePushSubHandler<OnPunchHoleArg>();
+        public SimpleSubPushHandler<OnPunchHoleArg> OnReverse { get; } = new SimpleSubPushHandler<OnPunchHoleArg>();
         public async Task SendReverse(ulong toid)
         {
             await Send(new SendPunchHoleArg<ReverseModel>

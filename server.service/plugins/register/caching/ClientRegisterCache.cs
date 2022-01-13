@@ -16,7 +16,7 @@ namespace server.service.plugins.register.caching
         private readonly ConcurrentDictionary<ulong, RegisterCacheModel> cache = new();
         private NumberSpace idNs = new NumberSpace(0);
 
-        public SimplePushSubHandler<string> OnChanged { get; } = new SimplePushSubHandler<string>();
+        public SimpleSubPushHandler<string> OnChanged { get; } = new SimpleSubPushHandler<string>();
 
         public ClientRegisterCaching()
         {
@@ -24,7 +24,7 @@ namespace server.service.plugins.register.caching
             {
                 while (true)
                 {
-                    long time = Helper.GetTimeStamp();
+                    long time = DateTimeHelper.GetTimeStamp();
                     foreach (RegisterCacheModel item in cache.Values)
                     {
                         if (time - item.UdpConnection.UdpLastTime > 60 * 1000)

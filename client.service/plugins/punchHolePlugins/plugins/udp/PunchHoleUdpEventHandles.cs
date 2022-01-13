@@ -37,7 +37,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
             connectCache.TryAdd(param.Id, new ConnectCache
             {
                 Tcs = tcs,
-                Time = Helper.GetTimeStamp(),
+                Time = DateTimeHelper.GetTimeStamp(),
                 TryTimes = param.TryTimes
             });
 
@@ -82,7 +82,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
             return await tcs.Task;
         }
 
-        public SimplePushSubHandler<OnStep1EventArg> OnStep1Handler { get; } = new SimplePushSubHandler<OnStep1EventArg>();
+        public SimpleSubPushHandler<OnStep1EventArg> OnStep1Handler { get; } = new SimpleSubPushHandler<OnStep1EventArg>();
         public async Task OnStep1(OnStep1EventArg arg)
         {
             OnStep1Handler.Push(arg);
@@ -109,7 +109,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
             });
         }
 
-        public SimplePushSubHandler<OnStep2EventArg> OnStep2Handler { get; } = new SimplePushSubHandler<OnStep2EventArg>();
+        public SimpleSubPushHandler<OnStep2EventArg> OnStep2Handler { get; } = new SimpleSubPushHandler<OnStep2EventArg>();
         public async Task OnStep2(OnStep2EventArg e)
         {
             OnStep2Handler.Push(e);
@@ -130,13 +130,13 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
             }
         }
 
-        public SimplePushSubHandler<OnStep2FailEventArg> OnStep2FailHandler { get; } = new SimplePushSubHandler<OnStep2FailEventArg>();
+        public SimpleSubPushHandler<OnStep2FailEventArg> OnStep2FailHandler { get; } = new SimpleSubPushHandler<OnStep2FailEventArg>();
         public void OnStep2Fail(OnStep2FailEventArg e)
         {
             OnStep2FailHandler.Push(e);
         }
 
-        public SimplePushSubHandler<OnStep3EventArg> OnStep3Handler { get; } = new SimplePushSubHandler<OnStep3EventArg>();
+        public SimpleSubPushHandler<OnStep3EventArg> OnStep3Handler { get; } = new SimpleSubPushHandler<OnStep3EventArg>();
         public async Task OnStep3(OnStep3EventArg e)
         {
             OnStep3Handler.Push(e);
@@ -151,7 +151,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
             });
         }
 
-        public SimplePushSubHandler<OnStep4EventArg> OnStep4Handler { get; } = new SimplePushSubHandler<OnStep4EventArg>();
+        public SimpleSubPushHandler<OnStep4EventArg> OnStep4Handler { get; } = new SimpleSubPushHandler<OnStep4EventArg>();
         public void OnStep4(OnStep4EventArg arg)
         {
             if (connectCache.TryRemove(arg.Data.FromId, out ConnectCache cache))

@@ -1,14 +1,10 @@
 ﻿using common;
 using common.extends;
-using server.model;
-using server.packet;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,7 +20,7 @@ namespace server.achieves.IOCP
         SocketAsyncEventArgsPool m_readWritePool;
         Semaphore m_maxNumberAcceptedClients;
 
-        public SimplePushSubHandler<ServerDataWrap> OnPacket { get; } = new SimplePushSubHandler<ServerDataWrap>();
+        public SimpleSubPushHandler<ServerDataWrap> OnPacket { get; } = new SimpleSubPushHandler<ServerDataWrap>();
 
         public ServerTest()
         {
