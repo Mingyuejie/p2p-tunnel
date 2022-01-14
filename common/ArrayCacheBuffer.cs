@@ -9,7 +9,7 @@ namespace common
     public class ArrayCacheBuffer
     {
         private byte[] items { get; set; } = Array.Empty<byte>();
-        private int size;
+        private int size = 0;
         public int Size
         {
             get
@@ -33,25 +33,19 @@ namespace common
             }
         }
 
-        public Memory<byte> Memory
+        public byte[] ArrayData
         {
             get
             {
-                return items.AsMemory(0, size);
+                return items;
             }
         }
 
-        public void AddRange(byte[] data)
+        public void AddRange(byte[] data, int length)
         {
-            BeResize(data.Length);
-            Array.Copy(data, 0, items, size, data.Length);
-            size += data.Length;
-        }
-        public void AddRange(Span<byte> data)
-        {
-            BeResize(data.Length);
-            Array.Copy(data.ToArray(), 0, items, size, data.Length);
-            size += data.Length;
+            BeResize(length);
+            Array.Copy(data, 0, items, size, length);
+            size += length;
         }
 
         public void RemoveRange(int index, int count)
@@ -66,10 +60,13 @@ namespace common
             }
         }
 
-        public void Clear()
+        public void Clear(bool clearData = false)
         {
             size = 0;
-            Size = 0;
+            if (clearData)
+            {
+                Size = 0;
+            }
         }
 
         private void BeResize(int length)

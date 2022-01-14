@@ -59,6 +59,8 @@ namespace server.model
             Array.Copy(pathByte, 0, res, index, pathByte.Length);
             index += pathByte.Length;
 
+            //Console.WriteLine($"{RequestId} 发送index:{index},content:{Content.Length}");
+
             Array.Copy(Content, 0, res, index, Content.Length);
             index += Content.Length;
 
@@ -68,20 +70,22 @@ namespace server.model
         /// 解包
         /// </summary>
         /// <param name="bytes"></param>
-        public void FromArray(Memory<byte> bytes)
+        public void FromArray(byte[] bytes, int index, int length)
         {
-            Span<byte> span = bytes.Span;
-            int index = 1;
+            index += 1;
 
-            RequestId = BitConverter.ToUInt64(span.Slice(index, 8));
+            RequestId = BitConverter.ToUInt64(bytes, index);
             index += 8;
 
-            int pathLength = BitConverter.ToInt32(span.Slice(index, 4));
+            int pathLength = BitConverter.ToInt32(bytes, index);
             index += 4;
-            Path = Encoding.ASCII.GetString(span.Slice(index, pathLength));
+
+            Path = Encoding.ASCII.GetString(bytes, index, pathLength);
             index += pathLength;
 
-            Memory = bytes.Slice(index, span.Length - index);
+            //Console.WriteLine($"{RequestId} AsMemory index:{index},length:{length},count:{length-index},total:{bytes.Length}");
+
+            Memory = bytes.AsMemory(index, length - index);
         }
     }
 
@@ -144,18 +148,17 @@ namespace server.model
         /// 解包
         /// </summary>
         /// <param name="bytes"></param>
-        public void FromArray(Memory<byte> bytes)
+        public void FromArray(byte[] bytes, int index, int length)
         {
-            Span<byte> span = bytes.Span;
-            int index = 1;
+            index += 1;
 
-            RequestId = BitConverter.ToUInt64(span.Slice(index, 8));
+            RequestId = BitConverter.ToUInt64(bytes, index);
             index += 8;
 
-            Code = (MessageResponeCode)BitConverter.ToInt16(span.Slice(index, 2));
+            Code = (MessageResponeCode)BitConverter.ToInt16(bytes, index);
             index += 2;
 
-            Memory = bytes.Slice(index, span.Length - index);
+            Memory = bytes.AsMemory(index, length - index);
         }
     }
 

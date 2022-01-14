@@ -23,7 +23,7 @@ namespace server.service.plugins
             this.serverPluginHelper = serverPluginHelper;
         }
 
-        public void Execute(PluginParamWrap data)
+        public async Task Execute(PluginParamWrap data)
         {
             ForwardModel model = data.Wrap.Memory.DeBytes<ForwardModel>();
 
@@ -36,7 +36,7 @@ namespace server.service.plugins
                     //是否在同一个组
                     if (source.GroupId == target.GroupId)
                     {
-                        serverPluginHelper.SendOnly(new MessageRequestParamsWrap<byte[]>
+                       await  serverPluginHelper.SendOnly(new MessageRequestParamsWrap<byte[]>
                         {
                             Connection = data.Connection,
                             Data = model.Data,

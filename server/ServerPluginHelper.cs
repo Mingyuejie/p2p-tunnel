@@ -135,7 +135,8 @@ namespace server
                     Content = msg.Data.ToBytes(),
                     Path = msg.Path
                 };
-                bool res = await msg.Connection.Send(wrap.ToArray(msg.Connection.ServerType));
+                var sendData = wrap.ToArray(msg.Connection.ServerType);
+                bool res = await msg.Connection.Send(sendData);
                 if (res && msg.Connection.ServerType == ServerType.UDP)
                 {
                     msg.Connection.UpdateTime(lastTime);
@@ -152,12 +153,12 @@ namespace server
         public async Task InputData(ServerDataWrap param)
         {
 
-            MessageType type = (MessageType)param.Data.Span[0];
+            MessageType type = (MessageType)param.Data[param.Index];
 
             if (type == MessageType.RESPONSE)
             {
                 MessageResponseWrap wrap = new MessageResponseWrap();
-                wrap.FromArray(param.Data);
+                wrap.FromArray(param.Data, param.Index, param.Length);
                 if (sends.TryRemove(wrap.RequestId, out SendCacheModel send))
                 {
                     send.Tcs.SetResult(new MessageRequestResponeWrap { Code = wrap.Code, Data = wrap.Memory });
@@ -166,7 +167,7 @@ namespace server
             else
             {
                 MessageRequestWrap wrap = new MessageRequestWrap();
-                wrap.FromArray(param.Data);
+                wrap.FromArray(param.Data, param.Index, param.Length);
                 try
                 {
                     wrap.Path = wrap.Path.ToLower();
@@ -272,7 +273,8 @@ namespace server
                     Code = msg.Code
                 };
 
-                bool res = await msg.Connection.Send(wrap.ToArray(msg.Connection.ServerType));
+                var sendData = wrap.ToArray(msg.Connection.ServerType);
+                bool res = await msg.Connection.Send(sendData);
                 if (res && msg.Connection.ServerType == ServerType.UDP)
                 {
                     msg.Connection.UpdateTime(lastTime);

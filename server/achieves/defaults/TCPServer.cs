@@ -87,21 +87,21 @@ namespace server.achieves.defaults
                             model.Clear();
                             break;
                         }
-                        model.CacheBuffer.AddRange(model.Buffer.AsSpan(0, length));
-
+                        model.CacheBuffer.AddRange(model.Buffer, length);
                         do
                         {
-                            var memory = model.CacheBuffer.Memory;
+                            var memory = model.CacheBuffer.ArrayData;
 
-                            int packageLen = BitConverter.ToInt32(memory.Span.Slice(0, 4));
+                            int packageLen = BitConverter.ToInt32(memory, 0);
                             if (packageLen > model.CacheBuffer.Size - 4)
                             {
                                 break;
                             }
-
                             await OnPacket.PushAsync(new ServerDataWrap
                             {
-                                Data = memory.Slice(4, packageLen),
+                                Data = memory,
+                                Index = 4,
+                                Length = packageLen + 4,
                                 Connection = model.Connection
                             });
 

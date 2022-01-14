@@ -153,7 +153,8 @@ namespace client.service.ftp
 
                         byte[] data = new byte[packSize];
                         await fs.ReadAsync(data, 0, packSize);
-                        if (!await SendOnlyTcp(cmd.WriteData(data), client.TcpConnection))
+                        var sendData = cmd.WriteData(data);
+                        if (!await SendOnlyTcp(sendData, client.TcpConnection))
                         {
                             save.State = UploadState.Error;
                         }
@@ -169,7 +170,8 @@ namespace client.service.ftp
                     {
                         byte[] data = new byte[lastPackSize];
                         await fs.ReadAsync(data, 0, lastPackSize);
-                        if (!await SendOnlyTcp(cmd.WriteData(data), client.TcpConnection))
+                        var sendData = cmd.WriteData(data);
+                        if (!await SendOnlyTcp(sendData, client.TcpConnection))
                         {
                             save.State = UploadState.Error;
                         }

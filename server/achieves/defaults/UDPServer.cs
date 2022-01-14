@@ -50,11 +50,13 @@ namespace server.achieves.defaults
                             connection = CreateConnection(result.RemoteEndPoint);
                             clients.TryAdd(id, connection);
                         }
-                        if(result.Buffer.Length > 0)
+                        if (result.Buffer.Length > 0)
                         {
                             await OnPacket.PushAsync(new ServerDataWrap
                             {
                                 Data = result.Buffer,
+                                Length = result.Buffer.Length,
+                                Index = 0,
                                 Connection = connection
                             });
                         }
