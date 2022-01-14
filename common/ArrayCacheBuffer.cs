@@ -72,7 +72,7 @@ namespace common
         private void BeResize(int length)
         {
             int _size = size + length;
-            if (size + length > items.Length)
+            if (_size > items.Length)
             {
                 int newsize = items.Length * 2;
                 if (newsize < _size)

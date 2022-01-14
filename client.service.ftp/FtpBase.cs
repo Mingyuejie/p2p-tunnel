@@ -339,14 +339,6 @@ namespace client.service.ftp
                                 item.LastLength = item.IndexLength;
                             }
                         }
-
-                        IEnumerable<FileSaveInfo> saves = Uploads.Caches.SelectMany(c => c.Value.Values);
-                        int uploadCount = saves.Count(c => c.State == UploadState.Uploading);
-                        int waitCount = saves.Count(c => c.State == UploadState.Wait);
-                        if (waitCount > 0 && uploadCount < config.UploadNum)
-                        {
-                            Upload(saves.FirstOrDefault(c => c.State == UploadState.Wait));
-                        }
                     }
                     if (!Downloads.Caches.IsEmpty)
                     {
@@ -361,6 +353,24 @@ namespace client.service.ftp
                     }
 
                     await Task.Delay(1000);
+                }
+            }, TaskCreationOptions.LongRunning);
+
+            Task.Factory.StartNew(async () =>
+            {
+                while (true)
+                {
+                    if (!Uploads.Caches.IsEmpty)
+                    {
+                        IEnumerable<FileSaveInfo> saves = Uploads.Caches.SelectMany(c => c.Value.Values);
+                        int uploadCount = saves.Count(c => c.State == UploadState.Uploading);
+                        int waitCount = saves.Count(c => c.State == UploadState.Wait);
+                        if (waitCount > 0 && uploadCount < config.UploadNum)
+                        {
+                            Upload(saves.FirstOrDefault(c => c.State == UploadState.Wait));
+                        }
+                    }
+                    await Task.Delay(1);
                 }
             }, TaskCreationOptions.LongRunning);
         }
