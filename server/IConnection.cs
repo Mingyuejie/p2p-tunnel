@@ -25,6 +25,7 @@ namespace server
         public ServerType ServerType { get; set; }
 
         public Task<bool> Send(byte[] data);
+        public Task<bool> Send(ReadOnlyMemory<byte> data);
 
         public void UpdateTime(long time);
         public bool IsTimeout(long time);
@@ -68,7 +69,16 @@ namespace server
             }
             return await SendUdp(data);
         }
-        private async Task<bool> SendTcp(byte[] data)
+        public async Task<bool> Send(ReadOnlyMemory<byte> data)
+        {
+            if (ServerType == ServerType.TCP)
+            {
+                return await SendTcp(data);
+            }
+            return false;
+        }
+
+        private async Task<bool> SendTcp(ReadOnlyMemory<byte> data)
         {
             if (Connected)
             {

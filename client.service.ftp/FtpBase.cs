@@ -141,6 +141,9 @@ namespace client.service.ftp
                 try
                 {
                     cmd.ToBytes();
+                    byte[] sendData = new byte[cmd.MetaData.Length + packSize];
+                    byte[] readData = new byte[packSize];
+
                     using FileStream fs = new FileStream(save.FileName, FileMode.Open, FileAccess.Read, FileShare.Read, config.ReadWriteBufferSize, true);
 
                     int index = 0;
@@ -151,14 +154,13 @@ namespace client.service.ftp
                             return;
                         }
 
-                        byte[] data = new byte[packSize];
-                        await fs.ReadAsync(data, 0, packSize);
-                        var sendData = cmd.WriteData(data);
+                        await fs.ReadAsync(readData, 0, readData.Length);
+                        cmd.WriteData(readData, sendData);
                         if (!await SendOnlyTcp(sendData, client.TcpConnection))
                         {
                             save.State = UploadState.Error;
                         }
-                        save.IndexLength += data.Length;
+                        save.IndexLength += packSize;
 
                         index++;
                     }
@@ -168,14 +170,15 @@ namespace client.service.ftp
                     }
                     if (lastPackSize > 0)
                     {
-                        byte[] data = new byte[lastPackSize];
-                        await fs.ReadAsync(data, 0, lastPackSize);
-                        var sendData = cmd.WriteData(data);
+                        sendData = new byte[cmd.MetaData.Length + lastPackSize];
+                        readData = new byte[lastPackSize];
+                        await fs.ReadAsync(readData, 0, readData.Length);
+                        cmd.WriteData(readData, sendData);
                         if (!await SendOnlyTcp(sendData, client.TcpConnection))
                         {
                             save.State = UploadState.Error;
                         }
-                        save.IndexLength += data.Length;
+                        save.IndexLength += lastPackSize;
                     }
                 }
                 catch (Exception ex)

@@ -57,12 +57,15 @@ namespace client.service.ftp.protocol
 
             return MetaData;
         }
-        public byte[] WriteData(byte[] data)
+        public byte[] WriteData(byte[] data, byte[] resultBytes = null)
         {
-            var res = new byte[MetaData.Length + data.Length];
-            Array.Copy(MetaData, 0, res, 0, MetaData.Length);
-            Array.Copy(data, 0, res, MetaData.Length, data.Length);
-            return res;
+            if (resultBytes == null)
+            {
+                resultBytes = new byte[MetaData.Length + data.Length];
+            }
+            Array.Copy(MetaData, 0, resultBytes, 0, MetaData.Length);
+            Array.Copy(data, 0, resultBytes, MetaData.Length, data.Length);
+            return resultBytes;
         }
         public void DeBytes(ReadOnlyMemory<byte> memory)
         {
