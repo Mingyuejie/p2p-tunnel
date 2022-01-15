@@ -144,7 +144,7 @@ namespace client.service.ftp
                     byte[] sendData = new byte[cmd.MetaData.Length + packSize];
                     byte[] readData = new byte[packSize];
 
-                    using FileStream fs = new FileStream(save.FileName, FileMode.Open, FileAccess.Read, FileShare.Read, config.ReadWriteBufferSize, true);
+                    using FileStream fs = new FileStream(save.FileName, FileMode.Open, FileAccess.Read, FileShare.Read, config.ReadWriteBufferSize);
 
                     int index = 0;
                     while (index < packCount)
@@ -154,7 +154,7 @@ namespace client.service.ftp
                             return;
                         }
 
-                        await fs.ReadAsync(readData, 0, readData.Length);
+                        fs.Read(readData, 0, readData.Length);
                         cmd.WriteData(readData, sendData);
                         if (!await SendOnlyTcp(sendData, client.TcpConnection))
                         {
@@ -172,7 +172,7 @@ namespace client.service.ftp
                     {
                         sendData = new byte[cmd.MetaData.Length + lastPackSize];
                         readData = new byte[lastPackSize];
-                        await fs.ReadAsync(readData, 0, readData.Length);
+                        fs.Read(readData, 0, readData.Length);
                         cmd.WriteData(readData, sendData);
                         if (!await SendOnlyTcp(sendData, client.TcpConnection))
                         {
@@ -180,6 +180,8 @@ namespace client.service.ftp
                         }
                         save.IndexLength += lastPackSize;
                     }
+                    fs.Close();
+                    fs.Dispose();
                 }
                 catch (Exception ex)
                 {
@@ -221,18 +223,22 @@ namespace client.service.ftp
                 if (fs.Stream == null)
                 {
                     fs.CacheFileName.TryDeleteFile();
-                    fs.Stream = new FileStream(fs.CacheFileName, FileMode.Create & FileMode.Append, FileAccess.Write, FileShare.Read, config.ReadWriteBufferSize, true);
+                    FileStream fss = new FileStream(fs.CacheFileName, FileMode.Create & FileMode.Append, FileAccess.Write, FileShare.Read, config.ReadWriteBufferSize);
+                    fs.Stream = fss;
                     fs.Stream.Seek(cmd.Size - 1, SeekOrigin.Begin);
                     fs.Stream.WriteByte(new byte());
                     fs.Stream.Seek(0, SeekOrigin.Begin);
                 }
 
-                await fs.Stream.WriteAsync(cmd.ReadData, fs.Token.Token);
+                fs.Stream.Write(cmd.ReadData.Span);
                 fs.IndexLength += cmd.ReadData.Length;
 
                 if (fs.IndexLength >= cmd.Size)
                 {
                     await SendOnlyTcp(new FtpFileEndCommand { Md5 = cmd.Md5 }, wrap.Client);
+                    fs.Stream.Flush();
+                    fs.Stream.Close();
+                    fs.Stream.Dispose();
                     Downloads.Remove(wrap.Client.Id, cmd.Md5);
                     File.Move(fs.CacheFileName, fs.FileName, true);
                 }
@@ -472,8 +478,7 @@ namespace client.service.ftp
                 }
             }
 
-            GC.Collect();
-            GC.SuppressFinalize(true);
+            GCHelper.Gc(this);
         }
 
         public bool Check()
@@ -547,7 +552,6 @@ namespace client.service.ftp
                 if (ipDic.TryRemove(md5, out FileSaveInfo save))
                 {
                     save.Disponse(deleteFile);
-                    save.Token.Cancel();
                 }
             }
         }

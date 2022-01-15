@@ -15,11 +15,17 @@ namespace common
         public static void FlushMemory()
         {
             GC.Collect();
+            GC.SuppressFinalize(true);
             GC.WaitForPendingFinalizers();
             if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
                 SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, -1, -1);
             }
+        }
+        public static void Gc(object obj)
+        {
+            GC.Collect();
+            GC.SuppressFinalize(obj);
         }
     }
 }
