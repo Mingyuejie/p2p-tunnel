@@ -20,7 +20,7 @@ namespace client.service.tcpforward
 
         public async Task SendTcpForward(SendTcpForwardEventArg arg)
         {
-            await serverRequest.SendOnly(new SendEventArg<TcpForwardModel>
+            await serverRequest.SendOnly(new SendArg<TcpForwardModel>
             {
                 Path = "TcpForward/Execute",
                 Connection = arg.Connection,
@@ -48,7 +48,7 @@ namespace client.service.tcpforward
 
     public class OnTcpForwardEventArg : EventArgs
     {
-        public PluginParamWrap Packet { get; set; }
+        public IConnection Connection { get; set; }
         public TcpForwardModel Data { get; set; }
     }
 

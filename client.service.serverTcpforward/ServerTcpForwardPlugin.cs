@@ -3,6 +3,7 @@ using client.servers.clientServer;
 using common;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
+using server;
 using server.model;
 using server.plugin;
 using System.Threading.Tasks;
@@ -20,9 +21,9 @@ namespace client.service.serverTcpforward
             this.serverTcpForwardHelper = serverTcpForwardHelper;
         }
 
-        public async Task Execute(PluginParamWrap data)
+        public async Task Execute(IConnection connection)
         {
-            ServerTcpForwardModel model = data.Wrap.Memory.DeBytes<ServerTcpForwardModel>();
+            ServerTcpForwardModel model = connection.ReceiveRequestWrap.Memory.DeBytes<ServerTcpForwardModel>();
             await serverTcpForwardHelper.Request(model);
         }
     }

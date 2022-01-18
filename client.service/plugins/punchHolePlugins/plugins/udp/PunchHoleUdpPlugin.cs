@@ -44,7 +44,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         {
             punchHoleUdp.OnStep1(new OnStep1EventArg
             {
-                Packet = arg.Packet,
+                Connection = arg.Connection,
                 RawData = arg.Data,
                 Data = arg.Data.Data.DeBytes<PunchHoleNotifyModel>()
             });
@@ -53,7 +53,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         {
             punchHoleUdp.OnStep2(new OnStep2EventArg
             {
-                Packet = arg.Packet,
+                Connection = arg.Connection,
                 RawData = arg.Data,
                 Data = arg.Data.Data.DeBytes<PunchHoleNotifyModel>()
             });
@@ -62,7 +62,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         {
             punchHoleUdp.OnStep2Fail(new OnStep2FailEventArg
             {
-                Packet = arg.Packet,
+                Connection = arg.Connection,
                 RawData = arg.Data,
                 Data = arg.Data.Data.DeBytes<PunchHoleNotifyModel>()
             });
@@ -72,7 +72,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         {
             punchHoleUdp.OnStep3(new OnStep3EventArg
             {
-                Packet = arg.Packet,
+                Connection = arg.Connection,
                 RawData = arg.Data,
                 Data = arg.Data.Data.DeBytes<Step3Model>()
             });
@@ -81,7 +81,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
         {
             punchHoleUdp.OnStep4(new OnStep4EventArg
             {
-                Packet = arg.Packet,
+                Connection = arg.Connection,
                 RawData = arg.Data,
                 Data = arg.Data.Data.DeBytes<Step4Model>()
             });

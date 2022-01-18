@@ -17,12 +17,14 @@ namespace client.service.plugins.serverPlugins.forward
             this.serverPluginHelper = serverPluginHelper;
         }
 
-        public async Task Execute(PluginParamWrap data)
+        public async Task Execute(IConnection connection)
         {
-            ForwardModel model = data.Wrap.Memory.DeBytes<ForwardModel>();
+            ForwardModel model = connection.ReceiveRequestWrap.Memory.DeBytes<ForwardModel>();
             await serverPluginHelper.InputData(new ServerDataWrap
             {
-                Connection = data.Connection,
+                Connection = connection,
+                Index = 0,
+                Length = model.Data.Length,
                 Data = model.Data
             });
 

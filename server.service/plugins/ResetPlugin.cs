@@ -16,12 +16,12 @@ namespace server.service.plugins
             this.serverPluginHelper = serverPluginHelper;
         }
 
-        public async Task<bool> Execute(PluginParamWrap data)
+        public async Task<bool> Execute(IConnection connection)
         {
-            ResetModel model = data.Wrap.Memory.DeBytes<ResetModel>();
+            ResetModel model = connection.ReceiveRequestWrap.Memory.DeBytes<ResetModel>();
 
             //A已注册
-            if (clientRegisterCache.Get(data.Connection.ConnectId, out RegisterCacheModel source))
+            if (clientRegisterCache.Get(connection.ConnectId, out RegisterCacheModel source))
             {
                 //B已注册
                 if (clientRegisterCache.Get(model.ToId, out RegisterCacheModel target))
@@ -31,10 +31,10 @@ namespace server.service.plugins
                     {
                         return (await serverPluginHelper.SendReply(new MessageRequestParamsWrap<ResetModel>
                         {
-                            Connection = data.Connection.ServerType == ServerType.UDP ? target.UdpConnection : target.TcpConnection,
+                            Connection = connection.ServerType == ServerType.UDP ? target.UdpConnection : target.TcpConnection,
                             Data = model,
-                            Path = data.Wrap.Path,
-                            RequestId = data.Wrap.RequestId
+                            Path = connection.ReceiveRequestWrap.Path,
+                            RequestId = connection.ReceiveRequestWrap.RequestId
                         })).Code == MessageResponeCode.OK;
                     }
                 }

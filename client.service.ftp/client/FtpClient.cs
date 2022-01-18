@@ -8,6 +8,7 @@ using common;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualBasic.FileIO;
+using server;
 using server.model;
 using server.plugin;
 using server.plugins.register.caching;
@@ -200,16 +201,15 @@ namespace client.service.ftp.client
             this.clientInfoCaching = clientInfoCaching;
         }
 
-        public async Task<byte[]> Execute(PluginParamWrap data)
+        public async Task<byte[]> Execute(IConnection connection)
         {
-            FtpCommand cmd = (FtpCommand)data.Wrap.Memory.Span[0];
+            
+            FtpCommand cmd = (FtpCommand)connection.ReceiveRequestWrap.Memory.Span[0];
             FtpPluginParamWrap wrap = new FtpPluginParamWrap
             {
-                Connection = data.Connection,
-                Wrap = data.Wrap,
-                Data = data.Wrap.Memory
+                Connection = connection
             };
-            if (clientInfoCaching.Get(data.Connection.ConnectId, out ClientInfo client))
+            if (clientInfoCaching.Get(connection.ConnectId, out ClientInfo client))
             {
                 wrap.Client = client;
                 if (ftpClient.Plugins.ContainsKey(cmd))

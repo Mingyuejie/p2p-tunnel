@@ -43,7 +43,7 @@ namespace client.service.servers.clientServer.plugins
                 watch.Start();
                 for (int i = 0; i < param.Count; i++)
                 {
-                    serverRequest.SendOnly(new SendEventArg<byte[]>
+                    serverRequest.SendOnly(new SendArg<byte[]>
                     {
                         Data = bytes,
                         Path = "Test/Packet",

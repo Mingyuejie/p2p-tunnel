@@ -19,7 +19,7 @@ namespace client.service.plugins.serverPlugins
             this.serverPluginHelper = serverPluginHelper;
         }
 
-        public async Task<MessageRequestResponeWrap> SendReply<T>(SendEventArg<T> arg)
+        public async Task<MessageRequestResponeWrap> SendReply<T>(SendArg<T> arg)
         {
             var res = await serverPluginHelper.SendReply(new MessageRequestParamsWrap<T>
             {
@@ -30,7 +30,7 @@ namespace client.service.plugins.serverPlugins
             });
             return res;
         }
-        public async Task<MessageRequestResponeWrap> SendReply(SendEventArg<byte[]> arg)
+        public async Task<MessageRequestResponeWrap> SendReply(SendArg<byte[]> arg)
         {
             return await serverPluginHelper.SendReply(new MessageRequestParamsWrap<byte[]>
             {
@@ -40,7 +40,7 @@ namespace client.service.plugins.serverPlugins
                 Timeout = arg.Timeout,
             });
         }
-        public async Task<bool> SendOnly<T>(SendEventArg<T> arg)
+        public async Task<bool> SendOnly<T>(SendArg<T> arg)
         {
             return await serverPluginHelper.SendOnly(new MessageRequestParamsWrap<T>
             {
@@ -50,7 +50,7 @@ namespace client.service.plugins.serverPlugins
                 Timeout = arg.Timeout,
             });
         }
-        public async Task<bool> SendOnly(SendEventArg<byte[]> arg)
+        public async Task<bool> SendOnly(SendArg<byte[]> arg)
         {
             return await serverPluginHelper.SendOnly(new MessageRequestParamsWrap<byte[]>
             {

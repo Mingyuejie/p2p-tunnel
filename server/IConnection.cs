@@ -24,6 +24,9 @@ namespace server
 
         public ServerType ServerType { get; set; }
 
+        public MessageRequestWrap ReceiveRequestWrap { get; set; }
+        public MessageResponseWrap ReceiveResponseWrap { get; set; }
+
         public Task<bool> Send(byte[] data);
         //public Task<bool> Send(ReadOnlyMemory<byte> data);
 
@@ -61,6 +64,10 @@ namespace server
 
         public ServerType ServerType { get; set; }
 
+        public MessageRequestWrap ReceiveRequestWrap { get; set; } = new MessageRequestWrap();
+        public MessageResponseWrap ReceiveResponseWrap { get; set; } = new MessageResponseWrap();
+        
+
         public async Task<bool> Send(byte[] data)
         {
             if (ServerType == ServerType.TCP)
@@ -69,14 +76,6 @@ namespace server
             }
             return await SendUdp(data);
         }
-        //public async Task<bool> Send(ReadOnlyMemory<byte> data)
-        //{
-        //    if (ServerType == ServerType.TCP)
-        //    {
-        //        return await SendTcp(data);
-        //    }
-        //    return false;
-        //}
 
         private async Task<bool> SendTcp(ReadOnlyMemory<byte> data)
         {
@@ -143,6 +142,8 @@ namespace server
             UdpAddress64 = 0;
             UdpcRecv = null;
             UdpLastTime = 0;
+            ReceiveRequestWrap = null;
+            ReceiveResponseWrap = null;
         }
     }
 }

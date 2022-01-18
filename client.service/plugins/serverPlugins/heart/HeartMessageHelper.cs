@@ -22,7 +22,7 @@ namespace client.service.plugins.serverPlugins.heart
         /// <param name="arg"></param>
         public async Task<MessageRequestResponeWrap> SendHeartMessage(IConnection connection)
         {
-            SendEventArg<HeartModel> arg = new SendEventArg<HeartModel>
+            SendArg<HeartModel> arg = new SendArg<HeartModel>
             {
                 Connection = connection,
                 Path = "heart/Execute",
@@ -31,11 +31,4 @@ namespace client.service.plugins.serverPlugins.heart
             return await serverRequest.SendReply(arg);
         }
     }
-
-    public class OnHeartEventArg : EventArgs
-    {
-        public PluginParamWrap Packet { get; set; }
-        public HeartModel Data { get; set; }
-    }
-
 }

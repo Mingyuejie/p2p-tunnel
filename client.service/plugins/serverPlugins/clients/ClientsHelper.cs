@@ -38,15 +38,15 @@ namespace client.service.plugins.serverPlugins.clients
             this.clientInfoCaching = clientInfoCaching;
             this.heartMessageHelper = heartMessageHelper;
 
-            punchHoleUdp.OnStep1Handler.Sub((e) => clientInfoCaching.Connecting(e.RawData.FromId, true, e.Packet.Connection));
-            punchHoleUdp.OnStep2FailHandler.Sub((e) => clientInfoCaching.Offline(e.RawData.FromId, e.Packet.Connection));
-            punchHoleUdp.OnStep3Handler.Sub((e) => { clientInfoCaching.Online(e.Data.FromId, e.Packet.Connection); });
-            punchHoleUdp.OnStep4Handler.Sub((e) => { clientInfoCaching.Online(e.Data.FromId, e.Packet.Connection); });
+            punchHoleUdp.OnStep1Handler.Sub((e) => clientInfoCaching.Connecting(e.RawData.FromId, true, e.Connection));
+            punchHoleUdp.OnStep2FailHandler.Sub((e) => clientInfoCaching.Offline(e.RawData.FromId, e.Connection));
+            punchHoleUdp.OnStep3Handler.Sub((e) => { clientInfoCaching.Online(e.Data.FromId, e.Connection); });
+            punchHoleUdp.OnStep4Handler.Sub((e) => { clientInfoCaching.Online(e.Data.FromId, e.Connection); });
 
-            punchHoleTcp.OnStep1Handler.Sub((e) => clientInfoCaching.Connecting(e.RawData.FromId, true, e.Packet.Connection));
-            punchHoleTcp.OnStep2FailHandler.Sub((e) => clientInfoCaching.Offline(e.RawData.FromId, e.Packet.Connection));
-            punchHoleTcp.OnStep3Handler.Sub((e) => clientInfoCaching.Online(e.Data.FromId, e.Packet.Connection));
-            punchHoleTcp.OnStep4Handler.Sub((e) => clientInfoCaching.Online(e.Data.FromId, e.Packet.Connection));
+            punchHoleTcp.OnStep1Handler.Sub((e) => clientInfoCaching.Connecting(e.RawData.FromId, true, e.Connection));
+            punchHoleTcp.OnStep2FailHandler.Sub((e) => clientInfoCaching.Offline(e.RawData.FromId, e.Connection));
+            punchHoleTcp.OnStep3Handler.Sub((e) => clientInfoCaching.Online(e.Data.FromId, e.Connection));
+            punchHoleTcp.OnStep4Handler.Sub((e) => clientInfoCaching.Online(e.Data.FromId, e.Connection));
 
             //有人要求反向链接
             punchHoldEventHandles.OnReverse.Sub(OnReverse);
@@ -142,18 +142,18 @@ namespace client.service.plugins.serverPlugins.clients
                 }
             }
         }
-        private void OnServerSendClients(OnServerSendClientsEventArg e)
+        private void OnServerSendClients(ClientsModel clients)
         {
             try
             {
-                if (!registerState.LocalInfo.TcpConnected || e.Data.Clients == null)
+                if (!registerState.LocalInfo.TcpConnected || clients.Clients == null)
                 {
                     return;
                 }
 
                 //Logger.Instance.Info(JsonConvert.SerializeObject(e.Data.Clients));
 
-                IEnumerable<ulong> remoteIds = e.Data.Clients.Select(c => c.Id);
+                IEnumerable<ulong> remoteIds = clients.Clients.Select(c => c.Id);
                 //下线了的
                 IEnumerable<ulong> offlines = clientInfoCaching.AllIds().Except(remoteIds).Where(c => c != registerState.ConnectId);
                 foreach (ulong offid in offlines)
@@ -163,7 +163,7 @@ namespace client.service.plugins.serverPlugins.clients
                 }
                 //新上线的
                 IEnumerable<ulong> upLines = remoteIds.Except(clientInfoCaching.AllIds());
-                IEnumerable<ClientsClientModel> upLineClients = e.Data.Clients.Where(c => upLines.Contains(c.Id) && c.Id != registerState.ConnectId);
+                IEnumerable<ClientsClientModel> upLineClients = clients.Clients.Where(c => upLines.Contains(c.Id) && c.Id != registerState.ConnectId);
 
                 foreach (ClientsClientModel item in upLineClients)
                 {

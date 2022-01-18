@@ -1,4 +1,5 @@
 ﻿using common.extends;
+using server;
 using server.model;
 using server.plugin;
 using System.Threading.Tasks;
@@ -16,14 +17,10 @@ namespace client.service.plugins.serverPlugins.clients
             this.clientsMessageHelper = clientsMessageHelper;
         }
 
-        public void Execute(PluginParamWrap model)
+        public void Execute(IConnection connection)
         {
-            ClientsModel res = model.Wrap.Memory.DeBytes<ClientsModel>();
-            clientsMessageHelper.OnServerClientsData.Push(new OnServerSendClientsEventArg
-            {
-                Data = res,
-                Packet = model
-            });
+            ClientsModel res = connection.ReceiveRequestWrap.Memory.DeBytes<ClientsModel>();
+            clientsMessageHelper.OnServerClientsData.Push(res);
         }
     }
 }

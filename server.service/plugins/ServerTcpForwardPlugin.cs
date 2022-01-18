@@ -35,14 +35,14 @@ namespace server.service.plugins
             this.clientRegisterCache = clientRegisterCache;
         }
 
-        public ServerTcpForwardRegisterResponseCode Register(PluginParamWrap data)
+        public ServerTcpForwardRegisterResponseCode Register(IConnection connection)
         {
             if (!config.tcpForward)
             {
                 return ServerTcpForwardRegisterResponseCode.DISABLED;
             }
-            ServerTcpForwardRegisterModel foreards = data.Wrap.Memory.DeBytes<ServerTcpForwardRegisterModel>();
-            clientRegisterCache.Get(data.Connection.ConnectId, out RegisterCacheModel source);
+            ServerTcpForwardRegisterModel foreards = connection.ReceiveRequestWrap.Memory.DeBytes<ServerTcpForwardRegisterModel>();
+            clientRegisterCache.Get(connection.ConnectId, out RegisterCacheModel source);
 
             try
             {
@@ -79,14 +79,15 @@ namespace server.service.plugins
             }
             return ServerTcpForwardRegisterResponseCode.OK;
         }
-        public ServerTcpForwardRegisterResponseCode UnRegister(PluginParamWrap data)
+        public ServerTcpForwardRegisterResponseCode UnRegister(IConnection connection)
         {
             tcpForwardServer.StopAll();
             return ServerTcpForwardRegisterResponseCode.OK;
         }
-        public void Response(PluginParamWrap data)
+
+        public void Response(IConnection connection)
         {
-            ServerTcpForwardModel model = data.Wrap.Memory.DeBytes<ServerTcpForwardModel>();
+            ServerTcpForwardModel model = connection.ReceiveRequestWrap.Memory.DeBytes<ServerTcpForwardModel>();
             if (model.Type == ServerTcpForwardType.RESPONSE)
             {
                 tcpForwardServer.Response(model);
@@ -301,7 +302,7 @@ namespace server.service.plugins
 
             if (token.TargetPort != 0)
             {
-                clientRegisterCache.Get(token.TargetClientId,out RegisterCacheModel registerInfo);
+                clientRegisterCache.Get(token.TargetClientId, out RegisterCacheModel registerInfo);
                 serverPluginHelper.SendOnly(new MessageRequestParamsWrap<ServerTcpForwardModel>
                 {
                     Path = "ServerTcpForward/Execute",
@@ -316,7 +317,7 @@ namespace server.service.plugins
                         AliveType = token.AliveType,
                         TargetIp = token.TargetIp
                     },
-                });
+                }).Wait();
             }
         }
 
@@ -382,7 +383,7 @@ namespace server.service.plugins
                 Fail(model.Data, "未选择转发对象，或者未与转发对象建立连接1");
                 return;
             }
-            serverPluginHelper.SendOnly(model);
+            serverPluginHelper.SendOnly(model).Wait();
         }
 
         public void Response(ServerTcpForwardModel model)

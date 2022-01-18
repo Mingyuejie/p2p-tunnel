@@ -17,19 +17,19 @@ namespace server.service.plugins.register
             this.clientRegisterCache = clientRegisterCache;
         }
 
-        public async Task<RegisterResultModel> Execute(PluginParamWrap data)
+        public async Task<RegisterResultModel> Execute(IConnection connection)
         {
             await Task.Yield();
             try
             {
-                RegisterModel model = data.Wrap.Memory.DeBytes<RegisterModel>();
-                if (data.Connection.ServerType == ServerType.UDP)
+                RegisterModel model = connection.ReceiveRequestWrap.Memory.DeBytes<RegisterModel>();
+                if (connection.ServerType == ServerType.UDP)
                 {
                     if (clientRegisterCache.GetBySameGroup(model.GroupId, model.Name) == null)
                     {
                         RegisterCacheModel add = new()
                         {
-                            UdpConnection = data.Connection,
+                            UdpConnection = connection,
                             Name = model.Name,
                             OriginGroupId = model.GroupId,
                             LocalIps = model.LocalIps,
@@ -41,13 +41,13 @@ namespace server.service.plugins.register
                         clientRegisterCache.Add(add);
                         string origingid = add.OriginGroupId;
                         add.OriginGroupId = string.Empty;
-                        data.Connection.ConnectId = add.Id;
+                        connection.ConnectId = add.Id;
 
                         return new RegisterResultModel
                         {
                             Id = add.Id,
-                            Ip = data.Connection.UdpAddress.Address.ToString(),
-                            Port = data.Connection.UdpAddress.Port,
+                            Ip = connection.UdpAddress.Address.ToString(),
+                            Port = connection.UdpAddress.Port,
                             TcpPort = 0,
                             GroupId = origingid
                         };
@@ -60,9 +60,9 @@ namespace server.service.plugins.register
                         };
                     }
                 }
-                else if (data.Connection.ServerType == ServerType.TCP)
+                else if (connection.ServerType == ServerType.TCP)
                 {
-                    IPEndPoint endpoint = data.Connection.TcpSocket.RemoteEndPoint as IPEndPoint;
+                    IPEndPoint endpoint = connection.TcpSocket.RemoteEndPoint as IPEndPoint;
                     if (!clientRegisterCache.Get(model.Id, out RegisterCacheModel client) || !endpoint.Address.Equals(client.UdpConnection.UdpAddress.Address))
                     {
                         return new RegisterResultModel
@@ -72,11 +72,11 @@ namespace server.service.plugins.register
                     }
                     else
                     {
-                        data.Connection.ConnectId = client.Id;
+                        connection.ConnectId = client.Id;
                         clientRegisterCache.UpdateTcpInfo(new RegisterCacheUpdateModel
                         {
                             Id = client.Id,
-                            TcpConnection = data.Connection,
+                            TcpConnection = connection,
                             GroupId = model.GroupId,
                             LocalTcpPort = model.LocalTcpPort,
                         });
@@ -106,9 +106,9 @@ namespace server.service.plugins.register
             };
         }
 
-        public async Task Notify(PluginParamWrap data)
+        public async Task Notify(IConnection connection)
         {
-            await clientRegisterCache.Notify(data.Connection);
+            await clientRegisterCache.Notify(connection);
         }
     }
 }

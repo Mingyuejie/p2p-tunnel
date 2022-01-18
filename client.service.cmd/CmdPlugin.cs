@@ -5,6 +5,7 @@ using common;
 using common.extends;
 using MessagePack;
 using ProtoBuf;
+using server;
 using server.model;
 using server.plugin;
 using server.plugins.register.caching;
@@ -34,7 +35,7 @@ namespace client.service.cmd
             RemoteCmdModel model = arg.Content.DeJson<RemoteCmdModel>();
             if (clientInfoCaching.Get(model.Id, out ClientInfo client))
             {
-                var res = await serverRequest.SendReply(new SendEventArg<CmdModel>
+                var res = await serverRequest.SendReply(new SendArg<CmdModel>
                 {
                     Path = "cmd/Execute",
                     Connection = client.TcpConnection,
@@ -96,14 +97,14 @@ namespace client.service.cmd
         {
             this.config = config;
         }
-        public CmdResultModel Execute(PluginParamWrap arg)
+        public CmdResultModel Execute(IConnection connection)
         {
-            CmdModel cmd = arg.Wrap.Memory.DeBytes<CmdModel>();
+            CmdModel cmd = connection.ReceiveRequestWrap.Memory.DeBytes<CmdModel>();
             if (!config.Enable)
             {
                 return new CmdResultModel { ErrorMsg = "远程命令服务未开启" };
             }
-            return ExecuteCmd(arg.Connection.ConnectId, cmd.Cmd);
+            return ExecuteCmd(connection.ConnectId, cmd.Cmd);
         }
 
 

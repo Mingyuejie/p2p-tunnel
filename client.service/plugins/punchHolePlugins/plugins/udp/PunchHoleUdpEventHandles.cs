@@ -103,7 +103,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
 
             await punchHoldEventHandles.Send(new SendPunchHoleArg<Step2Model>
             {
-                Connection = arg.Packet.Connection,
+                Connection = arg.Connection,
                 ToId = arg.RawData.FromId,
                 Data = new Step2Model { }
             });
@@ -143,7 +143,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
 
             await punchHoldEventHandles.Send(new SendPunchHoleArg<Step4Model>
             {
-                Connection = e.Packet.Connection,
+                Connection = e.Connection,
                 Data = new Step4Model
                 {
                     FromId = ConnectId

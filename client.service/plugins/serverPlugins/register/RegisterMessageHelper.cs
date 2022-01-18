@@ -30,7 +30,7 @@ namespace client.service.plugins.serverPlugins.register
         /// <param name="arg"></param>
         public async Task SendExitMessage()
         {
-            MessageRequestResponeWrap res = await serverRequest.SendReply(new SendEventArg<ExitModel>
+            MessageRequestResponeWrap res = await serverRequest.SendReply(new SendArg<ExitModel>
             {
                 Connection = registerState.TcpConnection,
                 Data = new ExitModel { },
@@ -44,7 +44,7 @@ namespace client.service.plugins.serverPlugins.register
         /// <param name="arg"></param>
         public async Task<RegisterResult> SendRegisterMessage(RegisterParams param)
         {
-            MessageRequestResponeWrap result = await serverRequest.SendReply(new SendEventArg<RegisterModel>
+            MessageRequestResponeWrap result = await serverRequest.SendReply(new SendArg<RegisterModel>
             {
                 Connection = registerState.UdpConnection,
                 Path = "register/Execute",
@@ -71,7 +71,7 @@ namespace client.service.plugins.serverPlugins.register
                 return new RegisterResult { NetState = result, Data = res };
             }
 
-            MessageRequestResponeWrap tcpResult = await serverRequest.SendReply(new SendEventArg<RegisterModel>
+            MessageRequestResponeWrap tcpResult = await serverRequest.SendReply(new SendArg<RegisterModel>
             {
                 Connection = registerState.TcpConnection,
                 Path = "register/Execute",
@@ -102,7 +102,7 @@ namespace client.service.plugins.serverPlugins.register
         /// <returns></returns>
         public async Task<bool> SendNotifyMessage()
         {
-            return await serverRequest.SendOnly(new SendEventArg<RegisterNotifyModel>
+            return await serverRequest.SendOnly(new SendArg<RegisterNotifyModel>
             {
                 Connection = registerState.TcpConnection,
                 Data = new RegisterNotifyModel { },

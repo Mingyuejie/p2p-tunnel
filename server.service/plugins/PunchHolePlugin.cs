@@ -18,12 +18,12 @@ namespace server.service.plugins
             this.serverPluginHelper = serverPluginHelper;
         }
 
-        public async Task<bool> Execute(PluginParamWrap data)
+        public async Task<bool> Execute(IConnection connection)
         {
-            PunchHoleModel model = data.Wrap.Memory.DeBytes<PunchHoleModel>();
+            PunchHoleModel model = connection.ReceiveRequestWrap.Memory.DeBytes<PunchHoleModel>();
 
             //A已注册
-            if (!clientRegisterCache.Get(data.Connection.ConnectId, out RegisterCacheModel source))
+            if (!clientRegisterCache.Get(connection.ConnectId, out RegisterCacheModel source))
             {
                 return false;
             }
@@ -53,13 +53,13 @@ namespace server.service.plugins
                 }.ToBytes();
             }
 
-            model.FromId = data.Connection.ConnectId;
+            model.FromId = connection.ConnectId;
             return await serverPluginHelper.SendOnly(new MessageRequestParamsWrap<PunchHoleModel>
             {
-                Connection = data.Connection.ServerType == ServerType.UDP ? target.UdpConnection : target.TcpConnection,
+                Connection = connection.ServerType == ServerType.UDP ? target.UdpConnection : target.TcpConnection,
                 Data = model,
-                Path = data.Wrap.Path,
-                RequestId = data.Wrap.RequestId
+                Path = connection.ReceiveRequestWrap.Path,
+                RequestId = connection.ReceiveRequestWrap.RequestId
             });
         }
     }

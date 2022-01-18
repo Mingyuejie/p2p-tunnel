@@ -4,5 +4,5 @@
   "Enable": false,
   "UploadNum": 10,
   "ReadWriteBufferSize": 10485760,
-  "SendPacketSize": 65536
+  "SendPacketSize": 32768
 }

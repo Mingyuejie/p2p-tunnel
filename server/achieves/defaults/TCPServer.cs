@@ -97,12 +97,13 @@ namespace server.achieves.defaults
                             {
                                 break;
                             }
+
                             await OnPacket.PushAsync(new ServerDataWrap
                             {
-                                Data = memory,
+                                Connection = model.Connection,
                                 Index = 4,
                                 Length = packageLen + 4,
-                                Connection = model.Connection
+                                Data = memory
                             });
 
                             model.CacheBuffer.RemoveRange(0, packageLen + 4);

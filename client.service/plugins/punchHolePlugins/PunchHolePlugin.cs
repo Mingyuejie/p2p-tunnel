@@ -4,6 +4,7 @@ using client.service.plugins.punchHolePlugins.plugins.udp;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
 using ProtoBuf;
+using server;
 using server.model;
 using server.plugin;
 using System;
@@ -22,14 +23,14 @@ namespace client.service.plugins.punchHolePlugins
             this.punchHoldEventHandles = punchHoldEventHandles;
         }
 
-        public void Execute(PluginParamWrap data)
+        public void Execute(IConnection connection)
         {
-            PunchHoleModel model = data.Wrap.Memory.DeBytes<PunchHoleModel>();
+            PunchHoleModel model = connection.ReceiveRequestWrap.Memory.DeBytes<PunchHoleModel>();
 
             punchHoldEventHandles.OnPunchHole(new OnPunchHoleArg
             {
                 Data = model,
-                Packet = data
+                Connection = connection
             });
         }
     }

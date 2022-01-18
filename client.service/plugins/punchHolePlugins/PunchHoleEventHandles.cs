@@ -70,7 +70,7 @@ namespace client.service.plugins.punchHolePlugins
         public async Task Send<T>(SendPunchHoleArg<T> arg)
         {
             IPunchHoleMessageBase msg = ((IPunchHoleMessageBase)arg.Data);
-            await serverRequest.SendOnly(new SendEventArg<PunchHoleModel>
+            await serverRequest.SendOnly(new SendArg<PunchHoleModel>
             {
                 Connection = arg.Connection,
                 Path = "punchhole/Execute",
@@ -108,13 +108,11 @@ namespace client.service.plugins.punchHolePlugins
         public T Data { get; set; }
     }
 
-
     public class OnPunchHoleArg
     {
         public PunchHoleModel Data { get; set; }
-        public PluginParamWrap Packet { get; set; }
+        public IConnection Connection { get; set; }
     }
-
 
     [ProtoContract, MessagePackObject]
     public class ReverseModel : IPunchHoleMessageBase

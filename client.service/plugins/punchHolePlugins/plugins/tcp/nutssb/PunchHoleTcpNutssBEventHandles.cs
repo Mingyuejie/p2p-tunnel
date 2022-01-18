@@ -280,7 +280,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
             OnStep3Handler.Push(arg);
             await punchHoldEventHandles.Send(new SendPunchHoleArg<Step4Model>
             {
-                Connection = arg.Packet.Connection,
+                Connection = arg.Connection,
                 Data = new Step4Model
                 {
                     FromId = ConnectId

@@ -42,20 +42,20 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
 
     public class OnStep1EventArg : EventArgs
     {
-        public PluginParamWrap Packet { get; set; }
+        public IConnection Connection { get; set; }
         public PunchHoleModel RawData { get; set; }
         public PunchHoleNotifyModel Data { get; set; }
     }
 
     public class OnStep2EventArg : EventArgs
     {
-        public PluginParamWrap Packet { get; set; }
+        public IConnection Connection { get; set; }
         public PunchHoleModel RawData { get; set; }
         public PunchHoleNotifyModel Data { get; set; }
     }
     public class OnStep2FailEventArg : EventArgs
     {
-        public PluginParamWrap Packet { get; set; }
+        public IConnection Connection { get; set; }
         public PunchHoleModel RawData { get; set; }
         public PunchHoleNotifyModel Data { get; set; }
     }
@@ -74,7 +74,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
 
     public class OnStep3EventArg : EventArgs
     {
-        public PluginParamWrap Packet { get; set; }
+        public IConnection Connection { get; set; }
         public PunchHoleModel RawData { get; set; }
         public Step3Model Data { get; set; }
     }
@@ -87,7 +87,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
 
     public class OnStep4EventArg : EventArgs
     {
-        public PluginParamWrap Packet { get; set; }
+        public IConnection Connection { get; set; }
         public PunchHoleModel RawData { get; set; }
         public Step4Model Data { get; set; }
     }

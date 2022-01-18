@@ -18,7 +18,6 @@ namespace server.model
         /// </summary>
         public ReadOnlyMemory<byte> Memory { get; set; } = Array.Empty<byte>();
 
-
         /// <summary>
         /// 转包
         /// </summary>
@@ -88,6 +87,7 @@ namespace server.model
             Memory = bytes.AsMemory(index, length - index);
         }
     }
+    
 
     public class MessageResponseWrap
     {
@@ -101,7 +101,6 @@ namespace server.model
         /// 接收数据
         /// </summary>
         public ReadOnlyMemory<byte> Memory { get; set; } = Array.Empty<byte>();
-
 
         /// <summary>
         /// 转包
@@ -188,15 +187,6 @@ namespace server.model
         RESPONSE = 1
     }
 
-    public class PluginParamWrap
-    {
-        public IConnection Connection { get; set; }
-
-        public MessageRequestWrap Wrap { get; set; }
-
-        public MessageResponeCode Code { get; set; } = MessageResponeCode.OK;
-    }
-
     public class MessageRequestParamsWrap<T>
     {
         public IConnection Connection { get; set; }
@@ -207,6 +197,7 @@ namespace server.model
         public ulong RequestId { get; set; } = 0;
         public int Timeout { get; set; } = 15000;
     }
+
     public class MessageResponseParamsWrap
     {
         public IConnection Connection { get; set; }

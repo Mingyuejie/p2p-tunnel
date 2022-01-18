@@ -299,7 +299,7 @@ namespace client.service.ftp
         }
         protected async Task<bool> SendOnlyTcp(byte[] data, IConnection connection)
         {
-            return await serverRequest.SendOnly(new SendEventArg<byte[]>
+            return await serverRequest.SendOnly(new SendArg<byte[]>
             {
                 Data = data,
                 Path = SocketPath,
@@ -308,7 +308,7 @@ namespace client.service.ftp
         }
         protected async Task<MessageRequestResponeWrap> SendReplyTcp(IFtpCommandBase data, ClientInfo client)
         {
-            return await serverRequest.SendReply(new SendEventArg<byte[]>
+            return await serverRequest.SendReply(new SendArg<byte[]>
             {
                 Data = data.ToBytes(),
                 Path = SocketPath,
@@ -570,10 +570,10 @@ namespace client.service.ftp
 
     }
 
-    public class FtpPluginParamWrap : PluginParamWrap
+    public class FtpPluginParamWrap
     {
+        public IConnection Connection { get; set; }
         public ClientInfo Client { get; set; }
-        public ReadOnlyMemory<byte> Data { get; set; }
     }
 
     [ProtoContract, MessagePackObject]

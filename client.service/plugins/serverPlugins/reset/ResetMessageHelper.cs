@@ -23,7 +23,7 @@ namespace client.service.plugins.serverPlugins.reset
         /// <param name="toid"></param>
         public async Task<MessageRequestResponeWrap> SendResetMessage(IConnection connection, ulong toid)
         {
-            return await serverRequest.SendReply(new SendEventArg<ResetModel>
+            return await serverRequest.SendReply(new SendArg<ResetModel>
             {
                 Connection = connection,
                 Path = "reset/Execute",

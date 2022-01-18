@@ -12,7 +12,7 @@ namespace server.service.plugins
         {
         }
 
-        public bool Execute(PluginParamWrap data)
+        public bool Execute(IConnection connection)
         {
             return true;
         }

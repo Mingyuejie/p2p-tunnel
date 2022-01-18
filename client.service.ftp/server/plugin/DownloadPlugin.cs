@@ -24,7 +24,7 @@ namespace client.service.ftp.server.plugin
             await Task.Yield();
 
             FtpDownloadCommand cmd = new FtpDownloadCommand();
-            cmd.DeBytes(arg.Data);
+            cmd.DeBytes(arg.Connection.ReceiveRequestWrap.Memory);
 
             IEnumerable<string> error = ftpServer.Upload(cmd, arg);
             if (error.Any())

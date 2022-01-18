@@ -15,6 +15,7 @@ namespace server
         private readonly Dictionary<string, PluginPathCacheInfo> plugins = new();
         private NumberSpace requestIdNumberSpace = new NumberSpace(0);
         private ConcurrentDictionary<ulong, SendCacheModel> sends = new ConcurrentDictionary<ulong, SendCacheModel>();
+        private SimpleObjectPool<MessageRequestWrap> messageRequestWrapPool = new SimpleObjectPool<MessageRequestWrap>();
 
         private readonly ITcpServer tcpserver;
         private readonly IUdpServer udpserver;
@@ -128,15 +129,15 @@ namespace server
                 {
                     return false;
                 }
+                MessageRequestWrap wrap = messageRequestWrapPool.Get();
+                wrap.Content = msg.Data.ToBytes();
+                wrap.RequestId = msg.RequestId;
+                wrap.Path = msg.Path;
 
-                MessageRequestWrap wrap = new MessageRequestWrap
-                {
-                    RequestId = msg.RequestId,
-                    Content = msg.Data.ToBytes(),
-                    Path = msg.Path
-                };
                 var sendData = wrap.ToArray(msg.Connection.ServerType);
                 bool res = await msg.Connection.Send(sendData);
+                messageRequestWrapPool.Restore(wrap);
+
                 if (res && msg.Connection.ServerType == ServerType.UDP)
                 {
                     msg.Connection.UpdateTime(lastTime);
@@ -150,37 +151,30 @@ namespace server
             return false;
         }
 
-        public async Task InputData(ServerDataWrap param)
+        public async Task InputData(ServerDataWrap serverDatawrap)
         {
-
-            MessageType type = (MessageType)param.Data[param.Index];
+            MessageType type = (MessageType)serverDatawrap.Data[serverDatawrap.Index];
 
             if (type == MessageType.RESPONSE)
             {
-                MessageResponseWrap wrap = new MessageResponseWrap();
-                wrap.FromArray(param.Data, param.Index, param.Length);
-                if (sends.TryRemove(wrap.RequestId, out SendCacheModel send))
+                var wrap = serverDatawrap.Connection.ReceiveResponseWrap;
+                wrap.FromArray(serverDatawrap.Data, serverDatawrap.Index, serverDatawrap.Length);
+                if (sends.TryRemove(serverDatawrap.Connection.ReceiveResponseWrap.RequestId, out SendCacheModel send))
                 {
                     send.Tcs.SetResult(new MessageRequestResponeWrap { Code = wrap.Code, Data = wrap.Memory });
                 }
             }
             else
             {
-                MessageRequestWrap wrap = new MessageRequestWrap();
-                wrap.FromArray(param.Data, param.Index, param.Length);
+                var wrap = serverDatawrap.Connection.ReceiveRequestWrap;
+                serverDatawrap.Connection.ReceiveRequestWrap.FromArray(serverDatawrap.Data, serverDatawrap.Index, serverDatawrap.Length);
                 try
                 {
                     wrap.Path = wrap.Path.ToLower();
                     if (plugins.ContainsKey(wrap.Path))
                     {
                         PluginPathCacheInfo plugin = plugins[wrap.Path];
-                        PluginParamWrap execute = new PluginParamWrap
-                        {
-                            Connection = param.Connection,
-                            Wrap = wrap
-                        };
-
-                        dynamic resultAsync = plugin.Method.Invoke(plugin.Target, new object[] { execute });
+                        dynamic resultAsync = plugin.Method.Invoke(plugin.Target, new object[] { serverDatawrap.Connection });
                         if (!plugin.IsVoid)
                         {
                             object resultObject = null;
@@ -198,12 +192,12 @@ namespace server
                             }
                             if (resultObject != null)
                             {
-                                if (resultObject is byte[])
+                                if (resultObject is byte[] byteData)
                                 {
                                     await SendReponseOnly(new MessageResponseParamsWrap
                                     {
-                                        Connection = param.Connection,
-                                        Data = resultObject as byte[],
+                                        Connection = serverDatawrap.Connection,
+                                        Data = byteData,
                                         RequestId = wrap.RequestId
                                     });
                                 }
@@ -211,7 +205,7 @@ namespace server
                                 {
                                     await SendReponseOnly(new MessageResponseParamsWrap
                                     {
-                                        Connection = param.Connection,
+                                        Connection = serverDatawrap.Connection,
                                         Data = resultObject.ToBytes(),
                                         RequestId = wrap.RequestId
                                     });
@@ -221,7 +215,7 @@ namespace server
                             {
                                 await SendReponseOnly(new MessageResponseParamsWrap
                                 {
-                                    Connection = param.Connection,
+                                    Connection = serverDatawrap.Connection,
                                     Data = Array.Empty<byte>(),
                                     RequestId = wrap.RequestId
                                 });
@@ -233,7 +227,7 @@ namespace server
                         Logger.Instance.Error($"{wrap.Path} fot found");
                         await SendReponseOnly(new MessageResponseParamsWrap
                         {
-                            Connection = param.Connection,
+                            Connection = serverDatawrap.Connection,
                             RequestId = wrap.RequestId,
                             Code = MessageResponeCode.NOT_FOUND
                         });
@@ -244,7 +238,7 @@ namespace server
                     Logger.Instance.Error(ex);
                     await SendReponseOnly(new MessageResponseParamsWrap
                     {
-                        Connection = param.Connection,
+                        Connection = serverDatawrap.Connection,
                         RequestId = wrap.RequestId,
                         Code = MessageResponeCode.ERROR
                     });
@@ -268,9 +262,9 @@ namespace server
             {
                 MessageResponseWrap wrap = new MessageResponseWrap
                 {
+                    Content = msg.Data.ToBytes(),
                     RequestId = msg.RequestId,
-                    Content = msg.Data,
-                    Code = msg.Code
+                    Code = msg.Code,
                 };
 
                 var sendData = wrap.ToArray(msg.Connection.ServerType);
@@ -301,7 +295,6 @@ public class SendCacheModel
     public ulong RequestId { get; set; } = 0;
     public int Timeout { get; set; } = 15000;
 }
-
 
 public struct PluginPathCacheInfo
 {

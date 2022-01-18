@@ -9,14 +9,14 @@ namespace client.plugins.serverPlugins
     public interface IServerRequest
     {
 
-        Task<MessageRequestResponeWrap> SendReply<T>(SendEventArg<T> arg);
-        Task<MessageRequestResponeWrap> SendReply(SendEventArg<byte[]> arg);
-        Task<bool> SendOnly<T>(SendEventArg<T> arg);
-        Task<bool> SendOnly(SendEventArg<byte[]> arg);
+        Task<MessageRequestResponeWrap> SendReply<T>(SendArg<T> arg);
+        Task<MessageRequestResponeWrap> SendReply(SendArg<byte[]> arg);
+        Task<bool> SendOnly<T>(SendArg<T> arg);
+        Task<bool> SendOnly(SendArg<byte[]> arg);
     }
 
 
-    public class SendEventArg<T>
+    public class SendArg<T>
     {
         public IConnection Connection { get; set; }
         public T Data { get; set; }

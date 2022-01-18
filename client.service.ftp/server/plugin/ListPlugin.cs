@@ -22,7 +22,7 @@ namespace client.service.ftp.server.plugin
             await Task.Yield();
 
             FtpListCommand cmd = new FtpListCommand();
-            cmd.DeBytes(arg.Data);
+            cmd.DeBytes(arg.Connection.ReceiveRequestWrap.Memory);
             return new FtpResultModel { Data = ftpServer.GetFiles(cmd, arg) };
         }
     }

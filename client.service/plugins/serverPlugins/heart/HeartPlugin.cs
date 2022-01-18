@@ -1,5 +1,6 @@
 ﻿using client.plugins.serverPlugins.clients;
 using common.extends;
+using server;
 using server.model;
 using server.plugin;
 using server.plugins.register.caching;
@@ -15,7 +16,7 @@ namespace client.service.plugins.serverPlugins.heart
         {
         }
 
-        public bool Execute(PluginParamWrap param)
+        public bool Execute(IConnection connection)
         {
             return true;
         }

@@ -1,4 +1,5 @@
 ﻿using common;
+using server;
 using server.model;
 using System;
 
@@ -10,14 +11,7 @@ namespace client.service.plugins.serverPlugins.clients
         {
         }
 
-        public SimpleSubPushHandler<OnServerSendClientsEventArg> OnServerClientsData { get; } = new SimpleSubPushHandler<OnServerSendClientsEventArg>();
+        public SimpleSubPushHandler<ClientsModel> OnServerClientsData { get; } = new SimpleSubPushHandler<ClientsModel>();
 
     }
-
-    public class OnServerSendClientsEventArg : EventArgs
-    {
-        public PluginParamWrap Packet { get; set; }
-        public ClientsModel Data { get; set; }
-    }
-
 }

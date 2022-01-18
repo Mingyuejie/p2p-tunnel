@@ -23,12 +23,12 @@ namespace server.service.plugins
             this.serverPluginHelper = serverPluginHelper;
         }
 
-        public async Task Execute(PluginParamWrap data)
+        public async Task Execute(IConnection connection)
         {
-            ForwardModel model = data.Wrap.Memory.DeBytes<ForwardModel>();
+            ForwardModel model = connection.ReceiveRequestWrap.Memory.DeBytes<ForwardModel>();
 
             //A已注册
-            if (clientRegisterCache.Get(data.Connection.ConnectId, out RegisterCacheModel source))
+            if (clientRegisterCache.Get(connection.ConnectId, out RegisterCacheModel source))
             {
                 //B已注册
                 if (clientRegisterCache.Get(model.ToId, out RegisterCacheModel target))
@@ -36,12 +36,12 @@ namespace server.service.plugins
                     //是否在同一个组
                     if (source.GroupId == target.GroupId)
                     {
-                       await  serverPluginHelper.SendOnly(new MessageRequestParamsWrap<byte[]>
+                        await serverPluginHelper.SendOnly(new MessageRequestParamsWrap<byte[]>
                         {
-                            Connection = data.Connection,
+                            Connection = connection,
                             Data = model.Data,
-                            Path = data.Wrap.Path,
-                            RequestId = data.Wrap.RequestId
+                            Path = connection.ReceiveRequestWrap.Path,
+                            RequestId = connection.ReceiveRequestWrap.RequestId
                         });
                     }
                 }

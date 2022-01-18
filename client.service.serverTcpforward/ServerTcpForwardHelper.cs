@@ -28,7 +28,7 @@ namespace client.service.serverTcpforward
 
         public async Task<MessageRequestResponeWrap> Register()
         {
-            return await serverRequest.SendReply(new SendEventArg<ServerTcpForwardRegisterModel>
+            return await serverRequest.SendReply(new SendArg<ServerTcpForwardRegisterModel>
             {
                 Data = new ServerTcpForwardRegisterModel
                 {
@@ -41,7 +41,7 @@ namespace client.service.serverTcpforward
         }
         public async Task<MessageRequestResponeWrap> UnRegister()
         {
-            return await serverRequest.SendReply(new SendEventArg<ServerTcpForwardRegisterModel>
+            return await serverRequest.SendReply(new SendArg<ServerTcpForwardRegisterModel>
             {
                 Data = new ServerTcpForwardRegisterModel
                 {
@@ -63,7 +63,7 @@ namespace client.service.serverTcpforward
 
             if (!serverTcpForwardRegisterConfig.Enable)
             {
-                await serverRequest.SendOnly(new SendEventArg<ServerTcpForwardModel>
+                await serverRequest.SendOnly(new SendArg<ServerTcpForwardModel>
                 {
                     Data = new ServerTcpForwardModel
                     {
@@ -115,7 +115,7 @@ namespace client.service.serverTcpforward
             catch (Exception ex)
             {
                 ClientModel.Remove(data.RequestId);
-                await serverRequest.SendOnly(new SendEventArg<ServerTcpForwardModel>
+                await serverRequest.SendOnly(new SendArg<ServerTcpForwardModel>
                 {
                     Data = new ServerTcpForwardModel
                     {
@@ -159,7 +159,7 @@ namespace client.service.serverTcpforward
 
         private async Task Receive(ClientModel client, byte[] data)
         {
-            await serverRequest.SendOnly(new SendEventArg<ServerTcpForwardModel>
+            await serverRequest.SendOnly(new SendArg<ServerTcpForwardModel>
             {
                 Data = new ServerTcpForwardModel
                 {

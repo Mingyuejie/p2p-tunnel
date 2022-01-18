@@ -16,7 +16,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
 
         public void Execute(OnPunchHoleArg arg)
         {
-            if (arg.Packet.Connection.ServerType != ServerType.TCP) return;
+            if (arg.Connection.ServerType != ServerType.TCP) return;
 
             PunchHoleTcpNutssBSteps step = (PunchHoleTcpNutssBSteps)arg.Data.PunchStep;
             switch (step)
@@ -51,7 +51,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
         {
             punchHoleTcp.OnStep1(new OnStep1EventArg
             {
-                Packet = arg.Packet,
+                Connection = arg.Connection,
                 RawData = arg.Data,
                 Data = arg.Data.Data.DeBytes<PunchHoleNotifyModel>()
             });
@@ -60,7 +60,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
         {
             punchHoleTcp.OnStep2(new OnStep2EventArg
             {
-                Packet = arg.Packet,
+                Connection = arg.Connection,
                 RawData = arg.Data,
                 Data = arg.Data.Data.DeBytes<PunchHoleNotifyModel>()
             });
@@ -69,7 +69,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
         {
             punchHoleTcp.OnStep2Retry(new OnStep2RetryEventArg
             {
-                Packet = arg.Packet,
+                Connection = arg.Connection,
                 RawData = arg.Data,
                 Data = arg.Data.Data.DeBytes<PunchHoleNotifyModel>()
             });
@@ -78,7 +78,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
         {
             punchHoleTcp.OnStep2Fail(new OnStep2FailEventArg
             {
-                Packet = arg.Packet,
+                Connection = arg.Connection,
                 RawData = arg.Data,
                 Data = arg.Data.Data.DeBytes<Step2FailModel>()
             });
@@ -87,7 +87,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
         {
             punchHoleTcp.OnStep2Stop(new OnStep2StopEventArg
             {
-                Packet = arg.Packet,
+                Connection = arg.Connection,
                 RawData = arg.Data,
                 Data = arg.Data.Data.DeBytes<Step2StopModel>()
             });
@@ -97,7 +97,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
         {
             punchHoleTcp.OnStep3(new OnStep3EventArg
             {
-                Packet = arg.Packet,
+                Connection = arg.Connection,
                 RawData = arg.Data,
                 Data = arg.Data.Data.DeBytes<Step3Model>()
             });
@@ -106,7 +106,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
         {
             punchHoleTcp.OnStep4(new OnStep4EventArg
             {
-                Packet = arg.Packet,
+                Connection = arg.Connection,
                 RawData = arg.Data,
                 Data = arg.Data.Data.DeBytes<Step4Model>()
             });

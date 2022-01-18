@@ -123,7 +123,7 @@ namespace client.service.tcpforward
                         Buffer = Encoding.UTF8.GetBytes("插件未开启"),
                         AliveType = arg.Data.AliveType
                     },
-                    Connection = arg.Packet.Connection
+                    Connection = arg.Connection
                 });
                 return;
             }
@@ -138,7 +138,7 @@ namespace client.service.tcpforward
                         Buffer = Encoding.UTF8.GetBytes("目标端口不在端口白名单中"),
                         AliveType = arg.Data.AliveType
                     },
-                    Connection = arg.Packet.Connection
+                    Connection = arg.Connection
                 });
                 return;
             }
@@ -153,7 +153,7 @@ namespace client.service.tcpforward
                         Buffer = Encoding.UTF8.GetBytes("目标端口在端口黑名单中"),
                         AliveType = arg.Data.AliveType
                     },
-                    Connection = arg.Packet.Connection
+                    Connection = arg.Connection
                 });
                 return;
             }
@@ -171,7 +171,7 @@ namespace client.service.tcpforward
                         TargetPort = arg.Data.TargetPort,
                         AliveType = arg.Data.AliveType,
                         TargetIp = arg.Data.TargetIp,
-                        SourceConnection = arg.Packet.Connection,
+                        SourceConnection = arg.Connection,
                         FromId = arg.Data.FromID
                     };
                     IPEndPoint dnsEndPoint = new(NetworkHelper.GetDomainIp(arg.Data.TargetIp), arg.Data.TargetPort);
@@ -204,7 +204,7 @@ namespace client.service.tcpforward
                         Buffer = Encoding.UTF8.GetBytes(ex + ""),
                         AliveType = arg.Data.AliveType
                     },
-                    Connection = arg.Packet.Connection
+                    Connection = arg.Connection
                 });
             }
         }

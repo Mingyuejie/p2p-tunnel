@@ -16,9 +16,9 @@ namespace server.service.plugins
             this.clientRegisterCache = clientRegisterCache;
         }
 
-        public async Task<bool> Execute(PluginParamWrap data)
+        public async Task<bool> Execute(IConnection connection)
         {
-            return await clientRegisterCache.Remove(data.Connection.ConnectId);
+            return await clientRegisterCache.Remove(connection.ConnectId);
         }
     }
 }
