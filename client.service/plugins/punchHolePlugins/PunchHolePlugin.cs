@@ -1,6 +1,7 @@
 ﻿using client.service.plugins.punchHolePlugins.plugins.tcp;
 using client.service.plugins.punchHolePlugins.plugins.tcp.nutssb;
 using client.service.plugins.punchHolePlugins.plugins.udp;
+using common;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
 using ProtoBuf;
@@ -92,9 +93,7 @@ namespace client.service.plugins.punchHolePlugins
         }
         public static ServiceCollection AddPunchHolePlugin(this ServiceCollection obj, Assembly[] assemblys)
         {
-            var types = assemblys.SelectMany(c => c.GetTypes())
-                 .Where(c => c.GetInterfaces().Contains(typeof(IPunchHolePlugin)));
-            foreach (Type item in types)
+            foreach (Type item in ReflectionHelper.GetInterfaceSchieves(assemblys, typeof(IPunchHolePlugin)))
             {
                 obj.AddSingleton(item);
             }

@@ -51,10 +51,7 @@ namespace server.service
             obj.AddSingleton<IClientRegisterCaching, ClientRegisterCaching>();
             obj.AddSingleton<ServerPluginHelper>();
 
-            IEnumerable<Type> types = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(c => c.GetTypes())
-                 .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
-            foreach (Type item in types)
+            foreach (Type item in ReflectionHelper.GetInterfaceSchieves(AppDomain.CurrentDomain.GetAssemblies(), typeof(IPlugin)))
             {
                 obj.AddSingleton(item);
             }
@@ -65,10 +62,7 @@ namespace server.service
         public static ServiceProvider UsePlugin(this ServiceProvider obj)
         {
             ServerPluginHelper serverPluginHelper = obj.GetService<ServerPluginHelper>();
-            IEnumerable<Type> types = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(c => c.GetTypes())
-                 .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
-            foreach (Type item in types)
+            foreach (Type item in ReflectionHelper.GetInterfaceSchieves(AppDomain.CurrentDomain.GetAssemblies(), typeof(IPlugin)))
             {
                 serverPluginHelper.LoadPlugin(item, obj.GetService(item));
             }

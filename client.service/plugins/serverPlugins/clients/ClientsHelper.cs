@@ -62,14 +62,14 @@ namespace client.service.plugins.serverPlugins.clients
             });
         }
 
-        public void ConnectClient(ulong id)
+        internal void ConnectClient(ulong id)
         {
             if (clientInfoCaching.Get(id, out ClientInfo client))
             {
                 ConnectClient(client);
             }
         }
-        private void ConnectClient(ClientInfo info)
+        internal void ConnectClient(ClientInfo info)
         {
             if (info.Id == registerState.ConnectId)
             {
@@ -90,7 +90,7 @@ namespace client.service.plugins.serverPlugins.clients
                 var result = await punchHoleUdp.Send(new ConnectParams
                 {
                     Id = info.Id,
-                    Name = info.Name,
+                    TunnelName = "udp",
                     TryTimes = 5
                 });
                 if (!result.State)
@@ -108,7 +108,7 @@ namespace client.service.plugins.serverPlugins.clients
                 var result = await punchHoleTcp.Send(new ConnectTcpParams
                 {
                     Id = info.Id,
-                    Name = info.Name,
+                    TunnelName = "tcp",
                     TryTimes = 5
                 });
                 if (!result.State)

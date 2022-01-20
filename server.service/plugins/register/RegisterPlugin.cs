@@ -17,98 +17,113 @@ namespace server.service.plugins.register
             this.clientRegisterCache = clientRegisterCache;
         }
 
-        public async Task<RegisterResultModel> Execute(IConnection connection)
+        public RegisterResultModel Execute(IConnection connection)
         {
-            await Task.Yield();
-            try
-            {
-                RegisterModel model = connection.ReceiveRequestWrap.Memory.DeBytes<RegisterModel>();
-                if (connection.ServerType == ServerType.UDP)
-                {
-                    if (clientRegisterCache.GetBySameGroup(model.GroupId, model.Name) == null)
-                    {
-                        RegisterCacheModel add = new()
-                        {
-                            UdpConnection = connection,
-                            Name = model.Name,
-                            OriginGroupId = model.GroupId,
-                            LocalIps = model.LocalIps,
-                            Mac = model.Mac,
-                            LocalUdpPort = model.LocalUdpPort,
-                            LocalTcpPort = model.LocalTcpPort,
-                            Id = 0
-                        };
-                        clientRegisterCache.Add(add);
-                        string origingid = add.OriginGroupId;
-                        add.OriginGroupId = string.Empty;
-                        connection.ConnectId = add.Id;
+            RegisterModel model = connection.ReceiveRequestWrap.Memory.DeBytes<RegisterModel>();
 
-                        return new RegisterResultModel
-                        {
-                            Id = add.Id,
-                            Ip = connection.UdpAddress.Address.ToString(),
-                            Port = connection.UdpAddress.Port,
-                            TcpPort = 0,
-                            GroupId = origingid
-                        };
-                    }
-                    else
-                    {
-                        return new RegisterResultModel
-                        {
-                            Code = RegisterResultModel.RegisterResultCodes.SAME_NAMES
-                        };
-                    }
-                }
-                else if (connection.ServerType == ServerType.TCP)
-                {
-                    IPEndPoint endpoint = connection.TcpSocket.RemoteEndPoint as IPEndPoint;
-                    if (!clientRegisterCache.Get(model.Id, out RegisterCacheModel client) || !endpoint.Address.Equals(client.UdpConnection.UdpAddress.Address))
-                    {
-                        return new RegisterResultModel
-                        {
-                            Code = RegisterResultModel.RegisterResultCodes.VERIFY
-                        };
-                    }
-                    else
-                    {
-                        connection.ConnectId = client.Id;
-                        clientRegisterCache.UpdateTcpInfo(new RegisterCacheUpdateModel
-                        {
-                            Id = client.Id,
-                            TcpConnection = connection,
-                            GroupId = model.GroupId,
-                            LocalTcpPort = model.LocalTcpPort,
-                        });
-                        return new RegisterResultModel
-                        {
-                            Id = model.Id,
-                            Ip = client.UdpConnection.UdpAddress.Address.ToString(),
-                            Port = client.UdpConnection.UdpAddress.Port,
-                            TcpPort = endpoint.Port,
-                            GroupId = model.GroupId
-                        };
-                    }
-                }
-            }
-            catch (Exception ex)
+            return connection.ServerType switch
             {
-                Logger.Instance.Error(ex);
-                return new RegisterResultModel
-                {
-                    Code = RegisterResultModel.RegisterResultCodes.UNKNOW
-                };
+                ServerType.UDP => Udp(connection, model),
+                ServerType.TCP => Tcp(connection, model),
+                _ => new RegisterResultModel { Code = RegisterResultModel.RegisterResultCodes.UNKNOW }
+            };
+        }
+        private RegisterResultModel Udp(IConnection connection, RegisterModel model)
+        {
+            if (clientRegisterCache.GetBySameGroup(model.GroupId, model.Name) != null)
+            {
+                return new RegisterResultModel { Code = RegisterResultModel.RegisterResultCodes.SAME_NAMES };
             }
+            RegisterCacheModel client = new()
+            {
+                Name = model.Name,
+                OriginGroupId = model.GroupId,
+                LocalIps = model.LocalIps,
+                Mac = model.Mac,
+                Id = 0
+            };
+            clientRegisterCache.Add(client);
+
+            client.UpdateUdpInfo(new RegisterCacheUpdateUdpModel { Connection = connection });
+            client.AddTunnel(new TunnelRegisterCacheModel
+            {
+                Port = connection.UdpAddress.Port,
+                LocalPort = model.LocalUdpPort,
+                Servertype = ServerType.UDP,
+                TunnelName = "udp",
+                IsDefault = true,
+            });
 
             return new RegisterResultModel
             {
-                Code = RegisterResultModel.RegisterResultCodes.UNKNOW
+                Id = client.Id,
+                Ip = connection.UdpAddress.Address.ToString(),
+                Port = connection.UdpAddress.Port,
+                TcpPort = 0,
+                GroupId = client.OriginGroupId
+            };
+        }
+        private RegisterResultModel Tcp(IConnection connection, RegisterModel model)
+        {
+            if (!clientRegisterCache.Get(model.Id, out RegisterCacheModel client))
+            {
+                return new RegisterResultModel { Code = RegisterResultModel.RegisterResultCodes.VERIFY };
+            }
+
+            client.UpdateTcpInfo(new RegisterCacheUpdateTcpModel
+            {
+                Connection = connection
+            });
+            client.AddTunnel(new TunnelRegisterCacheModel
+            {
+                Port = connection.TcpAddress.Port,
+                LocalPort = model.LocalTcpPort,
+                Servertype = ServerType.TCP,
+                TunnelName = "tcp",
+                IsDefault = true,
+            });
+
+            return new RegisterResultModel
+            {
+                Id = model.Id,
+                Ip = client.UdpConnection.UdpAddress.Address.ToString(),
+                Port = client.UdpConnection.UdpAddress.Port,
+                TcpPort = connection.TcpAddress.Port,
+                GroupId = model.GroupId
             };
         }
 
         public async Task Notify(IConnection connection)
         {
             await clientRegisterCache.Notify(connection);
+        }
+
+        public TunnelRegisterResult Tunnel(IConnection connection)
+        {
+            IPEndPoint endpoint = connection.TcpSocket.RemoteEndPoint as IPEndPoint;
+            if (!clientRegisterCache.Get(connection.ConnectId, out RegisterCacheModel client))
+            {
+                return new TunnelRegisterResult { Code = TunnelRegisterResult.TunnelRegisterResultCodes.VERIFY };
+            }
+
+            TunnelRegisterModel model = connection.ReceiveRequestWrap.Memory.DeBytes<TunnelRegisterModel>();
+
+            int port = connection.ServerType == ServerType.UDP ? connection.UdpAddress.Port : endpoint.Port;
+            TunnelRegisterCacheModel cache = new TunnelRegisterCacheModel
+            {
+                TunnelName = model.TunnelName,
+                Port = port,
+                LocalPort = model.LocalPort,
+                Servertype = connection.ServerType
+            };
+            if (client.TunnelExists(cache))
+            {
+                return new TunnelRegisterResult { Code = TunnelRegisterResult.TunnelRegisterResultCodes.SAME_NAMES };
+            }
+
+            client.AddTunnel(cache);
+
+            return new TunnelRegisterResult { Code = TunnelRegisterResult.TunnelRegisterResultCodes.OK };
         }
     }
 }

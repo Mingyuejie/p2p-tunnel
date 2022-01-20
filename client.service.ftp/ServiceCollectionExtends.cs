@@ -28,15 +28,11 @@ namespace client.service.ftp
         }
         public static ServiceCollection AddFtpPlugin(this ServiceCollection obj, Assembly[] assemblys)
         {
-            var types = assemblys.SelectMany(c => c.GetTypes())
-                 .Where(c => c.GetInterfaces().Contains(typeof(IFtpServerPlugin)));
-            foreach (var item in types)
+            foreach (var item in ReflectionHelper.GetInterfaceSchieves(assemblys, typeof(IFtpServerPlugin)))
             {
                 obj.AddSingleton(item);
             }
-            var types2 = assemblys.SelectMany(c => c.GetTypes())
-                 .Where(c => c.GetInterfaces().Contains(typeof(IFtpClientPlugin)));
-            foreach (var item in types2)
+            foreach (var item in ReflectionHelper.GetInterfaceSchieves(assemblys, typeof(IFtpClientPlugin)))
             {
                 obj.AddSingleton(item);
             }

@@ -40,7 +40,7 @@ namespace client.service.plugins.serverPlugins.register
             Console.CancelKeyPress += (s, e) => _ = Exit();
         }
 
-        public async Task AutoReg()
+        internal async Task AutoReg()
         {
             if (config.Client.AutoReg)
             {
@@ -62,7 +62,7 @@ namespace client.service.plugins.serverPlugins.register
             }
         }
 
-        public async Task Exit()
+        internal async Task Exit()
         {
             await registerMessageHelper.SendExitMessage();
             udpServer.Stop();
@@ -71,7 +71,7 @@ namespace client.service.plugins.serverPlugins.register
             GCHelper.FlushMemory();
         }
 
-        public async Task<CommonTaskResponseModel<bool>> Register()
+        internal async Task<CommonTaskResponseModel<bool>> Register()
         {
             TaskCompletionSource<CommonTaskResponseModel<bool>> tcs = new TaskCompletionSource<CommonTaskResponseModel<bool>>();
             await Exit();

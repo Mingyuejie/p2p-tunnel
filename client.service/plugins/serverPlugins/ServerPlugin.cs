@@ -4,6 +4,7 @@ using client.service.plugins.serverPlugins.clients;
 using client.service.plugins.serverPlugins.heart;
 using client.service.plugins.serverPlugins.register;
 using client.service.plugins.serverPlugins.reset;
+using common;
 using Microsoft.Extensions.DependencyInjection;
 using server;
 using server.achieves.defaults;
@@ -34,13 +35,12 @@ namespace client.service.plugins.serverPlugins
             obj.AddSingleton<RegisterMessageHelper>();
             obj.AddSingleton<RegisterHelper>();
             obj.AddSingleton<RegisterState>();
+            obj.AddSingleton<ITunnelRegister, TunnelRegister>();
+            
 
             obj.AddSingleton<ServerPluginHelper>();
 
-            IEnumerable<Type> types = assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies())
-                .SelectMany(c => c.GetTypes())
-                 .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
-            foreach (var item in types)
+            foreach (var item in ReflectionHelper.GetInterfaceSchieves(assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies()).ToArray(), typeof(IPlugin)))
             {
                 obj.AddSingleton(item);
             }
@@ -53,10 +53,7 @@ namespace client.service.plugins.serverPlugins
 
             ServerPluginHelper serverPluginHelper = obj.GetService<ServerPluginHelper>();
 
-            IEnumerable<Type> types = assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies())
-                .SelectMany(c => c.GetTypes())
-                 .Where(c => c.GetInterfaces().Contains(typeof(IPlugin)));
-            foreach (var item in types)
+            foreach (Type item in ReflectionHelper.GetInterfaceSchieves(assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies()).ToArray(), typeof(IPlugin)))
             {
                 serverPluginHelper.LoadPlugin(item, obj.GetService(item));
             }

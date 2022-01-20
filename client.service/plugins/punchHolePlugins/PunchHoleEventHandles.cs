@@ -43,10 +43,7 @@ namespace client.service.plugins.punchHolePlugins
                 plugins = new Dictionary<PunchHoleTypes, IPunchHolePlugin>();
             }
 
-            IEnumerable<Type> types = assemblys
-                .SelectMany(c => c.GetTypes())
-                .Where(c => c.GetInterfaces().Contains(typeof(IPunchHolePlugin)));
-            foreach (Type item in types)
+            foreach (Type item in ReflectionHelper.GetInterfaceSchieves(assemblys, typeof(IPunchHolePlugin)))
             {
                 IPunchHolePlugin obj = (IPunchHolePlugin)serviceProvider.GetService(item);
                 if (!plugins.ContainsKey(obj.Type))
@@ -81,7 +78,8 @@ namespace client.service.plugins.punchHolePlugins
                     FromId = 0,
                     PunchStep = msg.PunchStep,
                     PunchType = (byte)msg.PunchType,
-                    ToId = arg.ToId
+                    ToId = arg.ToId,
+                    TunnelName = arg.TunnelName
                 }
             });
         }
@@ -104,6 +102,7 @@ namespace client.service.plugins.punchHolePlugins
         public IConnection Connection { get; set; }
 
         public ulong ToId { get; set; }
+        public string TunnelName { get; set; }
 
         public T Data { get; set; }
     }

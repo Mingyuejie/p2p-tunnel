@@ -44,10 +44,12 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
             connectTcpCache.TryAdd(param.Id, new ConnectTcpCache
             {
                 TryTimes = param.TryTimes,
-                Tcs = tcs
+                Tcs = tcs,
+                TunnelName = param.TunnelName,
             });
             await punchHoldEventHandles.Send(new SendPunchHoleArg<Step1Model>
             {
+                TunnelName = param.TunnelName,
                 Connection = TcpServer,
                 ToId = param.Id,
                 Data = new Step1Model { }
@@ -57,13 +59,13 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
         }
 
         public SimpleSubPushHandler<OnStep1EventArg> OnStep1Handler { get; } = new SimpleSubPushHandler<OnStep1EventArg>();
-        public async Task OnStep1(OnStep1EventArg e)
+        public async Task OnStep1(OnStep1EventArg arg)
         {
-            OnStep1Handler.Push(e);
+            OnStep1Handler.Push(arg);
 
-            List<Tuple<string, int>> ips = e.Data.LocalIps.Split(Helper.SeparatorChar).Where(c => c.Length > 0)
-                .Select(c => new Tuple<string, int>(c, e.Data.LocalTcpPort)).ToList();
-            ips.Add(new Tuple<string, int>(e.Data.Ip, e.Data.TcpPort));
+            List<Tuple<string, int>> ips = arg.Data.LocalIps.Split(Helper.SeparatorChar).Where(c => c.Length > 0)
+                .Select(c => new Tuple<string, int>(c, arg.Data.LocalPort)).ToList();
+            ips.Add(new Tuple<string, int>(arg.Data.Ip, arg.Data.Port));
 
             foreach (Tuple<string, int> ip in ips)
             {
@@ -82,22 +84,23 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
 
             await punchHoldEventHandles.Send(new SendPunchHoleArg<Step2Model>
             {
+                TunnelName = arg.RawData.TunnelName,
                 Connection = TcpServer,
-                ToId = e.RawData.FromId,
+                ToId = arg.RawData.FromId,
                 Data = new Step2Model { }
             });
         }
 
         public SimpleSubPushHandler<OnStep2EventArg> OnStep2Handler { get; } = new SimpleSubPushHandler<OnStep2EventArg>();
-        public async Task OnStep2(OnStep2EventArg e)
+        public async Task OnStep2(OnStep2EventArg arg)
         {
-            OnStep2Handler.Push(e);
+            OnStep2Handler.Push(arg);
 
-            List<Tuple<string, int>> ips = e.Data.LocalIps.Split(Helper.SeparatorChar).Where(c => c.Length > 0)
-                .Select(c => new Tuple<string, int>(c, e.Data.LocalTcpPort)).ToList();
-            ips.Add(new Tuple<string, int>(e.Data.Ip, e.Data.TcpPort));
+            List<Tuple<string, int>> ips = arg.Data.LocalIps.Split(Helper.SeparatorChar).Where(c => c.Length > 0)
+                .Select(c => new Tuple<string, int>(c, arg.Data.LocalPort)).ToList();
+            ips.Add(new Tuple<string, int>(arg.Data.Ip, arg.Data.Port));
 
-            if (!connectTcpCache.TryGetValue(e.RawData.FromId, out ConnectTcpCache cache))
+            if (!connectTcpCache.TryGetValue(arg.RawData.FromId, out ConnectTcpCache cache))
             {
                 return;
             }
@@ -136,16 +139,20 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                         }
                         Logger.Instance.Debug($"{ip.Item1}:{ip.Item2} 连接成功");
                         targetSocket.EndConnect(result);
-                        tcpServer.BindReceive(targetSocket, bufferSize: config.Client.TcpBufferSize);
 
-                        await punchHoldEventHandles.Send(new SendPunchHoleArg<Step3Model>
+                        if (arg.Data.IsDefault)
                         {
-                            Connection = tcpServer.CreateConnection(targetSocket),
-                            Data = new Step3Model
+                            tcpServer.BindReceive(targetSocket, bufferSize: config.Client.TcpBufferSize);
+                            await punchHoldEventHandles.Send(new SendPunchHoleArg<Step3Model>
                             {
-                                FromId = ConnectId
-                            }
-                        });
+                                TunnelName = arg.RawData.TunnelName,
+                                Connection = tcpServer.CreateConnection(targetSocket),
+                                Data = new Step3Model
+                                {
+                                    FromId = ConnectId
+                                }
+                            });
+                        }
                         success = true;
                         break;
                     }
@@ -154,7 +161,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                         Logger.Instance.Debug($"{ip.Item1}:{ip.Item2} 连接失败");
                         targetSocket.SafeClose();
                         interval = 300;
-                        await SendStep2Retry(e.RawData.FromId);
+                        await SendStep2Retry(arg.RawData.FromId, arg.RawData.TunnelName);
                         length--;
                     }
                 }
@@ -169,7 +176,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                     else
                     {
                         interval = 100;
-                        await SendStep2Retry(e.RawData.FromId);
+                        await SendStep2Retry(arg.RawData.FromId, arg.RawData.TunnelName);
                         length--;
                     }
                 }
@@ -184,16 +191,18 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
             {
                 await SendStep2Fail(new SendStep2FailEventArg
                 {
+                    TunnelName = arg.RawData.TunnelName,
                     Id = ConnectId,
-                    ToId = e.RawData.FromId
+                    ToId = arg.RawData.FromId
                 });
             }
         }
 
-        private async Task SendStep2Retry(ulong toid)
+        private async Task SendStep2Retry(ulong toid, string tunnelName)
         {
             await punchHoldEventHandles.Send(new SendPunchHoleArg<Step2TryModel>
             {
+                TunnelName = tunnelName,
                 Connection = TcpServer,
                 ToId = toid,
                 Data = new Step2TryModel { }
@@ -208,7 +217,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
                 using Socket targetSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 targetSocket.Ttl = (short)(RouteLevel + 5);
                 targetSocket.ReuseBind(new IPEndPoint(config.Client.BindIp, ClientTcpPort));
-                targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(e.Data.Ip), e.Data.TcpPort));
+                targetSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(e.Data.Ip), e.Data.Port));
                 targetSocket.SafeClose();
             });
         }
@@ -230,6 +239,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
             }
             await punchHoldEventHandles.Send(new SendPunchHoleArg<Step2FailModel>
             {
+                TunnelName = arg.TunnelName,
                 Connection = TcpServer,
                 ToId = arg.ToId,
                 Data = new Step2FailModel { }
@@ -243,13 +253,17 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
         }
         public async Task SendStep2Stop(ulong toid)
         {
-            await punchHoldEventHandles.Send(new SendPunchHoleArg<Step2StopModel>
+            if(connectTcpCache.TryGetValue(toid, out ConnectTcpCache cache))
             {
-                Connection = TcpServer,
-                ToId = toid,
-                Data = new Step2StopModel { }
-            });
-            Cancel(toid);
+                await punchHoldEventHandles.Send(new SendPunchHoleArg<Step2StopModel>
+                {
+                    TunnelName = cache.TunnelName,
+                    Connection = TcpServer,
+                    ToId = toid,
+                    Data = new Step2StopModel { }
+                });
+                Cancel(toid);
+            }
         }
         public async Task OnStep2Stop(OnStep2StopEventArg e)
         {
@@ -280,6 +294,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp.nutssb
             OnStep3Handler.Push(arg);
             await punchHoldEventHandles.Send(new SendPunchHoleArg<Step4Model>
             {
+                TunnelName = arg.RawData.TunnelName,
                 Connection = arg.Connection,
                 Data = new Step4Model
                 {

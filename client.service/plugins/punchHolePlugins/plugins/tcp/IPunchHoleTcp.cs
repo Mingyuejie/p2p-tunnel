@@ -63,6 +63,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp
     {
         public ulong ToId { get; set; }
         public ulong Id { get; set; }
+        public string TunnelName { get; set; }
     }
     public class OnStep2FailEventArg : EventArgs
     {
@@ -232,10 +233,8 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp
     public class ConnectTcpParams
     {
         public ulong Id { get; set; } = 0;
-        public string Name { get; set; } = string.Empty;
+        public string TunnelName { get; set; } = string.Empty;
         public int TryTimes { get; set; } = 5;
-        //public Action<OnStep4EventArg> Callback { get; set; } = null;
-       // public Action<ConnectFailModel> FailCallback { get; set; } = null;
     }
 
     public class ConnectTcpCache
@@ -243,6 +242,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.tcp
         public int TryTimes { get; set; } = 5;
         public bool Canceled { get; set; } = false;
         public TaskCompletionSource<ConnectResultModel> Tcs { get; set; }
+        public string TunnelName { get; set; }
 
         //public Action<OnStep4EventArg> Callback { get; set; } = null;
         //public Action<ConnectFailModel> FailCallback { get; set; } = null;

@@ -42,10 +42,7 @@ namespace client.service.ftp.server
 
         public void LoadPlugins(Assembly[] assemblys)
         {
-            IEnumerable<Type> types = assemblys
-               .SelectMany(c => c.GetTypes())
-               .Where(c => c.GetInterfaces().Contains(typeof(IFtpServerPlugin)));
-            foreach (Type item in types)
+            foreach (Type item in ReflectionHelper.GetInterfaceSchieves(assemblys, typeof(IFtpServerPlugin)))
             {
                 IFtpServerPlugin obj = (IFtpServerPlugin)serviceProvider.GetService(item);
                 if (!Plugins.ContainsKey(obj.Cmd))

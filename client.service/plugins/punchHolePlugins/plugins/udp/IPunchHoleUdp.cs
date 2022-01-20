@@ -99,7 +99,7 @@ namespace client.service.plugins.punchHolePlugins.plugins.udp
     {
         public ulong Id { get; set; } = 0;
         public int TryTimes { get; set; } = 5;
-        public string Name { get; set; } = string.Empty;
+        public string TunnelName { get; set; } = string.Empty;
     }
 
     public class ConnectCache

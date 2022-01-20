@@ -80,4 +80,46 @@ namespace server.model
         }
 
     }
+
+    public class TunnelRegisterParam
+    {
+        public TunnelRegisterParam() { }
+
+        public string TunnelName { get; set; } = string.Empty;
+    }
+
+    [ProtoContract, MessagePackObject]
+    public class TunnelRegisterModel
+    {
+        public TunnelRegisterModel() { }
+
+        [ProtoMember(1), Key(1)]
+        public string TunnelName { get; set; } = string.Empty;
+
+        [ProtoMember(2), Key(2)]
+        public int LocalPort { get; set; } = 0;
+    }
+
+    [ProtoContract, MessagePackObject]
+    public class TunnelRegisterResult
+    {
+        public TunnelRegisterResult() { }
+
+        [ProtoMember(1), Key(1)]
+        public TunnelRegisterResultCodes Code { get; set; } = TunnelRegisterResultCodes.OK;
+
+        [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
+        [Flags]
+        public enum TunnelRegisterResultCodes : byte
+        {
+            [Description("成功")]
+            OK = 0,
+            [Description("存在同名")]
+            SAME_NAMES = 1,
+            [Description("验证未通过")]
+            VERIFY = 1,
+            [Description("出错")]
+            UNKNOW = 255
+        }
+    }
 }

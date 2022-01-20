@@ -42,10 +42,13 @@ namespace server.model
         [ProtoMember(5), Key(5)]
         public PunchForwardTypes PunchForwardType { get; set; } = PunchForwardTypes.NOTIFY;
 
+        [ProtoMember(6), Key(6)]
+        public string TunnelName { get; set; } = string.Empty;
+
         /// <summary>
         /// 客户端自定义步骤
         /// </summary>
-        [ProtoMember(6), Key(6)]
+        [ProtoMember(7), Key(7)]
         public byte PunchStep { get; set; } = 0;
     }
 
@@ -56,7 +59,7 @@ namespace server.model
         [Description("通知A的数据给B")]
         NOTIFY,
         [Description("原样转发")]
-        FORWARD 
+        FORWARD
     }
 
     [ProtoContract, MessagePackObject]
@@ -65,25 +68,16 @@ namespace server.model
         public PunchHoleNotifyModel() { }
 
         [ProtoMember(1), Key(1)]
-        public string Name { get; set; } = string.Empty;
-
-        [ProtoMember(2), Key(2)]
         public string Ip { get; set; } = string.Empty;
-
-        [ProtoMember(3), Key(3)]
+        [ProtoMember(2), Key(2)]
         public int Port { get; set; } = 0;
 
+        [ProtoMember(3), Key(3)]
+        public string LocalIps { get; set; } = string.Empty;
         [ProtoMember(4), Key(4)]
-        public int TcpPort { get; set; } = 0;
+        public int LocalPort { get; set; } = 0;
 
         [ProtoMember(5), Key(5)]
-        public string LocalIps { get; set; } = string.Empty;
-
-        [ProtoMember(6), Key(6)]
-        public int LocalTcpPort { get; set; } = 0;
-
-        [ProtoMember(7), Key(7)]
-        public int LocalUdpPort { get; set; } = 0;
-
+        public bool IsDefault { get; set; } = false;
     }
 }

@@ -20,7 +20,7 @@ namespace server.service.plugins.register.caching
 
         public ClientRegisterCaching()
         {
-            Task.Run(async () =>
+            Task.Factory.StartNew(async () =>
             {
                 while (true)
                 {
@@ -34,7 +34,7 @@ namespace server.service.plugins.register.caching
                     }
                     await Task.Delay(100);
                 }
-            });
+            }, TaskCreationOptions.LongRunning);
         }
 
         public bool Get(ulong id, out RegisterCacheModel client)
@@ -62,21 +62,9 @@ namespace server.service.plugins.register.caching
             {
                 model.OriginGroupId = Guid.NewGuid().ToString().Md5();
             }
-
             model.GroupId = model.OriginGroupId.Md5();
             cache.AddOrUpdate(model.Id, model, (a, b) => model);
             return model.Id;
-        }
-
-        public bool UpdateTcpInfo(RegisterCacheUpdateModel model)
-        {
-            if (Get(model.Id, out RegisterCacheModel client) && model.GroupId.Md5() == client.GroupId)
-            {
-                client.TcpConnection = model.TcpConnection;
-                client.LocalTcpPort = model.LocalTcpPort;
-                return true;
-            }
-            return false;
         }
 
         public async Task<bool> Remove(ulong id)

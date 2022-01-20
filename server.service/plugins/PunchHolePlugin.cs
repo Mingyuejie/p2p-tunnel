@@ -41,15 +41,18 @@ namespace server.service.plugins
 
             if (model.PunchForwardType == PunchForwardTypes.NOTIFY)
             {
+                if (!source.GetTunnel(model.TunnelName, out TunnelRegisterCacheModel tunnel))
+                {
+                    return false;
+                }
+
                 model.Data = new PunchHoleNotifyModel
                 {
                     Ip = source.UdpConnection.UdpAddress.Address.ToString(),
-                    Name = source.Name,
-                    Port = source.UdpConnection.UdpAddress.Port,
-                    TcpPort = (source.TcpConnection.TcpSocket.RemoteEndPoint as IPEndPoint).Port,
                     LocalIps = source.LocalIps,
-                    LocalTcpPort = source.LocalTcpPort,
-                    LocalUdpPort = source.LocalUdpPort,
+                    LocalPort = tunnel.LocalPort,
+                    Port = tunnel.Port,
+                    IsDefault = tunnel.IsDefault
                 }.ToBytes();
             }
 

@@ -28,9 +28,7 @@ namespace client.service.ddns
 
         public static ServiceCollection AddDdnsPlugin(this ServiceCollection obj, Assembly[] assemblys)
         {
-            var types = assemblys.SelectMany(c => c.GetTypes())
-                 .Where(c => c.GetInterfaces().Contains(typeof(IDdnsPlatform)));
-            foreach (var item in types)
+            foreach (Type item in ReflectionHelper.GetInterfaceSchieves(assemblys, typeof(IDdnsPlatform)))
             {
                 obj.AddSingleton(item);
             }

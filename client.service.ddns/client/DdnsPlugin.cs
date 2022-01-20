@@ -23,10 +23,7 @@ namespace client.service.ddns.client
         {
             this.config = config;
 
-            IEnumerable<Type> types = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(c => c.GetTypes())
-                .Where(c => c.GetInterfaces().Contains(typeof(IDdnsPlatform)));
-            foreach (var item in types)
+            foreach (Type item in ReflectionHelper.GetInterfaceSchieves(AppDomain.CurrentDomain.GetAssemblies(), typeof(IDdnsPlatform)))
             {
                 IDdnsPlatform plugin = (IDdnsPlatform)serviceProvider.GetService(item);
                 if (!plugins.ContainsKey(plugin.Platform))
