@@ -1,8 +1,8 @@
 <!--
  * @Author: snltty
  * @Date: 2021-08-22 14:09:03
- * @LastEditors: snltty
- * @LastEditTime: 2021-11-13 13:56:16
+ * @LastEditors: xr
+ * @LastEditTime: 2022-01-21 16:49:47
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3d:\Desktop\p2p-tunnel\README.md
@@ -12,7 +12,7 @@
 <a href="http://snltty.gitee.io/p2p-tunnel/#/about-home.html" target="_blank">详细说明</a>
 
 # p2p-tunnel
-1. .NET5 Socket编程实现内网穿透
+1. .NET6 Socket编程实现内网穿透
 2. UDP,TCP打洞实现点对点直连
 3. 访问内网web，内网桌面，及其它TCP上层协议服务
 4. 服务端只承受 客户端注册，客户端信息的交换。不承受数据转发，几乎无压力

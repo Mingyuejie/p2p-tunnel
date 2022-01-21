@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:39:45
  * @LastEditors: xr
- * @LastEditTime: 2022-01-21 16:31:45
+ * @LastEditTime: 2022-01-21 16:49:52
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\states\register.js
