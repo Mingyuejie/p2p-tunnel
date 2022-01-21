@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:39:45
  * @LastEditors: snltty
- * @LastEditTime: 2021-09-17 21:13:35
+ * @LastEditTime: 2022-01-21 10:08:32
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\states\register.js
@@ -32,7 +32,7 @@ export const provideRegister = () => {
             Port: 0,
             TcpPort: 0,
             IsConnecting: false,
-            Connected: false,
+            UdpConnected: false,
             TcpConnected: false,
             LocalIp: ''
         },
@@ -45,7 +45,7 @@ export const provideRegister = () => {
     provide(provideRegisterKey, state);
 
     subNotifyMsg('register/info', (json) => {
-        state.LocalInfo.Connected = json.LocalInfo.Connected;
+        state.LocalInfo.UdpConnected = json.LocalInfo.UdpConnected;
         state.LocalInfo.TcpConnected = json.LocalInfo.TcpConnected;
         state.LocalInfo.Port = json.LocalInfo.Port;
         state.LocalInfo.TcpPort = json.LocalInfo.TcpPort;
@@ -64,7 +64,7 @@ export const provideRegister = () => {
         }
     });
     subWebsocketState(() => {
-        state.Connected = false;
+        state.UdpConnected = false;
         state.TcpConnected = false;
     })
 }

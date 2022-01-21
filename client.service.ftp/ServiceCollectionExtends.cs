@@ -16,45 +16,45 @@ namespace client.service.ftp
 {
     public static class ServiceCollectionExtends
     {
-        public static ServiceCollection AddFtpPlugin(this ServiceCollection obj)
+        public static ServiceCollection AddFtpPlugin(this ServiceCollection services)
         {
             Config config = Config.ReadConfig().Result;
-            obj.AddSingleton((e) => config);
+            services.AddSingleton((e) => config);
 
-            obj.AddFtpPlugin(AppDomain.CurrentDomain.GetAssemblies());
-            obj.AddSingleton<FtpServer>();
-            obj.AddSingleton<FtpClient>();
-            return obj;
+            services.AddFtpPlugin(AppDomain.CurrentDomain.GetAssemblies());
+            services.AddSingleton<FtpServer>();
+            services.AddSingleton<FtpClient>();
+            return services;
         }
-        public static ServiceCollection AddFtpPlugin(this ServiceCollection obj, Assembly[] assemblys)
+        public static ServiceCollection AddFtpPlugin(this ServiceCollection services, Assembly[] assemblys)
         {
             foreach (var item in ReflectionHelper.GetInterfaceSchieves(assemblys, typeof(IFtpServerPlugin)))
             {
-                obj.AddSingleton(item);
+                services.AddSingleton(item);
             }
             foreach (var item in ReflectionHelper.GetInterfaceSchieves(assemblys, typeof(IFtpClientPlugin)))
             {
-                obj.AddSingleton(item);
+                services.AddSingleton(item);
             }
 
-            return obj;
+            return services;
         }
 
-        public static ServiceProvider UseFtpPlugin(this ServiceProvider obj)
+        public static ServiceProvider UseFtpPlugin(this ServiceProvider services)
         {
-            obj.UseFtpPlugin(AppDomain.CurrentDomain.GetAssemblies());
+            services.UseFtpPlugin(AppDomain.CurrentDomain.GetAssemblies());
 
             Logger.Instance.Info("文件服务插件已加载");
 
-            return obj;
+            return services;
         }
 
-        public static ServiceProvider UseFtpPlugin(this ServiceProvider obj, Assembly[] assemblys)
+        public static ServiceProvider UseFtpPlugin(this ServiceProvider services, Assembly[] assemblys)
         {
-            obj.GetService<FtpServer>().LoadPlugins(assemblys);
-            obj.GetService<FtpClient>().LoadPlugins(assemblys);
+            services.GetService<FtpServer>().LoadPlugins(assemblys);
+            services.GetService<FtpClient>().LoadPlugins(assemblys);
 
-            return obj;
+            return services;
         }
     }
 

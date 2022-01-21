@@ -101,16 +101,16 @@ namespace server.service.plugins
 
     public static class ServiceCollectionExtends
     {
-        public static ServiceCollection AddTcpForwardPlugin(this ServiceCollection obj)
+        public static ServiceCollection AddTcpForwardPlugin(this ServiceCollection services)
         {
-            obj.AddSingleton<TcpForwardServer>();
+            services.AddSingleton<TcpForwardServer>();
 
-            return obj;
+            return services;
         }
-        public static ServiceProvider UseTcpForwardPlugin(this ServiceProvider obj)
+        public static ServiceProvider UseTcpForwardPlugin(this ServiceProvider services)
         {
             Logger.Instance.Info("TCP转发服务已开启");
-            return obj;
+            return services;
         }
     }
 

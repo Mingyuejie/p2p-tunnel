@@ -250,33 +250,33 @@ namespace client.service.servers.clientServer
 
     public static class ServiceCollectionExtends
     {
-        public static ServiceCollection AddClientServer(this ServiceCollection obj, Assembly[] assemblys)
+        public static ServiceCollection AddClientServer(this ServiceCollection services, Assembly[] assemblys)
         {
-            obj.AddSingleton<IClientServer, ClientServer>();
+            services.AddSingleton<IClientServer, ClientServer>();
 
             IEnumerable<Type> types = assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies()).SelectMany(c => c.GetTypes());
 
             foreach (var item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientServicePlugin))))
             {
-                obj.AddSingleton(item);
+                services.AddSingleton(item);
             }
             foreach (var item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientServerPushMsgPlugin))))
             {
-                obj.AddSingleton(item);
+                services.AddSingleton(item);
             }
             foreach (var item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientServiceSettingPlugin))))
             {
-                obj.AddSingleton(item);
+                services.AddSingleton(item);
             }
 
-            return obj;
+            return services;
         }
 
-        public static ServiceProvider UseClientServer(this ServiceProvider obj, Assembly[] assemblys)
+        public static ServiceProvider UseClientServer(this ServiceProvider services, Assembly[] assemblys)
         {
-            obj.GetService<IClientServer>().Start();
-            obj.GetService<IClientServer>().LoadPlugins(assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies()).ToArray());
-            return obj;
+            services.GetService<IClientServer>().Start();
+            services.GetService<IClientServer>().LoadPlugins(assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies()).ToArray());
+            return services;
         }
     }
 }

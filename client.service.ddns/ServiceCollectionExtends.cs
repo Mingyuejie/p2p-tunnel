@@ -16,30 +16,30 @@ namespace client.service.ddns
 {
     public static class ServiceCollectionExtends
     {
-        public static ServiceCollection AddDdnsPlugin(this ServiceCollection obj)
+        public static ServiceCollection AddDdnsPlugin(this ServiceCollection services)
         {
             Config config = Config.ReadConfig().Result;
-            obj.AddSingleton((e) => config);
+            services.AddSingleton((e) => config);
 
-            obj.AddDdnsPlugin(AppDomain.CurrentDomain.GetAssemblies());
+            services.AddDdnsPlugin(AppDomain.CurrentDomain.GetAssemblies());
 
-            return obj;
+            return services;
         }
 
-        public static ServiceCollection AddDdnsPlugin(this ServiceCollection obj, Assembly[] assemblys)
+        public static ServiceCollection AddDdnsPlugin(this ServiceCollection services, Assembly[] assemblys)
         {
             foreach (Type item in ReflectionHelper.GetInterfaceSchieves(assemblys, typeof(IDdnsPlatform)))
             {
-                obj.AddSingleton(item);
+                services.AddSingleton(item);
             }
 
-            return obj;
+            return services;
         }
 
-        public static ServiceProvider UseDdnsPlugin(this ServiceProvider obj)
+        public static ServiceProvider UseDdnsPlugin(this ServiceProvider services)
         {
             Logger.Instance.Info("ddns域名解析插件已加载");
-            return obj;
+            return services;
         }
     }
 

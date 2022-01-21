@@ -57,18 +57,18 @@ namespace client.service.logger
 
     public static class ServiceCollectionExtends
     {
-        public static ServiceCollection AddLoggerPlugin(this ServiceCollection obj)
+        public static ServiceCollection AddLoggerPlugin(this ServiceCollection services)
         {
             Config config = Config.ReadConfig().Result;
-            obj.AddSingleton((e) => config);
+            services.AddSingleton((e) => config);
 
-            return obj;
+            return services;
         }
 
-        public static ServiceProvider UseLoggerPlugin(this ServiceProvider obj)
+        public static ServiceProvider UseLoggerPlugin(this ServiceProvider services)
         {
-            LoggerPlugin plugin = obj.GetService<LoggerPlugin>();
-            Config config = obj.GetService<Config>();
+            LoggerPlugin plugin = services.GetService<LoggerPlugin>();
+            Config config = services.GetService<Config>();
             Logger.Instance.OnLogger.Sub((model) =>
             {
                 if (config.Enable)
@@ -82,7 +82,7 @@ namespace client.service.logger
             });
 
             Logger.Instance.Info("日志收集插件已加载");
-            return obj;
+            return services;
         }
     }
 

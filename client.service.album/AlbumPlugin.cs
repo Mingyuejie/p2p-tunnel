@@ -136,18 +136,18 @@ namespace client.service.album
 
     public static class ServiceCollectionExtends
     {
-        public static ServiceCollection AddAlbumPlugin(this ServiceCollection obj)
+        public static ServiceCollection AddAlbumPlugin(this ServiceCollection services)
         {
             var config = AlbumSettingModel.ReadConfig();
-            obj.AddSingleton((e) => config);
+            services.AddSingleton((e) => config);
 
-            return obj;
+            return services;
         }
 
-        public static ServiceProvider UseAlbumPlugin(this ServiceProvider obj)
+        public static ServiceProvider UseAlbumPlugin(this ServiceProvider services)
         {
-            TcpForwardHelper tcpForwardHelper = obj.GetService<TcpForwardHelper>();
-            AlbumSettingModel config = obj.GetService<AlbumSettingModel>();
+            TcpForwardHelper tcpForwardHelper = services.GetService<TcpForwardHelper>();
+            AlbumSettingModel config = services.GetService<AlbumSettingModel>();
 
 
             tcpForwardHelper.DelByGroup("album");
@@ -186,7 +186,7 @@ namespace client.service.album
                 Program.Run();
                 Logger.Instance.Info($"图片相册服务已启动...");
             }
-            return obj;
+            return services;
         }
     }
 }

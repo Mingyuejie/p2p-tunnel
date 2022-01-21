@@ -31,20 +31,20 @@ namespace client.service.serverTcpforward
 
     public static class ServiceCollectionExtends
     {
-        public static ServiceCollection AddServerTcpForwardPlugin(this ServiceCollection obj)
+        public static ServiceCollection AddServerTcpForwardPlugin(this ServiceCollection services)
         {
             ServerTcpForwardRegisterConfig config = ServerTcpForwardRegisterConfig.ReadConfig().Result;
-            obj.AddSingleton((e) => config);
-            obj.AddSingleton<ServerTcpForwardHelper>();
+            services.AddSingleton((e) => config);
+            services.AddSingleton<ServerTcpForwardHelper>();
 
-            return obj;
+            return services;
         }
-        public static ServiceProvider UseServerTcpForwardPlugin(this ServiceProvider obj)
+        public static ServiceProvider UseServerTcpForwardPlugin(this ServiceProvider services)
         {
 
-            var registerState = obj.GetService<RegisterState>();
-            var serverTcpForwardHelper = obj.GetService<ServerTcpForwardHelper>();
-            var config = obj.GetService<ServerTcpForwardRegisterConfig>();
+            var registerState = services.GetService<RegisterState>();
+            var serverTcpForwardHelper = services.GetService<ServerTcpForwardHelper>();
+            var config = services.GetService<ServerTcpForwardRegisterConfig>();
             registerState.LocalInfo.TcpConnectedSub.Sub((connected) =>
             {
                 if (connected && config.AutoReg)
@@ -59,7 +59,7 @@ namespace client.service.serverTcpforward
             });
 
             Logger.Instance.Info("服务器TCP转发插件已加载");
-            return obj;
+            return services;
         }
     }
 

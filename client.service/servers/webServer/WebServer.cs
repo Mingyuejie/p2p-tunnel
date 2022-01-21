@@ -92,15 +92,15 @@ namespace client.service.servers.webServer
 
     public static class ServiceCollectionExtends
     {
-        public static ServiceCollection AddWebServer(this ServiceCollection obj)
+        public static ServiceCollection AddWebServer(this ServiceCollection services)
         {
-            obj.AddSingleton<IWebServer, WebServer>();
-            return obj;
+            services.AddSingleton<IWebServer, WebServer>();
+            return services;
         }
-        public static ServiceProvider UseWebServer(this ServiceProvider obj)
+        public static ServiceProvider UseWebServer(this ServiceProvider services)
         {
-            obj.GetService<IWebServer>().Start();
-            return obj;
+            services.GetService<IWebServer>().Start();
+            return services;
         }
     }
 }

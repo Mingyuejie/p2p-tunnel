@@ -15,67 +15,67 @@ namespace server.service
 {
     static class Service
     {
-        public static ServiceCollection AddTcpServer(this ServiceCollection obj)
+        public static ServiceCollection AddTcpServer(this ServiceCollection services)
         {
-            obj.AddSingleton<ITcpServer, TCPServer>();
-            return obj;
+            services.AddSingleton<ITcpServer, TCPServer>();
+            return services;
         }
-        public static ServiceCollection AddUdpServer(this ServiceCollection obj)
+        public static ServiceCollection AddUdpServer(this ServiceCollection services)
         {
-            obj.AddSingleton<IUdpServer, UDPServer>();
-            return obj;
+            services.AddSingleton<IUdpServer, UDPServer>();
+            return services;
         }
 
-        public static ServiceProvider UseTcpServer(this ServiceProvider obj)
+        public static ServiceProvider UseTcpServer(this ServiceProvider services)
         {
-            var config = obj.GetService<Config>();
-            var server = obj.GetService<ITcpServer>();
+            var config = services.GetService<Config>();
+            var server = services.GetService<ITcpServer>();
             server.SetBufferSize(config.TcpBufferSize);
             server.Start(config.Tcp, ip: IPAddress.Any);
 
             Logger.Instance.Info("TCP服务已开启");
 
-            return obj;
+            return services;
         }
-        public static ServiceProvider UseUdpServer(this ServiceProvider obj)
+        public static ServiceProvider UseUdpServer(this ServiceProvider services)
         {
-            obj.GetService<IUdpServer>().Start(obj.GetService<Config>().Udp);
+            services.GetService<IUdpServer>().Start(services.GetService<Config>().Udp);
 
             Logger.Instance.Info("UDP服务已开启");
 
-            return obj;
+            return services;
         }
 
-        public static ServiceCollection AddPlugin(this ServiceCollection obj)
+        public static ServiceCollection AddPlugin(this ServiceCollection services)
         {
-            obj.AddSingleton<IClientRegisterCaching, ClientRegisterCaching>();
-            obj.AddSingleton<ServerPluginHelper>();
+            services.AddSingleton<IClientRegisterCaching, ClientRegisterCaching>();
+            services.AddSingleton<ServerPluginHelper>();
 
             foreach (Type item in ReflectionHelper.GetInterfaceSchieves(AppDomain.CurrentDomain.GetAssemblies(), typeof(IPlugin)))
             {
-                obj.AddSingleton(item);
+                services.AddSingleton(item);
             }
 
-            return obj;
+            return services;
         }
 
-        public static ServiceProvider UsePlugin(this ServiceProvider obj)
+        public static ServiceProvider UsePlugin(this ServiceProvider services)
         {
-            ServerPluginHelper serverPluginHelper = obj.GetService<ServerPluginHelper>();
+            ServerPluginHelper serverPluginHelper = services.GetService<ServerPluginHelper>();
             foreach (Type item in ReflectionHelper.GetInterfaceSchieves(AppDomain.CurrentDomain.GetAssemblies(), typeof(IPlugin)))
             {
-                serverPluginHelper.LoadPlugin(item, obj.GetService(item));
+                serverPluginHelper.LoadPlugin(item, services.GetService(item));
             }
 
-            Loop(obj);
+            Loop(services);
 
-            return obj;
+            return services;
         }
 
-        private static void Loop(ServiceProvider obj)
+        private static void Loop(ServiceProvider services)
         {
-            IClientRegisterCaching clientRegisterCache = obj.GetService<IClientRegisterCaching>();
-            ServerPluginHelper serverPluginHelper = obj.GetService<ServerPluginHelper>();
+            IClientRegisterCaching clientRegisterCache = services.GetService<IClientRegisterCaching>();
+            ServerPluginHelper serverPluginHelper = services.GetService<ServerPluginHelper>();
 
             clientRegisterCache.OnChanged.SubAsync(async (string group) =>
             {

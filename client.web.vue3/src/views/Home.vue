@@ -1,8 +1,8 @@
 <!--
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
- * @LastEditors: xr
- * @LastEditTime: 2022-01-08 17:22:22
+ * @LastEditors: snltty
+ * @LastEditTime: 2022-01-21 10:07:14
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\Home.vue
@@ -22,7 +22,7 @@
             <el-table-column prop="Mac" label="Mac"></el-table-column>
             <el-table-column prop="UDP" label="UDP" width="80">
                 <template #default="scope">
-                    <el-switch disabled @click.stop v-model="scope.row.Connected"></el-switch>
+                    <el-switch disabled @click.stop v-model="scope.row.UdpConnected"></el-switch>
                 </template>
             </el-table-column>
             <el-table-column prop="TCP" label="TCP" width="80">
@@ -33,9 +33,9 @@
             <el-table-column prop="todo" label="操作" width="280" fixed="right" class="t-c">
                 <template #default="scope">
                     <div class="t-c">
-                        <el-button :disabled="scope.row.Connected && scope.row.TcpConnected" :loading="scope.row.Connecting || scope.row.TcpConnecting" size="mini" @click="handleConnect(scope.row)">连它</el-button>
-                        <el-button :disabled="scope.row.Connected && scope.row.TcpConnected" :loading="scope.row.Connecting || scope.row.TcpConnecting" size="mini" @click="handleConnectReverse(scope.row)">连我</el-button>
-                        <el-button :loading="scope.row.Connecting || scope.row.TcpConnecting" size="mini" @click="handleReset(scope.row)">重启它</el-button>
+                        <el-button :disabled="scope.row.UdpConnected && scope.row.TcpConnected" :loading="scope.row.UdpConnecting || scope.row.TcpConnecting" size="mini" @click="handleConnect(scope.row)">连它</el-button>
+                        <el-button :disabled="scope.row.UdpConnected && scope.row.TcpConnected" :loading="scope.row.UdpConnecting || scope.row.TcpConnecting" size="mini" @click="handleConnectReverse(scope.row)">连我</el-button>
+                        <el-button :loading="scope.row.UdpConnecting || scope.row.TcpConnecting" size="mini" @click="handleReset(scope.row)">重启它</el-button>
                     </div>
                 </template>
             </el-table-column>

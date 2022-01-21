@@ -52,7 +52,7 @@ namespace client.service.plugins.serverPlugins.clients
             {
                 if(connection.ServerType == ServerType.UDP)
                 {
-                    client.Connecting = val;
+                    client.UdpConnecting = val;
                 }
                 else
                 {

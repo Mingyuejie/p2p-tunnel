@@ -177,15 +177,15 @@ namespace client.service.upnp
 
     public static class ServiceCollectionExtends
     {
-        public static ServiceCollection AddUpnpPlugin(this ServiceCollection obj)
+        public static ServiceCollection AddUpnpPlugin(this ServiceCollection services)
         {
-            obj.AddSingleton<UpnpHelper>();
-            return obj;
+            services.AddSingleton<UpnpHelper>();
+            return services;
         }
-        public static ServiceProvider UseUpnpPlugin(this ServiceProvider obj)
+        public static ServiceProvider UseUpnpPlugin(this ServiceProvider services)
         {
-            obj.GetService<UpnpHelper>().Start();
-            return obj;
+            services.GetService<UpnpHelper>().Start();
+            return services;
         }
     }
 }

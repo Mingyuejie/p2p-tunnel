@@ -82,28 +82,28 @@ namespace client.service.plugins.punchHolePlugins
 
     public static class ServiceCollectionExtends
     {
-        public static ServiceCollection AddPunchHolePlugin(this ServiceCollection obj)
+        public static ServiceCollection AddPunchHolePlugin(this ServiceCollection services)
         {
-            obj.AddPunchHolePlugin(AppDomain.CurrentDomain.GetAssemblies());
+            services.AddPunchHolePlugin(AppDomain.CurrentDomain.GetAssemblies());
 
-            obj.AddSingleton<PunchHoleEventHandles>();
-            obj.AddSingleton<IPunchHoleUdp, PunchHoleUdpEventHandles>();
-            obj.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssBEventHandles>();
-            return obj;
+            services.AddSingleton<PunchHoleEventHandles>();
+            services.AddSingleton<IPunchHoleUdp, PunchHoleUdpEventHandles>();
+            services.AddSingleton<IPunchHoleTcp, PunchHoleTcpNutssBEventHandles>();
+            return services;
         }
-        public static ServiceCollection AddPunchHolePlugin(this ServiceCollection obj, Assembly[] assemblys)
+        public static ServiceCollection AddPunchHolePlugin(this ServiceCollection services, Assembly[] assemblys)
         {
             foreach (Type item in ReflectionHelper.GetInterfaceSchieves(assemblys, typeof(IPunchHolePlugin)))
             {
-                obj.AddSingleton(item);
+                services.AddSingleton(item);
             }
-            return obj;
+            return services;
         }
 
-        public static ServiceProvider UsePunchHolePlugin(this ServiceProvider obj)
+        public static ServiceProvider UsePunchHolePlugin(this ServiceProvider services)
         {
-            obj.GetService<PunchHoleEventHandles>().LoadPlugins();
-            return obj;
+            services.GetService<PunchHoleEventHandles>().LoadPlugins();
+            return services;
         }
     }
 }

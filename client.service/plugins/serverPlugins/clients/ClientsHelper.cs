@@ -84,9 +84,9 @@ namespace client.service.plugins.serverPlugins.clients
         }
         private async Task ConnectUdp(ClientInfo info)
         {
-            if (info.Connecting == false && info.Connected == false)
+            if (info.UdpConnecting == false && info.UdpConnected == false)
             {
-                info.Connecting = true;
+                info.UdpConnecting = true;
                 var result = await punchHoleUdp.Send(new ConnectParams
                 {
                     Id = info.Id,
@@ -135,7 +135,7 @@ namespace client.service.plugins.serverPlugins.clients
                 foreach (ClientInfo client in clientInfoCaching.All())
                 {
                     clientInfoCaching.Remove(client.Id);
-                    if (client.Connecting)
+                    if (client.UdpConnecting)
                     {
                         punchHoleTcp.SendStep2Stop(client.Id);
                     }
@@ -169,9 +169,9 @@ namespace client.service.plugins.serverPlugins.clients
                 {
                     ClientInfo client = new ClientInfo
                     {
-                        Connected = false,
+                        UdpConnected = false,
                         TcpConnected = false,
-                        Connecting = false,
+                        UdpConnecting = false,
                         UdpConnection = null,
                         TcpConnection = null,
                         Id = item.Id,
@@ -210,7 +210,7 @@ namespace client.service.plugins.serverPlugins.clients
                             {
                                 clientInfoCaching.Offline(client.Id);
                             }
-                            else if (client.Connected && client.UdpConnection.IsNeedHeart(time))
+                            else if (client.UdpConnected && client.UdpConnection.IsNeedHeart(time))
                             {
                                 await heartMessageHelper.SendHeartMessage(client.UdpConnection);
                             }

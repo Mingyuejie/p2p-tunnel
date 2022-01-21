@@ -1,8 +1,8 @@
 <!--
  * @Author: snltty
  * @Date: 2021-08-19 22:30:19
- * @LastEditors: xr
- * @LastEditTime: 2022-01-09 17:19:47
+ * @LastEditors: snltty
+ * @LastEditTime: 2022-01-21 10:06:43
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\Register.vue
@@ -98,8 +98,8 @@
             <el-form-item label="注册状态">
                 <el-row>
                     <el-col :span="8">
-                        <el-form-item label="UDP" prop="Connected">
-                            <el-switch disabled v-model="registerState.LocalInfo.Connected" />
+                        <el-form-item label="UDP" prop="UdpConnected">
+                            <el-switch disabled v-model="registerState.LocalInfo.UdpConnected" />
                         </el-form-item>
                     </el-col>
                     <el-col :span="8">

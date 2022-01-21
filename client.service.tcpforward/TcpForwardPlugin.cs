@@ -29,23 +29,23 @@ namespace client.service.tcpforward
 
     public static class ServiceCollectionExtends
     {
-        public static ServiceCollection AddTcpForwardPlugin(this ServiceCollection obj)
+        public static ServiceCollection AddTcpForwardPlugin(this ServiceCollection services)
         {
             TcpForwardSettingModel config = TcpForwardSettingModel.ReadConfig().Result;
-            obj.AddSingleton((e) => config);
+            services.AddSingleton((e) => config);
 
-            obj.AddSingleton<ITcpForwardServer, TcpForwardServer>();
-            obj.AddSingleton<TcpForwardHelper>();
-            obj.AddSingleton<TcpForwardEventHandles>();
-            obj.AddSingleton<ConnectPool>();
+            services.AddSingleton<ITcpForwardServer, TcpForwardServer>();
+            services.AddSingleton<TcpForwardHelper>();
+            services.AddSingleton<TcpForwardEventHandles>();
+            services.AddSingleton<ConnectPool>();
 
-            return obj;
+            return services;
         }
-        public static ServiceProvider UseTcpForwardPlugin(this ServiceProvider obj)
+        public static ServiceProvider UseTcpForwardPlugin(this ServiceProvider services)
         {
-            obj.GetService<TcpForwardHelper>().Start();
+            services.GetService<TcpForwardHelper>().Start();
 
-            return obj;
+            return services;
         }
     }
 }

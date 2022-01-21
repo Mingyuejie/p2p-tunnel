@@ -19,45 +19,45 @@ namespace client.service.plugins.serverPlugins
 {
     public static class ServerPlugin
     {
-        public static ServiceCollection AddServerPlugin(this ServiceCollection obj, Assembly[] assemblys)
+        public static ServiceCollection AddServerPlugin(this ServiceCollection services, Assembly[] assemblys)
         {
-            obj.AddSingleton<ITcpServer, TCPServer>();
-            obj.AddSingleton<IUdpServer, UDPServer>();
+            services.AddSingleton<ITcpServer, TCPServer>();
+            services.AddSingleton<IUdpServer, UDPServer>();
 
-            obj.AddSingleton<IClientInfoCaching, ClientInfoCache>();
+            services.AddSingleton<IClientInfoCaching, ClientInfoCache>();
 
-            obj.AddSingleton<IServerRequest, ServerRequestHelper>();
+            services.AddSingleton<IServerRequest, ServerRequestHelper>();
 
-            obj.AddSingleton<ResetMessageHelper>();
-            obj.AddSingleton<HeartMessageHelper>();
-            obj.AddSingleton<ClientsHelper>();
-            obj.AddSingleton<ClientsMessageHelper>();
-            obj.AddSingleton<RegisterMessageHelper>();
-            obj.AddSingleton<RegisterHelper>();
-            obj.AddSingleton<RegisterState>();
-            obj.AddSingleton<ITunnelRegister, TunnelRegister>();
+            services.AddSingleton<ResetMessageHelper>();
+            services.AddSingleton<HeartMessageHelper>();
+            services.AddSingleton<ClientsHelper>();
+            services.AddSingleton<ClientsMessageHelper>();
+            services.AddSingleton<RegisterMessageHelper>();
+            services.AddSingleton<RegisterHelper>();
+            services.AddSingleton<RegisterState>();
+            services.AddSingleton<ITunnelRegister, TunnelRegister>();
             
 
-            obj.AddSingleton<ServerPluginHelper>();
+            services.AddSingleton<ServerPluginHelper>();
 
             foreach (var item in ReflectionHelper.GetInterfaceSchieves(assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies()).ToArray(), typeof(IPlugin)))
             {
-                obj.AddSingleton(item);
+                services.AddSingleton(item);
             }
-            return obj;
+            return services;
         }
 
-        public static ServiceProvider UseServerPlugin(this ServiceProvider obj, Assembly[] assemblys)
+        public static ServiceProvider UseServerPlugin(this ServiceProvider services, Assembly[] assemblys)
         {
-            obj.GetService<ClientsHelper>();
+            services.GetService<ClientsHelper>();
 
-            ServerPluginHelper serverPluginHelper = obj.GetService<ServerPluginHelper>();
+            ServerPluginHelper serverPluginHelper = services.GetService<ServerPluginHelper>();
 
             foreach (Type item in ReflectionHelper.GetInterfaceSchieves(assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies()).ToArray(), typeof(IPlugin)))
             {
-                serverPluginHelper.LoadPlugin(item, obj.GetService(item));
+                serverPluginHelper.LoadPlugin(item, services.GetService(item));
             }
-            return obj;
+            return services;
         }
     }
 }
