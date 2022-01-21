@@ -223,7 +223,14 @@ namespace client.service.ftp
                 if (fs.Stream == null)
                 {
                     fs.CacheFileName.TryDeleteFile();
-                    FileStream fss = new FileStream(fs.CacheFileName, FileMode.Create & FileMode.Append, FileAccess.Write, FileShare.Read, config.ReadWriteBufferSize);
+                    FileStream fss = new FileStream(fs.CacheFileName, new FileStreamOptions
+                    {
+                        Mode = FileMode.Create,
+                        Access = FileAccess.Write,
+                        Share = FileShare.Read,
+                        BufferSize = config.ReadWriteBufferSize,
+                        PreallocationSize = cmd.Size
+                    });
                     fs.Stream = fss;
                     fs.Stream.Seek(cmd.Size - 1, SeekOrigin.Begin);
                     fs.Stream.WriteByte(new byte());

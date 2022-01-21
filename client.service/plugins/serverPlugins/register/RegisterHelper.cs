@@ -80,13 +80,13 @@ namespace client.service.plugins.serverPlugins.register
             {
                 IPAddress serverAddress = NetworkHelper.GetDomainIp(config.Server.Ip);
                 registerState.LocalInfo.IsConnecting = true;
-                registerState.LocalInfo.Port = NetworkHelper.GetRandomPort();
-                registerState.LocalInfo.TcpPort = NetworkHelper.GetRandomPort(new List<int> { registerState.LocalInfo.Port });
+                registerState.LocalInfo.UdpPort = NetworkHelper.GetRandomPort();
+                registerState.LocalInfo.TcpPort = NetworkHelper.GetRandomPort(new List<int> { registerState.LocalInfo.UdpPort });
                 registerState.LocalInfo.Mac = string.Empty;
 
                 //UDP 开始监听
-                udpServer.Start(registerState.LocalInfo.Port, config.Client.BindIp);
-                registerState.UdpConnection = udpServer.CreateConnection(new IPEndPoint(serverAddress, config.Server.Port));
+                udpServer.Start(registerState.LocalInfo.UdpPort, config.Client.BindIp);
+                registerState.UdpConnection = udpServer.CreateConnection(new IPEndPoint(serverAddress, config.Server.UdpPort));
 
                 //TCP 本地开始监听
                 tcpServer.SetBufferSize(config.Client.TcpBufferSize);
@@ -114,7 +114,7 @@ namespace client.service.plugins.serverPlugins.register
                 {
                     ClientName = config.Client.Name,
                     GroupId = config.Client.GroupId,
-                    LocalUdpPort = registerState.LocalInfo.Port,
+                    LocalUdpPort = registerState.LocalInfo.UdpPort,
                     LocalTcpPort = registerState.LocalInfo.TcpPort,
                     Mac = registerState.LocalInfo.Mac,
                     LocalIps = string.Join(Helper.SeparatorString, new List<string> { config.Client.LoopbackIp.ToString(), registerState.LocalInfo.LocalIp }),

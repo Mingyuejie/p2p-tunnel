@@ -42,7 +42,7 @@ namespace client.service.album
 
         public static IHostBuilder CreateHostBuilder(string[] args)
         {
-            var config = AlbumSettingModel.ReadConfig();
+            var config = AlbumSettingModel.ReadConfig().Result;
 
             return Host.CreateDefaultBuilder(args).ConfigureLogging((context, loggingBuilder) =>
             {

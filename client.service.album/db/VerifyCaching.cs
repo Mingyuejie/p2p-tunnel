@@ -24,7 +24,7 @@ namespace client.service.album.db
             string token = string.Empty;
             if (password == albumSettingModel.AdminPssd)
             {
-                token = $"{Guid.NewGuid()}_{Helper.GetTimeStamp()}".Md5();
+                token = $"{Guid.NewGuid()}_{DateTimeHelper.GetTimeStamp()}".Md5();
 
                 memoryCache.Set(token, 1, new MemoryCacheEntryOptions
                 {

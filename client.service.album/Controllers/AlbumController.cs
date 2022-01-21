@@ -71,7 +71,7 @@ namespace client.service.album.Controllers
 
             AlbumInfo model = new AlbumInfo
             {
-                AddTime = Helper.GetTimeStampSec(),
+                AddTime = DateTimeHelper.GetTimeStampSec(),
                 CID = cid,
                 Name = Path.GetFileNameWithoutExtension(fileData.FileName),
                 Path = saveName.Replace(webHostEnvironment.WebRootPath, "").Replace('\\', '/'),

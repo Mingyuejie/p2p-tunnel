@@ -21,7 +21,7 @@ namespace common.extends
 
         public static string Md5(this string input)
         {
-            MD5CryptoServiceProvider md5Hasher = new();
+            MD5 md5Hasher =  MD5.Create();
             byte[] data = md5Hasher.ComputeHash(Encoding.Default.GetBytes(input));
             StringBuilder sBuilder = new();
             for (int i = 0; i < data.Length; i++)

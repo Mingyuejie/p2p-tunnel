@@ -51,7 +51,7 @@ namespace client.service.album.Controllers
                 return new ErrorResult("身份未验证");
             }
             param.FormatObjectAttr();
-            CategoryInfo model = new CategoryInfo { Name = param.Name, Cover = param.Cover, AddTime = Helper.GetTimeStampSec() };
+            CategoryInfo model = new CategoryInfo { Name = param.Name, Cover = param.Cover, AddTime = DateTimeHelper.GetTimeStampSec() };
             return new ObjectResult(await dbHelper.Add(model));
         }
 

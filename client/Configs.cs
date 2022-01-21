@@ -160,7 +160,7 @@ namespace client
         [ProtoMember(1), Key(1)]
         public string Ip { get; set; } = string.Empty;
         [ProtoMember(2), Key(2)]
-        public int Port { get; set; } = 8099;
+        public int UdpPort { get; set; } = 8099;
         [ProtoMember(3), Key(3)]
         public int TcpPort { get; set; } = 8000;
     }

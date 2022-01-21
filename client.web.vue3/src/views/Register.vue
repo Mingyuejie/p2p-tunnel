@@ -1,8 +1,8 @@
 <!--
  * @Author: snltty
  * @Date: 2021-08-19 22:30:19
- * @LastEditors: snltty
- * @LastEditTime: 2022-01-21 10:06:43
+ * @LastEditors: xr
+ * @LastEditTime: 2022-01-21 16:38:48
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\Register.vue
@@ -32,8 +32,8 @@
                         </el-form-item>
                     </el-col>
                     <el-col :span="8">
-                        <el-form-item label="UDP端口" prop="ServerPort">
-                            <el-input v-model="model.ServerPort"></el-input>
+                        <el-form-item label="UDP端口" prop="ServerUdpPort">
+                            <el-input v-model="model.ServerUdpPort"></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="8">
@@ -51,8 +51,8 @@
                         </el-form-item>
                     </el-col>
                     <el-col :span="8">
-                        <el-form-item label="UDP端口" prop="Port">
-                            <el-input readonly v-model="registerState.LocalInfo.Port"></el-input>
+                        <el-form-item label="UDP端口" prop="UdpPort">
+                            <el-input readonly v-model="registerState.LocalInfo.UdpPort"></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="8">
@@ -182,7 +182,7 @@ export default {
             state.model.UseMac = registerState.ClientConfig.UseMac = json.ClientConfig.UseMac;
 
             state.model.ServerIp = registerState.ServerConfig.Ip = json.ServerConfig.Ip;
-            state.model.ServerPort = registerState.ServerConfig.Port = json.ServerConfig.Port;
+            state.model.ServerUdpPort = registerState.ServerConfig.UdpPort = json.ServerConfig.UdpPort;
             state.model.ServerTcpPort = registerState.ServerConfig.TcpPort = json.ServerConfig.TcpPort;
         }).catch((msg) => {
             // ElMessage.error(msg);
@@ -205,7 +205,7 @@ export default {
                     },
                     ServerConfig: {
                         Ip: state.model.ServerIp,
-                        Port: +state.model.ServerPort,
+                        UdpPort: +state.model.ServerUdpPort,
                         TcpPort: +state.model.ServerTcpPort,
                     }
                 };

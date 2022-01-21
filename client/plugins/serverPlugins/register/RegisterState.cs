@@ -1,15 +1,7 @@
 ﻿using common;
-using common.extends;
 using MessagePack;
 using ProtoBuf;
 using server;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace client.plugins.serverPlugins.register
 {
@@ -73,7 +65,7 @@ namespace client.plugins.serverPlugins.register
         public void Offline()
         {
             LocalInfo.IsConnecting = false;
-            LocalInfo.Connected = false;
+            LocalInfo.UdpConnected = false;
             LocalInfo.TcpConnected = false;
 
             RemoteInfo.Ip = string.Empty;
@@ -87,7 +79,7 @@ namespace client.plugins.serverPlugins.register
         public void Online(ulong id, string ip, int tcpPort)
         {
             LocalInfo.IsConnecting = false;
-            LocalInfo.Connected = true;
+            LocalInfo.UdpConnected = true;
             LocalInfo.TcpConnected = true;
 
             RemoteInfo.Ip = ip;
@@ -142,7 +134,7 @@ namespace client.plugins.serverPlugins.register
         /// 本地UDP端口
         /// </summary>
         [ProtoMember(3), Key(3)]
-        public int Port { get; set; } = 0;
+        public int UdpPort { get; set; } = 0;
         /// <summary>
         /// 本地TCP端口
         /// </summary>
@@ -161,7 +153,7 @@ namespace client.plugins.serverPlugins.register
         /// UDP是否已连接服务器
         /// </summary>
         [ProtoMember(7), Key(7)]
-        public bool Connected { get; set; } = false;
+        public bool UdpConnected { get; set; } = false;
 
 
         public SimpleSubPushHandler<bool> TcpConnectedSub { get; } = new SimpleSubPushHandler<bool>();

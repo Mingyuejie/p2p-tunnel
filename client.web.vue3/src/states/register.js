@@ -1,8 +1,8 @@
 /*
  * @Author: snltty
  * @Date: 2021-08-19 22:39:45
- * @LastEditors: snltty
- * @LastEditTime: 2022-01-21 10:08:32
+ * @LastEditors: xr
+ * @LastEditTime: 2022-01-21 16:31:45
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\states\register.js
@@ -23,7 +23,7 @@ export const provideRegister = () => {
         },
         ServerConfig: {
             Ip: '',
-            Port: 0,
+            UdpPort: 0,
             TcpPort: 0,
         },
         LocalInfo: {
@@ -47,7 +47,7 @@ export const provideRegister = () => {
     subNotifyMsg('register/info', (json) => {
         state.LocalInfo.UdpConnected = json.LocalInfo.UdpConnected;
         state.LocalInfo.TcpConnected = json.LocalInfo.TcpConnected;
-        state.LocalInfo.Port = json.LocalInfo.Port;
+        state.LocalInfo.UdpPort = json.LocalInfo.UdpPort;
         state.LocalInfo.TcpPort = json.LocalInfo.TcpPort;
         state.LocalInfo.Mac = json.LocalInfo.Mac;
         state.LocalInfo.LocalIp = json.LocalInfo.LocalIp;
