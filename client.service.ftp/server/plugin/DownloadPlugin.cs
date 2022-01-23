@@ -1,15 +1,12 @@
-﻿using client.service.ftp.plugin;
-using client.service.ftp.protocol;
+﻿using client.service.ftp.commands;
 using common;
-using common.extends;
-using server.model;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace client.service.ftp.server.plugin
 {
-    public class DownloadPlugin : IFtpServerPlugin
+    public class DownloadPlugin : IFtpCommandServerPlugin
     {
         public FtpCommand Cmd => FtpCommand.DOWNLOAD;
 
@@ -19,7 +16,7 @@ namespace client.service.ftp.server.plugin
             this.ftpServer = ftpServer;
         }
 
-        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
+        public async Task<FtpResultInfo> Execute(FtpPluginParamWrap arg)
         {
             await Task.Yield();
 
@@ -29,9 +26,9 @@ namespace client.service.ftp.server.plugin
             IEnumerable<string> error = ftpServer.Upload(cmd, arg);
             if (error.Any())
             {
-                return new FtpResultModel { Code = FtpResultModel.FtpResultCodes.UNKNOW, Data = $"{string.Join(Helper.SeparatorChar, error)}" };
+                return new FtpResultInfo { Code = FtpResultInfo.FtpResultCodes.UNKNOW, Data = $"{string.Join(Helper.SeparatorChar, error)}" };
             }
-            return new FtpResultModel();
+            return new FtpResultInfo();
         }
     }
 }

@@ -1,18 +1,9 @@
-﻿using client.service.ftp.extends;
-using client.service.ftp.plugin;
-using client.service.ftp.protocol;
-using common.extends;
-using ProtoBuf;
-using server.model;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using client.service.ftp.commands;
 using System.Threading.Tasks;
 
 namespace client.service.ftp.client.plugin
 {
-    public class CanceledPlugin : IFtpClientPlugin
+    public class CanceledPlugin : IFtpCommandClientPlugin
     {
         public FtpCommand Cmd => FtpCommand.FILE_CANCELED;
 
@@ -22,7 +13,7 @@ namespace client.service.ftp.client.plugin
             this.ftpClient = ftpClient;
         }
 
-        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
+        public async Task<FtpResultInfo> Execute(FtpPluginParamWrap arg)
         {
             await Task.Yield();
 
@@ -31,7 +22,7 @@ namespace client.service.ftp.client.plugin
 
             ftpClient.OnFileUploadCanceled(cmd, arg);
 
-            return new FtpResultModel();
+            return new FtpResultInfo();
         }
     }
 }

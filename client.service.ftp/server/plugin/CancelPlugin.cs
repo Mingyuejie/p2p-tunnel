@@ -1,18 +1,9 @@
-﻿using client.service.ftp.extends;
-using client.service.ftp.plugin;
-using client.service.ftp.protocol;
-using common.extends;
-using ProtoBuf;
-using server.model;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using client.service.ftp.commands;
 using System.Threading.Tasks;
 
 namespace client.service.ftp.server.plugin
 {
-    public class CancelPlugin : IFtpServerPlugin
+    public class CancelPlugin : IFtpCommandServerPlugin
     {
         public FtpCommand Cmd => FtpCommand.FILE_CANCEL;
 
@@ -22,16 +13,16 @@ namespace client.service.ftp.server.plugin
             this.ftpServer = ftpServer;
         }
 
-        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
+        public async Task<FtpResultInfo> Execute(FtpPluginParamWrap arg)
         {
             FtpCancelCommand cmd = new FtpCancelCommand();
             cmd.DeBytes(arg.Connection.ReceiveRequestWrap.Memory);
             await ftpServer.OnFileUploadCancel(cmd, arg);
-            return new FtpResultModel();
+            return new FtpResultInfo();
         }
     }
 
-    public class CanceledPlugin : IFtpServerPlugin
+    public class CanceledPlugin : IFtpCommandServerPlugin
     {
         public FtpCommand Cmd => FtpCommand.FILE_CANCELED;
 
@@ -41,13 +32,13 @@ namespace client.service.ftp.server.plugin
             this.ftpServer = ftpServer;
         }
 
-        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
+        public async Task<FtpResultInfo> Execute(FtpPluginParamWrap arg)
         {
             await Task.Yield();
             FtpCanceledCommand cmd = new FtpCanceledCommand();
             cmd.DeBytes(arg.Connection.ReceiveRequestWrap.Memory);
             ftpServer.OnFileUploadCanceled(cmd, arg);
-            return new FtpResultModel();
+            return new FtpResultInfo();
         }
     }
 }

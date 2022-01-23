@@ -12,10 +12,10 @@ namespace server
 
         public void Stop();
 
-        public SimpleSubPushHandler<ServerDataWrap> OnPacket { get; }
+        public SimpleSubPushHandler<ReceiveDataWrap> OnPacket { get; }
     }
 
-    public class ServerDataWrap
+    public class ReceiveDataWrap
     {
         public IConnection Connection { get; set; }
         public byte[] Data { get; set; }

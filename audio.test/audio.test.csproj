@@ -24,6 +24,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\common\common.csproj" />
 		<ProjectReference Include="..\NSpeex\NSpeex.csproj" />
 		<ProjectReference Include="..\ozeki\ozeki.csproj" />
 	</ItemGroup>

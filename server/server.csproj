@@ -19,11 +19,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\common\common.csproj" />
+	  <Compile Remove="extends\**" />
+	  <EmbeddedResource Remove="extends\**" />
+	  <None Remove="extends\**" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="extends\" />
+		<ProjectReference Include="..\common\common.csproj" />
 	</ItemGroup>
 
 </Project>

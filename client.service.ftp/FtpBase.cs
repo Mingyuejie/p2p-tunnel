@@ -1,53 +1,87 @@
-﻿using client.plugins.serverPlugins;
-using client.plugins.serverPlugins.clients;
-using client.service.ftp.extends;
-using client.service.ftp.protocol;
+﻿using client.service.ftp.extends;
+using client.service.ftp.commands;
 using common;
 using common.extends;
 using MessagePack;
+using Microsoft.Extensions.DependencyInjection;
 using ProtoBuf;
 using server;
 using server.model;
-using server.plugins.register.caching;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Net.Sockets;
+using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using client.messengers.register;
+using client.messengers.clients;
+using client.messengers.punchHole.tcp;
 
 namespace client.service.ftp
 {
     public class FtpBase
     {
-        public FileSaveManager Downloads { get; } = new();
-        public FileSaveManager Uploads { get; } = new();
+        public Dictionary<FtpCommand, IFtpCommandPluginBase> Plugins { get; } = new Dictionary<FtpCommand, IFtpCommandPluginBase>();
+
         protected virtual string SocketPath { get; set; }
         protected virtual string RootPath { get; set; }
 
+        private FileSaveManager Downloads { get; } = new();
+        private FileSaveManager Uploads { get; } = new();
         private NumberSpace fileIdNs = new NumberSpace(0);
+        private const string tunnelName = "ftp-tcp";
 
-        protected readonly IServerRequest serverRequest;
+        protected readonly MessengerSender messengerSender;
         protected readonly Config config;
         private readonly IClientInfoCaching clientInfoCaching;
-        public FtpBase(IServerRequest serverRequest, Config config, IClientInfoCaching clientInfoCaching)
+        private readonly RegisterStateInfo registerState;
+        private readonly ServiceProvider serviceProvider;
+        private readonly IDataTunnelRegister dataTunnelRegister;
+        private readonly IPunchHoleTcp punchHoleTcp;
+
+        protected FtpBase(ServiceProvider serviceProvider, MessengerSender messengerSender, Config config, IClientInfoCaching clientInfoCaching, RegisterStateInfo registerState, IPunchHoleTcp punchHoleTcp, IDataTunnelRegister dataTunnelRegister)
         {
-            this.serverRequest = serverRequest;
+            this.messengerSender = messengerSender;
             this.config = config;
             this.clientInfoCaching = clientInfoCaching;
+            this.registerState = registerState;
+            this.serviceProvider = serviceProvider;
+            this.punchHoleTcp = punchHoleTcp;
+            this.dataTunnelRegister = dataTunnelRegister;
+
             clientInfoCaching.OnOffline.Sub((client) =>
             {
                 Downloads.Clear(client.Id);
                 Uploads.Clear(client.Id);
             });
 
+            //Tunnel();
             LoopProgress();
+        }
+
+        protected void LoadPlugins(Assembly[] assemblys, Type type)
+        {
+            foreach (Type item in ReflectionHelper.GetInterfaceSchieves(assemblys, type))
+            {
+                IFtpCommandPluginBase obj = (IFtpCommandPluginBase)serviceProvider.GetService(item);
+                if (!Plugins.ContainsKey(obj.Cmd))
+                {
+                    Plugins.TryAdd(obj.Cmd, obj);
+                }
+            }
+        }
+
+        public IEnumerable<FileSaveInfo> GetUploads()
+        {
+            return Uploads.Caches.Values.SelectMany(c => c.Values);
+        }
+        public IEnumerable<FileSaveInfo> GetDownloads()
+        {
+            return Downloads.Caches.Values.SelectMany(c => c.Values);
         }
 
         protected List<string> Create(string currentPath, string path)
@@ -109,7 +143,7 @@ namespace client.service.ftp
                     TotalLength = file.Length,
                     Md5 = fileIdNs.Get(),
                     ClientId = client.Id,
-                    State = UploadState.Wait,
+                    State = UploadStates.Wait,
                     CacheFileName = file.FullName.Replace(currentPath, String.Empty).TrimStart(Path.DirectorySeparatorChar)
                 };
                 Uploads.Add(save);
@@ -131,7 +165,7 @@ namespace client.service.ftp
                 Size = save.TotalLength,
                 Name = save.CacheFileName
             };
-            save.State = UploadState.Uploading;
+            save.State = UploadStates.Uploading;
             int packSize = config.SendPacketSize; //每个包大小
             int packCount = (int)(save.TotalLength / packSize);
             int lastPackSize = (int)(save.TotalLength - (packCount * packSize));
@@ -158,7 +192,7 @@ namespace client.service.ftp
                         cmd.WriteData(readData, sendData);
                         if (!await SendOnlyTcp(sendData, client.TcpConnection))
                         {
-                            save.State = UploadState.Error;
+                            save.State = UploadStates.Error;
                         }
                         save.IndexLength += packSize;
 
@@ -176,7 +210,7 @@ namespace client.service.ftp
                         cmd.WriteData(readData, sendData);
                         if (!await SendOnlyTcp(sendData, client.TcpConnection))
                         {
-                            save.State = UploadState.Error;
+                            save.State = UploadStates.Error;
                         }
                         save.IndexLength += lastPackSize;
                     }
@@ -207,11 +241,11 @@ namespace client.service.ftp
                         CacheFileName = Path.Combine(currentPath, $"{cmd.Md5}.downloading"),
                         ClientId = wrap.Client.Id,
                         Md5 = cmd.Md5,
-                        State = UploadState.Wait
+                        State = UploadStates.Wait
                     };
                     Downloads.Add(fs);
                 }
-                else if (fs.Token.IsCancellationRequested || fs.State == UploadState.Canceled)
+                else if (fs.Token.IsCancellationRequested || fs.State == UploadStates.Canceled)
                 {
                     return;
                 }
@@ -280,20 +314,20 @@ namespace client.service.ftp
             Downloads.Remove(wrap.Client.Id, cmd.Md5, true);
         }
 
-        public async Task<FtpResultModel> RemoteCreate(string path, ClientInfo client)
+        public async Task<FtpResultInfo> RemoteCreate(string path, ClientInfo client)
         {
-            MessageRequestResponeWrap resp = await SendReplyTcp(new FtpCreateCommand { Path = path }, client);
-            return FtpResultModel.FromBytes(resp.Data);
+            MessageResponeInfo resp = await SendReplyTcp(new FtpCreateCommand { Path = path }, client);
+            return FtpResultInfo.FromBytes(resp.Data);
         }
-        public async Task<FtpResultModel> RemoteCancel(ulong md5, ClientInfo client)
+        public async Task<FtpResultInfo> RemoteCancel(ulong md5, ClientInfo client)
         {
-            MessageRequestResponeWrap resp = await SendReplyTcp(new FtpCancelCommand { Md5 = md5 }, client);
-            return FtpResultModel.FromBytes(resp.Data);
+            MessageResponeInfo resp = await SendReplyTcp(new FtpCancelCommand { Md5 = md5 }, client);
+            return FtpResultInfo.FromBytes(resp.Data);
         }
-        public async Task<FtpResultModel> RemoteDelete(string path, ClientInfo client)
+        public async Task<FtpResultInfo> RemoteDelete(string path, ClientInfo client)
         {
-            MessageRequestResponeWrap resp = await SendReplyTcp(new FtpDelCommand { Path = path }, client);
-            return FtpResultModel.FromBytes(resp.Data);
+            MessageResponeInfo resp = await SendReplyTcp(new FtpDelCommand { Path = path }, client);
+            return FtpResultInfo.FromBytes(resp.Data);
         }
 
         protected async Task<bool> SendOnlyTcp(IFtpCommandBase data, ClientInfo client)
@@ -306,16 +340,16 @@ namespace client.service.ftp
         }
         protected async Task<bool> SendOnlyTcp(byte[] data, IConnection connection)
         {
-            return await serverRequest.SendOnly(new SendArg<byte[]>
+            return await messengerSender.SendOnly(new  MessageRequestParamsInfo<byte[]>
             {
                 Data = data,
                 Path = SocketPath,
                 Connection = connection
             });
         }
-        protected async Task<MessageRequestResponeWrap> SendReplyTcp(IFtpCommandBase data, ClientInfo client)
+        protected async Task<MessageResponeInfo> SendReplyTcp(IFtpCommandBase data, ClientInfo client)
         {
-            return await serverRequest.SendReply(new SendArg<byte[]>
+            return await messengerSender.SendReply(new  MessageRequestParamsInfo<byte[]>
             {
                 Data = data.ToBytes(),
                 Path = SocketPath,
@@ -376,16 +410,54 @@ namespace client.service.ftp
                     if (!Uploads.Caches.IsEmpty)
                     {
                         IEnumerable<FileSaveInfo> saves = Uploads.Caches.SelectMany(c => c.Value.Values);
-                        int uploadCount = saves.Count(c => c.State == UploadState.Uploading);
-                        int waitCount = saves.Count(c => c.State == UploadState.Wait);
+                        int uploadCount = saves.Count(c => c.State == UploadStates.Uploading);
+                        int waitCount = saves.Count(c => c.State == UploadStates.Wait);
                         if (waitCount > 0 && uploadCount < config.UploadNum)
                         {
-                            Upload(saves.FirstOrDefault(c => c.State == UploadState.Wait));
+                            Upload(saves.FirstOrDefault(c => c.State == UploadStates.Wait));
                         }
                     }
                     await Task.Delay(1);
                 }
             }, TaskCreationOptions.LongRunning);
+        }
+
+        private void Tunnel()
+        {
+            registerState.OnRegisterStateChange.Sub((state) =>
+            {
+                Console.WriteLine(state);
+                if (state)
+                {
+                    Task.Run(async () =>
+                    {
+                        TunnelRegisterResultInfo result = await dataTunnelRegister.Register(tunnelName);
+                        if (result.Code == TunnelRegisterResultInfo.TunnelRegisterResultInfoCodes.OK)
+                        {
+                            Logger.Instance.Info($"{tunnelName} 通道注册成功");
+                        }
+                        else
+                        {
+                            Logger.Instance.Error($"{tunnelName} 通道注册失败:{result.Code.GetDesc((byte)result.Code)}");
+                        }
+                    });
+                }
+            });
+            punchHoleTcp.OnStep4Handler.Sub((arg) =>
+            {
+                Task.Run(async () =>
+                {
+                    ConnectTcpResultModel result = await punchHoleTcp.Send(new ConnectTcpParams { Id = arg.RawData.FromId, TryTimes = 5, TunnelName = tunnelName });
+                    if (result.State)
+                    {
+                        Logger.Instance.Info($"{arg.RawData.FromId} {tunnelName} 通道连接成功");
+                    }
+                    else
+                    {
+                        Logger.Instance.Error($"{arg.RawData.FromId} {tunnelName} 通道连接失败:{(result.Result as ConnectTcpFailModel).Msg}");
+                    }
+                });
+            });
         }
 
     }
@@ -425,7 +497,7 @@ namespace client.service.ftp
 
     [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
-    public enum UploadState : byte
+    public enum UploadStates : byte
     {
         [Description("等待中")]
         Wait = 0,
@@ -456,7 +528,7 @@ namespace client.service.ftp
         public CancellationTokenSource Token { get; set; }
 
         public long Speed { get; set; } = 0;
-        public UploadState State { get; set; } = UploadState.Wait;
+        public UploadStates State { get; set; } = UploadStates.Wait;
 
         public void Disponse(bool deleteFile = false)
         {
@@ -490,7 +562,7 @@ namespace client.service.ftp
 
         public bool Check()
         {
-            if (Token.IsCancellationRequested || State != UploadState.Uploading)
+            if (Token.IsCancellationRequested || State != UploadStates.Uploading)
             {
                 Disponse();
                 return false;
@@ -541,17 +613,6 @@ namespace client.service.ftp
             return false;
         }
 
-        public void SetState(ulong clientId, ulong md5, UploadState state)
-        {
-            if (Caches.TryGetValue(clientId, out ConcurrentDictionary<ulong, FileSaveInfo> ipDic))
-            {
-                if (ipDic.TryGetValue(md5, out FileSaveInfo save))
-                {
-                    save.State = state;
-                }
-            }
-        }
-
         public void Remove(ulong clientId, ulong md5, bool deleteFile = false)
         {
             if (Caches.TryGetValue(clientId, out ConcurrentDictionary<ulong, FileSaveInfo> ipDic))
@@ -584,7 +645,7 @@ namespace client.service.ftp
     }
 
     [ProtoContract, MessagePackObject]
-    public class FtpResultModel
+    public class FtpResultInfo
     {
         [ProtoMember(1, IsRequired = true), Key(1)]
         public FtpResultCodes Code { get; set; } = FtpResultCodes.OK;
@@ -627,9 +688,9 @@ namespace client.service.ftp
             return result;
         }
 
-        public static FtpResultModel FromBytes(ReadOnlyMemory<byte> bytes)
+        public static FtpResultInfo FromBytes(ReadOnlyMemory<byte> bytes)
         {
-            return new FtpResultModel
+            return new FtpResultInfo
             {
                 Code = (FtpResultCodes)bytes.Span[0],
                 ReadData = bytes.Slice(1, bytes.Length - 1)

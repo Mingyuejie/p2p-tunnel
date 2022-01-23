@@ -8,7 +8,7 @@ namespace server
     {
         public void SetBufferSize(int bufferSize = 8*1024);
         public void BindAccept(int port, IPAddress ip);
-        public void BindReceive(Socket socket, Action<SocketError> errorCallback = null, int bufferSize = 8 * 1024);
+        public IConnection BindReceive(Socket socket, Action<SocketError> errorCallback = null, int bufferSize = 8 * 1024);
 
         public IConnection CreateConnection(Socket socket);
     }

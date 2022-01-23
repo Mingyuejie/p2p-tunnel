@@ -9,12 +9,12 @@ namespace client.service.tcpforward
 {
     public interface ITcpForwardServer
     {
-        public void Start(TcpForwardRecordModel mapping);
-        public void Response(TcpForwardModel model);
-        public void Fail(TcpForwardModel failModel, string body = "");
+        public void Start(TcpForwardRecordInfo mapping);
+        public void Response(TcpForwardInfo model);
+        public void Fail(TcpForwardInfo failModel, string body = "");
         public void Stop(int sourcePort);
 
-        public SimpleSubPushHandler<TcpForwardRequestModel> OnRequest { get; }
-        public SimpleSubPushHandler<ListeningChangeModel> OnListeningChange { get; }
+        public SimpleSubPushHandler<TcpForwardRequestInfo> OnRequest { get; }
+        public SimpleSubPushHandler<ListeningChangeInfo> OnListeningChange { get; }
     }
 }

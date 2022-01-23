@@ -15,7 +15,7 @@ namespace client.service.ddns.platform
         /// </summary>
         /// <param name="group">本地分组</param>
         /// <returns></returns>
-        DescribeDomains DescribeDomains(DescribeDomainsParam model,string group);
+        DescribeDomains DescribeDomains(DescribeDomainsParamsInfo model,string group);
         /// <summary>
         /// 添加域名
         /// </summary>
@@ -37,45 +37,45 @@ namespace client.service.ddns.platform
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        DescribeDomainRecord DescribeDomainRecords(DescribeDomainRecordsModel model, string group);
+        DescribeDomainRecordsInfo DescribeDomainRecords(DescribeDomainRecordsParamsInfo model, string group);
         /// <summary>
         /// 添加解析
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        bool AddDomainRecord(AddDomainRecordModel model, string group);
+        bool AddDomainRecord(AddDomainRecordParamsInfo model, string group);
         /// <summary>
         /// 删除解析
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        bool DeleteDomainRecord(DeleteDomainRecordModel model, string group);
+        bool DeleteDomainRecord(DeleteDomainRecordParamsInfo model, string group);
         /// <summary>
         /// 更新解析
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        bool UpdateDomainRecord(UpdateDomainRecordModel model, string group);
+        bool UpdateDomainRecord(UpdateDomainRecordParamsInfo model, string group);
         /// <summary>
         /// 切换解析状态
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        bool SwitchDomainRecordStatus(SetDomainRecordStatusModel model, string group);
+        bool SwitchDomainRecordStatus(SetDomainRecordStatusParamsInfo model, string group);
         /// <summary>
         /// 更新解析备注
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        bool UpdateDomainRecordRemark(UpdateDomainRecordRemarkModel model, string group);
+        bool UpdateDomainRecordRemark(UpdateDomainRecordRemarkParamsInfo model, string group);
         /// <summary>
         /// 获取解析线路
         /// </summary>
         /// <returns></returns>
-        IEnumerable<DescribeSupportLine> DescribeSupportLines(string group, string domain);
+        IEnumerable<DescribeSupportLineParamsInfo> DescribeSupportLines(string group, string domain);
     }
 
-    public class AddDomainRecordModel
+    public class AddDomainRecordParamsInfo
     {
         public string DomainName { get; set; }
         public string RR { get; set; }
@@ -85,17 +85,17 @@ namespace client.service.ddns.platform
         public long Priority { get; set; }
         public string Line { get; set; }
     }
-    public enum RecordType
+    public enum RecordTypes
     {
         A, NS, MX, TXT, CNAME, SRV, AAAA, CAA, REDIRECT_URL, FORWARD_URL
     }
 
-    public class DeleteDomainRecordModel
+    public class DeleteDomainRecordParamsInfo
     {
         public string RecordId { get; set; }
         public string Domain { get; set; }
     }
-    public class UpdateDomainRecordModel
+    public class UpdateDomainRecordParamsInfo
     {
         public string RecordId { get; set; }
         public string Domain { get; set; }
@@ -106,19 +106,19 @@ namespace client.service.ddns.platform
         public long Priority { get; set; }
         public string Line { get; set; }
     }
-    public class DeleteSubDomainRecordsModel
+    public class DeleteSubDomainRecordsParamsInfo
     {
         public string DomainName { get; set; }
         public string RR { get; set; }
     }
-    public class SetDomainRecordStatusModel
+    public class SetDomainRecordStatusParamsInfo
     {
         public string RecordId { get; set; }
         public string Domain { get; set; }
         public string Status { get; set; } //Enable  //Disable
     }
 
-    public class DescribeSupportLine
+    public class DescribeSupportLineParamsInfo
     {
         public string LineCode { get; set; }
         public string FatherCode { get; set; }
@@ -126,31 +126,27 @@ namespace client.service.ddns.platform
         public string LineDisplayName { get; set; }
     }
 
-    public class UpdateDomainRecordRemarkModel
+    public class UpdateDomainRecordRemarkParamsInfo
     {
         public string RecordId { get; set; }
         public string Domain { get; set; }
         public string Remark { get; set; }
     }
-
-
-    public class DescribeDomainRecordsModel
+    public class DescribeDomainRecordsParamsInfo
     {
         public string DomainName { get; set; }
         public long PageNumber { get; set; } = 1;
         public long PageSize { get; set; } = 500;
     }
-
-    public class DescribeDomainRecord
+    public class DescribeDomainRecordsInfo
     {
-        public IEnumerable<DomainRecordsModel> DomainRecords { get; set; }
+        public IEnumerable<DomainRecordsItemInfo> DomainRecords { get; set; }
         public long PageNumber { get; set; } = 1;
         public long PageSize { get; set; } = 500;
         public long Count { get; set; } = 0;
 
     }
-
-    public class DomainRecordsModel
+    public class DomainRecordsItemInfo
     {
         public string DomainName { get; set; }
         public string Line { get; set; }
@@ -169,20 +165,21 @@ namespace client.service.ddns.platform
 
     public class DescribeDomains
     {
-        public IEnumerable<DescribeDomainModel> Domains { get; set; }
+        public IEnumerable<DescribeDomainItemInfo> Domains { get; set; }
         public long PageNumber { get; set; } = 1;
         public long PageSize { get; set; } = 500;
         public long TotalCount { get; set; } = 0;
     }
-    public class DescribeDomainsParam
+    public class DescribeDomainItemInfo
+    {
+        public string DomainId { get; set; }
+        public string DomainName { get; set; }
+    }
+    public class DescribeDomainsParamsInfo
     {
         public long PageNumber { get; set; } = 1;
         public long PageSize { get; set; } = 500;
     }
 
-    public class DescribeDomainModel
-    {
-        public string DomainId { get; set; }
-        public string DomainName { get; set; }
-    }
+    
 }

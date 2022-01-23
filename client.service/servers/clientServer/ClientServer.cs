@@ -13,15 +13,13 @@ using System.Threading.Tasks;
 
 namespace client.service.servers.clientServer
 {
-
-
     public class ClientServer : IClientServer
     {
         private readonly ConcurrentDictionary<Guid, IWebSocketConnection> websockets = new();
 
         private readonly Dictionary<string, PluginPathCacheInfo> plugins = new();
         private readonly Dictionary<string, Tuple<object, MethodInfo>> pushPlugins = new();
-        private readonly Dictionary<string, IClientServiceSettingPlugin> settingPlugins = new();
+        private readonly Dictionary<string, IClientConfigure> settingPlugins = new();
 
 
         private readonly Config config;
@@ -41,9 +39,9 @@ namespace client.service.servers.clientServer
             Type taskType = typeof(Task);
 
             IEnumerable<Type> types = assemblys.SelectMany(c => c.GetTypes());
-            foreach (Type item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientServicePlugin))))
+            foreach (Type item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientService))))
             {
-                string path = item.Name.Replace("Plugin", "");
+                string path = item.Name.Replace("ClientService", "");
                 object obj = serviceProvider.GetService(item);
                 foreach (MethodInfo method in item.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
                 {
@@ -62,9 +60,9 @@ namespace client.service.servers.clientServer
                 }
             }
 
-            foreach (Type item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientServerPushMsgPlugin))))
+            foreach (Type item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientPushMsg))))
             {
-                string path = item.Name.Replace("PushMsgPlugin", "");
+                string path = item.Name.Replace("ClientPushMsg", "");
                 object obj = serviceProvider.GetService(item);
                 foreach (MethodInfo method in item.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
                 {
@@ -75,10 +73,10 @@ namespace client.service.servers.clientServer
                     }
                 }
             }
-            foreach (Type item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientServiceSettingPlugin))))
+            foreach (Type item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientConfigure))))
             {
                 if (!settingPlugins.ContainsKey(item.Name))
-                    settingPlugins.Add(item.Name, (IClientServiceSettingPlugin)serviceProvider.GetService(item));
+                    settingPlugins.Add(item.Name, (IClientConfigure)serviceProvider.GetService(item));
             }
         }
 
@@ -131,14 +129,14 @@ namespace client.service.servers.clientServer
 
         private async Task OnMessage(IWebSocketConnection socket, string message)
         {
-            ClientServiceMessageWrap model = message.DeJson<ClientServiceMessageWrap>();
+            ClientServiceRequestInfo model = message.DeJson<ClientServiceRequestInfo>();
             model.Path = model.Path.ToLower();
             if (plugins.ContainsKey(model.Path))
             {
                 PluginPathCacheInfo plugin = plugins[model.Path];
                 try
                 {
-                    ClientServicePluginExecuteWrap param = new ClientServicePluginExecuteWrap
+                    ClientServiceParamsInfo param = new ClientServiceParamsInfo
                     {
                         Socket = socket,
                         RequestId = model.RequestId,
@@ -152,7 +150,7 @@ namespace client.service.servers.clientServer
                     {
                         if (plugin.IsTask)
                         {
-                            await (resultAsync as Task);
+                            await resultAsync;
                             if (plugin.IsTaskResult)
                             {
                                 resultObject = resultAsync.Result;
@@ -163,7 +161,7 @@ namespace client.service.servers.clientServer
                             resultObject = resultAsync;
                         }
                     }
-                    await param.Socket.Send(new ClientServiceMessageResponseWrap
+                    await param.Socket.Send(new ClientServiceResponseInfo
                     {
                         Content = param.Code == 0 ? resultObject : param.ErrorMessage,
                         RequestId = param.RequestId,
@@ -174,7 +172,7 @@ namespace client.service.servers.clientServer
                 catch (Exception ex)
                 {
                     Logger.Instance.Error(ex);
-                    await socket.Send(new ClientServiceMessageResponseWrap
+                    await socket.Send(new ClientServiceResponseInfo
                     {
                         Content = ex.Message,
                         RequestId = model.RequestId,
@@ -193,14 +191,14 @@ namespace client.service.servers.clientServer
                 {
                     foreach (var connection in websockets.Values)
                     {
-                        connection.Send(new ClientServiceMessageResponseWrap
+                        connection.Send(new ClientServiceResponseInfo
                         {
                             Path = "merge",
                             RequestId = 0,
                             Code = 0,
                             Content = pushPlugins.Select(c =>
                             {
-                                return new ClientServiceMessageResponseWrap
+                                return new ClientServiceResponseInfo
                                 {
                                     RequestId = 0,
                                     Code = 0,
@@ -215,15 +213,15 @@ namespace client.service.servers.clientServer
             }, TaskCreationOptions.LongRunning);
         }
 
-        public IClientServiceSettingPlugin GetSettingPlugin(string className)
+        public IClientConfigure GetConfigure(string className)
         {
-            settingPlugins.TryGetValue(className, out IClientServiceSettingPlugin plugin);
+            settingPlugins.TryGetValue(className, out IClientConfigure plugin);
             return plugin;
         }
 
-        public IEnumerable<SettingPluginInfo> GetSettingPlugins()
+        public IEnumerable<ClientServiceConfigureInfo> GetConfigures()
         {
-            return settingPlugins.Select(c => new SettingPluginInfo
+            return settingPlugins.Select(c => new ClientServiceConfigureInfo
             {
                 Name = c.Value.Name,
                 Author = c.Value.Author,
@@ -233,7 +231,7 @@ namespace client.service.servers.clientServer
             });
         }
 
-        public IEnumerable<string> GetPlugins()
+        public IEnumerable<string> GetServices()
         {
             return plugins.Select(c => c.Value.Target.GetType().Name).Distinct();
         }
@@ -246,37 +244,5 @@ namespace client.service.servers.clientServer
         public bool IsVoid { get; set; }
         public bool IsTask { get; set; }
         public bool IsTaskResult { get; set; }
-    }
-
-    public static class ServiceCollectionExtends
-    {
-        public static ServiceCollection AddClientServer(this ServiceCollection services, Assembly[] assemblys)
-        {
-            services.AddSingleton<IClientServer, ClientServer>();
-
-            IEnumerable<Type> types = assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies()).SelectMany(c => c.GetTypes());
-
-            foreach (var item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientServicePlugin))))
-            {
-                services.AddSingleton(item);
-            }
-            foreach (var item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientServerPushMsgPlugin))))
-            {
-                services.AddSingleton(item);
-            }
-            foreach (var item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientServiceSettingPlugin))))
-            {
-                services.AddSingleton(item);
-            }
-
-            return services;
-        }
-
-        public static ServiceProvider UseClientServer(this ServiceProvider services, Assembly[] assemblys)
-        {
-            services.GetService<IClientServer>().Start();
-            services.GetService<IClientServer>().LoadPlugins(assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies()).ToArray());
-            return services;
-        }
     }
 }

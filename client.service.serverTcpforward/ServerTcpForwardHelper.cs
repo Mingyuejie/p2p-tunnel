@@ -1,7 +1,7 @@
-﻿using client.plugins.serverPlugins;
-using client.plugins.serverPlugins.register;
+﻿using client.messengers.register;
 using common;
 using common.extends;
+using server;
 using server.model;
 using System;
 using System.Collections.Concurrent;
@@ -16,21 +16,21 @@ namespace client.service.serverTcpforward
 {
     public class ServerTcpForwardHelper
     {
-        private readonly IServerRequest serverRequest;
-        private readonly RegisterState registerstate;
-        private readonly ServerTcpForwardRegisterConfig serverTcpForwardRegisterConfig;
-        public ServerTcpForwardHelper(IServerRequest serverRequest, RegisterState registerstate, ServerTcpForwardRegisterConfig serverTcpForwardRegisterConfig)
+        private readonly MessengerSender messengerSender;
+        private readonly RegisterStateInfo registerstate;
+        private readonly Config serverTcpForwardRegisterConfig;
+        public ServerTcpForwardHelper(MessengerSender messengerSender, RegisterStateInfo registerstate, Config serverTcpForwardRegisterConfig)
         {
-            this.serverRequest = serverRequest;
+            this.messengerSender = messengerSender;
             this.registerstate = registerstate;
             this.serverTcpForwardRegisterConfig = serverTcpForwardRegisterConfig;
         }
 
-        public async Task<MessageRequestResponeWrap> Register()
+        public async Task<MessageResponeInfo> Register()
         {
-            return await serverRequest.SendReply(new SendArg<ServerTcpForwardRegisterModel>
+            return await messengerSender.SendReply(new  MessageRequestParamsInfo<ServerTcpForwardRegisterParamsInfo>
             {
-                Data = new ServerTcpForwardRegisterModel
+                Data = new ServerTcpForwardRegisterParamsInfo
                 {
                     Web = serverTcpForwardRegisterConfig.Web,
                     Tunnel = serverTcpForwardRegisterConfig.Tunnel
@@ -39,11 +39,11 @@ namespace client.service.serverTcpforward
                 Path = "ServerTcpForward/register"
             });
         }
-        public async Task<MessageRequestResponeWrap> UnRegister()
+        public async Task<MessageResponeInfo> UnRegister()
         {
-            return await serverRequest.SendReply(new SendArg<ServerTcpForwardRegisterModel>
+            return await messengerSender.SendReply(new  MessageRequestParamsInfo<ServerTcpForwardRegisterParamsInfo>
             {
-                Data = new ServerTcpForwardRegisterModel
+                Data = new ServerTcpForwardRegisterParamsInfo
                 {
                     Web = serverTcpForwardRegisterConfig.Web,
                     Tunnel = serverTcpForwardRegisterConfig.Tunnel
@@ -53,9 +53,9 @@ namespace client.service.serverTcpforward
             });
         }
 
-        public async Task Request(ServerTcpForwardModel data)
+        public async Task Request(ServerTcpForwardInfo data)
         {
-            if (data.Type == ServerTcpForwardType.CLOSE)
+            if (data.Type == ServerTcpForwardTypes.CLOSE)
             {
                 ClientModel.Remove(data.RequestId);
                 return;
@@ -63,13 +63,13 @@ namespace client.service.serverTcpforward
 
             if (!serverTcpForwardRegisterConfig.Enable)
             {
-                await serverRequest.SendOnly(new SendArg<ServerTcpForwardModel>
+                await messengerSender.SendOnly(new  MessageRequestParamsInfo<ServerTcpForwardInfo>
                 {
-                    Data = new ServerTcpForwardModel
+                    Data = new ServerTcpForwardInfo
                     {
                         RequestId = data.RequestId,
-                        Type = ServerTcpForwardType.FAIL,
-                        Buffer = Encoding.UTF8.GetBytes("客户端未开启插件"),
+                        Type = ServerTcpForwardTypes.FAIL,
+                        Buffer = "客户端未开启插件".GetBytes(),
                         AliveType = data.AliveType
                     },
                     Connection = registerstate.TcpConnection,
@@ -95,7 +95,7 @@ namespace client.service.serverTcpforward
                         SourceSocket = registerstate.TcpConnection.TcpSocket
                     };
 
-                    IPEndPoint dnsEndPoint = new(NetworkHelper .GetDomainIp(data.TargetIp), data.TargetPort);
+                    IPEndPoint dnsEndPoint = new(NetworkHelper.GetDomainIp(data.TargetIp), data.TargetPort);
                     socket.Connect(dnsEndPoint);
                     ClientModel.Add(client);
                     client.Stream = new NetworkStream(client.TargetSocket, false);
@@ -115,13 +115,13 @@ namespace client.service.serverTcpforward
             catch (Exception ex)
             {
                 ClientModel.Remove(data.RequestId);
-                await serverRequest.SendOnly(new SendArg<ServerTcpForwardModel>
+                await messengerSender.SendOnly(new  MessageRequestParamsInfo<ServerTcpForwardInfo>
                 {
-                    Data = new ServerTcpForwardModel
+                    Data = new ServerTcpForwardInfo
                     {
                         RequestId = data.RequestId,
-                        Type = ServerTcpForwardType.FAIL,
-                        Buffer = Encoding.UTF8.GetBytes(ex.ToString()),
+                        Type = ServerTcpForwardTypes.FAIL,
+                        Buffer = ex.ToString().GetBytes(),
                         AliveType = data.AliveType
                     },
                     Connection = registerstate.TcpConnection,
@@ -159,13 +159,13 @@ namespace client.service.serverTcpforward
 
         private async Task Receive(ClientModel client, byte[] data)
         {
-            await serverRequest.SendOnly(new SendArg<ServerTcpForwardModel>
+            await messengerSender.SendOnly(new  MessageRequestParamsInfo<ServerTcpForwardInfo>
             {
-                Data = new ServerTcpForwardModel
+                Data = new ServerTcpForwardInfo
                 {
                     RequestId = client.RequestId,
                     Buffer = data,
-                    Type = ServerTcpForwardType.RESPONSE,
+                    Type = ServerTcpForwardTypes.RESPONSE,
                     TargetPort = client.TargetPort,
                     AliveType = client.AliveType,
                     TargetIp = client.TargetIp

@@ -1,7 +1,7 @@
 ﻿using common;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
-using server.service.plugins;
+using server.service.messengers;
 using System;
 using System.IO;
 
@@ -16,10 +16,10 @@ namespace server.service
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddSingleton((e) => config);
 
-            serviceCollection.AddPlugin().AddTcpServer().AddUdpServer().AddTcpForwardPlugin();
+            serviceCollection.AddMessenger().AddTcpServer().AddUdpServer().AddTcpForwardPlugin();
 
             var serviceProvider = serviceCollection.BuildServiceProvider();
-            serviceProvider.UsePlugin().UseTcpServer().UseUdpServer().UseTcpForwardPlugin();
+            serviceProvider.UseMessenger().UseTcpServer().UseUdpServer().UseTcpForwardPlugin();
 
 
             Logger.Instance.Warning("=======================================");
@@ -28,7 +28,7 @@ namespace server.service
             Logger.Instance.Warning($"UDP端口:{config.Udp}");
             Logger.Instance.Warning($"TCP端口:{config.Tcp}");
 
-            _ = Console.ReadLine();
+            Console.ReadLine();
         }
     }
 }

@@ -7,12 +7,12 @@ namespace client.servers.clientServer
     {
         public void Start();
         public void LoadPlugins(Assembly[] assemblys);
-        public IEnumerable<SettingPluginInfo> GetSettingPlugins();
-        public IClientServiceSettingPlugin GetSettingPlugin(string className);
-        public IEnumerable<string> GetPlugins();
+        public IEnumerable<ClientServiceConfigureInfo> GetConfigures();
+        public IClientConfigure GetConfigure(string className);
+        public IEnumerable<string> GetServices();
     }
 
-    public class SettingPluginInfo
+    public class ClientServiceConfigureInfo
     {
         public string Name { get; set; } = string.Empty;
         public string ClassName { get; set; } = string.Empty;

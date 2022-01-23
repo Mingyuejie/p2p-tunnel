@@ -16,7 +16,7 @@ namespace common
         public static IEnumerable<Type> GetInterfaceSchieves(Assembly[] assemblys, Type type)
         {
             return assemblys.SelectMany(c => c.GetTypes())
-                .Where(c => c.GetInterfaces().Contains(type));
+               .Where(c => !c.IsAbstract).Where(c => c.GetInterfaces().Contains(type));
         }
     }
 }

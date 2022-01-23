@@ -1,9 +1,7 @@
-﻿using client.plugins.serverPlugins.clients;
-using client.service.tcpforward.client;
+﻿using client.messengers.clients;
 using common;
 using common.extends;
 using server;
-using server.plugins.register.caching;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -21,20 +19,20 @@ namespace client.service.tcpforward
     {
         public IPAddress IP { get; private set; }
         private readonly string configFileName = "config_tcp_forward.json";
-        public List<TcpForwardRecordBaseModel> Mappings { get; set; } = new List<TcpForwardRecordBaseModel>();
+        public List<TcpForwardRecordInfoBase> Mappings { get; set; } = new List<TcpForwardRecordInfoBase>();
 
         private readonly ITcpForwardServer tcpForwardServer;
-        private readonly TcpForwardEventHandles tcpForwardEventHandles;
+        private readonly TcpForwardMessengerSender  tcpForwardMessengerClient;
         private readonly IClientInfoCaching clientInfoCaching;
-        private readonly TcpForwardSettingModel tcpForwardSettingModel;
+        private readonly Config tcpForwardSettingModel;
 
         private int maxId = 0;
 
-        public TcpForwardHelper(ITcpForwardServer tcpForwardServer, TcpForwardEventHandles tcpForwardEventHandles,
-            IClientInfoCaching clientInfoCaching, TcpForwardSettingModel tcpForwardSettingModel)
+        public TcpForwardHelper(ITcpForwardServer tcpForwardServer, TcpForwardMessengerSender tcpForwardMessengerClient,
+            IClientInfoCaching clientInfoCaching, Config tcpForwardSettingModel)
         {
             this.tcpForwardServer = tcpForwardServer;
-            this.tcpForwardEventHandles = tcpForwardEventHandles;
+            this.tcpForwardMessengerClient = tcpForwardMessengerClient;
             this.clientInfoCaching = clientInfoCaching;
             this.tcpForwardSettingModel = tcpForwardSettingModel;
 
@@ -43,11 +41,11 @@ namespace client.service.tcpforward
             //A来了请求 ，转发到B，
             tcpForwardServer.OnRequest.SubAsync(OnRequest);
             //B接收到A的请求
-            tcpForwardEventHandles.OnTcpForwardHandler.SubAsync(OnTcpForwardMessageHandler);
+            tcpForwardMessengerClient.OnTcpForwardHandler.SubAsync(OnTcpForwardMessageHandler);
 
             tcpForwardServer.OnListeningChange.Sub((model) =>
             {
-                TcpForwardRecordBaseModel mapping = Mappings.FirstOrDefault(c => c.SourcePort == model.SourcePort);
+                TcpForwardRecordInfoBase mapping = Mappings.FirstOrDefault(c => c.SourcePort == model.SourcePort);
                 if (mapping != null)
                 {
                     mapping.Listening = model.Listening;
@@ -66,7 +64,7 @@ namespace client.service.tcpforward
             Logger.Instance.Info("TCP转发服务已启动...");
         }
 
-        private async Task OnRequest(TcpForwardRequestModel arg)
+        private async Task OnRequest(TcpForwardRequestInfo arg)
         {
             if (arg.Connection == null)
             {
@@ -74,7 +72,7 @@ namespace client.service.tcpforward
             }
             else
             {
-                await tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
+                await tcpForwardMessengerClient.SendTcpForward(new SendTcpForwardEventArg
                 {
                     Data = arg.Msg,
                     Connection = arg.Connection
@@ -86,21 +84,21 @@ namespace client.service.tcpforward
             switch (arg.Data.Type)
             {
                 //A收到了B的回复
-                case TcpForwardType.RESPONSE:
+                case TcpForwardTypes.RESPONSE:
                     tcpForwardServer.Response(arg.Data);
                     break;
                 //A收到B的错误回复
-                case TcpForwardType.FAIL:
+                case TcpForwardTypes.FAIL:
                     tcpForwardServer.Fail(arg.Data);
                     break;
                 //B收到请求
-                case TcpForwardType.REQUEST:
+                case TcpForwardTypes.REQUEST:
                     {
                         await Request(arg);
                     }
                     break;
                 //关闭
-                case TcpForwardType.CLOSE:
+                case TcpForwardTypes.CLOSE:
                     {
                         ClientModel.Remove(arg.Data.RequestId);
                     }
@@ -114,13 +112,13 @@ namespace client.service.tcpforward
 
             if (!tcpForwardSettingModel.Enable)
             {
-                await tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
+                await tcpForwardMessengerClient.SendTcpForward(new SendTcpForwardEventArg
                 {
-                    Data = new TcpForwardModel
+                    Data = new TcpForwardInfo
                     {
                         RequestId = arg.Data.RequestId,
-                        Type = TcpForwardType.FAIL,
-                        Buffer = Encoding.UTF8.GetBytes("插件未开启"),
+                        Type = TcpForwardTypes.FAIL,
+                        Buffer = "插件未开启".GetBytes(),
                         AliveType = arg.Data.AliveType
                     },
                     Connection = arg.Connection
@@ -129,13 +127,13 @@ namespace client.service.tcpforward
             }
             if (tcpForwardSettingModel.PortWhiteList.Length > 0 && !tcpForwardSettingModel.PortWhiteList.Contains(arg.Data.TargetPort))
             {
-                await tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
+                await tcpForwardMessengerClient.SendTcpForward(new SendTcpForwardEventArg
                 {
-                    Data = new TcpForwardModel
+                    Data = new TcpForwardInfo
                     {
                         RequestId = arg.Data.RequestId,
-                        Type = TcpForwardType.FAIL,
-                        Buffer = Encoding.UTF8.GetBytes("目标端口不在端口白名单中"),
+                        Type = TcpForwardTypes.FAIL,
+                        Buffer = "目标端口不在端口白名单中".GetBytes(),
                         AliveType = arg.Data.AliveType
                     },
                     Connection = arg.Connection
@@ -144,13 +142,13 @@ namespace client.service.tcpforward
             }
             if (tcpForwardSettingModel.PortBlackList.Contains(arg.Data.TargetPort))
             {
-                await tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
+                await tcpForwardMessengerClient.SendTcpForward(new SendTcpForwardEventArg
                 {
-                    Data = new TcpForwardModel
+                    Data = new TcpForwardInfo
                     {
                         RequestId = arg.Data.RequestId,
-                        Type = TcpForwardType.FAIL,
-                        Buffer = Encoding.UTF8.GetBytes("目标端口在端口黑名单中"),
+                        Type = TcpForwardTypes.FAIL,
+                        Buffer = "目标端口在端口黑名单中".GetBytes(),
                         AliveType = arg.Data.AliveType
                     },
                     Connection = arg.Connection
@@ -195,13 +193,13 @@ namespace client.service.tcpforward
             catch (Exception ex)
             {
                 ClientModel.Remove(arg.Data.RequestId);
-                await tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
+                await tcpForwardMessengerClient.SendTcpForward(new SendTcpForwardEventArg
                 {
-                    Data = new TcpForwardModel
+                    Data = new TcpForwardInfo
                     {
                         RequestId = arg.Data.RequestId,
-                        Type = TcpForwardType.FAIL,
-                        Buffer = Encoding.UTF8.GetBytes(ex + ""),
+                        Type = TcpForwardTypes.FAIL,
+                        Buffer = ex.Message.GetBytes(),
                         AliveType = arg.Data.AliveType
                     },
                     Connection = arg.Connection
@@ -238,13 +236,13 @@ namespace client.service.tcpforward
                 catch (Exception ex)
                 {
                     ClientModel.Remove(state.Client.RequestId);
-                    await tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
+                    await tcpForwardMessengerClient.SendTcpForward(new SendTcpForwardEventArg
                     {
-                        Data = new TcpForwardModel
+                        Data = new TcpForwardInfo
                         {
                             RequestId = state.Client.RequestId,
-                            Type = TcpForwardType.FAIL,
-                            Buffer = Encoding.UTF8.GetBytes(ex.Message),
+                            Type = TcpForwardTypes.FAIL,
+                            Buffer = ex.Message.GetBytes(),
                             AliveType = state.Client.AliveType
                         },
                         Connection = state.Client.SourceConnection
@@ -282,13 +280,13 @@ namespace client.service.tcpforward
         }
         private async Task Receive(ClientModel client, byte[] data)
         {
-            await tcpForwardEventHandles.SendTcpForward(new SendTcpForwardEventArg
+            await tcpForwardMessengerClient.SendTcpForward(new SendTcpForwardEventArg
             {
-                Data = new TcpForwardModel
+                Data = new TcpForwardInfo
                 {
                     RequestId = client.RequestId,
                     Buffer = data,
-                    Type = TcpForwardType.RESPONSE,
+                    Type = TcpForwardTypes.RESPONSE,
                     TargetPort = client.TargetPort,
                     AliveType = client.AliveType,
                     TargetIp = client.TargetIp
@@ -299,7 +297,7 @@ namespace client.service.tcpforward
 
         public string Del(int id)
         {
-            TcpForwardRecordBaseModel map = Mappings.FirstOrDefault(c => c.ID == id);
+            TcpForwardRecordInfoBase map = Mappings.FirstOrDefault(c => c.ID == id);
             if (map != null)
             {
                 Stop(map);
@@ -309,7 +307,7 @@ namespace client.service.tcpforward
         }
         public string DelByPort(int port)
         {
-            TcpForwardRecordBaseModel map = Mappings.FirstOrDefault(c => c.SourcePort == port);
+            TcpForwardRecordInfoBase map = Mappings.FirstOrDefault(c => c.SourcePort == port);
             if (map != null)
             {
                 Stop(map);
@@ -327,14 +325,14 @@ namespace client.service.tcpforward
             }
             return SaveConfig();
         }
-        public TcpForwardRecordBaseModel GetByPort(int port)
+        public TcpForwardRecordInfoBase GetByPort(int port)
         {
             return Mappings.FirstOrDefault(c => c.SourcePort == port);
         }
 
-        public string Add(TcpForwardRecordBaseModel model)
+        public string Add(TcpForwardRecordInfoBase model)
         {
-            TcpForwardRecordBaseModel portmap = Mappings.FirstOrDefault(c => c.SourcePort == model.SourcePort);
+            TcpForwardRecordInfoBase portmap = Mappings.FirstOrDefault(c => c.SourcePort == model.SourcePort);
             if (model.ID == 0)
             {
                 if (portmap != null)
@@ -347,7 +345,7 @@ namespace client.service.tcpforward
             }
             else
             {
-                TcpForwardRecordBaseModel idmap = Mappings.FirstOrDefault(c => c.ID == model.ID);
+                TcpForwardRecordInfoBase idmap = Mappings.FirstOrDefault(c => c.ID == model.ID);
 
                 if (idmap.SourcePort == model.SourcePort && idmap.ID != portmap.ID)
                 {
@@ -373,13 +371,13 @@ namespace client.service.tcpforward
         {
             return Start(Mappings.FirstOrDefault(c => c.ID == id));
         }
-        public string Start(TcpForwardRecordBaseModel model)
+        public string Start(TcpForwardRecordInfoBase model)
         {
             try
             {
                 if (model != null)
                 {
-                    TcpForwardRecordModel model2 = new()
+                    TcpForwardRecordInfo model2 = new()
                     {
                         AliveType = model.AliveType,
                         SourceIp = model.SourceIp,
@@ -418,7 +416,7 @@ namespace client.service.tcpforward
         {
             Stop(Mappings.FirstOrDefault(c => c.ID == id));
         }
-        public void Stop(TcpForwardRecordBaseModel model)
+        public void Stop(TcpForwardRecordInfoBase model)
         {
             tcpForwardServer.Stop(model.SourcePort);
             SaveConfig();
@@ -476,7 +474,7 @@ namespace client.service.tcpforward
     public class ConfigFileModel
     {
         public ConfigFileModel() { }
-        public List<TcpForwardRecordBaseModel> Mappings { get; set; } = new List<TcpForwardRecordBaseModel>();
+        public List<TcpForwardRecordInfoBase> Mappings { get; set; } = new List<TcpForwardRecordInfoBase>();
     }
 
     public class ClientModel

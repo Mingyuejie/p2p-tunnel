@@ -1,19 +1,11 @@
-﻿using client.service.ftp.extends;
-using client.service.ftp.plugin;
-using client.service.ftp.protocol;
-using common.extends;
-using Microsoft.VisualBasic.FileIO;
-using ProtoBuf;
-using server.model;
-using System;
+﻿using client.service.ftp.commands;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace client.service.ftp.server.plugin
 {
-    public class DelPlugin : IFtpServerPlugin
+    public class DelPlugin : IFtpCommandServerPlugin
     {
         private readonly FtpServer ftpServer;
         public DelPlugin(FtpServer ftpServer)
@@ -22,7 +14,7 @@ namespace client.service.ftp.server.plugin
         }
         public FtpCommand Cmd => FtpCommand.DELETE;
 
-        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
+        public async Task<FtpResultInfo> Execute(FtpPluginParamWrap arg)
         {
             await Task.Yield();
 
@@ -31,17 +23,17 @@ namespace client.service.ftp.server.plugin
 
             if (string.IsNullOrWhiteSpace(cmd.Path))
             {
-                return new FtpResultModel { Code = FtpResultModel.FtpResultCodes.PATH_REQUIRED };
+                return new FtpResultInfo { Code = FtpResultInfo.FtpResultCodes.PATH_REQUIRED };
             }
             else
             {
                 List<string> errs = ftpServer.Delete(cmd, arg);
                 if (errs.Any())
                 {
-                    return new FtpResultModel { Code = FtpResultModel.FtpResultCodes.UNKNOW, Data = string.Join(",", errs) };
+                    return new FtpResultInfo { Code = FtpResultInfo.FtpResultCodes.UNKNOW, Data = string.Join(",", errs) };
                 }
             }
-            return new FtpResultModel();
+            return new FtpResultInfo();
         }
     }
 }

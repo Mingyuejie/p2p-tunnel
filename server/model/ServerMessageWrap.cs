@@ -1,4 +1,5 @@
-﻿using ProtoBuf;
+﻿using common.extends;
+using ProtoBuf;
 using System;
 using System.ComponentModel;
 using System.Text;
@@ -24,11 +25,11 @@ namespace server.model
         /// <returns></returns>
         public byte[] ToArray(ServerType type)
         {
-            byte typeByte = (byte)MessageType.REQUEST;
-            byte[] requestIdByte = BitConverter.GetBytes(RequestId);
+            byte typeByte = (byte)MessageTypes.REQUEST;
+            byte[] requestIdByte = RequestId.GetBytes();
 
-            byte[] pathByte = Encoding.ASCII.GetBytes(Path);
-            byte[] pathLengthByte = BitConverter.GetBytes(pathByte.Length);
+            byte[] pathByte = Path.GetBytes();
+            byte[] pathLengthByte = pathByte.Length.GetBytes();
 
             int packLength = 1 + requestIdByte.Length + pathByte.Length + pathLengthByte.Length + Content.Length;
             int payloadLength = packLength;
@@ -42,7 +43,7 @@ namespace server.model
 
             if (type == ServerType.TCP)
             {
-                byte[] payloadLengthByte = BitConverter.GetBytes(payloadLength);
+                byte[] payloadLengthByte = payloadLength.GetBytes();
                 Array.Copy(payloadLengthByte, 0, res, index, payloadLengthByte.Length);
                 index += payloadLengthByte.Length;
             }
@@ -73,13 +74,13 @@ namespace server.model
         {
             index += 1;
 
-            RequestId = BitConverter.ToUInt64(bytes, index);
+            RequestId = bytes.ToUInt64(index);
             index += 8;
 
-            int pathLength = BitConverter.ToInt32(bytes, index);
+            int pathLength = bytes.ToInt32(index);
             index += 4;
 
-            Path = Encoding.ASCII.GetString(bytes, index, pathLength);
+            Path = bytes.GetString(index, pathLength);
             index += pathLength;
 
             //Console.WriteLine($"{RequestId} AsMemory index:{index},length:{length},count:{length-index},total:{bytes.Length}");
@@ -87,11 +88,9 @@ namespace server.model
             Memory = bytes.AsMemory(index, length - index);
         }
     }
-    
-
     public class MessageResponseWrap
     {
-        public MessageResponeCode Code { get; set; } = MessageResponeCode.OK;
+        public MessageResponeCodes Code { get; set; } = MessageResponeCodes.OK;
         public ulong RequestId { get; set; } = 0;
         /// <summary>
         /// 发送数据
@@ -108,10 +107,10 @@ namespace server.model
         /// <returns></returns>
         public byte[] ToArray(ServerType type)
         {
-            byte typeByte = (byte)MessageType.RESPONSE;
-            byte[] requestIdByte = BitConverter.GetBytes(RequestId);
+            byte typeByte = (byte)MessageTypes.RESPONSE;
+            byte[] requestIdByte = RequestId.GetBytes();
             short code = (short)Code;
-            byte[] codeByte = BitConverter.GetBytes(code);
+            byte[] codeByte = code.GetBytes();
 
             int packetLength = 1 + requestIdByte.Length + codeByte.Length + Content.Length;
             int payloadLength = packetLength;
@@ -125,7 +124,7 @@ namespace server.model
 
             if (type == ServerType.TCP)
             {
-                byte[] payloadLengthByte = BitConverter.GetBytes(payloadLength);
+                byte[] payloadLengthByte = payloadLength.GetBytes();
                 Array.Copy(payloadLengthByte, 0, res, index, payloadLengthByte.Length);
                 index += payloadLengthByte.Length;
             }
@@ -151,10 +150,10 @@ namespace server.model
         {
             index += 1;
 
-            RequestId = BitConverter.ToUInt64(bytes, index);
+            RequestId = bytes.ToUInt64(index);
             index += 8;
 
-            Code = (MessageResponeCode)BitConverter.ToInt16(bytes, index);
+            Code = (MessageResponeCodes)bytes.ToInt16(index);
             index += 2;
 
             Memory = bytes.AsMemory(index, length - index);
@@ -163,7 +162,7 @@ namespace server.model
 
     [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
-    public enum MessageResponeCode : byte
+    public enum MessageResponeCodes : byte
     {
         [Description("成功")]
         OK = 0,
@@ -179,7 +178,7 @@ namespace server.model
 
     [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
-    public enum MessageType : byte
+    public enum MessageTypes : byte
     {
         [Description("请求")]
         REQUEST = 0,
@@ -187,7 +186,7 @@ namespace server.model
         RESPONSE = 1
     }
 
-    public class MessageRequestParamsWrap<T>
+    public class MessageRequestParamsInfo<T>
     {
         public IConnection Connection { get; set; }
 
@@ -198,11 +197,11 @@ namespace server.model
         public int Timeout { get; set; } = 15000;
     }
 
-    public class MessageResponseParamsWrap
+    public class MessageResponseParamsInfo
     {
         public IConnection Connection { get; set; }
         public byte[] Data { get; set; } = Array.Empty<byte>();
         public ulong RequestId { get; set; } = 0;
-        public MessageResponeCode Code { get; set; } = MessageResponeCode.OK;
+        public MessageResponeCodes Code { get; set; } = MessageResponeCodes.OK;
     }
 }

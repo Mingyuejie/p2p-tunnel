@@ -1,15 +1,10 @@
-﻿using client.plugins.serverPlugins;
-using client.plugins.serverPlugins.clients;
-using client.service.ftp.plugin;
-using client.service.ftp.protocol;
+﻿using client.messengers.clients;
+using client.messengers.punchHole.tcp;
+using client.messengers.register;
+using client.service.ftp.commands;
 using common;
-using MessagePack;
 using Microsoft.Extensions.DependencyInjection;
-using ProtoBuf;
 using server;
-using server.model;
-using server.plugin;
-using server.plugins.register.caching;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -22,18 +17,12 @@ namespace client.service.ftp.server
 {
     public class FtpServer : FtpBase
     {
-        public Dictionary<FtpCommand, IFtpServerPlugin> Plugins { get; } = new Dictionary<FtpCommand, IFtpServerPlugin>();
-
         protected override string SocketPath => "ftpclient/Execute";
         protected override string RootPath { get { return config.ServerRoot; } }
 
-        private readonly ServiceProvider serviceProvider;
-
-        public FtpServer(ServiceProvider serviceProvider, IServerRequest serverRequest, Config config, IClientInfoCaching clientInfoCaching)
-            : base(serverRequest, config, clientInfoCaching)
+        public FtpServer(ServiceProvider serviceProvider, MessengerSender  messengerSender, Config config, IClientInfoCaching clientInfoCaching, RegisterStateInfo registerState, IPunchHoleTcp punchHoleTcp, IDataTunnelRegister dataTunnelRegister)
+            : base(serviceProvider, messengerSender, config, clientInfoCaching, registerState, punchHoleTcp, dataTunnelRegister)
         {
-            this.serviceProvider = serviceProvider;
-
             clientInfoCaching.OnOffline.Sub((client) =>
             {
                 currentPaths.TryRemove(client.Id, out _);
@@ -42,14 +31,7 @@ namespace client.service.ftp.server
 
         public void LoadPlugins(Assembly[] assemblys)
         {
-            foreach (Type item in ReflectionHelper.GetInterfaceSchieves(assemblys, typeof(IFtpServerPlugin)))
-            {
-                IFtpServerPlugin obj = (IFtpServerPlugin)serviceProvider.GetService(item);
-                if (!Plugins.ContainsKey(obj.Cmd))
-                {
-                    Plugins.TryAdd(obj.Cmd, obj);
-                }
-            }
+            LoadPlugins(assemblys, typeof(IFtpCommandServerPlugin));
         }
 
         public FileInfo[] GetFiles(FtpListCommand cmd, FtpPluginParamWrap wrap)
@@ -143,62 +125,5 @@ namespace client.service.ftp.server
 
     }
 
-    public class FtpServerPlugin : IPlugin
-    {
-        private readonly FtpServer ftpServer;
-        private readonly Config config;
-        private readonly IClientInfoCaching clientInfoCaching;
-        public FtpServerPlugin(FtpServer ftpServer, Config config, IClientInfoCaching clientInfoCaching)
-        {
-            this.ftpServer = ftpServer;
-            this.config = config;
-            this.clientInfoCaching = clientInfoCaching;
-        }
-
-        public async Task<byte[]> Execute(IConnection connection)
-        {
-            if (!config.Enable)
-            {
-                return new FtpResultModel
-                {
-                    Code = FtpResultModel.FtpResultCodes.DISABLE
-                }.ToBytes();
-            }
-            else
-            {
-                FtpCommand cmd = (FtpCommand)connection.ReceiveRequestWrap.Memory.Span[0];
-                FtpPluginParamWrap wrap = new FtpPluginParamWrap
-                {
-                    Connection = connection,
-                };
-                if (clientInfoCaching.Get(connection.ConnectId, out ClientInfo client))
-                {
-                    wrap.Client = client;
-                    if (ftpServer.Plugins.ContainsKey(cmd))
-                    {
-                        try
-                        {
-                            FtpResultModel res = await ftpServer.Plugins[cmd].Execute(wrap);
-                            if (res != null)
-                            {
-                                return res.ToBytes();
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.Instance.Error(ex);
-                            return new FtpResultModel
-                            {
-                                Code = FtpResultModel.FtpResultCodes.UNKNOW
-                            }.ToBytes();
-                        }
-                    }
-                }
-            }
-
-            return null;
-        }
-    }
-
-
+    
 }

@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:05:47
  * @LastEditors: xr
- * @LastEditTime: 2022-01-09 15:31:53
+ * @LastEditTime: 2022-01-23 14:27:58
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\Menu.vue
@@ -15,7 +15,7 @@
         <div class="navs flex-1">
             <router-link :to="{name:'Home'}">首页</router-link>
             <router-link :to="{name:'Register'}">注册服务 <i class="el-icon-circle-check" :class="{active:LocalInfo.TcpConnected}"></i></router-link>
-            <router-link :to="{name:'PluginSetting'}">插件配置</router-link>
+            <router-link :to="{name:'ServiceConfigure'}">插件配置</router-link>
             <el-dropdown>
                 <span class="el-dropdown-link">
                     <span>应用插件</span>
@@ -26,7 +26,7 @@
                     <el-dropdown-menu>
                         <template v-if="websocketState.connected">
                             <template v-for="(item,index) in menus" :key="index">
-                                <auth-item :name="item.plugin">
+                                <auth-item :name="item.service">
                                     <el-dropdown-item>
                                         <router-link :to="{name:item.name}">{{item.text}}</router-link>
                                     </el-dropdown-item>
@@ -85,14 +85,13 @@ export default {
         });
 
         const menus = [
-            { name: 'PluginTcpForward', text: 'TCP转发', plugin: 'TcpForwardPlugin' },
-            { name: 'PluginAlbum', text: '图片相册', plugin: 'AlbumSettingPlugin' },
-            { name: 'PluginFtp', text: '文件服务', plugin: 'FtpPlugin' },
-            { name: 'PluginCmd', text: '远程命令', plugin: 'CmdsPlugin' },
-            { name: 'PluginUPNP', text: 'UPNP映射', plugin: 'UpnpPlugin' },
-            { name: 'PluginDdns', text: '域名解析', plugin: 'DdnsPlugin' },
-            { name: 'PluginWakeUp', text: '幻数据包', plugin: 'WakeUpPlugin' },
-            { name: 'PluginLogger', text: '日志信息', plugin: 'LoggerPlugin' }
+            { name: 'ServiceTcpForward', text: 'TCP转发', service: 'TcpForwardClientService' },
+            { name: 'ServiceFtp', text: '文件服务', service: 'FtpClientService' },
+            { name: 'ServiceCmd', text: '远程命令', service: 'CmdsClientService' },
+            { name: 'ServiceUPNP', text: 'UPNP映射', service: 'UpnpClientService' },
+            { name: 'ServiceDdns', text: '域名解析', service: 'DdnsClientService' },
+            { name: 'ServiceWakeUp', text: '幻数据包', service: 'WakeUpClientService' },
+            { name: 'ServiceLogger', text: '日志信息', service: 'LoggerClientService' }
         ];
 
         const editWsUrl = () => {

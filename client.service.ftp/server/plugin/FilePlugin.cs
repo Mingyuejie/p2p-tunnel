@@ -1,13 +1,9 @@
-﻿using client.service.ftp.plugin;
-using client.service.ftp.protocol;
-using common;
-using common.extends;
-using server.model;
+﻿using client.service.ftp.commands;
 using System.Threading.Tasks;
 
 namespace client.service.ftp.server.plugin
 {
-    public class FilePlugin : IFtpServerPlugin
+    public class FilePlugin : IFtpCommandServerPlugin
     {
         private readonly FtpServer ftpServer;
         public FilePlugin(FtpServer ftpServer)
@@ -16,7 +12,7 @@ namespace client.service.ftp.server.plugin
         }
         public FtpCommand Cmd => FtpCommand.FILE;
 
-        public async Task<FtpResultModel> Execute(FtpPluginParamWrap data)
+        public async Task<FtpResultInfo> Execute(FtpPluginParamWrap data)
         {
             FtpFileCommand cmd = new FtpFileCommand();
             cmd.DeBytes(data.Connection.ReceiveRequestWrap.Memory);
@@ -25,7 +21,7 @@ namespace client.service.ftp.server.plugin
         }
     }
 
-    public class FileEndPlugin : IFtpServerPlugin
+    public class FileEndPlugin : IFtpCommandServerPlugin
     {
         private readonly FtpServer ftpServer;
         public FileEndPlugin(FtpServer ftpServer)
@@ -34,17 +30,19 @@ namespace client.service.ftp.server.plugin
         }
         public FtpCommand Cmd => FtpCommand.FILE_END;
 
-        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
+        public async Task<FtpResultInfo> Execute(FtpPluginParamWrap arg)
         {
+            await Task.Yield();
+
             FtpFileEndCommand cmd = new FtpFileEndCommand();
             cmd.DeBytes(arg.Connection.ReceiveRequestWrap.Memory);
 
             ftpServer.OnFileEnd(cmd, arg);
-            return await Task.FromResult<FtpResultModel>(null);
+            return null;
         }
     }
 
-    public class FileErrorPlugin : IFtpServerPlugin
+    public class FileErrorPlugin : IFtpCommandServerPlugin
     {
         private readonly FtpServer ftpServer;
         public FileErrorPlugin(FtpServer ftpServer)
@@ -53,7 +51,7 @@ namespace client.service.ftp.server.plugin
         }
         public FtpCommand Cmd => FtpCommand.FILE_ERROR;
 
-        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
+        public async Task<FtpResultInfo> Execute(FtpPluginParamWrap arg)
         {
             await Task.Yield();
 

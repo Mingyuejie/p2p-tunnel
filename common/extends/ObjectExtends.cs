@@ -1,9 +1,5 @@
-﻿using ProtoBuf;
-using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
 using System.Text.Unicode;
 
@@ -20,7 +16,9 @@ namespace common.extends
         {
             return JsonSerializer.Serialize(obj, options: new JsonSerializerOptions
             {
-                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(UnicodeRanges.All)
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(UnicodeRanges.All),
+                AllowTrailingCommas = true,
+                ReadCommentHandling = JsonCommentHandling.Skip
             });
         }
         /// <summary>
@@ -34,7 +32,9 @@ namespace common.extends
             return JsonSerializer.Deserialize<T>(json, options: new JsonSerializerOptions
             {
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(UnicodeRanges.All),
-                PropertyNameCaseInsensitive = true
+                PropertyNameCaseInsensitive = true,
+                AllowTrailingCommas = true,
+                ReadCommentHandling = JsonCommentHandling.Skip
             });
         }
 

@@ -1,8 +1,8 @@
 /*
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
- * @LastEditors: snltty
- * @LastEditTime: 2021-10-25 17:22:12
+ * @LastEditors: xr
+ * @LastEditTime: 2022-01-23 14:27:29
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\router\index.js
@@ -22,63 +22,57 @@ const routes = [
     },
 
     {
-        path: '/plugins.html',
-        name: 'Pugins',
-        component: () => import('../views/plugin/Index.vue'),
-        redirect: { name: 'PluginSetting' },
+        path: '/services.html',
+        name: 'Services',
+        component: () => import('../views/service/Index.vue'),
+        redirect: { name: 'ServiceConfigure' },
         children: [
             {
-                path: '/plugin-setting.html',
-                name: 'PluginSetting',
-                component: () => import('../views/plugin/setting/Setting.vue'),
+                path: '/service-configure.html',
+                name: 'ServiceConfigure',
+                component: () => import('../views/service/configure/Configure.vue'),
                 meta: { name: '插件配置' }
             },
             {
-                path: '/plugin-cmd.html',
-                name: 'PluginCmd',
-                component: () => import('../views/plugin/cmd/Index.vue'),
+                path: '/service-cmd.html',
+                name: 'ServiceCmd',
+                component: () => import('../views/service/cmd/Index.vue'),
                 meta: { name: '远程命令' }
             },
             {
-                path: '/plugin-logger.html',
-                name: 'PluginLogger',
-                component: () => import('../views/plugin/Logger.vue'),
+                path: '/service-logger.html',
+                name: 'ServiceLogger',
+                component: () => import('../views/service/Logger.vue'),
                 meta: { name: '日志信息' }
             },
             {
-                path: '/plugin-ftp.html',
-                name: 'PluginFtp',
-                component: () => import('../views/plugin/ftp/Index.vue'),
+                path: '/service-ftp.html',
+                name: 'ServiceFtp',
+                component: () => import('../views/service/ftp/Index.vue'),
                 meta: { name: '文件服务' }
             },
             {
-                path: '/plugin-upnp.html',
-                name: 'PluginUPNP',
-                component: () => import('../views/plugin/UPNP.vue'),
+                path: '/service-upnp.html',
+                name: 'ServiceUPNP',
+                component: () => import('../views/service/UPNP.vue'),
                 meta: { name: 'UPNP映射' }
             },
             {
-                path: '/plugin-album.html',
-                name: 'PluginAlbum',
-                component: () => import('../views/plugin/album/Index.vue'),
-                meta: { name: '图片相册' }
-            },
-            {
-                path: '/plugin-tcp-forward.html',
-                name: 'PluginTcpForward',
-                component: () => import('../views/plugin/TcpForward.vue'),
+                path: '/service-tcp-forward.html',
+                name: 'ServiceTcpForward',
+                component: () => import('../views/service/TcpForward.vue'),
                 meta: { name: 'TCP转发' }
             },
             {
-                path: '/plugin-wakeup.html',
-                name: 'PluginWakeUp',
-                component: () => import('../views/plugin/WakeUp.vue'),
+                path: '/service-wakeup.html',
+                name: 'ServiceWakeUp',
+                component: () => import('../views/service/WakeUp.vue'),
                 meta: { name: '幻数据包' }
             },
             {
-                path: '/plugin-ddns.html',
-                name: 'PluginDdns',
-                component: () => import('../views/plugin/ddns/Index.vue'),
+                path: '/service-ddns.html',
+                name: 'ServiceDdns',
+                component: () => import('../views/service/ddns/Index.vue'),
                 meta: { name: '域名解析' }
             },
         ]

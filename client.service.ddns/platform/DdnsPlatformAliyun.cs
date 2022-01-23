@@ -15,7 +15,7 @@ namespace client.service.ddns.platform
             this.config = config;
         }
 
-        public DescribeDomains DescribeDomains(DescribeDomainsParam model, string group)
+        public DescribeDomains DescribeDomains(DescribeDomainsParamsInfo model, string group)
         {
             DescribeDomainsRequest request = new DescribeDomainsRequest
             {
@@ -27,7 +27,7 @@ namespace client.service.ddns.platform
 
             return new DescribeDomains
             {
-                Domains = response.Body.Domains.Domain.Select(c => new DescribeDomainModel
+                Domains = response.Body.Domains.Domain.Select(c => new DescribeDomainItemInfo
                 {
                     DomainId = c.DomainId,
                     DomainName = c.DomainName
@@ -58,7 +58,7 @@ namespace client.service.ddns.platform
             return true;
         }
 
-        public bool AddDomainRecord(AddDomainRecordModel model, string group)
+        public bool AddDomainRecord(AddDomainRecordParamsInfo model, string group)
         {
             if (model.Priority < 1 || model.Priority > 50)
             {
@@ -77,7 +77,7 @@ namespace client.service.ddns.platform
             var response = GetClientByGroup(group).AddDomainRecord(request);
             return true;
         }
-        public bool UpdateDomainRecord(UpdateDomainRecordModel model, string group)
+        public bool UpdateDomainRecord(UpdateDomainRecordParamsInfo model, string group)
         {
             if (model.Priority < 1 || model.Priority > 50)
             {
@@ -96,7 +96,7 @@ namespace client.service.ddns.platform
             var response = GetClientByGroup(group).UpdateDomainRecord(request);
             return true;
         }
-        public bool DeleteDomainRecord(DeleteDomainRecordModel model, string group)
+        public bool DeleteDomainRecord(DeleteDomainRecordParamsInfo model, string group)
         {
             DeleteDomainRecordRequest request = new DeleteDomainRecordRequest
             {
@@ -106,7 +106,7 @@ namespace client.service.ddns.platform
             return true;
         }
 
-        public DescribeDomainRecord DescribeDomainRecords(DescribeDomainRecordsModel model, string group)
+        public DescribeDomainRecordsInfo DescribeDomainRecords(DescribeDomainRecordsParamsInfo model, string group)
         {
             DescribeDomainRecordsRequest request = new DescribeDomainRecordsRequest
             {
@@ -115,12 +115,12 @@ namespace client.service.ddns.platform
                 PageNumber = model.PageNumber
             };
             var response = GetClientByGroup(group).DescribeDomainRecords(request);
-            return new DescribeDomainRecord
+            return new DescribeDomainRecordsInfo
             {
                 PageSize = response.Body.PageSize ?? 0,
                 PageNumber = response.Body.PageNumber ?? 0,
                 Count = response.Body.TotalCount ?? 0,
-                DomainRecords = response.Body.DomainRecords.Record.Select(c => new DomainRecordsModel
+                DomainRecords = response.Body.DomainRecords.Record.Select(c => new DomainRecordsItemInfo
                 {
                     DomainName = c.DomainName,
                     Line = c.Line,
@@ -138,14 +138,14 @@ namespace client.service.ddns.platform
             };
         }
 
-        public IEnumerable<DescribeSupportLine> DescribeSupportLines(string group, string domain)
+        public IEnumerable<DescribeSupportLineParamsInfo> DescribeSupportLines(string group, string domain)
         {
             DescribeSupportLinesRequest request = new DescribeSupportLinesRequest
             {
 
             };
             var response = GetClientByGroup(group).DescribeSupportLines(request);
-            return response.Body.RecordLines.RecordLine.Take(10).Select(c => new DescribeSupportLine
+            return response.Body.RecordLines.RecordLine.Take(10).Select(c => new DescribeSupportLineParamsInfo
             {
                 FatherCode = c.FatherCode,
                 LineCode = c.LineCode,
@@ -159,7 +159,7 @@ namespace client.service.ddns.platform
             {"ENABLE","DISABLE" },
             {"DISABLE","ENABLE" },
         };
-        public bool SwitchDomainRecordStatus(SetDomainRecordStatusModel model, string group)
+        public bool SwitchDomainRecordStatus(SetDomainRecordStatusParamsInfo model, string group)
         {
             SetDomainRecordStatusRequest request = new SetDomainRecordStatusRequest
             {
@@ -170,7 +170,7 @@ namespace client.service.ddns.platform
             return true;
         }
 
-        public bool UpdateDomainRecordRemark(UpdateDomainRecordRemarkModel model, string group)
+        public bool UpdateDomainRecordRemark(UpdateDomainRecordRemarkParamsInfo model, string group)
         {
             UpdateDomainRecordRemarkRequest request = new UpdateDomainRecordRemarkRequest
             {

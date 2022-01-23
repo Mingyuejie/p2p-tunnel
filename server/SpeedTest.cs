@@ -1,4 +1,5 @@
-﻿using MessagePack;
+﻿using common.extends;
+using MessagePack;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -57,16 +58,14 @@ namespace server
                 cacheBuffer.AddRange(data, data.Length);
                 do
                 {
-                    var memory = cacheBuffer.ArrayData;
-
-                    int packageLen = BitConverter.ToInt32(memory, 0);
+                    int packageLen = cacheBuffer.ArrayData.ToInt32(0);
                     if (packageLen > cacheBuffer.Size - 4)
                     {
                         break;
                     }
 
                     MessageRequestWrapTest wrap1 = new MessageRequestWrapTest();
-                    wrap1.FromArray(memory, 0, packageLen);
+                    wrap1.FromArray(cacheBuffer.ArrayData, 0, packageLen);
 
                     FtpFileCommandTest cmd2 = new FtpFileCommandTest();
                     cmd2.FromBytes(wrap1.Memory);
@@ -103,12 +102,12 @@ namespace server
         {
             byte cmdByte = (byte)Cmd;
 
-            byte[] sizeByte = BitConverter.GetBytes(Size);
+            byte[] sizeByte = Size.GetBytes();
 
-            byte[] md5Byte = BitConverter.GetBytes(Md5);
+            byte[] md5Byte = Md5.GetBytes();
 
-            byte[] name = Encoding.UTF8.GetBytes(Name);
-            byte[] nameLength = BitConverter.GetBytes(name.Length);
+            byte[] name = Name.GetBytes();
+            byte[] nameLength = name.Length.GetBytes();
 
             MetaData = new byte[
                 1 +
@@ -144,15 +143,15 @@ namespace server
         {
             int index = 1;
 
-            Size = BitConverter.ToInt64(memory.Span.Slice(index, 8));
+            Size = memory.Span.Slice(index, 8).ToInt64();
             index += 8;
 
-            Md5 = BitConverter.ToUInt64(memory.Span.Slice(index, 8));
+            Md5 = memory.Span.Slice(index, 8).ToUInt64();
             index += 8;
 
-            int nameLength = BitConverter.ToInt32(memory.Span.Slice(index, 4));
+            int nameLength = memory.Span.Slice(index, 4).ToInt32();
             index += 4;
-            Name = Encoding.UTF8.GetString(memory.Span.Slice(index, nameLength));
+            Name = memory.Span.Slice(index, nameLength).GetString();
             index += nameLength;
 
             ReadData = memory.Slice(index);
@@ -209,13 +208,13 @@ namespace server
         public byte[] ToArray()
         {
             byte typeByte = (byte)1;
-            byte[] requestIdByte = BitConverter.GetBytes(RequestId);
+            byte[] requestIdByte = RequestId.GetBytes();
 
-            byte[] pathByte = Encoding.ASCII.GetBytes(Path);
-            byte[] pathLengthByte = BitConverter.GetBytes(pathByte.Length);
+            byte[] pathByte = Path.GetBytes();
+            byte[] pathLengthByte = pathByte.Length.GetBytes();
 
             int packetLength = 1 + requestIdByte.Length + pathByte.Length + pathLengthByte.Length + Content.Length;
-            byte[] packetLengthByte = BitConverter.GetBytes(packetLength);
+            byte[] packetLengthByte = packetLength.GetBytes();
             packetLength += packetLengthByte.Length;
 
             byte[] res = new byte[packetLength];
@@ -245,12 +244,12 @@ namespace server
         {
             index += 1;
 
-            RequestId = BitConverter.ToUInt64(bytes, index);
+            RequestId = bytes.ToUInt64(index);
             index += 8;
 
-            int pathLength = BitConverter.ToInt32(bytes, index);
+            int pathLength = bytes.ToInt32(index);
             index += 4;
-            Path = Encoding.ASCII.GetString(bytes, index, pathLength);
+            Path = bytes.GetString(index, pathLength);
             index += pathLength;
 
             Memory = bytes.AsMemory(index, length - index);

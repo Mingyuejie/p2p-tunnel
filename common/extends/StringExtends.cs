@@ -99,5 +99,10 @@ namespace common.extends
         {
             return Array.ConvertAll(input.Split(Helper.SeparatorChar), c => int.Parse(c));
         }
+
+        public static byte[] GetBytes(this string str)
+        {
+            return Encoding.UTF8.GetBytes(str);
+        }
     }
 }

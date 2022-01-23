@@ -1,23 +1,15 @@
-﻿using client.plugins.serverPlugins;
-using client.plugins.serverPlugins.clients;
-using client.service.ftp.extends;
-using client.service.ftp.plugin;
-using client.service.ftp.protocol;
-using client.service.ftp.server.plugin;
-using common;
+﻿using client.messengers.clients;
+using client.messengers.punchHole.tcp;
+using client.messengers.register;
+using client.service.ftp.commands;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualBasic.FileIO;
 using server;
 using server.model;
-using server.plugin;
-using server.plugins.register.caching;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Sockets;
 using System.Reflection;
 using System.Threading.Tasks;
 using static System.Environment;
@@ -26,30 +18,19 @@ namespace client.service.ftp.client
 {
     public class FtpClient : FtpBase
     {
-        public Dictionary<FtpCommand, IFtpClientPlugin> Plugins { get; } = new Dictionary<FtpCommand, IFtpClientPlugin>();
-
         protected override string SocketPath => "ftpserver/Execute";
-        protected string CurrentPath { get { return config.ClientCurrentPath; } }
         protected override string RootPath { get { return config.ClientRootPath; } }
 
-        private readonly ServiceProvider serviceProvider;
+        protected string CurrentPath { get { return config.ClientCurrentPath; } }
 
-        public FtpClient(ServiceProvider serviceProvider, IServerRequest serverRequest, Config config, IClientInfoCaching clientInfoCaching)
-            : base(serverRequest, config, clientInfoCaching)
+        public FtpClient(ServiceProvider serviceProvider, MessengerSender  messengerSender, Config config, IClientInfoCaching clientInfoCaching, RegisterStateInfo registerState, IPunchHoleTcp punchHoleTcp, IDataTunnelRegister dataTunnelRegister)
+            : base(serviceProvider,  messengerSender, config, clientInfoCaching, registerState, punchHoleTcp, dataTunnelRegister)
         {
-            this.serviceProvider = serviceProvider;
         }
 
         public void LoadPlugins(Assembly[] assemblys)
         {
-            foreach (Type item in ReflectionHelper.GetInterfaceSchieves(assemblys, typeof(IFtpClientPlugin)))
-            {
-                IFtpClientPlugin obj = (IFtpClientPlugin)serviceProvider.GetService(item);
-                if (!Plugins.ContainsKey(obj.Cmd))
-                {
-                    Plugins.TryAdd(obj.Cmd, obj);
-                }
-            }
+            LoadPlugins(assemblys, typeof(IFtpCommandClientPlugin));
         }
 
         public void SetCurrentPath(string path)
@@ -164,10 +145,10 @@ namespace client.service.ftp.client
         public async Task<FileInfo[]> RemoteList(string path, ClientInfo client)
         {
             var response = await SendReplyTcp(new FtpListCommand { Path = path }, client);
-            if (response.Code == MessageResponeCode.OK)
+            if (response.Code == MessageResponeCodes.OK)
             {
-                FtpResultModel result = FtpResultModel.FromBytes(response.Data);
-                if (result.Code == FtpResultModel.FtpResultCodes.OK)
+                FtpResultInfo result = FtpResultInfo.FromBytes(response.Data);
+                if (result.Code == FtpResultInfo.FtpResultCodes.OK)
                 {
                     return result.ReadData.DeBytes<FileInfo[]>();
                 }
@@ -177,7 +158,7 @@ namespace client.service.ftp.client
         public async Task<bool> Download(string path, ClientInfo client)
         {
             var response = await SendReplyTcp(new FtpDownloadCommand { Path = path }, client);
-            return response.Code == MessageResponeCode.OK;
+            return response.Code == MessageResponeCodes.OK;
         }
     }
 
@@ -188,48 +169,5 @@ namespace client.service.ftp.client
         public SpecialFolderInfo[] Child { get; set; } = Array.Empty<SpecialFolderInfo>();
     }
 
-    public class FtpClientPlugin : IPlugin
-    {
-        private readonly FtpClient ftpClient;
-        private readonly IClientInfoCaching clientInfoCaching;
-        public FtpClientPlugin(FtpClient ftpClient, IClientInfoCaching clientInfoCaching)
-        {
-            this.ftpClient = ftpClient;
-            this.clientInfoCaching = clientInfoCaching;
-        }
-
-        public async Task<byte[]> Execute(IConnection connection)
-        {
-            
-            FtpCommand cmd = (FtpCommand)connection.ReceiveRequestWrap.Memory.Span[0];
-            FtpPluginParamWrap wrap = new FtpPluginParamWrap
-            {
-                Connection = connection
-            };
-            if (clientInfoCaching.Get(connection.ConnectId, out ClientInfo client))
-            {
-                wrap.Client = client;
-                if (ftpClient.Plugins.ContainsKey(cmd))
-                {
-                    try
-                    {
-                        FtpResultModel res = await ftpClient.Plugins[cmd].Execute(wrap);
-                        if (res != null)
-                        {
-                            return res.ToBytes();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Instance.Error(ex);
-                        return new FtpResultModel
-                        {
-                            Code = FtpResultModel.FtpResultCodes.UNKNOW
-                        }.ToBytes();
-                    }
-                }
-            }
-            return null;
-        }
-    }
+    
 }

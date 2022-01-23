@@ -1,11 +1,9 @@
-﻿using client.service.ftp.plugin;
-using client.service.ftp.protocol;
-using common.extends;
+﻿using client.service.ftp.commands;
 using System.Threading.Tasks;
 
 namespace client.service.ftp.client.plugin
 {
-    public class FilePlugin : IFtpClientPlugin
+    public class FilePlugin : IFtpCommandClientPlugin
     {
         private readonly FtpClient ftpClient;
         public FilePlugin(FtpClient ftpClient)
@@ -14,7 +12,7 @@ namespace client.service.ftp.client.plugin
         }
         public FtpCommand Cmd => FtpCommand.FILE;
 
-        public async Task<FtpResultModel> Execute(FtpPluginParamWrap data)
+        public async Task<FtpResultInfo> Execute(FtpPluginParamWrap data)
         {
             FtpFileCommand cmd = new FtpFileCommand();
             cmd.DeBytes(data.Connection.ReceiveRequestWrap.Memory);
@@ -23,7 +21,7 @@ namespace client.service.ftp.client.plugin
         }
     }
 
-    public class FileEndPlugin : IFtpClientPlugin
+    public class FileEndPlugin : IFtpCommandClientPlugin
     {
         private readonly FtpClient ftpClient;
         public FileEndPlugin(FtpClient ftpClient)
@@ -32,7 +30,7 @@ namespace client.service.ftp.client.plugin
         }
         public FtpCommand Cmd => FtpCommand.FILE_END;
 
-        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
+        public async Task<FtpResultInfo> Execute(FtpPluginParamWrap arg)
         {
             await Task.Yield();
             FtpFileEndCommand cmd = new FtpFileEndCommand();

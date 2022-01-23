@@ -1,17 +1,9 @@
-﻿using client.service.ftp.plugin;
-using client.service.ftp.protocol;
-using common.extends;
-using ProtoBuf;
-using server.model;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using client.service.ftp.commands;
 using System.Threading.Tasks;
 
 namespace client.service.ftp.client.plugin
 {
-    public class CreatePlugin : IFtpClientPlugin
+    public class CreatePlugin : IFtpCommandClientPlugin
     {
         public FtpCommand Cmd => FtpCommand.CREATE;
 
@@ -21,7 +13,7 @@ namespace client.service.ftp.client.plugin
             this.ftpClient = ftpClient;
         }
 
-        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
+        public async Task<FtpResultInfo> Execute(FtpPluginParamWrap arg)
         {
             await Task.Yield();
 
@@ -30,14 +22,14 @@ namespace client.service.ftp.client.plugin
 
             if (string.IsNullOrWhiteSpace(cmd.Path))
             {
-                return new FtpResultModel { Code = FtpResultModel.FtpResultCodes.PATH_REQUIRED };
+                return new FtpResultInfo { Code = FtpResultInfo.FtpResultCodes.PATH_REQUIRED };
             }
             else
             {
                 ftpClient.Create(cmd.Path);
             }
 
-            return new FtpResultModel();
+            return new FtpResultInfo();
         }
     }
 }

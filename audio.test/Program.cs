@@ -1,4 +1,5 @@
-﻿using NAudio.CoreAudioApi;
+﻿using common.extends;
+using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using NSpeex;
 using ozeki;
@@ -86,12 +87,12 @@ namespace audio.test
                             {
                                 short currentSample = decodedBuffer[i];
                                 peakVolume = currentSample > peakVolume ? currentSample : peakVolume;
-                                BitConverter.GetBytes(currentSample).CopyTo(buffer, offset + bytesRead);
+                                currentSample.GetBytes().CopyTo(buffer, offset + bytesRead);
                                 bytesRead += 2;
                             }
                             else
                             {
-                                var bytes = BitConverter.GetBytes(decodedBuffer[i]);
+                                var bytes = decodedBuffer[i].GetBytes();
                                 exceedingBytes.Enqueue(bytes[0]);
                                 exceedingBytes.Enqueue(bytes[1]);
                             }

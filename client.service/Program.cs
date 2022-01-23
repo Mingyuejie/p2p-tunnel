@@ -1,13 +1,11 @@
 ﻿//using client.service.album;
 using client.service.cmd;
 using client.service.ddns;
-using client.service.ddns.client;
 using client.service.ftp;
 using client.service.ftp.server;
 using client.service.logger;
-using client.service.plugins.punchHolePlugins;
+using client.service.messengers.register;
 using client.service.plugins.serverPlugins;
-using client.service.plugins.serverPlugins.register;
 using client.service.servers.clientServer;
 using client.service.servers.webServer;
 using client.service.serverTcpforward;
@@ -47,21 +45,20 @@ namespace client.service
 
             //外部程序集的插件
             System.Reflection.Assembly[] assemblys = new[] {
-                typeof(TcpForwardPlugin).Assembly,
-                typeof(UpnpPlugin).Assembly,
-                typeof(FtpServerPlugin).Assembly,
-                typeof(WakeUpPlugin).Assembly,
-                typeof(CmdPlugin).Assembly,
-                typeof(LoggerPlugin).Assembly,
-                typeof(ServerTcpForwardPlugin).Assembly,
-                typeof(DdnsPlugin).Assembly,
+                typeof(TcpForwardMessenger).Assembly,
+                typeof(UpnpClientService).Assembly,
+                typeof(FtpServerMessenger).Assembly,
+                typeof(WakeUpClientService).Assembly,
+                typeof(CmdMessenger).Assembly,
+                typeof(LoggerClientService).Assembly,
+                typeof(ServerTcpForwardMessenger).Assembly,
+                typeof(DdnsClientService).Assembly,
             };
 
             serviceCollection
                 .AddServerPlugin(assemblys)//基础的功能
                 .AddClientServer(assemblys)//客户端管理
                 .AddWebServer()//客户端页面
-                .AddPunchHolePlugin()//打洞
                 .AddTcpForwardPlugin()  //客户端tcp转发
                 .AddUpnpPlugin()//upnp映射
                 .AddFtpPlugin() //文件服务
@@ -77,7 +74,6 @@ namespace client.service
                 .UseServerPlugin(assemblys)//基础的功能
                 .UseClientServer(assemblys)//客户端管理
                 .UseWebServer()//客户端页面
-                .UsePunchHolePlugin()//打洞
                 .UseTcpForwardPlugin()//客户端tcp转发
                 .UseUpnpPlugin()//upnp映射
                 .UseFtpPlugin() //文件服务

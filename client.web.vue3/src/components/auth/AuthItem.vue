@@ -1,14 +1,14 @@
 <!--
  * @Author: xr
  * @Date: 2021-03-23 20:41:22
- * @LastEditors: snltty
- * @LastEditTime: 2021-09-29 22:01:48
+ * @LastEditors: xr
+ * @LastEditTime: 2022-01-23 14:13:31
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\components\auth\AuthItem.vue
 -->
 <template>
-    <template v-if="plugins.indexOf(name) >= 0">
+    <template v-if="services.indexOf(name) >= 0">
         <slot></slot>
     </template>
 </template>
@@ -18,9 +18,9 @@ import { inject } from 'vue'
 export default {
     props: ['name'],
     setup () {
-        const plugins = inject('btn-auth-plugins');
+        const services = inject('btn-auth-services');
         return {
-            plugins
+            services
         }
     }
 }

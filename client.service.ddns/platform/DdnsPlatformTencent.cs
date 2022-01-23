@@ -33,7 +33,7 @@ namespace client.service.ddns.platform
             return true;
         }
 
-        public bool AddDomainRecord(AddDomainRecordModel model, string group)
+        public bool AddDomainRecord(AddDomainRecordParamsInfo model, string group)
         {
             if (model.Priority < 1 || model.Priority > 20)
             {
@@ -65,7 +65,7 @@ namespace client.service.ddns.platform
             return true;
         }
 
-        public bool DeleteDomainRecord(DeleteDomainRecordModel model, string group)
+        public bool DeleteDomainRecord(DeleteDomainRecordParamsInfo model, string group)
         {
             DeleteRecordRequest req = new DeleteRecordRequest
             {
@@ -77,7 +77,7 @@ namespace client.service.ddns.platform
             return true;
         }
 
-        public DescribeDomainRecord DescribeDomainRecords(DescribeDomainRecordsModel model, string group)
+        public DescribeDomainRecordsInfo DescribeDomainRecords(DescribeDomainRecordsParamsInfo model, string group)
         {
             DescribeRecordListRequest req = new DescribeRecordListRequest
             {
@@ -88,12 +88,12 @@ namespace client.service.ddns.platform
 
             var resp = GetClientByGroup(group).DescribeRecordListSync(req);
 
-            return new DescribeDomainRecord
+            return new DescribeDomainRecordsInfo
             {
                 PageSize = model.PageSize,
                 PageNumber = model.PageNumber,
                 Count = (long)resp.RecordCountInfo.ListCount,
-                DomainRecords = resp.RecordList.Select(c => new DomainRecordsModel
+                DomainRecords = resp.RecordList.Select(c => new DomainRecordsItemInfo
                 {
                     DomainName = string.Empty,
                     Line = c.Line,
@@ -111,7 +111,7 @@ namespace client.service.ddns.platform
             };
         }
 
-        public DescribeDomains DescribeDomains(DescribeDomainsParam model, string group)
+        public DescribeDomains DescribeDomains(DescribeDomainsParamsInfo model, string group)
         {
             DescribeDomainListRequest req = new DescribeDomainListRequest
             {
@@ -126,7 +126,7 @@ namespace client.service.ddns.platform
                 TotalCount = (long)resp.DomainCountInfo.AllTotal,
                 PageNumber = model.PageNumber,
                 PageSize = model.PageSize,
-                Domains = resp.DomainList.Select(c => new DescribeDomainModel
+                Domains = resp.DomainList.Select(c => new DescribeDomainItemInfo
                 {
                     DomainId = c.DomainId.ToString(),
                     DomainName = c.Name,
@@ -134,7 +134,7 @@ namespace client.service.ddns.platform
             };
         }
 
-        public IEnumerable<DescribeSupportLine> DescribeSupportLines(string group, string domain)
+        public IEnumerable<DescribeSupportLineParamsInfo> DescribeSupportLines(string group, string domain)
         {
             DescribeRecordLineListRequest req = new DescribeRecordLineListRequest
             {
@@ -143,7 +143,7 @@ namespace client.service.ddns.platform
             };
 
             var resp = GetClientByGroup(group).DescribeRecordLineListSync(req);
-            return resp.LineList.Take(10).Select(c => new DescribeSupportLine
+            return resp.LineList.Take(10).Select(c => new DescribeSupportLineParamsInfo
             {
                 FatherCode = c.Name,
                 LineCode = c.Name,
@@ -157,7 +157,7 @@ namespace client.service.ddns.platform
             {"ENABLE","DISABLE" },
             {"DISABLE","ENABLE" },
         };
-        public bool SwitchDomainRecordStatus(SetDomainRecordStatusModel model, string group)
+        public bool SwitchDomainRecordStatus(SetDomainRecordStatusParamsInfo model, string group)
         {
             ModifyRecordStatusRequest req = new ModifyRecordStatusRequest
             {
@@ -170,7 +170,7 @@ namespace client.service.ddns.platform
             return true;
         }
 
-        public bool UpdateDomainRecord(UpdateDomainRecordModel model, string group)
+        public bool UpdateDomainRecord(UpdateDomainRecordParamsInfo model, string group)
         {
             if (model.Priority < 1 || model.Priority > 20)
             {
@@ -192,7 +192,7 @@ namespace client.service.ddns.platform
             return true;
         }
 
-        public bool UpdateDomainRecordRemark(UpdateDomainRecordRemarkModel model, string group)
+        public bool UpdateDomainRecordRemark(UpdateDomainRecordRemarkParamsInfo model, string group)
         {
             ModifyRecordRemarkRequest req = new ModifyRecordRemarkRequest
             {

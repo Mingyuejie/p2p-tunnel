@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-08-19 22:30:19
  * @LastEditors: xr
- * @LastEditTime: 2022-01-21 16:38:48
+ * @LastEditTime: 2022-01-23 14:49:43
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\Register.vue
@@ -134,7 +134,7 @@
 import { ref, toRefs, reactive } from '@vue/reactivity';
 import { injectRegister } from '../states/register'
 import { sendRegisterMsg, getRegisterInfo } from '../apis/register'
-import { sendConfigMsg } from '../apis/config'
+import { updateConfig } from '../apis/config'
 
 import { ElMessage } from 'element-plus'
 import { watch } from '@vue/runtime-core';
@@ -210,9 +210,8 @@ export default {
                     }
                 };
                 registerState.LocalInfo.IsConnecting = true;
-                sendConfigMsg(data).then(() => {
+                updateConfig(data).then(() => {
                     sendRegisterMsg().then((res) => {
-
                     }).catch((msg) => {
                         ElMessage.error(msg);
                     });

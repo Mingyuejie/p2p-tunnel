@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace common
 {
-    public class ArrayCacheBuffer
+    public class ReceiveDataBuffer
     {
         private byte[] items { get; set; } = Array.Empty<byte>();
         private int size = 0;

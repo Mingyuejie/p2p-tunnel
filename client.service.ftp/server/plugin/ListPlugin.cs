@@ -1,13 +1,9 @@
-﻿using client.service.ftp.plugin;
-using client.service.ftp.protocol;
-using common;
-using common.extends;
-using System;
+﻿using client.service.ftp.commands;
 using System.Threading.Tasks;
 
 namespace client.service.ftp.server.plugin
 {
-    public class ListPlugin : IFtpServerPlugin
+    public class ListPlugin : IFtpCommandServerPlugin
     {
         private readonly FtpServer ftpServer;
 
@@ -17,13 +13,13 @@ namespace client.service.ftp.server.plugin
         }
         public FtpCommand Cmd => FtpCommand.LIST;
 
-        public async Task<FtpResultModel> Execute(FtpPluginParamWrap arg)
+        public async Task<FtpResultInfo> Execute(FtpPluginParamWrap arg)
         {
             await Task.Yield();
 
             FtpListCommand cmd = new FtpListCommand();
             cmd.DeBytes(arg.Connection.ReceiveRequestWrap.Memory);
-            return new FtpResultModel { Data = ftpServer.GetFiles(cmd, arg) };
+            return new FtpResultInfo { Data = ftpServer.GetFiles(cmd, arg) };
         }
     }
 }
