@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-07 00:37:53
  * @LastEditors: xr
- * @LastEditTime: 2022-01-21 16:49:26
+ * @LastEditTime: 2022-01-24 23:34:53
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\home.md
@@ -22,8 +22,6 @@
 
 ### 消息方式
 1. 默认打洞直连  **A->B**，400MB/s+ 的文件传输速度
-2. 打洞失败时，消息将由服务端转发  **A->服务端->B**
-3. 也可以在服务端开启TCP转发  **服务端->B**
 
 # QQ群 
 一起打造一个满意的打洞直连内网穿透工具
@@ -40,7 +38,6 @@
 1. p2p  打洞项目
     1. client 客户端公共内容
     2. client.service 客户端服务
-    3. client.service.album 客户端服务的 图片相册插件
     4. client.service.ftp 客户端服务的  文件服务插件
     5. client.service.tcpforward 客户端服务的 tcp转发插件
     6. client.service.upnp 网关端口映射管理
