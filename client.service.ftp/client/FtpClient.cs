@@ -23,8 +23,8 @@ namespace client.service.ftp.client
 
         protected string CurrentPath { get { return config.ClientCurrentPath; } }
 
-        public FtpClient(ServiceProvider serviceProvider, MessengerSender  messengerSender, Config config, IClientInfoCaching clientInfoCaching, RegisterStateInfo registerState, IPunchHoleTcp punchHoleTcp, IDataTunnelRegister dataTunnelRegister)
-            : base(serviceProvider,  messengerSender, config, clientInfoCaching, registerState, punchHoleTcp, dataTunnelRegister)
+        public FtpClient(ServiceProvider serviceProvider, MessengerSender messengerSender, Config config, IClientInfoCaching clientInfoCaching, RegisterStateInfo registerState, IPunchHoleTcp punchHoleTcp, IDataTunnelRegister dataTunnelRegister)
+            : base(serviceProvider, messengerSender, config, clientInfoCaching, registerState, punchHoleTcp, dataTunnelRegister)
         {
         }
 
@@ -133,7 +133,7 @@ namespace client.service.ftp.client
         {
             return Delete(CurrentPath, path);
         }
-        public async Task OnFile(FtpFileCommand cmd, FtpPluginParamWrap data)
+        public async ValueTask OnFile(FtpFileCommand cmd, FtpPluginParamWrap data)
         {
             await OnFile(CurrentPath, cmd, data);
         }
@@ -169,5 +169,5 @@ namespace client.service.ftp.client
         public SpecialFolderInfo[] Child { get; set; } = Array.Empty<SpecialFolderInfo>();
     }
 
-    
+
 }

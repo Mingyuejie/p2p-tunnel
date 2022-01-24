@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace server.servers.defaults
@@ -17,8 +18,10 @@ namespace server.servers.defaults
         }
 
         private UdpClient UdpcRecv { get; set; } = null;
-        public SimpleSubPushHandler<ReceiveDataWrap> OnPacket { get; } = new SimpleSubPushHandler<ReceiveDataWrap>();
+        public SimpleSubPushHandler<IConnection> OnPacket { get; } = new SimpleSubPushHandler<IConnection>();
         private static ConcurrentDictionary<long, IConnection> clients = new ConcurrentDictionary<long, IConnection>();
+        private CancellationTokenSource cancellationToken = new CancellationTokenSource();
+
 
         public void Start(int port, IPAddress ip = null)
         {
@@ -43,22 +46,18 @@ namespace server.servers.defaults
                 {
                     try
                     {
-                        var result = await UdpcRecv.ReceiveAsync();
+                        var result = await UdpcRecv.ReceiveAsync(cancellationToken.Token);
                         long id = result.RemoteEndPoint.ToInt64();
                         if (!clients.TryGetValue(id, out IConnection connection))
                         {
                             connection = CreateConnection(result.RemoteEndPoint);
                             clients.TryAdd(id, connection);
                         }
+
                         if (result.Buffer.Length > 0)
                         {
-                            await OnPacket.PushAsync(new ReceiveDataWrap
-                            {
-                                Data = result.Buffer,
-                                Length = result.Buffer.Length,
-                                Index = 0,
-                                Connection = connection
-                            });
+                            connection.ReceiveDataWrap.Data = result.Buffer.AsMemory();
+                            await OnPacket.PushAsync(connection);
                         }
                     }
                     catch (Exception)

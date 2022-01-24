@@ -1,6 +1,7 @@
 ﻿using common.extends;
 using server;
 using server.model;
+using System;
 using System.Threading.Tasks;
 
 namespace client.service.messengers.forward
@@ -19,13 +20,9 @@ namespace client.service.messengers.forward
         public async Task Execute(IConnection connection)
         {
             ForwardParamsInfo model = connection.ReceiveRequestWrap.Memory.DeBytes<ForwardParamsInfo>();
-            await messengerResolver.InputData(new ReceiveDataWrap
-            {
-                Connection = connection,
-                Index = 0,
-                Length = model.Data.Length,
-                Data = model.Data
-            });
+
+            connection.ReceiveDataWrap.Data = model.Data.AsMemory();
+            await messengerResolver.InputData(connection);
 
         }
     }

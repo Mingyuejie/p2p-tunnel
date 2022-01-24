@@ -100,7 +100,7 @@ namespace client.service.messengers.clients
         }
         private async Task ConnectTcp(ClientInfo info)
         {
-            clientInfoCaching.Connecting(info.Id, true, ServerType.UDP);
+            clientInfoCaching.Connecting(info.Id, true, ServerType.TCP);
             var result = await punchHoleTcp.Send(new ConnectTcpParams
             {
                 Id = info.Id,

@@ -12,7 +12,7 @@ namespace server.servers.defaults
     public class TCPServer : ITcpServer
     {
         private Socket socket;
-        public SimpleSubPushHandler<ReceiveDataWrap> OnPacket { get; } = new SimpleSubPushHandler<ReceiveDataWrap>();
+        public SimpleSubPushHandler<IConnection> OnPacket { get; } = new SimpleSubPushHandler<IConnection>();
         private CancellationTokenSource cancellationTokenSource;
         private int bufferSize = 8 * 1024;
 
@@ -44,7 +44,7 @@ namespace server.servers.defaults
                 {
                     try
                     {
-                        Socket client = await socket.AcceptAsync();
+                        Socket client = await socket.AcceptAsync(cancellationTokenSource.Token);
                         BindReceive(client, bufferSize: bufferSize);
                     }
                     catch (SocketException)
@@ -73,7 +73,7 @@ namespace server.servers.defaults
             {
                 ErrorCallback = errorCallback,
                 Connection = CreateConnection(socket),
-                Data = new byte[bufferSize],
+                Data = new byte[bufferSize].AsMemory(),
                 Socket = socket
             };
             Task.Run(async () =>
@@ -91,19 +91,14 @@ namespace server.servers.defaults
                         userToken.DataBuffer.AddRange(userToken.Data, length);
                         do
                         {
-                            int packageLen = userToken.DataBuffer.ArrayData.ToInt32(0);
+                            int packageLen = userToken.DataBuffer.Data.Span.ToInt32();
                             if (packageLen > userToken.DataBuffer.Size - 4)
                             {
                                 break;
                             }
 
-                            await OnPacket.PushAsync(new ReceiveDataWrap
-                            {
-                                Connection = userToken.Connection,
-                                Index = 4,
-                                Length = packageLen + 4,
-                                Data = userToken.DataBuffer.ArrayData
-                            });
+                            userToken.Connection.ReceiveDataWrap.Data = userToken.DataBuffer.Data.Slice(4, packageLen);
+                            await OnPacket.PushAsync(userToken.Connection);
 
                             userToken.DataBuffer.RemoveRange(0, packageLen + 4);
                         } while (userToken.DataBuffer.Size > 4);
@@ -153,7 +148,7 @@ namespace server.servers.defaults
     public class ReceiveUserToken
     {
         public IConnection Connection { get; set; }
-        public byte[] Data { get; set; }
+        public Memory<byte> Data { get; set; }
         public ReceiveDataBuffer DataBuffer { get; set; } = new ReceiveDataBuffer();
         public Socket Socket { get; set; }
 

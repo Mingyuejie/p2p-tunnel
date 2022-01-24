@@ -70,22 +70,22 @@ namespace server.model
         /// 解包
         /// </summary>
         /// <param name="bytes"></param>
-        public void FromArray(byte[] bytes, int index, int length)
+        public void FromArray(Memory<byte> memory)
         {
-            index += 1;
+            int index = 1;
 
-            RequestId = bytes.ToUInt64(index);
+            RequestId = memory.Span.Slice(index).ToUInt64();
             index += 8;
 
-            int pathLength = bytes.ToInt32(index);
+            int pathLength = memory.Span.Slice(index).ToInt32();
             index += 4;
 
-            Path = bytes.GetString(index, pathLength);
+            Path = memory.Span.Slice(index, pathLength).GetString();
             index += pathLength;
 
             //Console.WriteLine($"{RequestId} AsMemory index:{index},length:{length},count:{length-index},total:{bytes.Length}");
 
-            Memory = bytes.AsMemory(index, length - index);
+            Memory = memory.Slice(index, memory.Length - index);
         }
     }
     public class MessageResponseWrap
@@ -146,17 +146,17 @@ namespace server.model
         /// 解包
         /// </summary>
         /// <param name="bytes"></param>
-        public void FromArray(byte[] bytes, int index, int length)
+        public void FromArray(Memory<byte> memory)
         {
-            index += 1;
+            int index = 1;
 
-            RequestId = bytes.ToUInt64(index);
+            RequestId = memory.Span.Slice(index).ToUInt64();
             index += 8;
 
-            Code = (MessageResponeCodes)bytes.ToInt16(index);
+            Code = (MessageResponeCodes)memory.Span.Slice(index).ToInt16();
             index += 2;
 
-            Memory = bytes.AsMemory(index, length - index);
+            Memory = memory.Slice(index, memory.Length - index);
         }
     }
 

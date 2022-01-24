@@ -26,6 +26,7 @@ namespace server
 
         public MessageRequestWrap ReceiveRequestWrap { get; set; }
         public MessageResponseWrap ReceiveResponseWrap { get; set; }
+        public ReceiveDataWrap ReceiveDataWrap { get; set; }
 
         public Task<bool> Send(byte[] data);
         //public Task<bool> Send(ReadOnlyMemory<byte> data);
@@ -66,7 +67,7 @@ namespace server
 
         public MessageRequestWrap ReceiveRequestWrap { get; set; } = new MessageRequestWrap();
         public MessageResponseWrap ReceiveResponseWrap { get; set; } = new MessageResponseWrap();
-        
+        public ReceiveDataWrap ReceiveDataWrap { get; set; } = new ReceiveDataWrap();
 
         public async Task<bool> Send(byte[] data)
         {
@@ -94,13 +95,13 @@ namespace server
             return false;
         }
 
-        private async Task<bool> SendUdp(byte[] data)
+        private async Task<bool> SendUdp(ReadOnlyMemory<byte> data)
         {
             if (Connected)
             {
                 try
                 {
-                    await UdpcRecv.SendAsync(data, data.Length, UdpAddress);
+                    await UdpcRecv.SendAsync(data, UdpAddress);
                     return true;
                 }
                 catch (Exception ex)

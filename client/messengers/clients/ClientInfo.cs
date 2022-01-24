@@ -54,7 +54,7 @@ namespace client.messengers.clients
 
         public void Offline(ServerType serverType)
         {
-            if (serverType == server.model.ServerType.UDP)
+            if (serverType == ServerType.UDP)
             {
                 Offline();
             }
@@ -66,18 +66,17 @@ namespace client.messengers.clients
 
         public void Online(IConnection connection)
         {
-            if (connection.ServerType == server.model.ServerType.UDP)
+            if (connection.ServerType == ServerType.UDP)
             {
                 UdpConnection = connection;
-                UdpConnecting = false;
                 Ip = connection.UdpAddress.Address.ToString();
             }
             else
             {
-                TcpConnecting = false;
                 TcpConnection = connection;
                 Ip = connection.TcpAddress.Address.ToString();
             }
+            Connecting(false, connection.ServerType);
         }
 
         public void Connecting(bool val, IConnection connection)

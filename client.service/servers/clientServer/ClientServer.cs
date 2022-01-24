@@ -35,8 +35,6 @@ namespace client.service.servers.clientServer
         public void LoadPlugins(Assembly[] assemblys)
         {
             Type voidType = typeof(void);
-            Type asyncType = typeof(IAsyncResult);
-            Type taskType = typeof(Task);
 
             IEnumerable<Type> types = assemblys.SelectMany(c => c.GetTypes());
             foreach (Type item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientService))))
@@ -53,8 +51,8 @@ namespace client.service.servers.clientServer
                             IsVoid = method.ReturnType == voidType,
                             Method = method,
                             Target = obj,
-                            IsTask = method.ReturnType.GetInterfaces().Contains(asyncType),
-                            IsTaskResult = method.ReturnType.IsSubclassOf(taskType)
+                            IsTask = method.ReturnType.GetProperty("IsCompleted") != null && method.ReturnType.GetMethod("GetAwaiter") != null,
+                            IsTaskResult = method.ReturnType.GetProperty("Result") != null
                         });
                     }
                 }

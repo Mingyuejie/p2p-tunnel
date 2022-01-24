@@ -67,7 +67,7 @@ namespace client.service.ftp.server
         {
             return Delete(GetCurrentPath(wrap.Client.Id), cmd.Path);
         }
-        public async Task OnFile(FtpFileCommand cmd, FtpPluginParamWrap wrap)
+        public async ValueTask OnFile(FtpFileCommand cmd, FtpPluginParamWrap wrap)
         {
             await OnFile(GetCurrentPath(wrap.Client.Id), cmd, wrap);
         }

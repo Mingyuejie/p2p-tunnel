@@ -139,7 +139,7 @@ namespace server
             Array.Copy(data, 0, res, MetaData.Length, data.Length);
             return res;
         }
-        public void FromBytes(ReadOnlyMemory<byte> memory)
+        public void FromBytes(Memory<byte> memory)
         {
             int index = 1;
 
@@ -198,7 +198,7 @@ namespace server
         /// <summary>
         /// 接收数据
         /// </summary>
-        public ReadOnlyMemory<byte> Memory { get; set; } = Array.Empty<byte>();
+        public Memory<byte> Memory { get; set; } = Array.Empty<byte>();
 
 
         /// <summary>

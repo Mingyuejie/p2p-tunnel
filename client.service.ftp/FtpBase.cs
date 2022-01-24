@@ -225,7 +225,7 @@ namespace client.service.ftp
             }, save.Token.Token);
         }
 
-        protected async Task OnFile(string currentPath, FtpFileCommand cmd, FtpPluginParamWrap wrap)
+        protected async ValueTask OnFile(string currentPath, FtpFileCommand cmd, FtpPluginParamWrap wrap)
         {
             try
             {
@@ -340,7 +340,7 @@ namespace client.service.ftp
         }
         protected async Task<bool> SendOnlyTcp(byte[] data, IConnection connection)
         {
-            return await messengerSender.SendOnly(new  MessageRequestParamsInfo<byte[]>
+            return await messengerSender.SendOnly(new MessageRequestParamsInfo<byte[]>
             {
                 Data = data,
                 Path = SocketPath,
@@ -349,7 +349,7 @@ namespace client.service.ftp
         }
         protected async Task<MessageResponeInfo> SendReplyTcp(IFtpCommandBase data, ClientInfo client)
         {
-            return await messengerSender.SendReply(new  MessageRequestParamsInfo<byte[]>
+            return await messengerSender.SendReply(new MessageRequestParamsInfo<byte[]>
             {
                 Data = data.ToBytes(),
                 Path = SocketPath,

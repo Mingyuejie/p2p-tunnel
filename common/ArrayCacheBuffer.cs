@@ -8,7 +8,7 @@ namespace common
 {
     public class ReceiveDataBuffer
     {
-        private byte[] items { get; set; } = Array.Empty<byte>();
+        private Memory<byte> items { get; set; } = Array.Empty<byte>().AsMemory();
         private int size = 0;
         public int Size
         {
@@ -20,20 +20,18 @@ namespace common
             {
                 if (value == 0)
                 {
-                    Array.Clear(items, 0, size);
                     items = Array.Empty<byte>();
-
                 }
                 else if (value > items.Length)
                 {
-                    byte[] newItems = new byte[value];
-                    Array.Copy(items, newItems, items.Length);
+                    Memory<byte> newItems = new byte[value].AsMemory();
+                    items.CopyTo(newItems);
                     items = newItems;
                 }
             }
         }
 
-        public byte[] ArrayData
+        public Memory<byte> Data
         {
             get
             {
@@ -41,10 +39,11 @@ namespace common
             }
         }
 
-        public void AddRange(byte[] data, int length)
+        public void AddRange(Memory<byte> data, int length)
         {
             BeResize(length);
-            Array.Copy(data, 0, items, size, length);
+
+            data.Slice(0, length).CopyTo(items.Slice(size, length));
             size += length;
         }
 
@@ -55,7 +54,7 @@ namespace common
                 size -= count;
                 if (index < size)
                 {
-                    Array.Copy(items, index + count, items, index, size - index);
+                    items.Slice(index + count, size - index).CopyTo(items.Slice(index, size - index));
                 }
             }
         }
