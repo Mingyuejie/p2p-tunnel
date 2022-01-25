@@ -91,6 +91,8 @@ namespace server
 
                 var sendData = wrap.ToArray(msg.Connection.ServerType);
                 bool res = await msg.Connection.Send(sendData);
+
+                wrap.Reset();
                 messageRequestWrapPool.Restore(wrap);
 
                 if (res && msg.Connection.ServerType == ServerType.UDP)

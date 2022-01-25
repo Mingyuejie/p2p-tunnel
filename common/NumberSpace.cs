@@ -64,6 +64,11 @@ namespace common
             return num;
         }
 
+        public void Decrement()
+        {
+            Interlocked.Decrement(ref num);
+        }
+
         public void Reset()
         {
             Interlocked.Exchange(ref num, 0);

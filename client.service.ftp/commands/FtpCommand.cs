@@ -1,6 +1,4 @@
-﻿using MessagePack;
-using ProtoBuf;
-using System;
+﻿using System;
 using System.ComponentModel;
 
 namespace client.service.ftp.commands
@@ -12,7 +10,6 @@ namespace client.service.ftp.commands
     }
 
 
-    [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
     public enum FtpCommand : byte
     {
@@ -36,7 +33,6 @@ namespace client.service.ftp.commands
         FILE_ERROR = 8,
     }
 
-    [ProtoContract]
     public interface IFtpCommandBase
     {
         public FtpCommand Cmd { get; }

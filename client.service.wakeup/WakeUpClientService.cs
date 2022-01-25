@@ -28,8 +28,8 @@ namespace client.service.wakeup
                     if (client != null)
                     {
                         model.Mac = client.Mac;
-                        model.Ip = client.UdpConnection.UdpAddress.Address.ToString();
-                        model.Port = client.UdpConnection.UdpAddress.Port;
+                        model.Ip = client.UdpConnection.Address.Address.ToString();
+                        model.Port = client.UdpConnection.Address.Port;
 
                     }
                 }

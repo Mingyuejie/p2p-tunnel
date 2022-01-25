@@ -46,7 +46,7 @@ namespace server.service.messengers
 
                 model.Data = new PunchHoleNotifyInfo
                 {
-                    Ip = source.UdpConnection.UdpAddress.Address.ToString(),
+                    Ip = source.UdpConnection.Address.Address.ToString(),
                     LocalIps = source.LocalIps,
                     LocalPort = tunnel.LocalPort,
                     Port = tunnel.Port,

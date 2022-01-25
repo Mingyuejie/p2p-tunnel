@@ -28,7 +28,7 @@ namespace client.service.serverTcpforward
 
         public async Task<MessageResponeInfo> Register()
         {
-            return await messengerSender.SendReply(new  MessageRequestParamsInfo<ServerTcpForwardRegisterParamsInfo>
+            return await messengerSender.SendReply(new MessageRequestParamsInfo<ServerTcpForwardRegisterParamsInfo>
             {
                 Data = new ServerTcpForwardRegisterParamsInfo
                 {
@@ -41,7 +41,7 @@ namespace client.service.serverTcpforward
         }
         public async Task<MessageResponeInfo> UnRegister()
         {
-            return await messengerSender.SendReply(new  MessageRequestParamsInfo<ServerTcpForwardRegisterParamsInfo>
+            return await messengerSender.SendReply(new MessageRequestParamsInfo<ServerTcpForwardRegisterParamsInfo>
             {
                 Data = new ServerTcpForwardRegisterParamsInfo
                 {
@@ -63,7 +63,7 @@ namespace client.service.serverTcpforward
 
             if (!serverTcpForwardRegisterConfig.Enable)
             {
-                await messengerSender.SendOnly(new  MessageRequestParamsInfo<ServerTcpForwardInfo>
+                await messengerSender.SendOnly(new MessageRequestParamsInfo<ServerTcpForwardInfo>
                 {
                     Data = new ServerTcpForwardInfo
                     {
@@ -92,7 +92,7 @@ namespace client.service.serverTcpforward
                         TargetPort = data.TargetPort,
                         AliveType = data.AliveType,
                         TargetIp = data.TargetIp,
-                        SourceSocket = registerstate.TcpConnection.TcpSocket
+                        SourceSocket = ((TcpConnection)registerstate.TcpConnection).TcpSocket
                     };
 
                     IPEndPoint dnsEndPoint = new(NetworkHelper.GetDomainIp(data.TargetIp), data.TargetPort);
@@ -115,7 +115,7 @@ namespace client.service.serverTcpforward
             catch (Exception ex)
             {
                 ClientModel.Remove(data.RequestId);
-                await messengerSender.SendOnly(new  MessageRequestParamsInfo<ServerTcpForwardInfo>
+                await messengerSender.SendOnly(new MessageRequestParamsInfo<ServerTcpForwardInfo>
                 {
                     Data = new ServerTcpForwardInfo
                     {
@@ -159,7 +159,7 @@ namespace client.service.serverTcpforward
 
         private async Task Receive(ClientModel client, byte[] data)
         {
-            await messengerSender.SendOnly(new  MessageRequestParamsInfo<ServerTcpForwardInfo>
+            await messengerSender.SendOnly(new MessageRequestParamsInfo<ServerTcpForwardInfo>
             {
                 Data = new ServerTcpForwardInfo
                 {

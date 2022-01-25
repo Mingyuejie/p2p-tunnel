@@ -6,7 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO;
+using System.IO.Pipes;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -57,7 +58,6 @@ namespace client.service.servers.clientServer
                     }
                 }
             }
-
             foreach (Type item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientPushMsg))))
             {
                 string path = item.Name.Replace("ClientPushMsg", "");
@@ -117,15 +117,41 @@ namespace client.service.servers.clientServer
                 {
                     Task.Run(async () =>
                     {
-                        await OnMessage(socket, message);
+                        await socket.Send(await OnMessage(message));
                     });
                 };
             });
 
             Logger.Instance.Info("本地服务已启动...");
+
+            NamedPipe();
+            Logger.Instance.Info("本地命名管道服务已启动...");
         }
 
-        private async Task OnMessage(IWebSocketConnection socket, string message)
+        public IClientConfigure GetConfigure(string className)
+        {
+            settingPlugins.TryGetValue(className, out IClientConfigure plugin);
+            return plugin;
+        }
+
+        public IEnumerable<ClientServiceConfigureInfo> GetConfigures()
+        {
+            return settingPlugins.Select(c => new ClientServiceConfigureInfo
+            {
+                Name = c.Value.Name,
+                Author = c.Value.Author,
+                Desc = c.Value.Desc,
+                ClassName = c.Value.GetType().Name,
+                Enable = c.Value.Enable
+            });
+        }
+
+        public IEnumerable<string> GetServices()
+        {
+            return plugins.Select(c => c.Value.Target.GetType().Name).Distinct();
+        }
+
+        private async Task<string> OnMessage(string message)
         {
             ClientServiceRequestInfo model = message.DeJson<ClientServiceRequestInfo>();
             model.Path = model.Path.ToLower();
@@ -136,10 +162,8 @@ namespace client.service.servers.clientServer
                 {
                     ClientServiceParamsInfo param = new ClientServiceParamsInfo
                     {
-                        Socket = socket,
                         RequestId = model.RequestId,
                         Content = model.Content,
-                        Websockets = websockets,
                         Path = model.Path
                     };
                     dynamic resultAsync = plugin.Method.Invoke(plugin.Target, new object[] { param });
@@ -159,28 +183,34 @@ namespace client.service.servers.clientServer
                             resultObject = resultAsync;
                         }
                     }
-                    await param.Socket.Send(new ClientServiceResponseInfo
+                    return new ClientServiceResponseInfo
                     {
                         Content = param.Code == 0 ? resultObject : param.ErrorMessage,
                         RequestId = param.RequestId,
                         Path = param.Path,
                         Code = param.Code
-                    }.ToJson());
+                    }.ToJson();
                 }
                 catch (Exception ex)
                 {
                     Logger.Instance.Error(ex);
-                    await socket.Send(new ClientServiceResponseInfo
+                    return new ClientServiceResponseInfo
                     {
                         Content = ex.Message,
                         RequestId = model.RequestId,
                         Path = model.Path,
                         Code = -1
-                    }.ToJson());
+                    }.ToJson();
                 }
             }
+            return new ClientServiceResponseInfo
+            {
+                Content = "不存在这个路径",
+                RequestId = model.RequestId,
+                Path = model.Path,
+                Code = -1
+            }.ToJson();
         }
-
         private void Notify()
         {
             Task.Factory.StartNew(async () =>
@@ -211,27 +241,86 @@ namespace client.service.servers.clientServer
             }, TaskCreationOptions.LongRunning);
         }
 
-        public IClientConfigure GetConfigure(string className)
-        {
-            settingPlugins.TryGetValue(className, out IClientConfigure plugin);
-            return plugin;
-        }
 
-        public IEnumerable<ClientServiceConfigureInfo> GetConfigures()
+        private const string pipeName = "client.cmd";
+        private NumberSpace numberSpace = new NumberSpace();
+        private ConcurrentDictionary<ulong, Pipeline> pipelines = new ConcurrentDictionary<ulong, Pipeline>();
+        private void NamedPipe()
         {
-            return settingPlugins.Select(c => new ClientServiceConfigureInfo
+            Pipeline pipeline = NewNamedPipe();
+            Task.Run(async () =>
             {
-                Name = c.Value.Name,
-                Author = c.Value.Author,
-                Desc = c.Value.Desc,
-                ClassName = c.Value.GetType().Name,
-                Enable = c.Value.Enable
+                await pipeline.Server.WaitForConnectionAsync();
+                NamedPipe();
+
+                while (true)
+                {
+                    try
+                    {
+                        string msg = await pipeline.Reader.ReadLineAsync();
+                        if (string.IsNullOrWhiteSpace(msg))
+                        {
+                            RemoveNamedPipe(pipeline);
+                            break;
+                        }
+                        string result = await OnMessage(msg);
+                        await pipeline.Writer.WriteLineAsync(result);
+                    }
+                    catch (Exception)
+                    {
+                        RemoveNamedPipe(pipeline);
+                        break;
+                    }
+                }
             });
+
+        }
+        private Pipeline NewNamedPipe()
+        {
+            Pipeline pipeline = new Pipeline(pipeName)
+            {
+                ID = numberSpace.Get(),
+            };
+            pipelines.TryAdd(pipeline.ID, pipeline);
+            return pipeline;
+        }
+        private void RemoveNamedPipe(Pipeline pipeline)
+        {
+            if (pipelines.TryRemove(pipeline.ID, out _))
+            {
+                pipeline.Dispose();
+            }
+        }
+    }
+
+    public class Pipeline
+    {
+        public NamedPipeServerStream Server { get; private set; }
+        public StreamWriter Writer { get; private set; }
+        public StreamReader Reader { get; private set; }
+
+        public ulong ID { get; set; }
+
+        public Pipeline(string pipeName)
+        {
+            Server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, int.MaxValue, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            Writer = new StreamWriter(Server);
+            Reader = new StreamReader(Server);
         }
 
-        public IEnumerable<string> GetServices()
+        public void Dispose()
         {
-            return plugins.Select(c => c.Value.Target.GetType().Name).Distinct();
+            Server.Close();
+            Server.Dispose();
+            Server = null;
+
+            Reader.Close();
+            Reader.Dispose();
+            Reader = null;
+
+            Writer.Close();
+            Writer.Dispose();
+            Writer = null;
         }
     }
 

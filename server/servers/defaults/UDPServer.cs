@@ -93,11 +93,10 @@ namespace server.servers.defaults
 
         public IConnection CreateConnection(IPEndPoint address)
         {
-            return new Connection
+            return new UdpConnection
             {
-                ServerType = ServerType.UDP,
-                UdpAddress = address,
-                UdpAddress64 = address.ToInt64(),
+                Address = address,
+                Address64 = address.ToInt64(),
                 UdpcRecv = UdpcRecv
             };
         }

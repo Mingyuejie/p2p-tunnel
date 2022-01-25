@@ -4,7 +4,6 @@ using common;
 using common.extends;
 using MessagePack;
 using Microsoft.Extensions.DependencyInjection;
-using ProtoBuf;
 using server;
 using server.model;
 using System;
@@ -462,7 +461,6 @@ namespace client.service.ftp
 
     }
 
-    [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
     public enum FileType : byte
     {
@@ -472,20 +470,20 @@ namespace client.service.ftp
         File = 1
     }
 
-    [ProtoContract, MessagePackObject]
+    [MessagePackObject]
     public class FileInfo
     {
-        [ProtoMember(1), Key(1)]
+        [Key(1)]
         public DateTime LastAccessTime { get; set; } = DateTime.Now;
-        [ProtoMember(2), Key(2)]
+        [ Key(2)]
         public DateTime CreationTime { get; set; } = DateTime.Now;
-        [ProtoMember(3), Key(3)]
+        [Key(3)]
         public DateTime LastWriteTime { get; set; } = DateTime.Now;
-        [ProtoMember(4), Key(4)]
+        [ Key(4)]
         public string Name { get; set; } = string.Empty;
-        [ProtoMember(5), Key(5)]
+        [ Key(5)]
         public long Length { get; set; } = 0;
-        [ProtoMember(6, IsRequired = true), Key(6)]
+        [Key(6)]
         public FileType Type { get; set; } = FileType.File;
     }
 
@@ -495,7 +493,6 @@ namespace client.service.ftp
         public FileType Type { get; set; }
     }
 
-    [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
     public enum UploadStates : byte
     {
@@ -644,26 +641,24 @@ namespace client.service.ftp
         public ClientInfo Client { get; set; }
     }
 
-    [ProtoContract, MessagePackObject]
+    [ MessagePackObject]
     public class FtpResultInfo
     {
-        [ProtoMember(1, IsRequired = true), Key(1)]
+        [Key(1)]
         public FtpResultCodes Code { get; set; } = FtpResultCodes.OK;
 
         /// <summary>
         /// 写数据
         /// </summary>
-        [ProtoMember(2, IsRequired = true), Key(2)]
+        [ Key(2)]
         public object Data { get; set; } = Array.Empty<byte>();
 
         /// <summary>
         /// 读数据
         /// </summary>
-        [ProtoIgnore, IgnoreMember]
+        [ IgnoreMember]
         public ReadOnlyMemory<byte> ReadData { get; set; }
 
-
-        [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
         [Flags]
         public enum FtpResultCodes : byte
         {

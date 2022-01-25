@@ -24,7 +24,7 @@ namespace server.service.messengers.register.caching
                     long time = DateTimeHelper.GetTimeStamp();
                     foreach (RegisterCacheInfo item in cache.Values)
                     {
-                        if (time - item.UdpConnection.UdpLastTime > 60 * 1000)
+                        if (time - item.UdpConnection.LastTime > 60 * 1000)
                         {
                             await Remove(item.Id);
                         }

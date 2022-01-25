@@ -1,6 +1,5 @@
 ﻿using common.extends;
 using MessagePack;
-using ProtoBuf;
 using server;
 using server.model;
 using System;
@@ -11,30 +10,30 @@ namespace client.messengers.clients
     /// <summary>
     /// 客户端信息
     /// </summary>
-    [ProtoContract, Serializable, MessagePackObject]
+    [Serializable, MessagePackObject]
     public class ClientInfo
     {
-        [ProtoMember(1), Key(1)]
+        [Key(1)]
         public bool UdpConnecting { get; set; } = false;
-        [ProtoMember(2), Key(2)]
+        [Key(2)]
         public bool TcpConnecting { get; set; } = false;
-        [ProtoMember(3), Key(3)]
+        [Key(3)]
         public bool UdpConnected { get => UdpConnection != null; }
-        [ProtoMember(4), Key(4)]
+        [Key(4)]
         public bool TcpConnected { get => TcpConnection != null; }
 
-        [ProtoMember(5), Key(5)]
+        [Key(5)]
         public string Name { get; set; } = string.Empty;
-        [ProtoMember(6), Key(6)]
+        [Key(6)]
         public string Mac { get; set; } = string.Empty;
-        [ProtoMember(7), Key(7)]
+        [Key(7)]
         public string Ip { get; set; } = string.Empty;
-        [ProtoMember(8), Key(8)]
+        [Key(8)]
         public ulong Id { get; set; } = 0;
 
-        [ProtoIgnore, JsonIgnore, IgnoreMember]
+        [JsonIgnore, IgnoreMember]
         public IConnection TcpConnection { get; set; } = null;
-        [ProtoIgnore, JsonIgnore, IgnoreMember]
+        [JsonIgnore, IgnoreMember]
         public IConnection UdpConnection { get; set; } = null;
 
         public void Offline()
@@ -47,7 +46,7 @@ namespace client.messengers.clients
             TcpConnecting = false;
             if (TcpConnection != null)
             {
-                TcpConnection.TcpSocket.SafeClose();
+                TcpConnection.Disponse();
             }
             TcpConnection = null;
         }
@@ -69,12 +68,12 @@ namespace client.messengers.clients
             if (connection.ServerType == ServerType.UDP)
             {
                 UdpConnection = connection;
-                Ip = connection.UdpAddress.Address.ToString();
+                Ip = connection.Address.Address.ToString();
             }
             else
             {
                 TcpConnection = connection;
-                Ip = connection.TcpAddress.Address.ToString();
+                Ip = connection.Address.Address.ToString();
             }
             Connecting(false, connection.ServerType);
         }

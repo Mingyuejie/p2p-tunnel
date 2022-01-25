@@ -135,12 +135,11 @@ namespace server.servers.defaults
 
         public IConnection CreateConnection(Socket socket)
         {
-            return new Connection
+            return new TcpConnection
             {
-                ServerType = ServerType.TCP,
                 TcpSocket = socket,
-                TcpAddress64 = (socket.RemoteEndPoint as IPEndPoint).ToInt64(),
-                TcpAddress = (socket.RemoteEndPoint as IPEndPoint)
+                Address64 = (socket.RemoteEndPoint as IPEndPoint).ToInt64(),
+                Address = (socket.RemoteEndPoint as IPEndPoint)
             };
         }
     }

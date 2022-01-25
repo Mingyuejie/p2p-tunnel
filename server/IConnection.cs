@@ -13,23 +13,17 @@ namespace server
         public ulong ConnectId { get; set; }
         public bool Connected { get; }
 
-        public UdpClient UdpcRecv { get; set; }
-        public IPEndPoint UdpAddress { get; set; }
-        public long UdpAddress64 { get; set; }
-        public long UdpLastTime { get; set; }
+        public IPEndPoint Address { get; set; }
+        public long Address64 { get; set; }
+        public long LastTime { get; set; }
 
-        public Socket TcpSocket { get; set; }
-        public IPEndPoint TcpAddress { get; set; }
-        public long TcpAddress64 { get; set; }
-
-        public ServerType ServerType { get; set; }
+        public ServerType ServerType { get; }
 
         public MessageRequestWrap ReceiveRequestWrap { get; set; }
         public MessageResponseWrap ReceiveResponseWrap { get; set; }
         public ReceiveDataWrap ReceiveDataWrap { get; set; }
 
-        public Task<bool> Send(byte[] data);
-        //public Task<bool> Send(ReadOnlyMemory<byte> data);
+        public Task<bool> Send(ReadOnlyMemory<byte> data);
 
         public void UpdateTime(long time);
         public bool IsTimeout(long time);
@@ -37,48 +31,85 @@ namespace server
 
         public void Disponse();
     }
-
-
-    public class Connection : IConnection
+    public class UdpConnection : IConnection
     {
-        public ulong ConnectId { get; set; } = 0;
-        public bool Connected
-        {
-            get
-            {
-                if (ServerType == ServerType.UDP)
-                {
-                    return UdpcRecv != null && UdpAddress != null;
-                }
-                return TcpSocket != null && TcpSocket.Connected;
-            }
-        }
-
         public UdpClient UdpcRecv { get; set; }
-        public IPEndPoint UdpAddress { get; set; }
-        public long UdpAddress64 { get; set; }
-        public long UdpLastTime { get; set; } = DateTimeHelper.GetTimeStamp();
 
-        public Socket TcpSocket { get; set; }
-        public IPEndPoint TcpAddress { get; set; }
-        public long TcpAddress64 { get; set; }
+        public ulong ConnectId { get; set; } = 0;
+        public bool Connected => UdpcRecv != null && Address != null;
 
-        public ServerType ServerType { get; set; }
+        public IPEndPoint Address { get; set; }
+        public long Address64 { get; set; }
+        public long LastTime { get; set; } = DateTimeHelper.GetTimeStamp();
+
+        public ServerType ServerType => ServerType.UDP;
 
         public MessageRequestWrap ReceiveRequestWrap { get; set; } = new MessageRequestWrap();
         public MessageResponseWrap ReceiveResponseWrap { get; set; } = new MessageResponseWrap();
         public ReceiveDataWrap ReceiveDataWrap { get; set; } = new ReceiveDataWrap();
 
-        public async Task<bool> Send(byte[] data)
+        public async Task<bool> Send(ReadOnlyMemory<byte> data)
         {
-            if (ServerType == ServerType.TCP)
+            if (Connected)
             {
-                return await SendTcp(data);
+                try
+                {
+                    await UdpcRecv.SendAsync(data, Address);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance.DebugError(ex);
+                }
             }
-            return await SendUdp(data);
+            return false;
         }
 
-        private async Task<bool> SendTcp(ReadOnlyMemory<byte> data)
+        public void UpdateTime(long time)
+        {
+            LastTime = time;
+        }
+
+        public bool IsTimeout(long time)
+        {
+            return (LastTime > 0 && time - LastTime > 20000);
+        }
+        public bool IsNeedHeart(long time)
+        {
+            return (LastTime == 0 || time - LastTime > 5000);
+        }
+
+        public void Disponse()
+        {
+            Address = null;
+            Address64 = 0;
+            UdpcRecv = null;
+            LastTime = 0;
+            ReceiveRequestWrap = null;
+            ReceiveResponseWrap = null;
+            ReceiveDataWrap = null;
+        }
+    }
+
+
+    public class TcpConnection : IConnection
+    {
+        public Socket TcpSocket { get; set; }
+
+        public ulong ConnectId { get; set; } = 0;
+        public bool Connected => TcpSocket != null && TcpSocket.Connected;
+
+        public IPEndPoint Address { get; set; }
+        public long Address64 { get; set; }
+        public long LastTime { get; set; } = DateTimeHelper.GetTimeStamp();
+
+        public ServerType ServerType => ServerType.TCP;
+
+        public MessageRequestWrap ReceiveRequestWrap { get; set; } = new MessageRequestWrap();
+        public MessageResponseWrap ReceiveResponseWrap { get; set; } = new MessageResponseWrap();
+        public ReceiveDataWrap ReceiveDataWrap { get; set; } = new ReceiveDataWrap();
+
+        public async Task<bool> Send(ReadOnlyMemory<byte> data)
         {
             if (Connected)
             {
@@ -95,38 +126,18 @@ namespace server
             return false;
         }
 
-        private async Task<bool> SendUdp(ReadOnlyMemory<byte> data)
-        {
-            if (Connected)
-            {
-                try
-                {
-                    await UdpcRecv.SendAsync(data, UdpAddress);
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    Logger.Instance.DebugError(ex);
-                }
-            }
-            return false;
-        }
-
         public void UpdateTime(long time)
         {
-            if (ServerType == ServerType.UDP)
-            {
-                UdpLastTime = time;
-            }
+            LastTime = time;
         }
 
         public bool IsTimeout(long time)
         {
-            return (UdpLastTime > 0 && time - UdpLastTime > 20000);
+            return (LastTime > 0 && time - LastTime > 20000);
         }
         public bool IsNeedHeart(long time)
         {
-            return (UdpLastTime == 0 || time - UdpLastTime > 5000);
+            return (LastTime == 0 || time - LastTime > 5000);
         }
 
         public void Disponse()
@@ -136,15 +147,13 @@ namespace server
                 TcpSocket.SafeClose();
                 TcpSocket.Dispose();
             }
-            TcpAddress = null;
-            TcpAddress64 = 0;
+            Address = null;
+            Address64 = 0;
 
-            UdpAddress = null;
-            UdpAddress64 = 0;
-            UdpcRecv = null;
-            UdpLastTime = 0;
+            LastTime = 0;
             ReceiveRequestWrap = null;
             ReceiveResponseWrap = null;
+            ReceiveDataWrap = null;
         }
     }
 }

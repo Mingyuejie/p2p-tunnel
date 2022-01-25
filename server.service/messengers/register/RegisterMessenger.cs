@@ -44,7 +44,7 @@ namespace server.service.messengers.register
 
             client.AddTunnel(new TunnelRegisterCacheInfo
             {
-                Port = connection.UdpAddress.Port,
+                Port = connection.Address.Port,
                 LocalPort = model.LocalUdpPort,
                 Servertype = ServerType.UDP,
                 TunnelName = "udp",
@@ -54,8 +54,8 @@ namespace server.service.messengers.register
             return new RegisterResultInfo
             {
                 Id = client.Id,
-                Ip = connection.UdpAddress.Address.ToString(),
-                Port = connection.UdpAddress.Port,
+                Ip = connection.Address.Address.ToString(),
+                Port = connection.Address.Port,
                 TcpPort = 0,
                 GroupId = client.OriginGroupId
             };
@@ -73,7 +73,7 @@ namespace server.service.messengers.register
             });
             client.AddTunnel(new TunnelRegisterCacheInfo
             {
-                Port = connection.TcpAddress.Port,
+                Port = connection.Address.Port,
                 LocalPort = model.LocalTcpPort,
                 Servertype = ServerType.TCP,
                 TunnelName = "tcp",
@@ -83,9 +83,9 @@ namespace server.service.messengers.register
             return new RegisterResultInfo
             {
                 Id = model.Id,
-                Ip = client.UdpConnection.UdpAddress.Address.ToString(),
-                Port = client.UdpConnection.UdpAddress.Port,
-                TcpPort = connection.TcpAddress.Port,
+                Ip = client.UdpConnection.Address.Address.ToString(),
+                Port = client.UdpConnection.Address.Port,
+                TcpPort = connection.Address.Port,
                 GroupId = model.GroupId
             };
         }
@@ -104,7 +104,7 @@ namespace server.service.messengers.register
             return new TunnelRegisterInfo
             {
                 Code = TunnelRegisterResultInfo.TunnelRegisterResultInfoCodes.OK,
-                Port = connection.ServerType == ServerType.UDP ? connection.UdpAddress.Port : connection.TcpAddress.Port
+                Port = connection.ServerType == ServerType.UDP ? connection.Address.Port : connection.Address.Port
             };
         }
         public TunnelRegisterResultInfo Tunnel(IConnection connection)

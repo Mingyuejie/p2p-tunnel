@@ -32,9 +32,6 @@
 		<Content Include="public\nssm安装服务.bat">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
-		<Content Include="public\version.txt">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</Content>
 		<Content Include="public\各平台发布命令.txt">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
@@ -51,9 +48,6 @@
 	<ItemGroup>
 	  <None Remove="version.txt" />
 	  <None Remove="各平台发布命令.txt" />
-	</ItemGroup>
-	<ItemGroup>
-		<PackageReference Include="SharpPcap" Version="6.0.0" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\client.service.cmd\client.service.cmd.csproj" />

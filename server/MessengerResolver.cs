@@ -68,7 +68,7 @@ namespace server
             else
             {
                 var wrap = connection.ReceiveRequestWrap;
-                connection.ReceiveRequestWrap.FromArray(connection.ReceiveDataWrap.Data);
+                wrap.FromArray(connection.ReceiveDataWrap.Data);
                 try
                 {
                     wrap.Path = wrap.Path.ToLower();
@@ -143,6 +143,10 @@ namespace server
                         RequestId = wrap.RequestId,
                         Code = MessageResponeCodes.ERROR
                     });
+                }
+                finally
+                {
+                    wrap.Memory = Memory<byte>.Empty;
                 }
             }
         }

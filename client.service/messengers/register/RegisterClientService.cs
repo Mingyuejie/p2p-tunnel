@@ -1,7 +1,6 @@
 ﻿using client.messengers.register;
 using client.servers.clientServer;
 using MessagePack;
-using ProtoBuf;
 using System.Threading.Tasks;
 
 namespace client.service.messengers.register
@@ -10,7 +9,7 @@ namespace client.service.messengers.register
     {
         private readonly RegisterHelper registerHelper;
         private readonly RegisterStateInfo registerState;
-        private readonly RegisterMessengerSender  registerMessengerClient;
+        private readonly RegisterMessengerSender registerMessengerClient;
         private readonly Config config;
         public RegisterClientService(RegisterHelper registerHelper, RegisterStateInfo registerState, RegisterMessengerSender registerMessengerClient, Config config)
         {
@@ -46,17 +45,17 @@ namespace client.service.messengers.register
             };
         }
     }
-   
-    [ProtoContract, MessagePackObject]
+
+    [MessagePackObject]
     public class RegisterInfo
     {
-        [ProtoMember(1), Key(1)]
+        [Key(1)]
         public ClientConfig ClientConfig { get; set; } = new ClientConfig();
-        [ProtoMember(2), Key(2)]
+        [Key(2)]
         public ServerConfig ServerConfig { get; set; } = new ServerConfig();
-        [ProtoMember(3), Key(3)]
+        [Key(3)]
         public LocalInfo LocalInfo { get; set; } = new LocalInfo();
-        [ProtoMember(4), Key(4)]
+        [Key(4)]
         public RemoteInfo RemoteInfo { get; set; } = new RemoteInfo();
     }
 }

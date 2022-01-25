@@ -1,6 +1,5 @@
 ﻿using client.messengers.clients;
 using MessagePack;
-using ProtoBuf;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -132,19 +131,19 @@ namespace client.service.cmd
         public ulong Id { get; set; }
         public string Cmd { get; set; }
     }
-    [ProtoContract, MessagePackObject]
+    [ MessagePackObject]
     public class CmdParamsInfo
     {
-        [ProtoMember(1), Key(1)]
+        [ Key(1)]
         public string Cmd { get; set; }
     }
-    [ProtoContract, MessagePackObject]
+    [ MessagePackObject]
     public class CmdResultInfo
     {
-        [ProtoMember(1), Key(1)]
+        [Key(1)]
         public string Res { get; set; }
 
-        [ProtoMember(2), Key(2)]
+        [ Key(2)]
         public string ErrorMsg { get; set; }
     }
 }

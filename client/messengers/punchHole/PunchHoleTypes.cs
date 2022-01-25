@@ -1,10 +1,8 @@
-﻿using ProtoBuf;
-using System;
+﻿using System;
 using System.ComponentModel;
 
 namespace client.messengers.punchHole
 {
-    [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
     public enum PunchHoleTypes
     {

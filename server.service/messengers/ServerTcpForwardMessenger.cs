@@ -2,7 +2,6 @@
 using common.extends;
 using MessagePack;
 using Microsoft.Extensions.DependencyInjection;
-using ProtoBuf;
 using server.model;
 using server.servers.IOCP;
 using server.service.messengers.register.caching;
@@ -586,16 +585,16 @@ namespace server.service.messengers
         }
     }
 
-    [ProtoContract, MessagePackObject]
+    [MessagePackObject]
     public class TcpForwardRecordBaseModel
     {
-        [ProtoMember(2), Key(2)]
+        [Key(2)]
         public int ServerPort { get; set; } = 8080;
-        [ProtoMember(3), Key(3)]
+        [Key(3)]
         public string TargetIp { get; set; } = "127.0.0.1";
-        [ProtoMember(4), Key(4)]
+        [Key(4)]
         public int TargetPort { get; set; } = 8080;
-        [ProtoMember(5), Key(5)]
+        [Key(5)]
         public ServerTcpForwardAliveTypes AliveType { get; set; } = ServerTcpForwardAliveTypes.WEB;
     }
 

@@ -4,7 +4,6 @@ using common;
 using common.extends;
 using MessagePack;
 using Microsoft.Extensions.DependencyInjection;
-using ProtoBuf;
 using server;
 using server.model;
 using System;
@@ -95,16 +94,16 @@ namespace client.service.messengers.punchHole
         public T Data { get; set; }
     }
 
-    [ProtoContract, MessagePackObject]
+    [MessagePackObject]
     public class ReverseModel : IPunchHoleStepInfo
     {
-        [ProtoMember(1, IsRequired = true), Key(1)]
+        [Key(1)]
         public PunchHoleTypes PunchType { get; } = PunchHoleTypes.REVERSE;
 
-        [ProtoMember(2, IsRequired = true), Key(2)]
+        [Key(2)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
-        [ProtoMember(3), Key(3)]
+        [Key(3)]
         public byte PunchStep { get; } = 0;
     }
 }

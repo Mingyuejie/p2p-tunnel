@@ -82,13 +82,13 @@ namespace server.service
             {
                 List<ClientsClientInfo> clients = clientRegisterCache.GetAll().Where(c => c.GroupId == group && c.TcpConnection != null).Select(c => new ClientsClientInfo
                 {
-                    Address = c.UdpConnection.UdpAddress.Address.ToString(),
+                    Address = c.UdpConnection.Address.Address.ToString(),
                     TcpConnection = c.TcpConnection,
                     UdpConnection = c.UdpConnection,
                     Id = c.Id,
                     Name = c.Name,
-                    Port = c.UdpConnection.UdpAddress.Port,
-                    TcpPort = (c.TcpConnection.TcpSocket.RemoteEndPoint as IPEndPoint).Port,
+                    Port = c.UdpConnection.Address.Port,
+                    TcpPort = c.TcpConnection.Address.Port,
                     Mac = c.Mac
                 }).ToList();
                 if (clients.Any())

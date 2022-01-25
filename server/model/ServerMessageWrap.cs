@@ -1,5 +1,4 @@
 ﻿using common.extends;
-using ProtoBuf;
 using System;
 using System.ComponentModel;
 using System.Text;
@@ -14,6 +13,8 @@ namespace server.model
         /// 发送数据
         /// </summary>
         public byte[] Content { get; set; } = Array.Empty<byte>();
+        private byte[] content = Array.Empty<byte>();
+
         /// <summary>
         /// 接收数据
         /// </summary>
@@ -86,6 +87,13 @@ namespace server.model
             //Console.WriteLine($"{RequestId} AsMemory index:{index},length:{length},count:{length-index},total:{bytes.Length}");
 
             Memory = memory.Slice(index, memory.Length - index);
+        }
+
+        public void Reset()
+        {
+            Path = string.Empty;
+            Content = content;
+
         }
     }
     public class MessageResponseWrap
@@ -160,7 +168,6 @@ namespace server.model
         }
     }
 
-    [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
     public enum MessageResponeCodes : byte
     {
@@ -176,7 +183,6 @@ namespace server.model
         ERROR = 4,
     }
 
-    [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
     [Flags]
     public enum MessageTypes : byte
     {

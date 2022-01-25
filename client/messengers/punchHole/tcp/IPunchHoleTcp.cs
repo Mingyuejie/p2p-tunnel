@@ -1,6 +1,5 @@
 ﻿using common;
 using MessagePack;
-using ProtoBuf;
 using server;
 using server.model;
 using System;
@@ -88,129 +87,129 @@ namespace client.messengers.punchHole.tcp
         public Step4Model Data { get; set; }
     }
 
-    [ProtoContract, MessagePackObject]
+    [MessagePackObject]
     public class Step1Model : IPunchHoleStepInfo
     {
-        [ProtoMember(1, IsRequired = true), Key(1)]
+        [Key(1)]
         public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
-        [ProtoMember(2, IsRequired = true), Key(2)]
+        [Key(2)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.NOTIFY;
 
-        [ProtoMember(3), Key(3)]
+        [Key(3)]
         public byte PunchStep { get; } = (byte)PunchHoleTcpNutssBSteps.STEP_1;
     }
 
-    [ProtoContract, MessagePackObject]
+    [MessagePackObject]
     public class Step2Model : IPunchHoleStepInfo
     {
 
-        [ProtoMember(1, IsRequired = true), Key(1)]
+        [Key(1)]
         public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
-        [ProtoMember(2, IsRequired = true), Key(2)]
+        [Key(2)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.NOTIFY;
 
-        [ProtoMember(3), Key(3)]
+        [Key(3)]
         public byte PunchStep { get; } = (byte)PunchHoleTcpNutssBSteps.STEP_2;
     }
 
-    [ProtoContract, MessagePackObject]
+    [MessagePackObject]
     public class Step2FailModel : IPunchHoleStepInfo
     {
 
-        [ProtoMember(1, IsRequired = true), Key(1)]
+        [Key(1)]
         public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
-        [ProtoMember(2, IsRequired = true), Key(2)]
+        [Key(2)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
-        [ProtoMember(3), Key(3)]
+        [Key(3)]
         public byte PunchStep { get; } = (byte)PunchHoleTcpNutssBSteps.STEP_2_FAIL;
     }
-    [ProtoContract, MessagePackObject]
+    [MessagePackObject]
     public class Step2TryModel : IPunchHoleStepInfo
     {
-        [ProtoMember(1, IsRequired = true), Key(1)]
+        [Key(1)]
         public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
-        [ProtoMember(2, IsRequired = true), Key(2)]
+        [Key(2)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.NOTIFY;
 
-        [ProtoMember(3), Key(3)]
+        [Key(3)]
         public byte PunchStep { get; } = (byte)PunchHoleTcpNutssBSteps.STEP_2_TRY;
     }
 
-    [ProtoContract, MessagePackObject]
+    [MessagePackObject]
     public class Step2StopModel : IPunchHoleStepInfo
     {
-        [ProtoMember(1, IsRequired = true), Key(1)]
+        [Key(1)]
         public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
-        [ProtoMember(2, IsRequired = true), Key(2)]
+        [Key(2)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
-        [ProtoMember(3), Key(3)]
+        [Key(3)]
         public byte PunchStep { get; } = (byte)PunchHoleTcpNutssBSteps.STEP_2_STOP;
     }
 
-    [ProtoContract, MessagePackObject]
+    [MessagePackObject]
     public class Step3Model : IPunchHoleStepInfo
     {
         /// <summary>
         /// 我的id
         /// </summary>
-        [ProtoMember(1), Key(1)]
+        [Key(1)]
         public ulong FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true), Key(2)]
+        [Key(2)]
         public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
-        [ProtoMember(3, IsRequired = true), Key(3)]
+        [Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
-        [ProtoMember(4), Key(4)]
+        [Key(4)]
         public byte PunchStep { get; } = (byte)PunchHoleTcpNutssBSteps.STEP_3;
     }
 
-    [ProtoContract, MessagePackObject]
+    [MessagePackObject]
     public class Step4Model : IPunchHoleStepInfo
     {
         /// <summary>
         /// 我的id
         /// </summary>
-        [ProtoMember(1), Key(1)]
+        [Key(1)]
         public ulong FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true), Key(2)]
+        [Key(2)]
         public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
-        [ProtoMember(3, IsRequired = true), Key(3)]
+        [Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
-        [ProtoMember(4), Key(4)]
+        [Key(4)]
         public byte PunchStep { get; } = (byte)PunchHoleTcpNutssBSteps.STEP_4;
     }
 
-    [ProtoContract, MessagePackObject]
+    [MessagePackObject]
     public class StepPacketModel : IPunchHoleStepInfo
     {
         /// <summary>
         /// 我的id
         /// </summary>
-        [ProtoMember(1), Key(1)]
+        [Key(1)]
         public ulong FromId { get; set; } = 0;
 
-        [ProtoMember(2, IsRequired = true), Key(2)]
+        [Key(2)]
         public PunchHoleTypes PunchType { get; set; } = PunchHoleTypes.TCP_NUTSSB;
 
-        [ProtoMember(3, IsRequired = true), Key(3)]
+        [Key(3)]
         public PunchForwardTypes PunchForwardType { get; } = PunchForwardTypes.FORWARD;
 
-        [ProtoMember(4), Key(4)]
+        [Key(4)]
         public byte PunchStep { get; } = (byte)PunchHoleTcpNutssBSteps.STEP_PACKET;
 
-        [ProtoMember(5), Key(5)]
+        [Key(5)]
         public byte Live { get; } = 1;
     }
 
@@ -256,7 +255,7 @@ namespace client.messengers.punchHole.tcp
         public object Result { get; set; }
     }
 
-
+    [Flags]
     public enum ConnectTcpFailType
     {
         ERROR, TIMEOUT, CANCEL

@@ -1,27 +1,26 @@
 ﻿using common.extends;
 using MessagePack;
-using ProtoBuf;
 using System;
 using System.Text;
 
 namespace client.service.ftp.commands
 {
-    [ProtoContract, MessagePackObject]
+    [MessagePackObject]
     public class FtpFileCommand : IFtpCommandBase
     {
-        [ProtoMember(1, IsRequired = true), Key(1)]
+        [Key(1)]
         public FtpCommand Cmd { get; } = FtpCommand.FILE;
-        [ProtoMember(2), Key(2)]
+        [Key(2)]
         public long Size { get; set; }
-        [ProtoMember(3), Key(3)]
+        [Key(3)]
         public ulong Md5 { get; set; }
-        [ProtoMember(4), Key(4)]
+        [Key(4)]
         public string Name { get; set; }
 
-        [ProtoIgnore, IgnoreMember]
+        [IgnoreMember]
         public byte[] MetaData { get; set; }
 
-        [ProtoIgnore, IgnoreMember]
+        [IgnoreMember]
         public ReadOnlyMemory<byte> ReadData { get; set; }
 
         public byte[] ToBytes()
@@ -83,12 +82,12 @@ namespace client.service.ftp.commands
 
     }
 
-    [ProtoContract, MessagePackObject]
+    [MessagePackObject]
     public class FtpFileEndCommand : IFtpCommandBase
     {
-        [ProtoMember(1, IsRequired = true), Key(1)]
+        [Key(1)]
         public FtpCommand Cmd { get; set; } = FtpCommand.FILE_END;
-        [ProtoMember(2), Key(2)]
+        [Key(2)]
         public ulong Md5 { get; set; }
 
         public byte[] ToBytes()
@@ -114,14 +113,14 @@ namespace client.service.ftp.commands
         }
     }
 
-    [ProtoContract, MessagePackObject]
+    [MessagePackObject]
     public class FtpFileErrorCommand : IFtpCommandBase
     {
-        [ProtoMember(1, IsRequired = true), Key(1)]
+        [Key(1)]
         public FtpCommand Cmd { get; set; } = FtpCommand.FILE_ERROR;
-        [ProtoMember(2), Key(2)]
+        [Key(2)]
         public ulong Md5 { get; set; }
-        [ProtoMember(3), Key(3)]
+        [Key(3)]
         public string Msg { get; set; }
 
         public byte[] ToBytes()
