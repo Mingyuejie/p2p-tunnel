@@ -56,5 +56,56 @@ namespace common.extends
         {
             return Encoding.UTF8.GetString(span);
         }
+
+        public static bool ASCIIEquals(this Memory<byte> memory, Memory<byte> memory1)
+        {
+            return memory.Span.ASCIIEquals(memory1.Span);
+        }
+
+        public static bool ASCIIEquals(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> other)
+        {
+            if (span.Length != other.Length) return false;
+
+            bool res = true;
+            for (int i = 0; i < span.Length; i++)
+            {
+                byte spanI = span[i];
+                byte otherI = other[i];
+
+                if (spanI != 0x2F)
+                {
+                    res &= (spanI | 0X20) == (otherI | 0x20);
+                }
+                else
+                {
+                    res &= spanI == otherI;
+                }
+            }
+            Console.WriteLine($"{span.GetString()}={other.GetString()},{res}");
+            return res;
+        }
+
+        public static bool ASCIIEquals(this Span<byte> span, Span<byte> other)
+        {
+            if (span.Length != other.Length) return false;
+
+            bool res = true;
+            for (int i = 0; i < span.Length; i++)
+            {
+                byte spanI = span[i];
+                byte otherI = other[i];
+
+                if (spanI != 0x2F)
+                {
+                    res &= (spanI | 0X20) == (otherI | 0x20);
+                }
+                else
+                {
+                    res &= spanI == otherI;
+                }
+            }
+            return res;
+        }
+
     }
 }

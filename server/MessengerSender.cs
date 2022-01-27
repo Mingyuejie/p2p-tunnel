@@ -87,7 +87,7 @@ namespace server
                 MessageRequestWrap wrap = messageRequestWrapPool.Get();
                 wrap.Content = msg.Data.ToBytes();
                 wrap.RequestId = msg.RequestId;
-                wrap.Path = msg.Path;
+                wrap.Path = msg.Path.ToLower();
 
                 var sendData = wrap.ToArray(msg.Connection.ServerType);
                 bool res = await msg.Connection.Send(sendData);

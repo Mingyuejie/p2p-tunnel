@@ -3,6 +3,6 @@
   "Password": "000000",
   "Enable": false,
   "UploadNum": 10,
-  "ReadWriteBufferSize": 10485760,
+  "ReadWriteBufferSize": 1048576,
   "SendPacketSize": 32768
 }

@@ -4,12 +4,15 @@ using server.model;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace server
 {
     public class MessengerResolver
     {
+
+        //private readonly Dictionary<ReadOnlyMemory<byte>, PluginPathCacheInfo> plugins = new(new MemoryCharDictionaryComparer());
         private readonly Dictionary<string, PluginPathCacheInfo> plugins = new();
 
         private readonly ITcpServer tcpserver;
@@ -57,97 +60,82 @@ namespace server
 
         public async Task InputData(IConnection connection)
         {
-            MessageTypes type = (MessageTypes)connection.ReceiveDataWrap.Data.Span[0];
+            var receive = connection.ReceiveDataWrap;
+            var wrapResponse = connection.ReceiveResponseWrap;
+            var wrapRequest = connection.ReceiveRequestWrap;
 
+            MessageTypes type = (MessageTypes)receive.Data.Span[0];
+            //回复的消息
             if (type == MessageTypes.RESPONSE)
             {
-                var wrap = connection.ReceiveResponseWrap;
-                wrap.FromArray(connection.ReceiveDataWrap.Data);
-                messengerSender.Response(wrap);
+                wrapResponse.FromArray(connection.ReceiveDataWrap.Data);
+                messengerSender.Response(wrapResponse);
+                return;
             }
-            else
+
+            wrapRequest.FromArray(receive.Data);
+
+            try
             {
-                var wrap = connection.ReceiveRequestWrap;
-                wrap.FromArray(connection.ReceiveDataWrap.Data);
-                try
+                //404,没这个插件
+                if (!plugins.ContainsKey(wrapRequest.Path))
                 {
-                    wrap.Path = wrap.Path.ToLower();
-                    if (plugins.ContainsKey(wrap.Path))
-                    {
-                        PluginPathCacheInfo plugin = plugins[wrap.Path];
-                        dynamic resultAsync = plugin.Method.Invoke(plugin.Target, new object[] { connection });
-                        if (!plugin.IsVoid)
-                        {
-                            object resultObject = null;
-                            if (plugin.IsTask)
-                            {
-                                await resultAsync;
-                                if (plugin.IsTaskResult)
-                                {
-                                    resultObject = resultAsync.Result;
-                                }
-                            }
-                            else
-                            {
-                                resultObject = resultAsync;
-                            }
-                            if (resultObject != null)
-                            {
-                                if (resultObject is byte[] byteData)
-                                {
-                                    await messengerSender.ReplyOnly(new MessageResponseParamsInfo
-                                    {
-                                        Connection = connection,
-                                        Data = byteData,
-                                        RequestId = wrap.RequestId
-                                    });
-                                }
-                                else
-                                {
-                                    await messengerSender.ReplyOnly(new MessageResponseParamsInfo
-                                    {
-                                        Connection = connection,
-                                        Data = resultObject.ToBytes(),
-                                        RequestId = wrap.RequestId
-                                    });
-                                }
-                            }
-                            else
-                            {
-                                await messengerSender.ReplyOnly(new MessageResponseParamsInfo
-                                {
-                                    Connection = connection,
-                                    Data = Array.Empty<byte>(),
-                                    RequestId = wrap.RequestId
-                                });
-                            }
-                        }
-                    }
-                    else
-                    {
-                        Logger.Instance.Error($"{wrap.Path} fot found");
-                        await messengerSender.ReplyOnly(new MessageResponseParamsInfo
-                        {
-                            Connection = connection,
-                            RequestId = wrap.RequestId,
-                            Code = MessageResponeCodes.NOT_FOUND
-                        });
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Instance.Error(ex);
+                    Logger.Instance.Error($"{wrapRequest.Path} fot found");
                     await messengerSender.ReplyOnly(new MessageResponseParamsInfo
                     {
                         Connection = connection,
-                        RequestId = wrap.RequestId,
-                        Code = MessageResponeCodes.ERROR
+                        RequestId = wrapRequest.RequestId,
+                        Code = MessageResponeCodes.NOT_FOUND
                     });
+                    return;
                 }
-                finally
+
+                PluginPathCacheInfo plugin = plugins[wrapRequest.Path];
+                dynamic resultAsync = plugin.Method.Invoke(plugin.Target, new object[] { connection });
+                //void的，task的 没有返回值，不回复，需要回复的可以返回任意类型
+                if (plugin.IsVoid)
                 {
-                    wrap.Memory = Memory<byte>.Empty;
+                    return;
                 }
+                if (plugin.IsTask && !plugin.IsTaskResult)
+                {
+                    return;
+                }
+
+                object resultObject = null;
+                if (plugin.IsTask)
+                {
+                    await resultAsync;
+                    if (plugin.IsTaskResult)
+                    {
+                        resultObject = resultAsync.Result;
+                    }
+                }
+                else
+                {
+                    resultObject = resultAsync;
+                }
+
+                await messengerSender.ReplyOnly(new MessageResponseParamsInfo
+                {
+                    Connection = connection,
+                    Data = resultObject != null ? resultObject.ToBytes() : Array.Empty<byte>(),
+                    RequestId = wrapRequest.RequestId
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.Error(ex);
+                await messengerSender.ReplyOnly(new MessageResponseParamsInfo
+                {
+                    Connection = connection,
+                    RequestId = wrapRequest.RequestId,
+                    Code = MessageResponeCodes.ERROR
+                });
+            }
+            finally
+            {
+                wrapRequest.Reset();
             }
         }
 
@@ -160,4 +148,6 @@ namespace server
             public bool IsTaskResult { get; set; }
         }
     }
+
+
 }

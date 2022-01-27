@@ -155,61 +155,62 @@ namespace client.service.servers.clientServer
         {
             ClientServiceRequestInfo model = message.DeJson<ClientServiceRequestInfo>();
             model.Path = model.Path.ToLower();
-            if (plugins.ContainsKey(model.Path))
+            if (!plugins.ContainsKey(model.Path))
             {
-                PluginPathCacheInfo plugin = plugins[model.Path];
-                try
+                return new ClientServiceResponseInfo
                 {
-                    ClientServiceParamsInfo param = new ClientServiceParamsInfo
+                    Content = "不存在这个路径",
+                    RequestId = model.RequestId,
+                    Path = model.Path,
+                    Code = -1
+                }.ToJson();
+            }
+
+            PluginPathCacheInfo plugin = plugins[model.Path];
+            try
+            {
+                ClientServiceParamsInfo param = new ClientServiceParamsInfo
+                {
+                    RequestId = model.RequestId,
+                    Content = model.Content,
+                    Path = model.Path
+                };
+                dynamic resultAsync = plugin.Method.Invoke(plugin.Target, new object[] { param });
+                object resultObject = null;
+                if (!plugin.IsVoid)
+                {
+                    if (plugin.IsTask)
                     {
-                        RequestId = model.RequestId,
-                        Content = model.Content,
-                        Path = model.Path
-                    };
-                    dynamic resultAsync = plugin.Method.Invoke(plugin.Target, new object[] { param });
-                    object resultObject = null;
-                    if (!plugin.IsVoid && resultAsync != null)
-                    {
-                        if (plugin.IsTask)
+                        await resultAsync;
+                        if (plugin.IsTaskResult)
                         {
-                            await resultAsync;
-                            if (plugin.IsTaskResult)
-                            {
-                                resultObject = resultAsync.Result;
-                            }
-                        }
-                        else
-                        {
-                            resultObject = resultAsync;
+                            resultObject = resultAsync.Result;
                         }
                     }
-                    return new ClientServiceResponseInfo
+                    else
                     {
-                        Content = param.Code == 0 ? resultObject : param.ErrorMessage,
-                        RequestId = param.RequestId,
-                        Path = param.Path,
-                        Code = param.Code
-                    }.ToJson();
+                        resultObject = resultAsync;
+                    }
                 }
-                catch (Exception ex)
+                return new ClientServiceResponseInfo
                 {
-                    Logger.Instance.Error(ex);
-                    return new ClientServiceResponseInfo
-                    {
-                        Content = ex.Message,
-                        RequestId = model.RequestId,
-                        Path = model.Path,
-                        Code = -1
-                    }.ToJson();
-                }
+                    Content = param.Code == 0 ? resultObject : param.ErrorMessage,
+                    RequestId = param.RequestId,
+                    Path = param.Path,
+                    Code = param.Code
+                }.ToJson();
             }
-            return new ClientServiceResponseInfo
+            catch (Exception ex)
             {
-                Content = "不存在这个路径",
-                RequestId = model.RequestId,
-                Path = model.Path,
-                Code = -1
-            }.ToJson();
+                Logger.Instance.Error(ex);
+                return new ClientServiceResponseInfo
+                {
+                    Content = ex.Message,
+                    RequestId = model.RequestId,
+                    Path = model.Path,
+                    Code = -1
+                }.ToJson();
+            }
         }
         private void Notify()
         {
@@ -303,7 +304,7 @@ namespace client.service.servers.clientServer
 
         public Pipeline(string pipeName)
         {
-            Server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, int.MaxValue, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            Server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 254, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
             Writer = new StreamWriter(Server);
             Reader = new StreamReader(Server);
         }

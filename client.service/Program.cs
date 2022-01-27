@@ -1,5 +1,4 @@
-﻿//using client.service.album;
-using client.service.cmd;
+﻿using client.service.cmd;
 using client.service.ddns;
 using client.service.ftp;
 using client.service.ftp.server;
@@ -10,7 +9,6 @@ using client.service.servers.clientServer;
 using client.service.servers.webServer;
 using client.service.serverTcpforward;
 using client.service.tcpforward;
-using client.service.upnp;
 using client.service.wakeup;
 using common;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,7 +44,7 @@ namespace client.service
             //外部程序集的插件
             System.Reflection.Assembly[] assemblys = new[] {
                 typeof(TcpForwardMessenger).Assembly,
-                typeof(UpnpClientService).Assembly,
+                //typeof(UpnpClientService).Assembly,
                 typeof(FtpServerMessenger).Assembly,
                 typeof(WakeUpClientService).Assembly,
                 typeof(CmdMessenger).Assembly,
@@ -60,7 +58,7 @@ namespace client.service
                 .AddClientServer(assemblys)//客户端管理
                 .AddWebServer()//客户端页面
                 .AddTcpForwardPlugin()  //客户端tcp转发
-                .AddUpnpPlugin()//upnp映射
+                //.AddUpnpPlugin()//upnp映射
                 .AddFtpPlugin() //文件服务
                 .AddCmdPlugin() //远程命令
                 .AddLoggerPlugin() //日志
@@ -75,7 +73,7 @@ namespace client.service
                 .UseClientServer(assemblys)//客户端管理
                 .UseWebServer()//客户端页面
                 .UseTcpForwardPlugin()//客户端tcp转发
-                .UseUpnpPlugin()//upnp映射
+                //.UseUpnpPlugin()//upnp映射
                 .UseFtpPlugin() //文件服务
                 .UseCmdPlugin() //远程命令
                 .UseLoggerPlugin() //日志

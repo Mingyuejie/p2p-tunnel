@@ -256,15 +256,14 @@ namespace client.service.ftp
                 if (fs.Stream == null)
                 {
                     fs.CacheFileName.TryDeleteFile();
-                    FileStream fss = new FileStream(fs.CacheFileName, new FileStreamOptions
+                    fs.Stream = new FileStream(fs.CacheFileName, new FileStreamOptions
                     {
                         Mode = FileMode.Create,
                         Access = FileAccess.Write,
                         Share = FileShare.Read,
-                        BufferSize = config.ReadWriteBufferSize,
+                        BufferSize = 1 * 1024 * 1024,// config.ReadWriteBufferSize,
                         PreallocationSize = cmd.Size
                     });
-                    fs.Stream = fss;
                     fs.Stream.Seek(cmd.Size - 1, SeekOrigin.Begin);
                     fs.Stream.WriteByte(new byte());
                     fs.Stream.Seek(0, SeekOrigin.Begin);
@@ -277,8 +276,6 @@ namespace client.service.ftp
                 {
                     await SendOnlyTcp(new FtpFileEndCommand { Md5 = cmd.Md5 }, wrap.Client);
                     fs.Stream.Flush();
-                    fs.Stream.Close();
-                    fs.Stream.Dispose();
                     Downloads.Remove(wrap.Client.Id, cmd.Md5);
                     File.Move(fs.CacheFileName, fs.FileName, true);
                 }
@@ -475,13 +472,13 @@ namespace client.service.ftp
     {
         [Key(1)]
         public DateTime LastAccessTime { get; set; } = DateTime.Now;
-        [ Key(2)]
+        [Key(2)]
         public DateTime CreationTime { get; set; } = DateTime.Now;
         [Key(3)]
         public DateTime LastWriteTime { get; set; } = DateTime.Now;
-        [ Key(4)]
+        [Key(4)]
         public string Name { get; set; } = string.Empty;
-        [ Key(5)]
+        [Key(5)]
         public long Length { get; set; } = 0;
         [Key(6)]
         public FileType Type { get; set; } = FileType.File;
@@ -527,31 +524,24 @@ namespace client.service.ftp
         public long Speed { get; set; } = 0;
         public UploadStates State { get; set; } = UploadStates.Wait;
 
+        bool disposed = false;
         public void Disponse(bool deleteFile = false)
         {
-            if (Token != null)
+            if (disposed) return;
+            disposed = true;
+
+            Token.Cancel();
+            Token = null;
+
+            if(Stream != null)
             {
-                Token.Cancel();
-            }
-            if (Stream != null)
-            {
-                Stream.Close();
                 Stream.Dispose();
+                Stream = null;
             }
-            Stream = null;
 
             if (deleteFile)
             {
-                try
-                {
-                    if (File.Exists(CacheFileName))
-                    {
-                        File.Delete(CacheFileName);
-                    }
-                }
-                catch (Exception)
-                {
-                }
+                CacheFileName.TryDeleteFile();
             }
 
             GCHelper.Gc(this);
@@ -641,7 +631,7 @@ namespace client.service.ftp
         public ClientInfo Client { get; set; }
     }
 
-    [ MessagePackObject]
+    [MessagePackObject]
     public class FtpResultInfo
     {
         [Key(1)]
@@ -650,13 +640,13 @@ namespace client.service.ftp
         /// <summary>
         /// 写数据
         /// </summary>
-        [ Key(2)]
+        [Key(2)]
         public object Data { get; set; } = Array.Empty<byte>();
 
         /// <summary>
         /// 读数据
         /// </summary>
-        [ IgnoreMember]
+        [IgnoreMember]
         public ReadOnlyMemory<byte> ReadData { get; set; }
 
         [Flags]

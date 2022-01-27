@@ -1,9 +1,5 @@
-﻿using common.extends;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TencentCloud.Common;
 using TencentCloud.Common.Profile;
 using TencentCloud.Dnspod.V20210323;
@@ -117,7 +113,7 @@ namespace client.service.ddns.platform
             {
                 Offset = ((model.PageNumber - 1) * model.PageSize),
                 Limit = model.PageSize,
-                
+
             };
 
             var resp = GetClientByGroup(group).DescribeDomainListSync(req);
@@ -166,7 +162,7 @@ namespace client.service.ddns.platform
                 Status = RecordStatusSwitchMap[model.Status],
             };
 
-            GetClientByGroup(group).ModifyRecordStatus(req);
+            GetClientByGroup(group).ModifyRecordStatus(req).Wait();
             return true;
         }
 

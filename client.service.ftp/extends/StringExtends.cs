@@ -1,11 +1,7 @@
 ﻿using common;
-using Microsoft.VisualBasic.FileIO;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace client.service.ftp.extends
 {
@@ -91,12 +87,13 @@ namespace client.service.ftp.extends
             {
                 try
                 {
-                    FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                    Directory.Delete(path);
+                    //FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
                 }
                 catch (Exception)
                 {
 
-                    Directory.Delete(path);
+                    
                 }
             }
         }
@@ -107,12 +104,13 @@ namespace client.service.ftp.extends
             {
                 try
                 {
-                    FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                    File.Delete(path);
+                    //FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
                 }
                 catch (Exception)
                 {
 
-                    File.Delete(path);
+                    //File.Delete(path);
                 }
             }
         }

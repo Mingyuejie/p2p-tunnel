@@ -1,6 +1,7 @@
 ﻿using common.extends;
 using server.model;
 using server.service.messengers.register.caching;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace server.service.messengers
@@ -8,7 +9,7 @@ namespace server.service.messengers
     public class PunchHoleMessenger : IMessenger
     {
         private readonly IClientRegisterCaching clientRegisterCache;
-        private readonly MessengerSender  messengerSender;
+        private readonly MessengerSender messengerSender;
 
         public PunchHoleMessenger(IClientRegisterCaching clientRegisterCache, MessengerSender messengerSender)
         {

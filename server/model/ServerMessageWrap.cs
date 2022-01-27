@@ -8,6 +8,8 @@ namespace server.model
     public class MessageRequestWrap
     {
         public string Path { get; set; } = string.Empty;
+        //public ReadOnlyMemory<byte> PathMemory { get;private set; }
+
         public ulong RequestId { get; set; } = 0;
         /// <summary>
         /// 发送数据
@@ -18,7 +20,7 @@ namespace server.model
         /// <summary>
         /// 接收数据
         /// </summary>
-        public ReadOnlyMemory<byte> Memory { get; set; } = Array.Empty<byte>();
+        public ReadOnlyMemory<byte> Memory { get; private set; } = Array.Empty<byte>();
 
         /// <summary>
         /// 转包
@@ -81,10 +83,9 @@ namespace server.model
             int pathLength = memory.Span.Slice(index).ToInt32();
             index += 4;
 
-            Path = memory.Span.Slice(index, pathLength).GetString();
+            // PathMemory = memory.Slice(index, pathLength);
+            Path = memory.Slice(index, pathLength).Span.GetString();
             index += pathLength;
-
-            //Console.WriteLine($"{RequestId} AsMemory index:{index},length:{length},count:{length-index},total:{bytes.Length}");
 
             Memory = memory.Slice(index, memory.Length - index);
         }
@@ -93,7 +94,7 @@ namespace server.model
         {
             Path = string.Empty;
             Content = content;
-
+            Memory = content;
         }
     }
     public class MessageResponseWrap
@@ -104,6 +105,7 @@ namespace server.model
         /// 发送数据
         /// </summary>
         public byte[] Content { get; set; } = Array.Empty<byte>();
+        private byte[] content = Array.Empty<byte>();
         /// <summary>
         /// 接收数据
         /// </summary>
@@ -165,6 +167,12 @@ namespace server.model
             index += 2;
 
             Memory = memory.Slice(index, memory.Length - index);
+        }
+
+        public void Reset()
+        {
+            Content = content;
+            Memory = content;
         }
     }
 
