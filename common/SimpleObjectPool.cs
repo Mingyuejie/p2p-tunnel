@@ -11,7 +11,7 @@ namespace common
     {
         private ConcurrentStack<T> objectStack = new ConcurrentStack<T>();
 
-        public T Get()
+        public T Rent()
         {
             if (!objectStack.TryPop(out T t))
             {
@@ -20,7 +20,7 @@ namespace common
             return t;
         }
 
-        public void Restore(T aObject)
+        public void Return(T aObject)
         {
             if (aObject == null) return;
             objectStack.Push(aObject);

@@ -37,7 +37,7 @@ namespace server.service.messengers
                         {
                             Connection = connection,
                             Data = model.Data,
-                            Path = connection.ReceiveRequestWrap.Path,
+                            MemoryPath = connection.ReceiveRequestWrap.Path,
                             RequestId = connection.ReceiveRequestWrap.RequestId
                         });
                     }

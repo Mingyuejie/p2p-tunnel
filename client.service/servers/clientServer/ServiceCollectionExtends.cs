@@ -27,14 +27,20 @@ namespace client.service.servers.clientServer
             {
                 services.AddSingleton(item);
             }
+            foreach (var item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientCommand))))
+            {
+                services.AddSingleton(item);
+            }
 
             return services;
         }
 
         public static ServiceProvider UseClientServer(this ServiceProvider services, Assembly[] assemblys)
         {
-            services.GetService<IClientServer>().Start();
-            services.GetService<IClientServer>().LoadPlugins(assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies()).ToArray());
+            IClientServer clientServer = services.GetService<IClientServer>();
+            clientServer.LoadPlugins(assemblys.Concat(AppDomain.CurrentDomain.GetAssemblies()).ToArray());
+            clientServer.Start();
+
             return services;
         }
     }

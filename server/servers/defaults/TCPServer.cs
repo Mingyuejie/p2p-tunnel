@@ -33,8 +33,8 @@ namespace server.servers.defaults
         public void BindAccept(int port, IPAddress ip)
         {
             socket = new Socket(ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            socket.KeepAlive();
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
             socket.Bind(new IPEndPoint(ip, port));
             socket.Listen(int.MaxValue);
 
@@ -47,8 +47,9 @@ namespace server.servers.defaults
                         Socket client = await socket.AcceptAsync(cancellationTokenSource.Token);
                         BindReceive(client, bufferSize: bufferSize);
                     }
-                    catch (SocketException)
+                    catch (SocketException ex)
                     {
+                        Logger.Instance.DebugError(ex);
                         Stop();
                         break;
                     }
@@ -58,13 +59,8 @@ namespace server.servers.defaults
                         Stop();
                         break;
                     }
-                    if (cancellationTokenSource.IsCancellationRequested)
-                    {
-                        Stop();
-                        break;
-                    }
                 }
-            }, cancellationTokenSource.Token);
+            });
         }
 
         public IConnection BindReceive(Socket socket, Action<SocketError> errorCallback = null, int bufferSize = 8 * 1024)
@@ -105,23 +101,19 @@ namespace server.servers.defaults
                     }
                     catch (SocketException ex)
                     {
+                        Logger.Instance.DebugError(ex);
                         userToken.ErrorCallback?.Invoke(ex.SocketErrorCode);
                         userToken.Clear();
                         break;
                     }
                     catch (Exception ex)
                     {
-                        userToken.Clear();
                         Logger.Instance.DebugError(ex);
-                        break;
-                    }
-                    if (cancellationTokenSource.IsCancellationRequested)
-                    {
                         userToken.Clear();
                         break;
                     }
                 }
-            }, cancellationTokenSource.Token);
+            });
 
             return userToken.Connection;
         }

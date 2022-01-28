@@ -12,8 +12,9 @@ namespace server
     public class MessengerResolver
     {
 
-        //private readonly Dictionary<ReadOnlyMemory<byte>, PluginPathCacheInfo> plugins = new(new MemoryCharDictionaryComparer());
-        private readonly Dictionary<string, PluginPathCacheInfo> plugins = new();
+        private readonly Dictionary<ReadOnlyMemory<byte>, MessengerCacheInfo> messengers = new(new MemoryByteDictionaryComparer());
+
+        //private readonly Dictionary<string, MessengerCacheInfo> plugins = new();
 
         private readonly ITcpServer tcpserver;
         private readonly IUdpServer udpserver;
@@ -42,10 +43,10 @@ namespace server
             string path = type.Name.Replace("Messenger", "");
             foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
             {
-                string key = $"{path}/{method.Name}".ToLower();
-                if (!plugins.ContainsKey(key))
+                Memory<byte> key = $"{path}/{method.Name}".ToLower().GetBytes().AsMemory();
+                if (!messengers.ContainsKey(key))
                 {
-                    PluginPathCacheInfo cache = new PluginPathCacheInfo
+                    MessengerCacheInfo cache = new MessengerCacheInfo
                     {
                         IsVoid = method.ReturnType == voidType,
                         Method = method,
@@ -53,7 +54,7 @@ namespace server
                         IsTask = method.ReturnType.GetProperty("IsCompleted") != null && method.ReturnType.GetMethod("GetAwaiter") != null,
                         IsTaskResult = method.ReturnType.GetProperty("Result") != null
                     };
-                    plugins.TryAdd(key, cache);
+                    messengers.TryAdd(key, cache);
                 }
             }
         }
@@ -68,7 +69,7 @@ namespace server
             //回复的消息
             if (type == MessageTypes.RESPONSE)
             {
-                wrapResponse.FromArray(connection.ReceiveDataWrap.Data);
+                wrapResponse.FromArray(receive.Data);
                 messengerSender.Response(wrapResponse);
                 return;
             }
@@ -78,9 +79,9 @@ namespace server
             try
             {
                 //404,没这个插件
-                if (!plugins.ContainsKey(wrapRequest.Path))
+                if (!messengers.ContainsKey(wrapRequest.Path))
                 {
-                    Logger.Instance.Error($"{wrapRequest.Path} fot found");
+                    Logger.Instance.Error($"{wrapRequest.Path.Span.GetString()} fot found");
                     await messengerSender.ReplyOnly(new MessageResponseParamsInfo
                     {
                         Connection = connection,
@@ -90,7 +91,7 @@ namespace server
                     return;
                 }
 
-                PluginPathCacheInfo plugin = plugins[wrapRequest.Path];
+                MessengerCacheInfo plugin = messengers[wrapRequest.Path];
                 dynamic resultAsync = plugin.Method.Invoke(plugin.Target, new object[] { connection });
                 //void的，task的 没有返回值，不回复，需要回复的可以返回任意类型
                 if (plugin.IsVoid)
@@ -139,7 +140,7 @@ namespace server
             }
         }
 
-        private struct PluginPathCacheInfo
+        private struct MessengerCacheInfo
         {
             public object Target { get; set; }
             public MethodInfo Method { get; set; }

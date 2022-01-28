@@ -32,7 +32,7 @@ namespace client.service.servers.webServer
                     HttpListenerContext context = http.GetContext();
                     HttpListenerRequest request = context.Request;
                     HttpListenerResponse response = context.Response;
-                    var stream = response.OutputStream;
+                    Stream stream = response.OutputStream;
                     try
                     {
                         response.Headers["Server"] = "snltty";
@@ -44,7 +44,7 @@ namespace client.service.servers.webServer
                         string fullPath = Path.Join(config.Web.Root, path);
                         if (File.Exists(fullPath))
                         {
-                            var bytes = File.ReadAllBytes(fullPath);
+                            byte[] bytes = File.ReadAllBytes(fullPath);
                             response.ContentLength64 = bytes.Length;
                             response.ContentType = GetContentType(fullPath);
                             stream.Write(bytes, 0, bytes.Length);

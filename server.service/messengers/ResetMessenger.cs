@@ -32,7 +32,7 @@ namespace server.service.messengers
                         {
                             Connection = connection.ServerType == ServerType.UDP ? target.UdpConnection : target.TcpConnection,
                             Data = model,
-                            Path = connection.ReceiveRequestWrap.Path,
+                            MemoryPath = connection.ReceiveRequestWrap.Path,
                             RequestId = connection.ReceiveRequestWrap.RequestId
                         })).Code == MessageResponeCodes.OK;
                     }

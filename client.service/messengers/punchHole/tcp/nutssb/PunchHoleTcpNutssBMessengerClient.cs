@@ -15,7 +15,7 @@ namespace client.service.messengers.punchHole.tcp.nutssb
 {
     public class PunchHoleTcpNutssBMessengerSender : IPunchHoleTcp
     {
-        private readonly PunchHoleMessengerSender  punchHoleMessengerClient;
+        private readonly PunchHoleMessengerSender punchHoleMessengerClient;
         private readonly ITcpServer tcpServer;
         private readonly RegisterStateInfo registerState;
         private readonly Config config;
@@ -148,11 +148,11 @@ namespace client.service.messengers.punchHole.tcp.nutssb
 
                         if (arg.Data.IsDefault)
                         {
-                            tcpServer.BindReceive(targetSocket, bufferSize: config.Client.TcpBufferSize);
+                            var connection = tcpServer.BindReceive(targetSocket, bufferSize: config.Client.TcpBufferSize);
                             await punchHoleMessengerClient.Send(new SendPunchHoleArg<Step3Model>
                             {
                                 TunnelName = arg.RawData.TunnelName,
-                                Connection = tcpServer.CreateConnection(targetSocket),
+                                Connection = connection,
                                 Data = new Step3Model
                                 {
                                     FromId = ConnectId
@@ -180,6 +180,7 @@ namespace client.service.messengers.punchHole.tcp.nutssb
                 }
                 catch (SocketException ex)
                 {
+                    Logger.Instance.DebugError(ex);
                     targetSocket.SafeClose();
                     targetSocket = null;
                     if (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)

@@ -2,14 +2,14 @@
  * @Author: snltty
  * @Date: 2021-08-22 14:09:03
  * @LastEditors: xr
- * @LastEditTime: 2022-01-24 23:35:59
+ * @LastEditTime: 2022-01-28 14:37:41
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3d:\Desktop\p2p-tunnel\README.md
 -->
 # 详细说明
 
-<a href="http://snltty.gitee.io/p2p-tunnel/#/about-home.html" target="_blank">详细说明</a>
+<a href="http://snltty.gitee.io/p2p-tunnel/#/about-home.html" target="_blank">详细说明，及web管理端</a>
 
 # p2p-tunnel
 1. .NET6 Socket编程实现内网穿透
@@ -17,15 +17,14 @@
 3. 访问内网web，内网桌面，及其它TCP上层协议服务
 4. 服务端只承受 客户端注册，客户端信息的交换。不承受数据转发，几乎无压力
 5. 也带有 服务端转发 插件（需要自己部署服务器）
-6. 文件服务跑满 4000兆带宽 500MB/s+,(同机器下，硬盘速度受到了影响)
-7. 多平台域名解析服务，动态更新解析(当IP变化时自动更新),支持 **阿里云、腾讯云** , 适合有公网家庭宽带做服务器的需求
+6. 多平台域名解析服务，动态更新解析(当IP变化时自动更新),支持 **阿里云、腾讯云** , 适合有公网家庭宽带做服务器的需求
+7. 文件服务 600MB/s+,(同机器下，硬盘速度受到了影响)
+
+<img src="./screenshot/file-speed.png" width="300">
+
 8. 序列化->打包->粘包解析->解包->反序列化 整个流程时间
 
 <img src="./screenshot/speed.png" width="300">
-
-### 消息方式
-1. 默认打洞直连  **A->B**，500MB/s+ 的文件传输速度
-
 
 # <font color="red">注意事项</font>
 1. 服务器 或 内网电脑，暴露服务在公网时，请做好安全防范
@@ -61,31 +60,3 @@
     5. rdp.desktop rdp 桌面共享 
     6. rdp.viewer  rdp 桌面共享查看器
 4. client.web.vue3 客户端管理界面
-
-
-### 截图
-#### 1. 注册
-![注册](./screenshot/zc.jpg)
-
-
-#### 2. 客户端列表
-![客户端列表](./screenshot/khd.jpg)
-#### 3. 转发配置
-![tcp转发](./screenshot/tcpzf.jpg)
-
-1. TCP转发 - 访问对方网页
-
-    <img src="./screenshot/bweb.jpg" width="300">
-
-2. TCP转发 - 访问对方桌面
-
-    <img src="./screenshot/bdesktop.jpg" width="300">
-
-#### 5. 文件服务
-![文件服务](./screenshot/wj.jpg)
-
-#### 6. 远程命令
-![远程命令](./screenshot/cmd.jpg)
-
-
-#### 7. 持续丰富中...

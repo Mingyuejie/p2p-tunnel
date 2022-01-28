@@ -7,11 +7,6 @@ namespace common.extends
 {
     public static class ObjectExtends
     {
-        /// <summary>
-        /// System.Text.Json
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
         public static string ToJson(this object obj)
         {
             return JsonSerializer.Serialize(obj, options: new JsonSerializerOptions
@@ -21,12 +16,7 @@ namespace common.extends
                 ReadCommentHandling = JsonCommentHandling.Skip
             });
         }
-        /// <summary>
-        /// System.Text.Json
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="json"></param>
-        /// <returns></returns>
+
         public static T DeJson<T>(this string json)
         {
             return JsonSerializer.Deserialize<T>(json, options: new JsonSerializerOptions

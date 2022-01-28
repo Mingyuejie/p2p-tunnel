@@ -7,7 +7,7 @@ namespace server.model
 {
     public class MessageRequestWrap
     {
-        public string Path { get; set; } = string.Empty;
+        public Memory<byte> Path { get; set; } = Memory<byte>.Empty;
         //public ReadOnlyMemory<byte> PathMemory { get;private set; }
 
         public ulong RequestId { get; set; } = 0;
@@ -30,39 +30,34 @@ namespace server.model
         {
             byte typeByte = (byte)MessageTypes.REQUEST;
             byte[] requestIdByte = RequestId.GetBytes();
+            byte[] pathLengthByte = Path.Length.GetBytes();
 
-            byte[] pathByte = Path.GetBytes();
-            byte[] pathLengthByte = pathByte.Length.GetBytes();
+            byte[] res = new byte[(type == ServerType.TCP ? 4 : 0)
+                + 1
+                + requestIdByte.Length
+                + pathLengthByte.Length + Path.Length
+                + Content.Length];
 
-            int packLength = 1 + requestIdByte.Length + pathByte.Length + pathLengthByte.Length + Content.Length;
-            int payloadLength = packLength;
-            if (type == ServerType.TCP)
-            {
-                packLength += 4;
-            }
-
-            byte[] res = new byte[packLength];
             int index = 0;
 
             if (type == ServerType.TCP)
             {
-                byte[] payloadLengthByte = payloadLength.GetBytes();
+                byte[] payloadLengthByte = (res.Length - 4).GetBytes();
                 Array.Copy(payloadLengthByte, 0, res, index, payloadLengthByte.Length);
                 index += payloadLengthByte.Length;
             }
 
             res[index] = typeByte;
-            index += 1;
+            index += sizeof(byte);
 
             Array.Copy(requestIdByte, 0, res, index, requestIdByte.Length);
             index += requestIdByte.Length;
 
             Array.Copy(pathLengthByte, 0, res, index, pathLengthByte.Length);
             index += pathLengthByte.Length;
-            Array.Copy(pathByte, 0, res, index, pathByte.Length);
-            index += pathByte.Length;
 
-            //Console.WriteLine($"{RequestId} 发送index:{index},content:{Content.Length}");
+            Path.Span.CopyTo(res.AsSpan(index, Path.Length));
+            index += Path.Length;
 
             Array.Copy(Content, 0, res, index, Content.Length);
             index += Content.Length;
@@ -78,13 +73,12 @@ namespace server.model
             int index = 1;
 
             RequestId = memory.Span.Slice(index).ToUInt64();
-            index += 8;
+            index += sizeof(ulong);
 
             int pathLength = memory.Span.Slice(index).ToInt32();
-            index += 4;
+            index += sizeof(int);
 
-            // PathMemory = memory.Slice(index, pathLength);
-            Path = memory.Slice(index, pathLength).Span.GetString();
+            Path = memory.Slice(index, pathLength);
             index += pathLength;
 
             Memory = memory.Slice(index, memory.Length - index);
@@ -92,7 +86,7 @@ namespace server.model
 
         public void Reset()
         {
-            Path = string.Empty;
+            Path = Memory<byte>.Empty;
             Content = content;
             Memory = content;
         }
@@ -117,39 +111,33 @@ namespace server.model
         /// <returns></returns>
         public byte[] ToArray(ServerType type)
         {
-            byte typeByte = (byte)MessageTypes.RESPONSE;
-            byte[] requestIdByte = RequestId.GetBytes();
-            short code = (short)Code;
-            byte[] codeByte = code.GetBytes();
+            byte[] res = new byte[(type == ServerType.TCP ? 4 : 0)
+                + 1
+                + 1
+                + 8
+                + Content.Length];
 
-            int packetLength = 1 + requestIdByte.Length + codeByte.Length + Content.Length;
-            int payloadLength = packetLength;
-            if (type == ServerType.TCP)
-            {
-                packetLength += 4;
-            }
-
-            byte[] res = new byte[packetLength];
             int index = 0;
-
             if (type == ServerType.TCP)
             {
-                byte[] payloadLengthByte = payloadLength.GetBytes();
+                byte[] payloadLengthByte = (res.Length - sizeof(int)).GetBytes();
                 Array.Copy(payloadLengthByte, 0, res, index, payloadLengthByte.Length);
                 index += payloadLengthByte.Length;
             }
 
-            res[index] = typeByte;
-            index += 1;
+            res[index] = (byte)MessageTypes.RESPONSE;
+            index += sizeof(byte);
 
+            res[index] = (byte)Code;
+            index += sizeof(byte);
+
+            byte[] requestIdByte = RequestId.GetBytes();
             Array.Copy(requestIdByte, 0, res, index, requestIdByte.Length);
             index += requestIdByte.Length;
 
-            Array.Copy(codeByte, 0, res, index, codeByte.Length);
-            index += codeByte.Length;
-
             Array.Copy(Content, 0, res, index, Content.Length);
             index += Content.Length;
+
             return res;
         }
         /// <summary>
@@ -160,11 +148,11 @@ namespace server.model
         {
             int index = 1;
 
-            RequestId = memory.Span.Slice(index).ToUInt64();
-            index += 8;
+            Code = (MessageResponeCodes)memory.Span[index];
+            index += sizeof(byte);
 
-            Code = (MessageResponeCodes)memory.Span.Slice(index).ToInt16();
-            index += 2;
+            RequestId = memory.Span.Slice(index).ToUInt64();
+            index += sizeof(ulong);
 
             Memory = memory.Slice(index, memory.Length - index);
         }
@@ -204,9 +192,28 @@ namespace server.model
     {
         public IConnection Connection { get; set; }
 
-        public string Path { get; set; } = string.Empty;
-        public T Data { get; set; } = default;
+        public string Path
+        {
+            set
+            {
+                memoryPath = value.ToLower().GetBytes().AsMemory();
+            }
+        }
 
+        private Memory<byte> memoryPath = null;
+        public Memory<byte> MemoryPath
+        {
+            get
+            {
+                return memoryPath;
+            }
+            set
+            {
+                memoryPath = value;
+            }
+        }
+
+        public T Data { get; set; } = default;
         public ulong RequestId { get; set; } = 0;
         public int Timeout { get; set; } = 15000;
     }

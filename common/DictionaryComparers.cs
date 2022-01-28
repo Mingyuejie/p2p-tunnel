@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace common
 {
 
-    public class MemoryCharDictionaryComparer : IEqualityComparer<ReadOnlyMemory<byte>>
+    public class MemoryByteDictionaryComparer : IEqualityComparer<ReadOnlyMemory<byte>>
     {
         public bool Equals(ReadOnlyMemory<byte> x, ReadOnlyMemory<byte> y)
         {

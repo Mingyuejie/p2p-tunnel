@@ -2,7 +2,7 @@
  * @Author: snltty
  * @Date: 2021-09-07 00:37:53
  * @LastEditors: xr
- * @LastEditTime: 2022-01-24 23:34:53
+ * @LastEditTime: 2022-01-28 14:34:33
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\home.md
@@ -14,14 +14,14 @@
 3. 访问内网web，内网桌面，及其它TCP上层协议服务
 4. 服务端只承受 客户端注册，客户端信息的交换。不承受数据转发，几乎无压力
 5. 也带有 服务端转发 插件（需要自己部署服务器）
-6. 文件服务跑满 4000兆带宽 500MB/s+,(同机器下，硬盘速度受到了影响)
-7. 多平台域名解析服务，动态更新解析(当IP变化时自动更新),支持 **阿里云、腾讯云** , 适合有公网家庭宽带做服务器的需求
+6. 多平台域名解析服务，动态更新解析(当IP变化时自动更新),支持 **阿里云、腾讯云** , 适合有公网家庭宽带做服务器的需求
+7. 文件服务 600MB/s+,(同机器下，硬盘速度受到了影响)
+
+<img src="./imgs/file-speed.png" style="border:1px solid #ddd;max-width:50%">
+
 8. 序列化->打包->粘包解析->解包->反序列化 整个流程时间
 
-<img src="./imgs/speed.png" width="200" style="border:1px solid #ddd;">
-
-### 消息方式
-1. 默认打洞直连  **A->B**，400MB/s+ 的文件传输速度
+<img src="./imgs/speed.png" style="border:1px solid #ddd;max-width:50%">
 
 # QQ群 
 一起打造一个满意的打洞直连内网穿透工具

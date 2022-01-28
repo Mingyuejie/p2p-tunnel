@@ -60,8 +60,9 @@ namespace server.servers.defaults
                             await OnPacket.PushAsync(connection);
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        Logger.Instance.DebugError(ex);
                         Stop();
                         break;
                     }

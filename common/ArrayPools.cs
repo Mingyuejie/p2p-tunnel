@@ -9,5 +9,7 @@ namespace common
 {
     public static class ArrayPools
     {
+        public static MemoryPool<byte> memoryPool = MemoryPool<byte>.Shared;
+        public static ArrayPool<byte> arrayPool = ArrayPool<byte>.Create(64 * 1024, 100000);
     }
 }

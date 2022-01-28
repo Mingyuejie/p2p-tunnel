@@ -21,7 +21,7 @@ namespace client.service.servers.clientServer
         private readonly Dictionary<string, PluginPathCacheInfo> plugins = new();
         private readonly Dictionary<string, Tuple<object, MethodInfo>> pushPlugins = new();
         private readonly Dictionary<string, IClientConfigure> settingPlugins = new();
-
+        private readonly Dictionary<string, IClientCommand> pipelinePlugins = new();
 
         private readonly Config config;
         private readonly ServiceProvider serviceProvider;
@@ -76,8 +76,16 @@ namespace client.service.servers.clientServer
                 if (!settingPlugins.ContainsKey(item.Name))
                     settingPlugins.Add(item.Name, (IClientConfigure)serviceProvider.GetService(item));
             }
-        }
+            foreach (Type item in types.Where(c => c.GetInterfaces().Contains(typeof(IClientCommand))))
+            {
+                string name = item.Name.Replace("ClientCommand", "");
+                if (!pipelinePlugins.ContainsKey(name))
+                {
+                    pipelinePlugins.Add(name, (IClientCommand)serviceProvider.GetService(item));
+                }
+            }
 
+        }
         public void Start()
         {
             WebSocketServer server = new($"ws://{config.Websocket.BindIp}:{config.Websocket.Port}");
@@ -133,7 +141,6 @@ namespace client.service.servers.clientServer
             settingPlugins.TryGetValue(className, out IClientConfigure plugin);
             return plugin;
         }
-
         public IEnumerable<ClientServiceConfigureInfo> GetConfigures()
         {
             return settingPlugins.Select(c => new ClientServiceConfigureInfo
@@ -145,7 +152,6 @@ namespace client.service.servers.clientServer
                 Enable = c.Value.Enable
             });
         }
-
         public IEnumerable<string> GetServices()
         {
             return plugins.Select(c => c.Value.Target.GetType().Name).Distinct();
@@ -242,13 +248,10 @@ namespace client.service.servers.clientServer
             }, TaskCreationOptions.LongRunning);
         }
 
-
         private const string pipeName = "client.cmd";
-        private NumberSpace numberSpace = new NumberSpace();
-        private ConcurrentDictionary<ulong, Pipeline> pipelines = new ConcurrentDictionary<ulong, Pipeline>();
         private void NamedPipe()
         {
-            Pipeline pipeline = NewNamedPipe();
+            Pipeline pipeline = new Pipeline(pipeName);
             Task.Run(async () =>
             {
                 await pipeline.Server.WaitForConnectionAsync();
@@ -261,7 +264,7 @@ namespace client.service.servers.clientServer
                         string msg = await pipeline.Reader.ReadLineAsync();
                         if (string.IsNullOrWhiteSpace(msg))
                         {
-                            RemoveNamedPipe(pipeline);
+                            pipeline.Dispose();
                             break;
                         }
                         string result = await OnMessage(msg);
@@ -269,29 +272,30 @@ namespace client.service.servers.clientServer
                     }
                     catch (Exception)
                     {
-                        RemoveNamedPipe(pipeline);
+                        pipeline.Dispose();
                         break;
                     }
                 }
             });
+        }
+        //private string GetCommandName()
+        //{
+        //    RootCommand root = new RootCommand
+        //    {
 
-        }
-        private Pipeline NewNamedPipe()
-        {
-            Pipeline pipeline = new Pipeline(pipeName)
-            {
-                ID = numberSpace.Get(),
-            };
-            pipelines.TryAdd(pipeline.ID, pipeline);
-            return pipeline;
-        }
-        private void RemoveNamedPipe(Pipeline pipeline)
-        {
-            if (pipelines.TryRemove(pipeline.ID, out _))
-            {
-                pipeline.Dispose();
-            }
-        }
+        //    };
+        //    root.Parse();
+        //}
+    }
+
+
+    public struct PluginPathCacheInfo
+    {
+        public object Target { get; set; }
+        public MethodInfo Method { get; set; }
+        public bool IsVoid { get; set; }
+        public bool IsTask { get; set; }
+        public bool IsTaskResult { get; set; }
     }
 
     public class Pipeline
@@ -300,15 +304,12 @@ namespace client.service.servers.clientServer
         public StreamWriter Writer { get; private set; }
         public StreamReader Reader { get; private set; }
 
-        public ulong ID { get; set; }
-
         public Pipeline(string pipeName)
         {
             Server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 254, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
             Writer = new StreamWriter(Server);
             Reader = new StreamReader(Server);
         }
-
         public void Dispose()
         {
             Server.Close();
@@ -323,14 +324,5 @@ namespace client.service.servers.clientServer
             Writer.Dispose();
             Writer = null;
         }
-    }
-
-    public struct PluginPathCacheInfo
-    {
-        public object Target { get; set; }
-        public MethodInfo Method { get; set; }
-        public bool IsVoid { get; set; }
-        public bool IsTask { get; set; }
-        public bool IsTaskResult { get; set; }
     }
 }

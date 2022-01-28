@@ -1,4 +1,5 @@
-﻿using server;
+﻿using common;
+using server;
 
 namespace client.service.messengers.heart
 {
@@ -13,6 +14,7 @@ namespace client.service.messengers.heart
 
         public bool Execute(IConnection connection)
         {
+            //Logger.Instance.Debug($"收到{connection.ConnectId}的心跳");
             return true;
         }
     }

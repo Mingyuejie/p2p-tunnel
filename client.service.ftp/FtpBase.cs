@@ -177,7 +177,7 @@ namespace client.service.ftp
                     byte[] sendData = new byte[cmd.MetaData.Length + packSize];
                     byte[] readData = new byte[packSize];
 
-                    using FileStream fs = new FileStream(save.FileName, FileMode.Open, FileAccess.Read, FileShare.Read, config.ReadWriteBufferSize);
+                    using FileStream fs = new FileStream(save.FileName, FileMode.Open, FileAccess.Read, FileShare.Read, config.ReadWriteBufferSize, FileOptions.SequentialScan);
 
                     int index = 0;
                     while (index < packCount)
@@ -261,8 +261,9 @@ namespace client.service.ftp
                         Mode = FileMode.Create,
                         Access = FileAccess.Write,
                         Share = FileShare.Read,
-                        BufferSize = 1 * 1024 * 1024,// config.ReadWriteBufferSize,
-                        PreallocationSize = cmd.Size
+                        BufferSize = config.ReadWriteBufferSize,
+                        PreallocationSize = cmd.Size,
+                        Options = FileOptions.SequentialScan
                     });
                     fs.Stream.Seek(cmd.Size - 1, SeekOrigin.Begin);
                     fs.Stream.WriteByte(new byte());
@@ -422,7 +423,6 @@ namespace client.service.ftp
         {
             registerState.OnRegisterStateChange.Sub((state) =>
             {
-                Console.WriteLine(state);
                 if (state)
                 {
                     Task.Run(async () =>
@@ -530,10 +530,13 @@ namespace client.service.ftp
             if (disposed) return;
             disposed = true;
 
-            Token.Cancel();
-            Token = null;
+            if (Token != null)
+            {
+                Token.Cancel();
+                Token = null;
+            }
 
-            if(Stream != null)
+            if (Stream != null)
             {
                 Stream.Dispose();
                 Stream = null;
@@ -549,6 +552,7 @@ namespace client.service.ftp
 
         public bool Check()
         {
+            if (disposed) return false;
             if (Token.IsCancellationRequested || State != UploadStates.Uploading)
             {
                 Disponse();

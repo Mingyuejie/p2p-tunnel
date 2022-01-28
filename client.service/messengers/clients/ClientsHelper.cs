@@ -22,7 +22,7 @@ namespace client.service.messengers.clients
         private readonly IPunchHoleTcp punchHoleTcp;
         private readonly RegisterStateInfo registerState;
         private readonly IClientInfoCaching clientInfoCaching;
-        private readonly HeartMessengerSender  heartMessengerClient;
+        private readonly HeartMessengerSender heartMessengerClient;
 
         public ClientsHelper(ClientsMessengerSender clientsMessageHelper,
             IPunchHoleUdp punchHoleUdp, IPunchHoleTcp punchHoleTcp,

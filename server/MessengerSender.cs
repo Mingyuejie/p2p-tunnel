@@ -2,6 +2,7 @@
 using common.extends;
 using server.model;
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 
@@ -84,16 +85,17 @@ namespace server
                 {
                     return false;
                 }
-                MessageRequestWrap wrap = messageRequestWrapPool.Get();
+                MessageRequestWrap wrap = messageRequestWrapPool.Rent();
                 wrap.Content = msg.Data.ToBytes();
                 wrap.RequestId = msg.RequestId;
-                wrap.Path = msg.Path.ToLower();
+                wrap.Path = msg.MemoryPath;
 
-                var sendData = wrap.ToArray(msg.Connection.ServerType);
-                bool res = await msg.Connection.Send(sendData);
+                byte[] bytes = wrap.ToArray(msg.Connection.ServerType);
+
+                bool res = await msg.Connection.Send(bytes);
 
                 wrap.Reset();
-                messageRequestWrapPool.Restore(wrap);
+                messageRequestWrapPool.Return(wrap);
 
                 if (res && msg.Connection.ServerType == ServerType.UDP)
                 {
@@ -118,8 +120,9 @@ namespace server
                     Code = msg.Code,
                 };
 
-                var sendData = wrap.ToArray(msg.Connection.ServerType);
-                bool res = await msg.Connection.Send(sendData);
+                byte[] bytes = wrap.ToArray(msg.Connection.ServerType);
+                bool res = await msg.Connection.Send(bytes);
+
                 if (res && msg.Connection.ServerType == ServerType.UDP)
                 {
                     msg.Connection.UpdateTime(LastTime);
