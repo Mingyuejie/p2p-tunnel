@@ -1,6 +1,7 @@
 ﻿using common.extends;
 using System;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace server.model
@@ -31,7 +32,6 @@ namespace server.model
             byte typeByte = (byte)MessageTypes.REQUEST;
             byte[] requestIdByte = RequestId.GetBytes();
             byte[] pathLengthByte = Path.Length.GetBytes();
-
             byte[] res = new byte[(type == ServerType.TCP ? 4 : 0)
                 + 1
                 + requestIdByte.Length
