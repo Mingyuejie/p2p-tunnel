@@ -150,7 +150,7 @@ namespace client.service.ftp
                     Md5 = fileIdNs.Get(),
                     ClientId = client.Id,
                     State = UploadStates.Wait,
-                    CacheFullName = file.FullName.Replace(currentPath, targetCurrentPath).TrimStart(Path.DirectorySeparatorChar)
+                    CacheFullName = Path.Combine(targetCurrentPath, file.FullName.Replace(currentPath, String.Empty))
                 };
                 Uploads.Add(save);
             }
@@ -338,7 +338,7 @@ namespace client.service.ftp
             MessageResponeInfo resp = await SendReplyTcp(new FtpCurrentPathCommand { }, client);
             if (resp.Code == MessageResponeCodes.OK)
             {
-                return FtpResultInfo.FromBytes(resp.Data).Data as string;
+                return FtpResultInfo.FromBytes(resp.Data).ReadData.DeBytes<string>();
             }
 
             return string.Empty;
@@ -521,7 +521,7 @@ namespace client.service.ftp
 
     public class FileSaveInfo
     {
-      
+
         public ulong Md5 { get; set; }
         public long TotalLength { get; set; }
         public long IndexLength { get; set; } = 0;

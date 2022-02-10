@@ -13,9 +13,12 @@ namespace server
         public ulong ConnectId { get; set; }
         public bool Connected { get; }
 
+        public bool EncodeEnabled { get; }
+        public ICrypto Crypto { get; }
+        public void EncodeEnable(ICrypto crypto);
+
         public IPEndPoint Address { get; }
         public long Address64 { get; }
-        public long LastTime { get; }
 
         public ServerType ServerType { get; }
 
@@ -23,12 +26,12 @@ namespace server
         public MessageResponseWrap ReceiveResponseWrap { get; }
         public ReceiveDataWrap ReceiveDataWrap { get; }
 
-        public ValueTask<bool> Send(ReadOnlyMemory<byte> data);
-
+        public long LastTime { get; }
         public void UpdateTime(long time);
         public bool IsTimeout(long time);
         public bool IsNeedHeart(long time);
 
+        public ValueTask<bool> Send(ReadOnlyMemory<byte> data);
         public void Disponse();
     }
 
@@ -36,6 +39,13 @@ namespace server
     {
         public ulong ConnectId { get; set; } = 0;
         public virtual bool Connected => false;
+        public bool EncodeEnabled => Crypto != null;
+        public ICrypto Crypto { get; private set; }
+        void IConnection.EncodeEnable(ICrypto crypto)
+        {
+            Crypto = crypto;
+        }
+
 
         public IPEndPoint Address { get; protected set; }
         public long Address64 { get; protected set; }
@@ -63,6 +73,7 @@ namespace server
             ReceiveResponseWrap = null;
             ReceiveDataWrap = null;
         }
+
     }
 
     public class UdpConnection : Connection

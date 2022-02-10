@@ -1,20 +1,34 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Buffers;
 using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace common
 {
-    public class CryptoFactory
+    public interface ICryptoFactory
     {
-        public ICrypto CreateAes(string password)
+        /// <summary>
+        /// 对称加密
+        /// </summary>
+        /// <param name="password"></param>
+        /// <returns></returns>
+        public ISymmetricCrypto CreateSymmetric(string password);
+        /// <summary>
+        /// 非对称加密
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public IAsymmetricCrypto CreateAsymmetric(RsaKey key);
+    }
+
+    public class CryptoFactory : ICryptoFactory
+    {
+        public ISymmetricCrypto CreateSymmetric(string password)
         {
             return new AesCrypto(password);
         }
-        public ICrypto CreateRsa(RsaCrypto.RsaKey key)
+        public IAsymmetricCrypto CreateAsymmetric(RsaKey key)
         {
             return new RsaCrypto(key);
         }
@@ -22,24 +36,42 @@ namespace common
 
     public interface ICrypto : IDisposable
     {
-        public Memory<byte> Encode(byte[] buffer);
-        public ValueTask<Memory<byte>> EncodeAsync(Memory<byte> buffer);
+        public byte[] Encode(byte[] buffer);
+        public byte[] Encode(Memory<byte> buffer);
         public Memory<byte> Decode(byte[] buffer);
-        public ValueTask<Memory<byte>> DecodeAsync(Memory<byte> buffer);
-
+        public Memory<byte> Decode(Memory<byte> buffer);
+    }
+    /// <summary>
+    /// 非对称加密
+    /// </summary>
+    public interface IAsymmetricCrypto : ICrypto
+    {
+        public RsaKey Key { get; }
+    }
+    /// <summary>
+    /// 对称加密
+    /// </summary>
+    public interface ISymmetricCrypto : ICrypto
+    {
+        public string Password { get; }
     }
 
-    public class AesCrypto : ICrypto
+    public class AesCrypto : ISymmetricCrypto
     {
         private ICryptoTransform encryptoTransform;
         private ICryptoTransform decryptoTransform;
+        ArrayPool<byte> arrayPool = ArrayPool<byte>.Create();
+
+        public string Password { get; private set; }
 
         public AesCrypto(string password)
         {
-            if (string.IsNullOrWhiteSpace(password))
+            Password = password;
+            if (string.IsNullOrWhiteSpace(Password))
             {
-                password = GenerateRandomPassword();
+                Password = StringHelper.RandomPasswordStringMd5();
             }
+
 
             using Aes aes = Aes.Create();
             (aes.Key, aes.IV) = GenerateKeyAndIV(password);
@@ -47,7 +79,7 @@ namespace common
             decryptoTransform = aes.CreateDecryptor(aes.Key, aes.IV);
         }
 
-        public Memory<byte> Encode(byte[] buffer)
+        public byte[] Encode(byte[] buffer)
         {
             using MemoryStream memory = new MemoryStream();
             using CryptoStream Encryptor = new CryptoStream(memory, encryptoTransform, CryptoStreamMode.Write);
@@ -56,14 +88,9 @@ namespace common
             Encryptor.FlushFinalBlock();
             return memory.ToArray();
         }
-        public async ValueTask<Memory<byte>> EncodeAsync(Memory<byte> buffer)
+        public byte[] Encode(Memory<byte> buffer)
         {
-            using MemoryStream memory = new MemoryStream();
-            using CryptoStream Encryptor = new CryptoStream(memory, encryptoTransform, CryptoStreamMode.Write);
-
-            await Encryptor.WriteAsync(buffer);
-            Encryptor.FlushFinalBlock();
-            return memory.ToArray();
+            return Encode(buffer.ToArray());
         }
 
         public Memory<byte> Decode(byte[] buffer)
@@ -77,14 +104,15 @@ namespace common
             return result.AsMemory(0, length);
         }
 
-        public async ValueTask<Memory<byte>> DecodeAsync(Memory<byte> buffer)
+        public Memory<byte> Decode(Memory<byte> buffer)
         {
-            using MemoryStream memory = new MemoryStream(buffer.ToArray());
-            using CryptoStream decryptor = new CryptoStream(memory, decryptoTransform, CryptoStreamMode.Read);
+            byte[] bytes = arrayPool.Rent(buffer.Length);
+            buffer.CopyTo(bytes.AsMemory());
 
-            int length = await decryptor.ReadAsync(buffer);
+            Memory<byte> res = Decode(bytes);
+            arrayPool.Return(bytes);
 
-            return buffer.Slice(0, length);
+            return res;
         }
 
         public void Dispose()
@@ -108,25 +136,19 @@ namespace common
             Array.Copy(hash, 32, iv, 0, 16);
             return (Key: key, IV: iv);
         }
-
-        private string GenerateRandomPassword()
-        {
-            List<char> password = new List<char>();
-            Random random = new Random();
-
-            for (int i = 0; i < 32; i++)
-            {
-                password.Add((char)random.Next(0, 127));
-            }
-            return password.ToString();
-        }
     }
 
-    public class RsaCrypto : ICrypto
+    public class RsaCrypto : IAsymmetricCrypto
     {
         RsaKey key = new RsaKey();
         RSA rsa = RSA.Create();
 
+        public RsaKey Key => key;
+
+        public RsaCrypto()
+        {
+            CreateKey();
+        }
         public RsaCrypto(RsaKey key)
         {
             if (key != null)
@@ -144,19 +166,19 @@ namespace common
             return rsa.Decrypt(buffer, RSAEncryptionPadding.OaepSHA512);
         }
 
-        public ValueTask<Memory<byte>> DecodeAsync(Memory<byte> buffer)
+        public Memory<byte> Decode(Memory<byte> buffer)
         {
-            return new ValueTask<Memory<byte>>(Decode(buffer.ToArray()));
+            return Decode(buffer.ToArray());
         }
 
-        public Memory<byte> Encode(byte[] buffer)
+        public byte[] Encode(byte[] buffer)
         {
             return rsa.Encrypt(buffer, RSAEncryptionPadding.OaepSHA512);
         }
 
-        public ValueTask<Memory<byte>> EncodeAsync(Memory<byte> buffer)
+        public byte[] Encode(Memory<byte> buffer)
         {
-            return new ValueTask<Memory<byte>>(Encode(buffer.ToArray()));
+            return Encode(buffer.ToArray());
         }
 
         public void Dispose()
@@ -171,11 +193,11 @@ namespace common
             key.PrivateKey = rsa.ToXmlString(true);
             key.PublicKey = rsa.ToXmlString(false);
         }
-
-        public class RsaKey
-        {
-            public string PrivateKey { get; set; }
-            public string PublicKey { get; set; }
-        }
+       
+    }
+    public class RsaKey
+    {
+        public string PrivateKey { get; set; }
+        public string PublicKey { get; set; }
     }
 }

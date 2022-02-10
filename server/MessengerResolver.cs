@@ -70,11 +70,20 @@ namespace server
             if (type == MessageTypes.RESPONSE)
             {
                 wrapResponse.FromArray(receive.Data);
+                if (connection.EncodeEnabled)
+                {
+                    wrapResponse.Memory = connection.Crypto.Decode(wrapResponse.Memory);
+                }
+
                 messengerSender.Response(wrapResponse);
                 return;
             }
 
             wrapRequest.FromArray(receive.Data);
+            if (connection.EncodeEnabled)
+            {
+                wrapRequest.Memory = connection.Crypto.Decode(wrapRequest.Memory);
+            }
 
             try
             {

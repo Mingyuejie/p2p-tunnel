@@ -13,6 +13,7 @@ namespace server
         private NumberSpace requestIdNumberSpace = new NumberSpace(0);
         private ConcurrentDictionary<ulong, SendCacheInfo> sends = new ConcurrentDictionary<ulong, SendCacheInfo>();
         private SimpleObjectPool<MessageRequestWrap> messageRequestWrapPool = new SimpleObjectPool<MessageRequestWrap>();
+        private ArrayPool<byte> arrayPool = ArrayPool<byte>.Create();
 
         public long LastTime { get; private set; } = DateTimeHelper.GetTimeStamp();
 
@@ -86,7 +87,15 @@ namespace server
                     return false;
                 }
                 MessageRequestWrap wrap = messageRequestWrapPool.Rent();
-                wrap.Content = msg.Data.ToBytes();
+
+                if (msg.Connection.EncodeEnabled)
+                {
+                    wrap.Content = msg.Connection.Crypto.Encode(msg.Data.ToBytes());
+                }
+                else
+                {
+                    wrap.Content = msg.Data.ToBytes();
+                }
                 wrap.RequestId = msg.RequestId;
                 wrap.Path = msg.MemoryPath;
 
@@ -115,10 +124,17 @@ namespace server
             {
                 MessageResponseWrap wrap = new MessageResponseWrap
                 {
-                    Content = msg.Data.ToBytes(),
                     RequestId = msg.RequestId,
                     Code = msg.Code,
                 };
+                if (msg.Connection.EncodeEnabled)
+                {
+                    wrap.Content = msg.Connection.Crypto.Encode(msg.Data.ToBytes());
+                }
+                else
+                {
+                    wrap.Content = msg.Data.ToBytes();
+                }
 
                 byte[] bytes = wrap.ToArray(msg.Connection.ServerType);
                 bool res = await msg.Connection.Send(bytes);

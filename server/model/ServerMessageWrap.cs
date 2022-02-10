@@ -1,5 +1,6 @@
 ﻿using common.extends;
 using System;
+using System.Buffers;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -21,7 +22,7 @@ namespace server.model
         /// <summary>
         /// 接收数据
         /// </summary>
-        public ReadOnlyMemory<byte> Memory { get; private set; } = Array.Empty<byte>();
+        public Memory<byte> Memory { get; set; } = Array.Empty<byte>();
 
         /// <summary>
         /// 转包
@@ -103,7 +104,7 @@ namespace server.model
         /// <summary>
         /// 接收数据
         /// </summary>
-        public ReadOnlyMemory<byte> Memory { get; set; } = Array.Empty<byte>();
+        public Memory<byte> Memory { get; set; } = Array.Empty<byte>();
 
         /// <summary>
         /// 转包

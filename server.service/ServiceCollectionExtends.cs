@@ -49,7 +49,9 @@ namespace server.service
             services.AddSingleton<IClientRegisterCaching, ClientRegisterCaching>();
             services.AddSingleton<MessengerResolver>();
             services.AddSingleton<MessengerSender>();
-            
+            services.AddSingleton<ICryptoFactory,CryptoFactory>();
+            services.AddSingleton<IAsymmetricCrypto, RsaCrypto>();
+
             foreach (Type item in ReflectionHelper.GetInterfaceSchieves(AppDomain.CurrentDomain.GetAssemblies(), typeof(IMessenger)))
             {
                 services.AddSingleton(item);
