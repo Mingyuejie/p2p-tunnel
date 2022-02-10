@@ -127,12 +127,7 @@ namespace server.servers.defaults
 
         public IConnection CreateConnection(Socket socket)
         {
-            return new TcpConnection
-            {
-                TcpSocket = socket,
-                Address64 = (socket.RemoteEndPoint as IPEndPoint).ToInt64(),
-                Address = (socket.RemoteEndPoint as IPEndPoint)
-            };
+            return new TcpConnection(socket);
         }
     }
 

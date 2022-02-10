@@ -149,6 +149,4 @@ namespace server
             public bool IsTaskResult { get; set; }
         }
     }
-
-
 }
