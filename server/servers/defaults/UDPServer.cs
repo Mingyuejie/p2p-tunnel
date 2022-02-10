@@ -94,12 +94,7 @@ namespace server.servers.defaults
 
         public IConnection CreateConnection(IPEndPoint address)
         {
-            return new UdpConnection
-            {
-                Address = address,
-                Address64 = address.ToInt64(),
-                UdpcRecv = UdpcRecv
-            };
+            return new UdpConnection(UdpcRecv, address);
         }
     }
 }

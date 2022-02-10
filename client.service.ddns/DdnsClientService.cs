@@ -3,7 +3,6 @@ using client.service.ddns.platform;
 using common;
 using common.extends;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -176,42 +175,54 @@ namespace client.service.ddns
             return true;
         }
 
+        private string oldIp = string.Empty;
         private void Loop()
         {
             Task.Factory.StartNew(async () =>
             {
-                string oldIp = string.Empty;
+                await UpdateIp();
                 while (true)
                 {
-                    if (config.Enable)
-                    {
-                        try
-                        {
-                            using HttpClient client = new HttpClient();
-                            client.DefaultRequestHeaders.Add("host", "ip.cn");
-                            client.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36");
-                            JObject jobj = JObject.Parse(client.GetStringAsync("https://ip.cn/api/index?ip=&type=0").Result);
-                            if (jobj["code"].ToString() == "0")
-                            {
-                                string ip = jobj["ip"].ToString();
-                                if (ip != oldIp)
-                                {
-                                    oldIp = ip;
-                                    UpdateRecord(ip);
-                                }
-                            }
-                        }
-                        catch (Exception)
-                        {
-
-                        }
-                    }
-
+                    await UpdateIp();
                     await Task.Delay(config.Interval);
                 }
 
             }, TaskCreationOptions.LongRunning);
         }
+        private async Task UpdateIp()
+        {
+            if (config.Enable)
+            {
+                try
+                {
+                    string ip = await GetIp();
+                    if (!string.IsNullOrWhiteSpace(ip) && ip != oldIp)
+                    {
+                        oldIp = ip;
+                        UpdateRecord(ip);
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Logger.Instance.Error(ex);
+                }
+            }
+        }
+        private async Task<string> GetIp()
+        {
+            using HttpClient client = new HttpClient();
+            client.DefaultRequestHeaders.Add("host", "ip.cn");
+            client.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36");
+
+            string res = await client.GetStringAsync("https://ip.cn/api/index?ip=&type=0");
+            GetIpResultInfo result = res.DeJson<GetIpResultInfo>();
+            if (result.Code == 0)
+            {
+                return result.Ip;
+            }
+            return string.Empty;
+        }
+
         private void UpdateRecord(string ip)
         {
             foreach (var platform in config.Platforms)
@@ -307,7 +318,6 @@ namespace client.service.ddns
         public string Platform { get; set; }
         public string Group { get; set; }
     }
-
     public class RecordSwitchParamsInfo : ParamBaseInfo
     {
         public string Record { get; set; }
@@ -323,5 +333,12 @@ namespace client.service.ddns
             public string Name { get; set; }
             public List<string> Records { get; set; }
         }
+    }
+
+
+    public class GetIpResultInfo
+    {
+        public int Code { get; set; }
+        public string Ip { get; set; }
     }
 }

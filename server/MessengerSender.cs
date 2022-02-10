@@ -109,7 +109,7 @@ namespace server
             }
             return false;
         }
-        public async Task ReplyOnly(MessageResponseParamsInfo msg)
+        public async ValueTask ReplyOnly(MessageResponseParamsInfo msg)
         {
             try
             {
