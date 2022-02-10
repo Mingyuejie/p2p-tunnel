@@ -18,12 +18,10 @@ namespace client.service.ftp.server.plugin
 
         public async Task<FtpResultInfo> Execute(FtpPluginParamWrap arg)
         {
-            await Task.Yield();
-
             FtpDownloadCommand cmd = new FtpDownloadCommand();
             cmd.DeBytes(arg.Connection.ReceiveRequestWrap.Memory);
 
-            IEnumerable<string> error = ftpServer.Upload(cmd, arg);
+            IEnumerable<string> error = await ftpServer.Upload(cmd, arg);
             if (error.Any())
             {
                 return new FtpResultInfo { Code = FtpResultInfo.FtpResultCodes.UNKNOW, Data = $"{string.Join(Helper.SeparatorChar, error)}" };

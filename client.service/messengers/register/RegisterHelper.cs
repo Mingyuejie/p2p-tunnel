@@ -107,6 +107,7 @@ namespace client.service.messengers.register
                     await AutoReg();
                 }, config.Client.TcpBufferSize);
 
+
                 //注册
                 RegisterResult result = await registerMessageHelper.Register(new RegisterParams
                 {

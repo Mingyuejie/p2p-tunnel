@@ -15,7 +15,7 @@ namespace client.service.ftp.commands
         [Key(3)]
         public ulong Md5 { get; set; }
         [Key(4)]
-        public string Name { get; set; }
+        public string FullName { get; set; }
 
         [IgnoreMember]
         public byte[] MetaData { get; set; }
@@ -31,7 +31,7 @@ namespace client.service.ftp.commands
 
             byte[] md5Byte = Md5.GetBytes();
 
-            byte[] name = Name.GetBytes();
+            byte[] name = FullName.GetBytes();
             byte[] nameLength = name.Length.GetBytes();
 
             MetaData = new byte[
@@ -74,7 +74,7 @@ namespace client.service.ftp.commands
 
             int nameLength = memory.Span.Slice(index, 4).ToInt32();
             index += 4;
-            Name = memory.Span.Slice(index, nameLength).GetString();
+            FullName = memory.Span.Slice(index, nameLength).GetString();
             index += nameLength;
 
             ReadData = memory.Slice(index);

@@ -133,9 +133,9 @@ namespace client.service.ftp.client
         {
             return Delete(CurrentPath, path);
         }
-        public async ValueTask OnFile(FtpFileCommand cmd, FtpPluginParamWrap data)
+        public new async ValueTask OnFile(FtpFileCommand cmd, FtpPluginParamWrap data)
         {
-            await OnFile(CurrentPath, cmd, data);
+            await base.OnFile(cmd, data);
         }
         public async Task Upload(string path, ClientInfo client)
         {
@@ -159,6 +159,11 @@ namespace client.service.ftp.client
         {
             var response = await SendReplyTcp(new FtpDownloadCommand { Path = path }, client);
             return response.Code == MessageResponeCodes.OK;
+        }
+
+        public string GetCurrentPath()
+        {
+            return config.ClientRootPath;
         }
     }
 

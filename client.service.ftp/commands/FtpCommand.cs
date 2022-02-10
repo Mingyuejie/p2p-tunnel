@@ -31,6 +31,8 @@ namespace client.service.ftp.commands
         FILE_CANCELED = 7,
         [Description("传送文件错误")]
         FILE_ERROR = 8,
+        [Description("当前目录")]
+        CURRENT_PATH = 9,
     }
 
     public interface IFtpCommandBase

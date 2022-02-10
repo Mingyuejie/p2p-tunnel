@@ -20,7 +20,7 @@ namespace client.service.ftp.server
         protected override string SocketPath => "ftpclient/Execute";
         protected override string RootPath { get { return config.ServerRoot; } }
 
-        public FtpServer(ServiceProvider serviceProvider, MessengerSender  messengerSender, Config config, IClientInfoCaching clientInfoCaching, RegisterStateInfo registerState, IPunchHoleTcp punchHoleTcp, IDataTunnelRegister dataTunnelRegister)
+        public FtpServer(ServiceProvider serviceProvider, MessengerSender messengerSender, Config config, IClientInfoCaching clientInfoCaching, RegisterStateInfo registerState, IPunchHoleTcp punchHoleTcp, IDataTunnelRegister dataTunnelRegister)
             : base(serviceProvider, messengerSender, config, clientInfoCaching, registerState, punchHoleTcp, dataTunnelRegister)
         {
             clientInfoCaching.OnOffline.Sub((client) =>
@@ -67,11 +67,11 @@ namespace client.service.ftp.server
         {
             return Delete(GetCurrentPath(wrap.Client.Id), cmd.Path);
         }
-        public async ValueTask OnFile(FtpFileCommand cmd, FtpPluginParamWrap wrap)
+        public new async ValueTask OnFile(FtpFileCommand cmd, FtpPluginParamWrap wrap)
         {
-            await OnFile(GetCurrentPath(wrap.Client.Id), cmd, wrap);
+            await base.OnFile(cmd, wrap);
         }
-        public IEnumerable<string> Upload(FtpDownloadCommand cmd, FtpPluginParamWrap wrap)
+        public async Task<IEnumerable<string>> Upload(FtpDownloadCommand cmd, FtpPluginParamWrap wrap)
         {
             string[] paths = cmd.Path.Split(Helper.SeparatorChar);
             string currentPath = GetCurrentPath(wrap.Client.Id);
@@ -79,7 +79,7 @@ namespace client.service.ftp.server
             IEnumerable<string> notAccessPaths = paths.Except(accessPaths);
             if (accessPaths.Any())
             {
-                Upload(currentPath, string.Join(Helper.SeparatorChar, accessPaths), wrap.Client).Wait();
+                await Upload(currentPath, string.Join(Helper.SeparatorChar, accessPaths), wrap.Client);
             }
             if (notAccessPaths.Any())
             {
@@ -90,7 +90,7 @@ namespace client.service.ftp.server
         }
 
         private ConcurrentDictionary<ulong, string> currentPaths = new ConcurrentDictionary<ulong, string>();
-        private string GetCurrentPath(ulong clientId)
+        public string GetCurrentPath(ulong clientId)
         {
             currentPaths.TryGetValue(clientId, out string path);
             if (string.IsNullOrWhiteSpace(path))
@@ -125,5 +125,4 @@ namespace client.service.ftp.server
 
     }
 
-    
 }

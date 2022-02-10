@@ -95,6 +95,13 @@ namespace client.service.ftp
         {
             await Task.Run(async () =>
             {
+                string targetCurrentPath = await RemoteCurrentPath(client);
+                if (string.IsNullOrWhiteSpace(targetCurrentPath))
+                {
+                    Logger.Instance.Error($" Upload fail,empty target path");
+                    return;
+                }
+
                 foreach (string item in path.Split(Helper.SeparatorChar))
                 {
                     if (!string.IsNullOrWhiteSpace(item))
@@ -113,20 +120,20 @@ namespace client.service.ftp
                             }
                             foreach (FileUploadInfo file in files.Where(c => c.Type == FileType.File))
                             {
-                                AppendUpload(file.Path, currentPath, client);
+                                AppendUpload(file.Path, currentPath, targetCurrentPath, client);
                             }
                         }
                         else if (File.Exists(filepath))
                         {
-                            AppendUpload(filepath, currentPath, client);
+                            AppendUpload(filepath, currentPath, targetCurrentPath, client);
                         }
                     }
                 }
             });
         }
-        private void AppendUpload(string path, string currentPath, ClientInfo client)
+        private void AppendUpload(string path, string currentPath, string targetCurrentPath, ClientInfo client)
         {
-            var file = new System.IO.FileInfo(path);
+            System.IO.FileInfo file = new System.IO.FileInfo(path);
             try
             {
                 //同时上传重复的文件
@@ -135,15 +142,15 @@ namespace client.service.ftp
                     return;
                 }
 
-                var save = new FileSaveInfo
+                FileSaveInfo save = new FileSaveInfo
                 {
-                    FileName = file.FullName,
+                    FullName = file.FullName,
                     IndexLength = 0,
                     TotalLength = file.Length,
                     Md5 = fileIdNs.Get(),
                     ClientId = client.Id,
                     State = UploadStates.Wait,
-                    CacheFileName = file.FullName.Replace(currentPath, String.Empty).TrimStart(Path.DirectorySeparatorChar)
+                    CacheFullName = file.FullName.Replace(currentPath, targetCurrentPath).TrimStart(Path.DirectorySeparatorChar)
                 };
                 Uploads.Add(save);
             }
@@ -162,7 +169,7 @@ namespace client.service.ftp
             {
                 Md5 = save.Md5,
                 Size = save.TotalLength,
-                Name = save.CacheFileName
+                FullName = save.CacheFullName
             };
             save.State = UploadStates.Uploading;
             int packSize = config.SendPacketSize; //每个包大小
@@ -177,7 +184,7 @@ namespace client.service.ftp
                     byte[] sendData = new byte[cmd.MetaData.Length + packSize];
                     byte[] readData = new byte[packSize];
 
-                    using FileStream fs = new FileStream(save.FileName, FileMode.Open, FileAccess.Read, FileShare.Read, config.ReadWriteBufferSize, FileOptions.SequentialScan);
+                    using FileStream fs = new FileStream(save.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, config.ReadWriteBufferSize, FileOptions.SequentialScan);
 
                     int index = 0;
                     while (index < packCount)
@@ -224,7 +231,7 @@ namespace client.service.ftp
             }, save.Token.Token);
         }
 
-        protected async ValueTask OnFile(string currentPath, FtpFileCommand cmd, FtpPluginParamWrap wrap)
+        protected async ValueTask OnFile(FtpFileCommand cmd, FtpPluginParamWrap wrap)
         {
             try
             {
@@ -236,8 +243,8 @@ namespace client.service.ftp
                         Stream = null,
                         IndexLength = 0,
                         TotalLength = cmd.Size,
-                        FileName = Path.Combine(currentPath, cmd.Name),
-                        CacheFileName = Path.Combine(currentPath, $"{cmd.Md5}.downloading"),
+                        FullName = cmd.FullName,
+                        CacheFullName = Path.Combine(Path.GetDirectoryName(cmd.FullName), $"{cmd.Md5}.downloading"),
                         ClientId = wrap.Client.Id,
                         Md5 = cmd.Md5,
                         State = UploadStates.Wait
@@ -255,8 +262,8 @@ namespace client.service.ftp
 
                 if (fs.Stream == null)
                 {
-                    fs.CacheFileName.TryDeleteFile();
-                    fs.Stream = new FileStream(fs.CacheFileName, new FileStreamOptions
+                    fs.CacheFullName.TryDeleteFile();
+                    fs.Stream = new FileStream(fs.CacheFullName, new FileStreamOptions
                     {
                         Mode = FileMode.Create,
                         Access = FileAccess.Write,
@@ -278,7 +285,7 @@ namespace client.service.ftp
                     await SendOnlyTcp(new FtpFileEndCommand { Md5 = cmd.Md5 }, wrap.Client);
                     fs.Stream.Flush();
                     Downloads.Remove(wrap.Client.Id, cmd.Md5);
-                    File.Move(fs.CacheFileName, fs.FileName, true);
+                    File.Move(fs.CacheFullName, fs.FullName, true);
                 }
             }
             catch (Exception ex)
@@ -325,6 +332,16 @@ namespace client.service.ftp
         {
             MessageResponeInfo resp = await SendReplyTcp(new FtpDelCommand { Path = path }, client);
             return FtpResultInfo.FromBytes(resp.Data);
+        }
+        public async Task<string> RemoteCurrentPath(ClientInfo client)
+        {
+            MessageResponeInfo resp = await SendReplyTcp(new FtpCurrentPathCommand { }, client);
+            if (resp.Code == MessageResponeCodes.OK)
+            {
+                return FtpResultInfo.FromBytes(resp.Data).Data as string;
+            }
+
+            return string.Empty;
         }
 
         protected async Task<bool> SendOnlyTcp(IFtpCommandBase data, ClientInfo client)
@@ -455,7 +472,6 @@ namespace client.service.ftp
                 });
             });
         }
-
     }
 
     [Flags]
@@ -505,24 +521,31 @@ namespace client.service.ftp
 
     public class FileSaveInfo
     {
+      
+        public ulong Md5 { get; set; }
+        public long TotalLength { get; set; }
+        public long IndexLength { get; set; } = 0;
+        /// <summary>
+        /// 本地文件完整路径
+        /// </summary>
+        public string FullName { get; set; } = string.Empty;
+        public long Speed { get; set; } = 0;
+        public UploadStates State { get; set; } = UploadStates.Wait;
+
         [JsonIgnore]
         public FileStream Stream { get; set; }
         [JsonIgnore]
         public ulong ClientId { get; set; }
-        public ulong Md5 { get; set; }
-        public long TotalLength { get; set; }
-        public long IndexLength { get; set; } = 0;
-        public string FileName { get; set; } = string.Empty;
+        /// <summary>
+        /// 缓存文件名，客户端表示为上传到的远程的路径，服务端表示为临时文件名
+        /// </summary>
         [JsonIgnore]
-        public string CacheFileName { get; set; } = string.Empty;
+        public string CacheFullName { get; set; } = string.Empty;
         [JsonIgnore]
         public long LastLength { get; set; } = 0;
 
         [JsonIgnore]
         public CancellationTokenSource Token { get; set; }
-
-        public long Speed { get; set; } = 0;
-        public UploadStates State { get; set; } = UploadStates.Wait;
 
         bool disposed = false;
         public void Disponse(bool deleteFile = false)
@@ -544,7 +567,7 @@ namespace client.service.ftp
 
             if (deleteFile)
             {
-                CacheFileName.TryDeleteFile();
+                CacheFullName.TryDeleteFile();
             }
 
             GCHelper.Gc(this);
@@ -599,7 +622,7 @@ namespace client.service.ftp
         {
             if (Caches.TryGetValue(clientId, out ConcurrentDictionary<ulong, FileSaveInfo> ipDic))
             {
-                return ipDic.Values.FirstOrDefault(c => c.FileName == fileFullName) != null;
+                return ipDic.Values.FirstOrDefault(c => c.FullName == fileFullName) != null;
             }
             return false;
         }
