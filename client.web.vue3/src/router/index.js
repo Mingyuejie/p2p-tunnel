@@ -1,8 +1,8 @@
 /*
  * @Author: snltty
  * @Date: 2021-08-19 21:50:16
- * @LastEditors: xr
- * @LastEditTime: 2022-01-23 14:27:29
+ * @LastEditors: snltty
+ * @LastEditTime: 2022-02-11 18:00:26
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\router\index.js
@@ -52,16 +52,16 @@ const routes = [
                 meta: { name: '文件服务' }
             },
             {
-                path: '/service-upnp.html',
-                name: 'ServiceUPNP',
-                component: () => import('../views/service/UPNP.vue'),
-                meta: { name: 'UPNP映射' }
-            },
-            {
                 path: '/service-tcp-forward.html',
                 name: 'ServiceTcpForward',
                 component: () => import('../views/service/TcpForward.vue'),
                 meta: { name: 'TCP转发' }
+            },
+            {
+                path: '/service-upnp.html',
+                name: 'ServiceUPNP',
+                component: () => import('../views/service/UPNP.vue'),
+                meta: { name: 'UPNP映射' }
             },
             {
                 path: '/service-wakeup.html',

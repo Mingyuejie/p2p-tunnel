@@ -34,7 +34,7 @@ namespace client.service.cmd
                 }
                 return new CmdResultInfo { ErrorMsg = res.Code.ToString() };
             }
-            return ExecuteCmd(model.Id, model.Cmd);
+            return await ExecuteCmd(model.Id, model.Cmd);
         }
     }
 }

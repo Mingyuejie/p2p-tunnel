@@ -1,6 +1,7 @@
 ﻿using client.messengers.clients;
 using common.extends;
 using server;
+using System.Threading.Tasks;
 
 namespace client.service.cmd
 {
@@ -11,16 +12,14 @@ namespace client.service.cmd
         {
             this.config = config;
         }
-        public CmdResultInfo Execute(IConnection connection)
+        public async Task<CmdResultInfo> Execute(IConnection connection)
         {
             CmdParamsInfo cmd = connection.ReceiveRequestWrap.Memory.DeBytes<CmdParamsInfo>();
             if (!config.Enable)
             {
                 return new CmdResultInfo { ErrorMsg = "远程命令服务未开启" };
             }
-            return ExecuteCmd(connection.ConnectId, cmd.Cmd);
+            return await ExecuteCmd(connection.ConnectId, cmd.Cmd);
         }
-
-
     }
 }

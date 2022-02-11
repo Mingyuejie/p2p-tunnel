@@ -1,8 +1,8 @@
 <!--
  * @Author: snltty
  * @Date: 2021-09-26 19:51:49
- * @LastEditors: xr
- * @LastEditTime: 2022-01-23 14:19:32
+ * @LastEditors: snltty
+ * @LastEditTime: 2022-02-11 17:59:53
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\service\ftp\Remote.vue
@@ -18,7 +18,9 @@
             </el-select>
             <span class="split"></span>
             <el-button size="mini" :loading="loading" @click="getFiles('')">刷新列表</el-button>
-            <el-button size="mini" :loading="loading" @click="showCmd = true">执行命令</el-button>
+            <auth-item name="CmdsClientService">
+                <el-button size="mini" :loading="loading" @click="showCmd = true">执行命令</el-button>
+            </auth-item>
             <span class="split"></span>
             <ConfigureModal className="FtpClientConfigure">
                 <el-button size="mini">配置插件</el-button>
@@ -59,8 +61,9 @@ import { injectFilesData } from './list-share-data'
 import { pushListener } from '../../../apis/request'
 import { injectCmd } from '../../../states/cmd'
 import Cmd from '../cmd/Cmd.vue'
+import AuthItem from '../../../components/auth/AuthItem.vue';
 export default {
-    components: { FileTree, ContextMenu, ConfigureModal, Cmd },
+    components: { FileTree, ContextMenu, ConfigureModal, Cmd, AuthItem },
     setup () {
         const listShareData = injectFilesData();
         const clientState = injectClients();

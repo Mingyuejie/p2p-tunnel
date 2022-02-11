@@ -72,7 +72,6 @@ namespace common
                 Password = StringHelper.RandomPasswordStringMd5();
             }
 
-
             using Aes aes = Aes.Create();
             (aes.Key, aes.IV) = GenerateKeyAndIV(password);
             encryptoTransform = aes.CreateEncryptor(aes.Key, aes.IV);
@@ -90,7 +89,13 @@ namespace common
         }
         public byte[] Encode(Memory<byte> buffer)
         {
-            return Encode(buffer.ToArray());
+            byte[] bytes = arrayPool.Rent(buffer.Length);
+            buffer.CopyTo(bytes.AsMemory());
+
+            byte[] res = Encode(bytes);
+            arrayPool.Return(bytes);
+
+            return res;
         }
 
         public Memory<byte> Decode(byte[] buffer)

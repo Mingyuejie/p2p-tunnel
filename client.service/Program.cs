@@ -1,15 +1,11 @@
-﻿using client.service.cmd;
-using client.service.ddns;
-using client.service.ftp;
+﻿using client.service.ftp;
 using client.service.ftp.server;
 using client.service.logger;
 using client.service.messengers.register;
 using client.service.plugins.serverPlugins;
 using client.service.servers.clientServer;
 using client.service.servers.webServer;
-using client.service.serverTcpforward;
 using client.service.tcpforward;
-using client.service.wakeup;
 using common;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -46,11 +42,11 @@ namespace client.service
                 typeof(TcpForwardMessenger).Assembly,
                 //typeof(UpnpClientService).Assembly,
                 typeof(FtpServerMessenger).Assembly,
-                typeof(WakeUpClientService).Assembly,
-                typeof(CmdMessenger).Assembly,
+                //typeof(WakeUpClientService).Assembly,
+                //typeof(CmdMessenger).Assembly,
                 typeof(LoggerClientService).Assembly,
-                typeof(ServerTcpForwardMessenger).Assembly,
-                typeof(DdnsClientService).Assembly,
+                //typeof(ServerTcpForwardMessenger).Assembly,
+                //typeof(DdnsClientService).Assembly,
             };
 
             serviceCollection
@@ -60,10 +56,10 @@ namespace client.service
                 .AddTcpForwardPlugin()  //客户端tcp转发
                 //.AddUpnpPlugin()//upnp映射
                 .AddFtpPlugin() //文件服务
-                .AddCmdPlugin() //远程命令
+                //.AddCmdPlugin() //远程命令
                 .AddLoggerPlugin() //日志
-                .AddServerTcpForwardPlugin()//服务器TCP转发
-                .AddDdnsPlugin()
+                //.AddServerTcpForwardPlugin()//服务器TCP转发
+                //.AddDdnsPlugin()
             ;
 
 
@@ -75,10 +71,10 @@ namespace client.service
                 .UseTcpForwardPlugin()//客户端tcp转发
                 //.UseUpnpPlugin()//upnp映射
                 .UseFtpPlugin() //文件服务
-                .UseCmdPlugin() //远程命令
+                //.UseCmdPlugin() //远程命令
                 .UseLoggerPlugin() //日志
-                .UseServerTcpForwardPlugin()//服务器TCP转发
-                .UseDdnsPlugin()
+                //.UseServerTcpForwardPlugin()//服务器TCP转发
+                //.UseDdnsPlugin()
                ;
             //自动注册
             _ = serviceProvider.GetService<RegisterHelper>().AutoReg();

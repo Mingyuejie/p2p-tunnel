@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace client.servers.clientServer
 {
@@ -10,6 +11,8 @@ namespace client.servers.clientServer
         public IEnumerable<ClientServiceConfigureInfo> GetConfigures();
         public IClientConfigure GetConfigure(string className);
         public IEnumerable<string> GetServices();
+
+        public Task<ClientServiceResponseInfo> OnMessage(ClientServiceRequestInfo model);
     }
 
     public class ClientServiceConfigureInfo

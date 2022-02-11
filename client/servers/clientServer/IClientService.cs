@@ -1,7 +1,4 @@
-﻿using Fleck;
-using MessagePack;
-using System;
-using System.Collections.Concurrent;
+﻿using MessagePack;
 
 namespace client.servers.clientServer
 {
@@ -24,7 +21,6 @@ namespace client.servers.clientServer
     {
         public string Path { get; set; } = string.Empty;
         public long RequestId { get; set; } = 0;
-        public int Code { get; set; } = 0;
         public string Content { get; set; } = string.Empty;
     }
 

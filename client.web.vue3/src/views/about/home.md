@@ -1,8 +1,8 @@
 <!--
  * @Author: snltty
  * @Date: 2021-09-07 00:37:53
- * @LastEditors: xr
- * @LastEditTime: 2022-01-28 14:34:33
+ * @LastEditors: snltty
+ * @LastEditTime: 2022-02-11 18:07:12
  * @version: v1.0.0
  * @Descripttion: 功能说明
  * @FilePath: \client.web.vue3\src\views\about\home.md
@@ -37,17 +37,17 @@
 # 项目结构
 1. p2p  打洞项目
     1. client 客户端公共内容
-    2. client.service 客户端服务
+    2. client.service **打洞客户端**
     4. client.service.ftp 客户端服务的  文件服务插件
     5. client.service.tcpforward 客户端服务的 tcp转发插件
-    6. client.service.upnp 网关端口映射管理
-    7. client.service.wakeup 幻数据包唤醒
-    8. client.service.cmd p2p远程客户端命令
-    9. client.service.ddns 域名解析
-    10. client.service.serverTcpforward 服务端TCP转发(需要自己部署服务器)
+    6. client.service.upnp 网关端口映射管理 **(默认不启用)**
+    7. client.service.wakeup 幻数据包唤醒 **(默认不启用)**
+    8. client.service.cmd p2p远程客户端命令 **(默认不启用)**
+    9. client.service.ddns 域名解析 **(默认不启用)**
+    10. client.service.serverTcpforward 服务端TCP转发(需要自己部署服务器) **(默认不启用)**
     11. common 一些公共的功能
     12. server 服务器
-    13. server.service 打洞服务器的服务端
+    13. server.service **打洞服务端**
 2. platform 跟平台有关的一些实验项目
     1. win  windows特有的
         1. remoteDektop 远程桌面相关

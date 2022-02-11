@@ -125,7 +125,7 @@ namespace client.service.servers.clientServer
                 {
                     Task.Run(async () =>
                     {
-                        await socket.Send(await OnMessage(message));
+                        await socket.Send((await OnMessage(message.DeJson<ClientServiceRequestInfo>())).ToJson());
                     });
                 };
             });
@@ -157,9 +157,8 @@ namespace client.service.servers.clientServer
             return plugins.Select(c => c.Value.Target.GetType().Name).Distinct();
         }
 
-        private async Task<string> OnMessage(string message)
+        public async Task<ClientServiceResponseInfo> OnMessage(ClientServiceRequestInfo model)
         {
-            ClientServiceRequestInfo model = message.DeJson<ClientServiceRequestInfo>();
             model.Path = model.Path.ToLower();
             if (!plugins.ContainsKey(model.Path))
             {
@@ -169,7 +168,7 @@ namespace client.service.servers.clientServer
                     RequestId = model.RequestId,
                     Path = model.Path,
                     Code = -1
-                }.ToJson();
+                };
             }
 
             PluginPathCacheInfo plugin = plugins[model.Path];
@@ -204,7 +203,7 @@ namespace client.service.servers.clientServer
                     RequestId = param.RequestId,
                     Path = param.Path,
                     Code = param.Code
-                }.ToJson();
+                };
             }
             catch (Exception ex)
             {
@@ -215,7 +214,7 @@ namespace client.service.servers.clientServer
                     RequestId = model.RequestId,
                     Path = model.Path,
                     Code = -1
-                }.ToJson();
+                };
             }
         }
         private void Notify()
@@ -267,8 +266,8 @@ namespace client.service.servers.clientServer
                             pipeline.Dispose();
                             break;
                         }
-                        string result = await OnMessage(msg);
-                        await pipeline.Writer.WriteLineAsync(result);
+                        ClientServiceResponseInfo result = await OnMessage(msg.DeJson<ClientServiceRequestInfo>());
+                        await pipeline.Writer.WriteLineAsync(result.ToJson());
                     }
                     catch (Exception)
                     {
@@ -278,14 +277,6 @@ namespace client.service.servers.clientServer
                 }
             });
         }
-        //private string GetCommandName()
-        //{
-        //    RootCommand root = new RootCommand
-        //    {
-
-        //    };
-        //    root.Parse();
-        //}
     }
 
 

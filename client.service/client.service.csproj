@@ -50,14 +50,9 @@
 	  <None Remove="各平台发布命令.txt" />
 	</ItemGroup>
 	<ItemGroup>
-		<ProjectReference Include="..\client.service.cmd\client.service.cmd.csproj" />
-		<ProjectReference Include="..\client.service.ddns\client.service.ddns.csproj" />
 		<ProjectReference Include="..\client.service.ftp\client.service.ftp.csproj" />
 		<ProjectReference Include="..\client.service.logger\client.service.logger.csproj" />
-		<ProjectReference Include="..\client.service.serverTcpforward\client.service.serverTcpforward.csproj" />
 		<ProjectReference Include="..\client.service.tcpforward\client.service.tcpforward.csproj" />
-		<ProjectReference Include="..\client.service.upnp\client.service.upnp.csproj" />
-		<ProjectReference Include="..\client.service.wakeup\client.service.wakeup.csproj" />
 		<ProjectReference Include="..\client\client.csproj" />
 		<ProjectReference Include="..\common\common.csproj" />
 		<ProjectReference Include="..\server\server.csproj" />

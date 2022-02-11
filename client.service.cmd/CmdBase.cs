@@ -8,12 +8,13 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace client.service.cmd
 {
     public class CmdBase
     {
-        public ConcurrentDictionary<ulong, string> dirs { get; } = new();
+        public ConcurrentDictionary<ulong, Process> dirs { get; } = new();
 
         public CmdBase(IClientInfoCaching clientInfoCaching)
         {
@@ -24,104 +25,67 @@ namespace client.service.cmd
             });
         }
 
-        protected CmdResultInfo ExecuteCmd(ulong id, string cmd)
+        protected async Task<CmdResultInfo> ExecuteCmd(ulong id, string cmd)
         {
+            TaskCompletionSource<CmdResultInfo> tcs = new TaskCompletionSource<CmdResultInfo>();
+
             if (string.IsNullOrWhiteSpace(cmd))
             {
-                return new CmdResultInfo();
+                tcs.SetResult(new CmdResultInfo());
             }
 
-            //获取当前目录，每个人的都存一份
-            if (!dirs.TryGetValue(id, out string workDir))
+            //每个人的都存一份
+            if (!dirs.TryGetValue(id, out Process proc))
             {
-                workDir = Directory.GetCurrentDirectory();
-                dirs.TryAdd(id, workDir);
+                proc = new();
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    proc.StartInfo.FileName = "cmd.exe";
+                }
+                else
+                {
+                    proc.StartInfo.FileName = "/bin/bash";
+                }
+                proc.StartInfo.WorkingDirectory = Directory.GetCurrentDirectory();
+                proc.StartInfo.CreateNoWindow = true;
+                proc.StartInfo.UseShellExecute = false;
+
+                proc.StartInfo.RedirectStandardError = true;
+                proc.StartInfo.RedirectStandardInput = true;
+                proc.StartInfo.RedirectStandardOutput = true;
+                proc.StartInfo.Verb = "runas";
+
+                proc.Start();
+                proc.BeginOutputReadLine();
+                proc.BeginErrorReadLine();
+                dirs.TryAdd(id, proc);
             }
 
-            Tuple<string, string> cmdParsed = ParseCmd(cmd);
-            if (cmdParsed.Item1 == "cd")
+            DataReceivedEventHandler errorCallback = new DataReceivedEventHandler((object sender, DataReceivedEventArgs e) =>
             {
-                //处理cd 命令
-                return new CmdResultInfo { Res = $"当前目录 {cd(id, cmdParsed.Item2)}" };
-            }
 
-            Process proc = new();
+            });
+            DataReceivedEventHandler outputCallback = new DataReceivedEventHandler((object sender, DataReceivedEventArgs e) =>
+            {
+                Console.WriteLine(e.Data);
+            });
+            proc.OutputDataReceived += outputCallback;
+            proc.ErrorDataReceived += errorCallback;
+
+            StringBuilder sb = new StringBuilder("echo cmd_end");
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                proc.StartInfo.FileName = "cmd.exe";
+                sb.AppendLine("&& echo %cd%");
             }
             else
             {
-                proc.StartInfo.FileName = "/bin/bash";
+                sb.AppendLine("&& pwd");
             }
-            proc.StartInfo.WorkingDirectory = workDir;
-            proc.StartInfo.CreateNoWindow = true;
-            proc.StartInfo.UseShellExecute = false;
-            proc.StartInfo.RedirectStandardError = true;
-            proc.StartInfo.RedirectStandardInput = true;
-            proc.StartInfo.RedirectStandardOutput = true;
-            proc.StartInfo.Verb = "runas";
-            proc.Start();
-
             proc.StandardInput.WriteLine(cmd);
+            proc.StandardInput.WriteLine(sb.ToString());
             proc.StandardInput.AutoFlush = true;
-            proc.StandardInput.WriteLine("exit");
-            string res = proc.StandardOutput.ReadToEnd();
-            string error = proc.StandardError.ReadToEnd();
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                if (!string.IsNullOrWhiteSpace(res))
-                {
-                    IEnumerable<string> arr = res.Split(Environment.NewLine);
-                    res = string.Join(Environment.NewLine, arr.Skip(4).Take(arr.Count() - 6));
-                }
-            }
-
-            proc.WaitForExit();
-            proc.Close();
-            proc.Dispose();
-
-            return new CmdResultInfo
-            {
-                ErrorMsg = error,
-                Res = res
-            };
-        }
-
-        private string cd(ulong id, string path)
-        {
-            dirs.TryGetValue(id, out string workDir);
-            if (!string.IsNullOrWhiteSpace(path))
-            {
-                if (Directory.Exists(Path.Combine(workDir, path)))
-                {
-                    workDir = new DirectoryInfo(Path.Combine(workDir, path)).FullName;
-                    dirs.AddOrUpdate(id, workDir, (a, b) => workDir);
-                }
-            }
-            return workDir;
-        }
-
-        /// <summary>
-        /// 处理行返回 命令 和 参数
-        /// </summary>
-        /// <param name="cmd"></param>
-        /// <returns></returns>
-        private Tuple<string, string> ParseCmd(string cmd)
-        {
-            ReadOnlySpan<char> span = cmd.Trim().AsSpan();
-            int index = span.IndexOf(Encoding.ASCII.GetString(new byte[] { 32 })[0]);
-            if (index > 0)
-            {
-                string cmdStr = span.Slice(0, index).ToString().Trim();
-                string paramStr = span.Slice(index, span.Length - index).ToString().Trim();
-                return new Tuple<string, string>(cmdStr, paramStr);
-            }
-            else
-            {
-                return new Tuple<string, string>(span.ToString(), string.Empty);
-            }
+            return await tcs.Task;
         }
     }
 
@@ -131,19 +95,22 @@ namespace client.service.cmd
         public ulong Id { get; set; }
         public string Cmd { get; set; }
     }
-    [ MessagePackObject]
+    [MessagePackObject]
     public class CmdParamsInfo
     {
-        [ Key(1)]
+        [Key(1)]
         public string Cmd { get; set; }
     }
-    [ MessagePackObject]
+    [MessagePackObject]
     public class CmdResultInfo
     {
         [Key(1)]
         public string Res { get; set; }
 
-        [ Key(2)]
+        [Key(2)]
         public string ErrorMsg { get; set; }
+
+        [Key(3)]
+        public string WorkDir { get; set; }
     }
 }
